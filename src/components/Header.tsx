@@ -30,8 +30,8 @@ export function Header() {
           </div>
 
           {/* Center: Logo */}
-          <Link to="/">
-            <img src={rdwLogo} alt="Rescue Dog Wines" className="h-10 md:h-14" />
+          <Link to="/" className="flex-1 flex justify-center px-4">
+            <img src={rdwLogo} alt="Rescue Dog Wines" className="h-10 md:h-14 max-w-[280px] md:max-w-[400px] w-auto object-contain" />
           </Link>
 
           {/* Right: Account + Cart */}

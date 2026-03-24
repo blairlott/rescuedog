@@ -30,21 +30,8 @@ export function Header() {
           </div>
 
           {/* Center: Logo */}
-          <Link to="/" className="flex items-center gap-3">
-            <span className="text-xl md:text-2xl font-bold tracking-brand uppercase text-foreground">
-              Rescue Dog
-            </span>
-            {/* Paw print icon placeholder - using text */}
-            <svg viewBox="0 0 40 40" className="h-8 w-8 md:h-10 md:w-10 text-primary" fill="currentColor">
-              <circle cx="12" cy="8" r="4" />
-              <circle cx="28" cy="8" r="4" />
-              <circle cx="6" cy="20" r="4" />
-              <circle cx="34" cy="20" r="4" />
-              <ellipse cx="20" cy="28" rx="10" ry="8" />
-            </svg>
-            <span className="text-xl md:text-2xl font-bold tracking-brand uppercase text-foreground">
-              Wines
-            </span>
+          <Link to="/">
+            <img src={rdwLogo} alt="Rescue Dog Wines" className="h-10 md:h-14" />
           </Link>
 
           {/* Right: Account + Cart */}

@@ -18,9 +18,9 @@ export function Header() {
 
       {/* Main Header */}
       <div className="border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 grid grid-cols-[72px_1fr_72px] md:grid-cols-[96px_1fr_96px] items-center gap-2">
           {/* Left: Search */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <button className="md:hidden p-1 text-foreground" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -30,12 +30,16 @@ export function Header() {
           </div>
 
           {/* Center: Logo */}
-          <Link to="/" className="flex-1 flex justify-center px-4 min-w-0">
-            <img src={rdwLogo} alt="Rescue Dog Wines" className="w-[240px] md:w-[360px] lg:w-[420px] h-auto object-contain" />
+          <Link to="/" className="flex justify-center px-1 md:px-2 min-w-0">
+            <img
+              src={rdwLogo}
+              alt="Rescue Dog Wines"
+              className="w-full max-w-[320px] md:max-w-[500px] h-auto object-contain"
+            />
           </Link>
 
           {/* Right: Account + Cart */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-end gap-3 min-w-0">
             <Link to="#" className="hidden md:block p-1 text-foreground hover:text-primary transition-colors">
               <User className="h-5 w-5" />
             </Link>

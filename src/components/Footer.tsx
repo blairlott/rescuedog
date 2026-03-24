@@ -20,8 +20,9 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground">Explore</h4>
             <ul className="space-y-2 text-sm text-foreground">
-              <li><Link to="/" className="hover:text-primary transition-colors">About</Link></li>
-              <li><Link to="/" className="hover:text-primary transition-colors">Vineyard</Link></li>
+              <li><Link to="/about" className="hover:text-primary transition-colors">About</Link></li>
+              <li><Link to="/mission" className="hover:text-primary transition-colors">Mission</Link></li>
+              <li><Link to="/events" className="hover:text-primary transition-colors">Events</Link></li>
               <li><Link to="/wholesale" className="hover:text-primary transition-colors">Trade & Media</Link></li>
             </ul>
           </div>
@@ -46,9 +47,7 @@ export function Footer() {
                 placeholder="Enter email here"
                 className="flex-1 bg-transparent py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
-              <button type="submit" className="p-2 text-foreground hover:text-primary">
-                →
-              </button>
+              <button type="submit" className="p-2 text-foreground hover:text-primary">→</button>
             </form>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Sign up with your email address to receive promotions, new release updates, and a code for 10% off your first order!
@@ -58,10 +57,10 @@ export function Footer() {
                 Follow us @rescuedogwines
               </p>
               <div className="flex gap-4 text-foreground">
-                <a href="#" className="hover:text-primary transition-colors text-lg">f</a>
-                <a href="#" className="hover:text-primary transition-colors text-lg">p</a>
-                <a href="#" className="hover:text-primary transition-colors text-lg">ig</a>
-                <a href="#" className="hover:text-primary transition-colors text-lg">in</a>
+                <a href="https://facebook.com/rescuedogwines" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors text-lg">f</a>
+                <a href="https://pinterest.com/rescuedogwines" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors text-lg">p</a>
+                <a href="https://instagram.com/rescuedogwines" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors text-lg">ig</a>
+                <a href="https://linkedin.com/company/rescuedogwines" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors text-lg">in</a>
               </div>
             </div>
           </div>

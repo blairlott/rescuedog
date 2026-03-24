@@ -4,11 +4,15 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCartSync } from "@/hooks/useCartSync";
+import { AgeGate } from "@/components/AgeGate";
 import Index from "./pages/Index";
 import ProductDetail from "./pages/ProductDetail";
 import WinesPage from "./pages/WinesPage";
 import ShopPage from "./pages/ShopPage";
 import WholesalePage from "./pages/WholesalePage";
+import AboutPage from "./pages/AboutPage";
+import MissionPage from "./pages/MissionPage";
+import EventsPage from "./pages/EventsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +26,9 @@ function AppContent() {
       <Route path="/wines" element={<WinesPage />} />
       <Route path="/shop" element={<ShopPage />} />
       <Route path="/wholesale" element={<WholesalePage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/mission" element={<MissionPage />} />
+      <Route path="/events" element={<EventsPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -33,7 +40,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppContent />
+        <AgeGate>
+          <AppContent />
+        </AgeGate>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

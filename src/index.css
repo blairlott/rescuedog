@@ -2,47 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 @layer base {
   :root {
-    --background: 30 25% 97%;
-    --foreground: 20 15% 15%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
 
-    --card: 30 20% 95%;
-    --card-foreground: 20 15% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
 
-    --popover: 30 25% 97%;
-    --popover-foreground: 20 15% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 0 32% 28%;
-    --primary-foreground: 30 25% 97%;
+    --primary: 350 100% 40%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 15% 90%;
-    --secondary-foreground: 20 15% 15%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 10%;
 
-    --muted: 30 10% 92%;
-    --muted-foreground: 20 8% 50%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 38 60% 52%;
-    --accent-foreground: 20 15% 15%;
+    --accent: 350 100% 40%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 30 15% 85%;
-    --input: 30 15% 85%;
-    --ring: 0 32% 28%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 350 100% 40%;
 
-    --radius: 0.375rem;
+    --radius: 0rem;
 
-    --wine-deep: 0 40% 20%;
-    --wine-rich: 0 32% 28%;
-    --wine-light: 0 20% 40%;
-    --gold: 38 60% 52%;
-    --gold-light: 38 50% 70%;
-    --cream: 30 25% 97%;
-    --cream-dark: 30 15% 90%;
+    --brand-red: 350 100% 40%;
+    --brand-black: 0 0% 10%;
+    --brand-white: 0 0% 100%;
+    --brand-gray: 0 0% 96%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -55,33 +52,33 @@
   }
 
   .dark {
-    --background: 20 15% 10%;
-    --foreground: 30 20% 92%;
+    --background: 0 0% 5%;
+    --foreground: 0 0% 95%;
 
-    --card: 20 15% 14%;
-    --card-foreground: 30 20% 92%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 20 15% 10%;
-    --popover-foreground: 30 20% 92%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 38 60% 52%;
-    --primary-foreground: 20 15% 10%;
+    --primary: 350 100% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 20 12% 20%;
-    --secondary-foreground: 30 20% 92%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 20 12% 20%;
-    --muted-foreground: 30 10% 60%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 0 32% 35%;
-    --accent-foreground: 30 20% 92%;
+    --accent: 350 100% 45%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 20 12% 22%;
-    --input: 20 12% 22%;
-    --ring: 38 60% 52%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 350 100% 45%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -101,10 +98,10 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Source Sans 3', sans-serif;
+    font-family: 'Cabin', Arial, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Cabin', Arial, sans-serif;
   }
 }

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProductCardProps {
@@ -16,6 +16,10 @@ export function ProductCard({ product }: ProductCardProps) {
   const image = node.images.edges[0]?.node;
   const price = node.priceRange.minVariantPrice;
   const firstVariant = node.variants.edges[0]?.node;
+
+  const priceNum = parseFloat(price.amount);
+  const dollars = Math.floor(priceNum);
+  const cents = Math.round((priceNum - dollars) * 100).toString().padStart(2, '0');
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -33,9 +37,9 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Link to={`/product/${node.handle}`} className="group block">
-      <div className="bg-card rounded-lg overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-lg">
-        <div className="aspect-square overflow-hidden bg-muted">
+    <Link to={`/product/${node.handle}`} className="group block text-center">
+      <div className="overflow-hidden mb-4">
+        <div className="aspect-square overflow-hidden bg-secondary">
           {image ? (
             <img
               src={image.url}
@@ -49,32 +53,29 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
         </div>
-        <div className="p-4 space-y-2">
-          <h3 className="font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-            {node.title}
-          </h3>
-          <p className="text-lg font-bold text-primary">
-            ${parseFloat(price.amount).toFixed(2)} <span className="text-xs text-muted-foreground font-normal">{price.currencyCode}</span>
-          </p>
-          <Button
-            onClick={handleAddToCart}
-            disabled={isLoading || !firstVariant?.availableForSale}
-            size="sm"
-            className="w-full bg-primary hover:bg-primary/90"
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : !firstVariant?.availableForSale ? (
-              "Sold Out"
-            ) : (
-              <>
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                Add to Cart
-              </>
-            )}
-          </Button>
-        </div>
       </div>
+      <h3 className="text-sm font-medium text-foreground mb-1">
+        {node.title}
+      </h3>
+      <p className="text-foreground mb-3">
+        <span className="text-xs align-top">$</span>
+        <span className="text-lg font-medium">{dollars}</span>
+        <span className="text-xs align-top">.{cents}</span>
+      </p>
+      <Button
+        onClick={handleAddToCart}
+        disabled={isLoading || !firstVariant?.availableForSale}
+        size="sm"
+        className="uppercase tracking-brand text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 px-6"
+      >
+        {isLoading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : !firstVariant?.availableForSale ? (
+          "Sold Out"
+        ) : (
+          "Add to Cart"
+        )}
+      </Button>
     </Link>
   );
 }

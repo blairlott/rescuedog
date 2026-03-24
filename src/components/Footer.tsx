@@ -1,38 +1,74 @@
-import { Wine, Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function Footer() {
   return (
-    <footer className="bg-primary text-primary-foreground py-12 mt-16">
+    <footer className="border-t border-border py-12 mt-16">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Shop */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Wine className="h-6 w-6" />
-              <span className="font-display text-lg font-bold">Rescue Dog Wines</span>
-            </div>
-            <p className="text-primary-foreground/70 text-sm leading-relaxed">
-              Great wine with a great purpose. A portion of every purchase goes to support dog rescue organizations.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-display font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li><a href="/wines" className="hover:text-primary-foreground transition-colors">Our Wines</a></li>
-              <li><a href="/shop" className="hover:text-primary-foreground transition-colors">Shop All</a></li>
-              <li><a href="/wholesale" className="hover:text-primary-foreground transition-colors">Wholesale</a></li>
+            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground">Shop</h4>
+            <ul className="space-y-2 text-sm text-foreground">
+              <li><Link to="/wines" className="hover:text-primary transition-colors">Wine</Link></li>
+              <li><Link to="/wines" className="hover:text-primary transition-colors">Wine Club</Link></li>
+              <li><Link to="/shop" className="hover:text-primary transition-colors">Store Locator</Link></li>
+              <li><Link to="/shop" className="hover:text-primary transition-colors">Rescue Gear</Link></li>
             </ul>
           </div>
+
+          {/* Explore */}
           <div>
-            <h4 className="font-display font-semibold mb-4">B2B & Wholesale</h4>
-            <p className="text-primary-foreground/70 text-sm leading-relaxed">
-              Interested in carrying Rescue Dog Wines? Contact us for wholesale pricing and bulk orders.
+            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground">Explore</h4>
+            <ul className="space-y-2 text-sm text-foreground">
+              <li><Link to="/" className="hover:text-primary transition-colors">About</Link></li>
+              <li><Link to="/" className="hover:text-primary transition-colors">Vineyard</Link></li>
+              <li><Link to="/wholesale" className="hover:text-primary transition-colors">Trade & Media</Link></li>
+            </ul>
+          </div>
+
+          {/* More */}
+          <div>
+            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground">More</h4>
+            <ul className="space-y-2 text-sm text-foreground">
+              <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Refund Policy</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Shipping Policy</a></li>
+              <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
+            </ul>
+          </div>
+
+          {/* Newsletter */}
+          <div>
+            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground">Newsletter</h4>
+            <form className="flex border-b border-foreground mb-4">
+              <input
+                type="email"
+                placeholder="Enter email here"
+                className="flex-1 bg-transparent py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+              />
+              <button type="submit" className="p-2 text-foreground hover:text-primary">
+                →
+              </button>
+            </form>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Sign up with your email address to receive promotions, new release updates, and a code for 10% off your first order!
             </p>
+            <div className="mt-6">
+              <p className="text-xs font-bold tracking-brand uppercase text-foreground mb-3">
+                Follow us @rescuedogwines
+              </p>
+              <div className="flex gap-4 text-foreground">
+                <a href="#" className="hover:text-primary transition-colors text-lg">f</a>
+                <a href="#" className="hover:text-primary transition-colors text-lg">p</a>
+                <a href="#" className="hover:text-primary transition-colors text-lg">ig</a>
+                <a href="#" className="hover:text-primary transition-colors text-lg">in</a>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center text-sm text-primary-foreground/50">
-          <p className="flex items-center justify-center gap-1">
-            Made with <Heart className="h-3 w-3 text-destructive" /> for rescue dogs everywhere
-          </p>
+
+        <div className="border-t border-border mt-8 pt-8 text-sm text-muted-foreground">
+          <p>© {new Date().getFullYear()}, RescueDogWines.</p>
         </div>
       </div>
     </footer>

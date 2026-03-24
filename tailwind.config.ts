@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Playfair Display"', 'serif'],
-        body: ['"Source Sans 3"', 'sans-serif'],
+        body: ['"Cabin"', 'Arial', 'sans-serif'],
+        display: ['"Cabin"', 'Arial', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -51,18 +51,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        wine: {
-          deep: "hsl(var(--wine-deep))",
-          rich: "hsl(var(--wine-rich))",
-          light: "hsl(var(--wine-light))",
-        },
-        gold: {
-          DEFAULT: "hsl(var(--gold))",
-          light: "hsl(var(--gold-light))",
-        },
-        cream: {
-          DEFAULT: "hsl(var(--cream))",
-          dark: "hsl(var(--cream-dark))",
+        brand: {
+          red: "hsl(var(--brand-red))",
+          black: "hsl(var(--brand-black))",
+          white: "hsl(var(--brand-white))",
+          gray: "hsl(var(--brand-gray))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -79,6 +72,9 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      letterSpacing: {
+        'brand': '0.15em',
       },
       keyframes: {
         "accordion-down": {

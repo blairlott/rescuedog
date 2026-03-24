@@ -4,6 +4,16 @@ import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
 import rdwLogo from "@/assets/rdw-logo.png";
 
+const navItems = [
+  { label: "SHOP WINES", to: "/wines" },
+  { label: "WINE CLUB", to: "/wines" },
+  { label: "FIND A STORE", to: "/shop" },
+  { label: "MERCH", to: "/shop" },
+  { label: "ABOUT", to: "/about" },
+  { label: "MISSION", to: "/mission" },
+  { label: "EVENTS", to: "/events" },
+];
+
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -51,14 +61,7 @@ export function Header() {
         <nav className="hidden md:block border-t border-border">
           <div className="container mx-auto px-4">
             <ul className="flex items-center justify-center gap-8 py-3">
-              {[
-                { label: "SHOP WINES", to: "/wines" },
-                { label: "WINE CLUB", to: "/wines" },
-                { label: "FIND A STORE", to: "/shop" },
-                { label: "MERCH", to: "/shop" },
-                { label: "ABOUT", to: "/" },
-                { label: "MISSION", to: "/" },
-              ].map((item) => (
+              {navItems.map((item) => (
                 <li key={item.label}>
                   <Link
                     to={item.to}
@@ -76,15 +79,7 @@ export function Header() {
       {/* Mobile Nav */}
       {mobileMenuOpen && (
         <nav className="md:hidden border-b border-border bg-background px-4 py-4 space-y-3">
-          {[
-            { label: "SHOP WINES", to: "/wines" },
-            { label: "WINE CLUB", to: "/wines" },
-            { label: "FIND A STORE", to: "/shop" },
-            { label: "MERCH", to: "/shop" },
-            { label: "ABOUT", to: "/" },
-            { label: "MISSION", to: "/" },
-            { label: "WHOLESALE / B2B", to: "/wholesale" },
-          ].map((item) => (
+          {[...navItems, { label: "WHOLESALE / B2B", to: "/wholesale" }].map((item) => (
             <Link
               key={item.label}
               to={item.to}

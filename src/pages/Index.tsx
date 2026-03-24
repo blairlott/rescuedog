@@ -139,7 +139,7 @@ const Index = () => {
                 size="lg"
                 className="uppercase tracking-brand text-sm font-bold border-foreground text-foreground hover:bg-foreground hover:text-background px-10"
               >
-                <Link to="/">Learn More</Link>
+                <Link to="/about">Learn More</Link>
               </Button>
             </div>
           </div>

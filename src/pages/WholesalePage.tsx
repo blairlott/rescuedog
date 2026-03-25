@@ -277,9 +277,9 @@ const WholesalePage = () => {
             {/* Logo */}
             <div className="max-w-xs mx-auto mb-16 text-center">
               <h3 className="font-display text-xl font-bold text-foreground mb-4">Logo</h3>
-              <a href="https://rescuedogwines.com/wp-content/uploads/2023/08/RDW-logo.png" target="_blank" rel="noopener noreferrer" className="block">
+              <a href={brandLogoFull} target="_blank" rel="noopener noreferrer" download className="block">
                 <img
-                  src="https://rescuedogwines.com/wp-content/uploads/2023/09/rescue-dog-wines-5.png"
+                  src={brandLogo}
                   alt="Rescue Dog Wines Logo"
                   className="mx-auto h-24 object-contain mb-3"
                 />

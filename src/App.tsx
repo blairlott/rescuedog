@@ -28,6 +28,7 @@ function AppContent() {
       <Route path="/product/:handle" element={<ProductDetail />} />
       <Route path="/wines" element={<WinesPage />} />
       <Route path="/shop" element={<ShopPage />} />
+      <Route path="/store-locator" element={<StoreLocatorPage />} />
       <Route path="/wholesale" element={<WholesalePage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/mission" element={<MissionPage />} />

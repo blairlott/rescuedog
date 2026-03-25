@@ -3,6 +3,7 @@ import { Footer } from "@/components/Footer";
 import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
 

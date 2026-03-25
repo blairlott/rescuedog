@@ -54,12 +54,12 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Link to={`/product/${node.handle}`} className="group block text-center">
       <div className="overflow-hidden mb-4 relative">
-        <div className="aspect-square overflow-hidden bg-secondary">
+        <div className="aspect-[3/4] overflow-hidden bg-secondary">
           {image ? (
             <img
               src={image.url}
               alt={image.altText || node.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
               loading="lazy"
             />
           ) : (

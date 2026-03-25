@@ -173,6 +173,7 @@ export default function CrmDashboard() {
       )}
 
       <AccountFormDialog open={formOpen} onOpenChange={setFormOpen} account={editAccount} />
+      <BulkImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

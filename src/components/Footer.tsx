@@ -10,9 +10,9 @@ export function Footer() {
             <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground">Shop</h4>
             <ul className="space-y-2 text-sm text-foreground">
               <li><Link to="/wines" className="hover:text-primary transition-colors">Wine</Link></li>
-              <li><Link to="/wines" className="hover:text-primary transition-colors">Wine Club</Link></li>
-              <li><Link to="/shop" className="hover:text-primary transition-colors">Store Locator</Link></li>
-              <li><Link to="/shop" className="hover:text-primary transition-colors">Rescue Gear</Link></li>
+              <li><Link to="/club" className="hover:text-primary transition-colors">Wine Club</Link></li>
+              <li><Link to="/store-locator" className="hover:text-primary transition-colors">Store Locator</Link></li>
+              <li><Link to="/merch" className="hover:text-primary transition-colors">Rescue Gear</Link></li>
             </ul>
           </div>
 
@@ -22,8 +22,9 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-foreground">
               <li><Link to="/about" className="hover:text-primary transition-colors">About</Link></li>
               <li><Link to="/mission" className="hover:text-primary transition-colors">Mission</Link></li>
+              <li><Link to="/vineyard" className="hover:text-primary transition-colors">Vineyard</Link></li>
               <li><Link to="/events" className="hover:text-primary transition-colors">Events</Link></li>
-              <li><Link to="/wholesale" className="hover:text-primary transition-colors">Trade & Media</Link></li>
+              <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
             </ul>
           </div>
 
@@ -31,6 +32,8 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground">More</h4>
             <ul className="space-y-2 text-sm text-foreground">
+              <li><Link to="/wholesale" className="hover:text-primary transition-colors">Wholesale / B2B</Link></li>
+              <li><Link to="/donation" className="hover:text-primary transition-colors">Donation Request</Link></li>
               <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Refund Policy</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Shipping Policy</a></li>

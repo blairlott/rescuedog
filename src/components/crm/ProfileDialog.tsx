@@ -80,6 +80,13 @@ export function ProfileDialog({ open, onOpenChange }: Props) {
           <p className="text-xs text-muted-foreground">
             This info is shared with your team so accounts can show your contact details.
           </p>
+          {roleInfo?.isAdminOrOwner && (
+            <Link to="/crm/admin" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" className="w-full gap-2">
+                <Users className="h-4 w-4" /> Manage Users & Roles
+              </Button>
+            </Link>
+          )}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving}>Save</Button>

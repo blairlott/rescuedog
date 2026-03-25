@@ -86,6 +86,19 @@ export default function CrmAccountDetail() {
           <h3 className="font-semibold text-foreground text-sm uppercase tracking-brand">Details</h3>
           {account.buyer_name && <p className="text-sm"><span className="text-muted-foreground">Buyer:</span> {account.buyer_name} {account.buyer_title && `(${account.buyer_title})`}</p>}
           {account.rep_name && <p className="text-sm"><span className="text-muted-foreground">Rep:</span> {account.rep_name}</p>}
+          <p className="text-sm">
+            <span className="text-muted-foreground">Last Order:</span>{' '}
+            {(() => {
+              const level = getStaleness((account as any).last_order_date);
+              return (
+                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${getStalenessColor(level)}`}>
+                  {(account as any).last_order_date
+                    ? `${new Date((account as any).last_order_date).toLocaleDateString()} (${getStalenessLabel(level)})`
+                    : getStalenessLabel(level)}
+                </span>
+              );
+            })()}
+          </p>
           {account.distributor && <p className="text-sm"><span className="text-muted-foreground">Distributor:</span> {account.distributor}</p>}
           {account.distributor_rep && <p className="text-sm"><span className="text-muted-foreground">Dist. Rep:</span> {account.distributor_rep}</p>}
           {account.sales_order && <p className="text-sm"><span className="text-muted-foreground">Order:</span> {account.sales_order}</p>}

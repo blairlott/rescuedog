@@ -19,11 +19,12 @@ const pillars = [
 ];
 
 
-const ITEMS_PER_PAGE = 25;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const MissionPage = () => {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 

@@ -136,19 +136,19 @@ export default function CrmMapPage() {
   }, [unmapped, upsertAccount]);
 
   return (
-    <div className="p-0" style={{ height: "100%" }}>
-      <div className="p-4 border-b border-border flex items-center gap-3 flex-wrap">
+    <div className="relative" style={{ height: "100%" }}>
+      <div className="relative z-[1000] p-4 border-b border-border bg-card flex items-center gap-3 flex-wrap">
         <h2 className="font-bold text-foreground">Account Map</h2>
         <Select value={stateFilter} onValueChange={(v) => setStateFilter(v === "all" ? "" : v)}>
           <SelectTrigger className="w-[150px]"><SelectValue placeholder="All States" /></SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-[1100]">
             <SelectItem value="all">All States</SelectItem>
             {US_STATES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={premiseFilter} onValueChange={(v) => setPremiseFilter(v === "all" ? "" : v)}>
           <SelectTrigger className="w-[140px]"><SelectValue placeholder="All Types" /></SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-[1100]">
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="on">On Premise</SelectItem>
             <SelectItem value="off">Off Premise</SelectItem>
@@ -177,7 +177,8 @@ export default function CrmMapPage() {
 
       <div
         ref={mapContainerRef}
-        style={{ height: "calc(100vh - 120px)", width: "100%" }}
+        className="relative z-0"
+        style={{ height: "calc(100% - 64px)", width: "100%" }}
       />
     </div>
   );

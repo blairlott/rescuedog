@@ -190,7 +190,10 @@ export default function CrmDashboard() {
                 <TableBody>
                   {filteredAccounts.map((a) => (
                     <TableRow key={a.id}>
-                      <TableCell className="font-medium">{a.account_name}</TableCell>
+                      <TableCell className="font-medium text-xs">{a.account_name}</TableCell>
+                      <TableCell className="text-xs max-w-[180px]">
+                        {[a.street_address, a.city, a.state, a.zip].filter(Boolean).join(", ") || "—"}
+                      </TableCell>
                       <TableCell className="text-xs">{a.buyer_name || "—"}</TableCell>
                       <TableCell className="text-xs">
                         {a.phone ? <a href={`tel:${a.phone}`} className="text-primary hover:underline">{a.phone}</a> : "—"}
@@ -200,7 +203,7 @@ export default function CrmDashboard() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">
-                          {a.premise_type === "on" ? "On Premise" : "Off Premise"}
+                          {a.premise_type === "on" ? "On" : "Off"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -219,7 +222,6 @@ export default function CrmDashboard() {
                           );
                         })()}
                       </TableCell>
-                      <TableCell className="text-xs">{[a.city, a.state].filter(Boolean).join(", ") || "—"}</TableCell>
                       <TableCell className="text-xs">{a.distributor || "—"}</TableCell>
                       <TableCell>
                         <EditableSelect

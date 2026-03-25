@@ -22,7 +22,24 @@ const storeLocatorLinks = [
   },
 ];
 
+const GRAPPOS_UID = "TG-5727723373";
+
 const StoreLocatorPage = () => {
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://locator.grappos.com/embed.js";
+    script.async = true;
+    script.onload = () => {
+      (window as any).GrapposLocator?.init({
+        uid: GRAPPOS_UID,
+        target: "#grappos-locator",
+      });
+    };
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
   return (
     <div className="min-h-screen flex flex-col">
       <Header />

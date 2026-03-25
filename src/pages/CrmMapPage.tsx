@@ -159,7 +159,7 @@ export default function CrmMapPage() {
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-red-500" /> My Accounts</span>
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-yellow-400" /> Prospects</span>
-          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-blue-500" /> Other Reps</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-blue-500" /> Active</span>
         </div>
 
         <div className="flex items-center gap-3 ml-auto">

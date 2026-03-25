@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCartSync } from "@/hooks/useCartSync";
 import { AgeGate } from "@/components/AgeGate";
 import Index from "./pages/Index";
+import MerchHomePage from "./pages/MerchHomePage";
 import ProductDetail from "./pages/ProductDetail";
 import WinesPage from "./pages/WinesPage";
 import ShopPage from "./pages/ShopPage";
@@ -22,6 +23,7 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
+      <Route path="/merch" element={<MerchHomePage />} />
       <Route path="/product/:handle" element={<ProductDetail />} />
       <Route path="/wines" element={<WinesPage />} />
       <Route path="/shop" element={<ShopPage />} />

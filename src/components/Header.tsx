@@ -14,7 +14,7 @@ const navItems: NavItem[] = [
   { label: "SHOP WINES", to: "/wines" },
   { label: "WINE CLUB", to: "/wines" },
   { label: "FIND A STORE", to: "/shop" },
-  { label: "MERCH", to: "https://rescuedog.com", external: true },
+  { label: "MERCH", to: "/merch" },
   { label: "ABOUT", to: "/about" },
   { label: "MISSION", to: "/mission" },
   { label: "EVENTS", to: "/events" },

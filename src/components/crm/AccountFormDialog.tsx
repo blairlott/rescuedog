@@ -36,6 +36,8 @@ export function AccountFormDialog({ open, onOpenChange, account }: Props) {
         status: account.status || "prospect",
         distributor: account.distributor || "",
         distributor_rep: account.distributor_rep || "",
+        distributor_rep_email: (account as any).distributor_rep_email || "",
+        distributor_rep_phone: (account as any).distributor_rep_phone || "",
         street_address: account.street_address || "",
         city: account.city || "",
         state: account.state || "GA",

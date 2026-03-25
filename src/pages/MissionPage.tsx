@@ -1,10 +1,13 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
+
+type SortField = "name" | "city" | "state";
+type SortDir = "asc" | "desc";
 import { rescuePartners, TOTAL_PARTNER_COUNT } from "@/data/rescuePartners";
 
 const pillars = [

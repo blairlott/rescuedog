@@ -332,6 +332,7 @@ export default function CrmDashboard() {
             </div>
           )}
         </div>
+        )}
       </Tabs>
 
       <AccountFormDialog open={formOpen} onOpenChange={setFormOpen} account={editAccount} />

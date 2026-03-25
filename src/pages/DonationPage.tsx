@@ -156,7 +156,7 @@ const DonationPage = () => {
         .insert({
           org_name: orgName,
           is_nonprofit: isNonprofit,
-          services,
+          services: servicesOtherChecked && servicesOther ? [...services, `Other: ${servicesOther}`] : services,
           mailing_street: mailingStreet,
           mailing_city: mailingCity,
           mailing_state: mailingState,

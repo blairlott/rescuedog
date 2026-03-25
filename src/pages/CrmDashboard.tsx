@@ -115,6 +115,14 @@ export default function CrmDashboard() {
           <TabsTrigger value="active">Active</TabsTrigger>
           <TabsTrigger value="prospects">Prospects</TabsTrigger>
           <TabsTrigger value="all-accounts">All Accounts</TabsTrigger>
+          {roleInfo?.isAdminOrOwner && (
+            <TabsTrigger value="approvals" className="gap-1">
+              Approvals
+              {approvalCount > 0 && (
+                <Badge className="bg-yellow-100 text-yellow-800 ml-1 text-xs">{approvalCount}</Badge>
+              )}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <div className="mt-4 space-y-4">

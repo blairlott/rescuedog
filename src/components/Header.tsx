@@ -89,7 +89,9 @@ export function Header() {
                   ) : (
                     <Link
                       to={item.to}
-                      className="text-sm font-medium tracking-brand uppercase text-foreground hover:text-primary transition-colors"
+                      className={`text-sm font-medium tracking-brand uppercase transition-colors ${
+                        location.pathname === item.to ? "text-primary" : "text-foreground hover:text-primary"
+                      }`}
                     >
                       {item.label}
                     </Link>

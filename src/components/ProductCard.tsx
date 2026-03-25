@@ -78,10 +78,15 @@ export function ProductCard({ product }: ProductCardProps) {
       <h3 className="text-sm font-medium text-foreground mb-1">
         {node.title}
       </h3>
-      <p className="text-foreground mb-3">
+      <p className="text-foreground mb-1">
         <span className="text-xs align-top">$</span>
         <span className="text-lg font-medium">{dollars}</span>
         <span className="text-xs align-top">.{cents}</span>
+      </p>
+      <p className="text-xs text-primary mb-3">
+        <Link to="/club" onClick={(e) => e.stopPropagation()} className="hover:underline">
+          ${(priceNum * 0.8).toFixed(2)} Wine Club Price
+        </Link>
       </p>
       <Button
         onClick={handleAddToCart}

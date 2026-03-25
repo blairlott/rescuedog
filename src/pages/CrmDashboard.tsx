@@ -84,8 +84,7 @@ export default function CrmDashboard() {
   const isMyAccount = (a: SalesAccount) =>
     a.rep_name?.toLowerCase() === myName.toLowerCase();
 
-  const canEditAccount = (a: SalesAccount) =>
-    roleInfo?.isAdminOrOwner || isMyAccount(a);
+  const canEditAccount = (_a: SalesAccount) => true;
 
   return (
     <div className="p-6 space-y-6">

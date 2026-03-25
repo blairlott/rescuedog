@@ -236,6 +236,17 @@ export default function CrmDashboard() {
                           }}
                         />
                       </TableCell>
+                      <TableCell className="text-xs">
+                        <div className="space-y-0.5">
+                          {(a as any).distributor_rep_phone && (
+                            <a href={`tel:${(a as any).distributor_rep_phone}`} className="block text-primary hover:underline">{(a as any).distributor_rep_phone}</a>
+                          )}
+                          {(a as any).distributor_rep_email && (
+                            <a href={`mailto:${(a as any).distributor_rep_email}`} className="block text-primary hover:underline truncate max-w-[140px]">{(a as any).distributor_rep_email}</a>
+                          )}
+                          {!(a as any).distributor_rep_phone && !(a as any).distributor_rep_email && "—"}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {roleInfo?.isAdminOrOwner ? (
                           <Select

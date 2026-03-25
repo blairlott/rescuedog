@@ -58,7 +58,7 @@ const StoreLocatorPage = () => {
         <section className="pb-12 md:pb-16">
           <div className="container mx-auto px-4">
             <iframe
-              src={`https://locator.grappos.com/${GRAPPOS_UID}`}
+              src={`https://locator.grappos.com/?uid=${GRAPPOS_UID}`}
               title="Store Locator"
               className="w-full max-w-5xl mx-auto rounded-lg border border-border"
               style={{ width: "100%", height: "625px" }}

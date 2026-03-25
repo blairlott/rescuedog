@@ -115,8 +115,8 @@ const Index = () => {
           {/* Bottle Image Overlay */}
           <div className="hidden lg:block">
             <img
-              src="https://rescuedogwines.com/wp-content/uploads/2023/09/Rescue-Dog-Wines-NV-Demi-Sec-Sparkling.png"
-              alt="NV Demi-Sec Sparkling Wine"
+              src="https://cdn.shopify.com/s/files/1/0599/6580/0542/files/redblend2023.png?v=1774391461"
+              alt="2023 Red Blend | Rescue Dog Wines"
               className="h-[500px] w-auto drop-shadow-2xl"
             />
           </div>

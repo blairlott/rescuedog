@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSalesAccounts, useDeleteAccount } from "@/hooks/useSalesAccounts";
+import { useSalesAccounts, useDeleteAccount, useUpsertAccount } from "@/hooks/useSalesAccounts";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AccountFormDialog } from "@/components/crm/AccountFormDialog";
 import { BulkImportDialog } from "@/components/crm/BulkImportDialog";

@@ -27,8 +27,7 @@ const ALL_ROLES: { value: AppRole; label: string; icon: typeof Shield }[] = [
   { value: "national_manager", label: "National Manager", icon: Globe },
   { value: "regional_manager", label: "Regional Manager", icon: Map },
   { value: "state_manager", label: "State Manager", icon: MapPin },
-  { value: "brand_ambassador", label: "Brand Ambassador", icon: UserCog },
-  { value: "sales_rep", label: "Sales Rep", icon: UserCog },
+  { value: "brand_ambassador", label: "Brand Ambassador / Sales Rep", icon: UserCog },
 ];
 
 const roleBadgeColors: Record<string, string> = {

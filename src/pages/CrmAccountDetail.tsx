@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSalesAccount, useAccountActivities, useAddActivity, useUpsertAccount } from "@/hooks/useSalesAccounts";
 import { useState } from "react";
+import { AccountFormDialog } from "@/components/crm/AccountFormDialog";
 import { toast } from "sonner";
 import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 import { US_STATES } from "@/lib/usStates";
@@ -73,6 +74,7 @@ export default function CrmAccountDetail() {
   const upsertAccount = useUpsertAccount();
   const [activityText, setActivityText] = useState("");
   const [activityType, setActivityType] = useState("note");
+  const [editOpen, setEditOpen] = useState(false);
 
   if (isLoading) return <div className="p-6 text-muted-foreground">Loading...</div>;
   if (!account) return <div className="p-6 text-muted-foreground">Account not found</div>;
@@ -114,25 +116,30 @@ export default function CrmAccountDetail() {
             <Badge className="capitalize">{account.status}</Badge>
           </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={async () => {
-            const today = new Date().toISOString().split('T')[0];
-            try {
-              await upsertAccount.mutateAsync({
-                id: account.id, account_name: account.account_name, last_order_date: today,
-              } as any);
-              await addActivity.mutateAsync({
-                account_id: account.id, activity_type: 'order', description: `Order marked on ${today}`,
-              });
-              toast.success('Marked as ordered today');
-            } catch (err: any) {
-              toast.error(err.message);
-            }
-          }}
-        >
-          <ShoppingCart className="h-4 w-4 mr-1" /> Mark Ordered
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              const today = new Date().toISOString().split('T')[0];
+              try {
+                await upsertAccount.mutateAsync({
+                  id: account.id, account_name: account.account_name, last_order_date: today,
+                } as any);
+                await addActivity.mutateAsync({
+                  account_id: account.id, activity_type: 'order', description: `Order marked on ${today}`,
+                });
+                toast.success('Marked as ordered today');
+              } catch (err: any) {
+                toast.error(err.message);
+              }
+            }}
+          >
+            <ShoppingCart className="h-4 w-4 mr-1" /> Mark Ordered
+          </Button>
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-4 w-4 mr-1" /> Edit
+          </Button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -266,6 +273,7 @@ export default function CrmAccountDetail() {
           {activities.length === 0 && <p className="text-sm text-muted-foreground">No activities yet.</p>}
         </div>
       </div>
+      <AccountFormDialog open={editOpen} onOpenChange={setEditOpen} account={account} />
     </div>
   );
 }

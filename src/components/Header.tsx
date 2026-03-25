@@ -4,11 +4,17 @@ import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
 import rdwLogo from "@/assets/rdw-logo.png";
 
-const navItems = [
+interface NavItem {
+  label: string;
+  to: string;
+  external?: boolean;
+}
+
+const navItems: NavItem[] = [
   { label: "SHOP WINES", to: "/wines" },
   { label: "WINE CLUB", to: "/wines" },
   { label: "FIND A STORE", to: "/shop" },
-  { label: "MERCH", to: "/shop" },
+  { label: "MERCH", to: "https://rescuedog.com", external: true },
   { label: "ABOUT", to: "/about" },
   { label: "MISSION", to: "/mission" },
   { label: "EVENTS", to: "/events" },
@@ -63,12 +69,23 @@ export function Header() {
             <ul className="flex items-center justify-center gap-8 py-3">
               {navItems.map((item) => (
                 <li key={item.label}>
-                  <Link
-                    to={item.to}
-                    className="text-sm font-medium tracking-brand uppercase text-foreground hover:text-primary transition-colors"
-                  >
-                    {item.label}
-                  </Link>
+                  {item.external ? (
+                    <a
+                      href={item.to}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium tracking-brand uppercase text-foreground hover:text-primary transition-colors"
+                    >
+                      {item.label}
+                    </a>
+                  ) : (
+                    <Link
+                      to={item.to}
+                      className="text-sm font-medium tracking-brand uppercase text-foreground hover:text-primary transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -79,15 +96,28 @@ export function Header() {
       {/* Mobile Nav */}
       {mobileMenuOpen && (
         <nav className="md:hidden border-b border-border bg-background px-4 py-4 space-y-3">
-          {[...navItems, { label: "WHOLESALE / B2B", to: "/wholesale" }].map((item) => (
-            <Link
-              key={item.label}
-              to={item.to}
-              className="block text-sm font-medium tracking-brand uppercase text-foreground"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {item.label}
-            </Link>
+          {[...navItems, { label: "WHOLESALE / B2B", to: "/wholesale" } as NavItem].map((item) => (
+            item.external ? (
+              <a
+                key={item.label}
+                href={item.to}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-sm font-medium tracking-brand uppercase text-foreground"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                key={item.label}
+                to={item.to}
+                className="block text-sm font-medium tracking-brand uppercase text-foreground"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            )
           ))}
         </nav>
       )}

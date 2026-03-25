@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import type { SalesAccount } from "@/hooks/useSalesAccounts";
 import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 import { EditableSelect } from "@/components/crm/EditableSelect";
+import { ApprovalQueueTab, useApprovalCount } from "@/components/crm/ApprovalQueueTab";
 
 const statusColors: Record<string, string> = {
   prospect: "bg-muted text-muted-foreground",

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wine, Truck, Users, Mail, MapPin, Globe, FileText } from "lucide-react";
+import { Wine, Truck, Users, Mail, MapPin, Globe, FileText, Download, Image } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,29 @@ const regions = [
   { value: "us-national", label: "US National & Other States", contact: "Jana Ritter" },
   { value: "international", label: "International", contact: "Jana Ritter" },
 ];
+
+const bottleShots = [
+  { name: "2023 Red Blend", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/9-25-25-RedBlend-BS_SMALL-imgupscaler.ai_Sharpen_4K-1.png" },
+  { name: "2023 Cabernet Sauvignon", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/9-25-25-Cabernet-BS-SMALL_imgupscaler.ai_Sharpen_4K.png" },
+  { name: "2024 Sauvignon Blanc", url: "https://rescuedogwines.com/wp-content/uploads/2025/10/2024-SB-LP-design.png" },
+  { name: "2024 Chardonnay", url: "https://rescuedogwines.com/wp-content/uploads/2025/12/9-25-25-Chardonnay-BS-SMALL_imgupscaler.ai_Sharpen_4K-1.png" },
+  { name: "2024 Rosé Estate Grown Grenache", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/9-25-25-Rose-BS-SMALL_imgupscaler.ai_Sharpen_4K.png" },
+  { name: "2021 Pinot Noir", url: "https://rescuedogwines.com/wp-content/uploads/2023/09/RescueDogWines2021PinotNoir.png" },
+  { name: "NV Demi-Sec Sparkling Wine", url: "https://rescuedogwines.com/wp-content/uploads/2023/09/Rescue-Dog-Wines-NV-Demi-Sec-Sparkling.png" },
+  { name: "NV Sparkling Rosé", url: "https://rescuedogwines.com/wp-content/uploads/2023/09/Rescue-Dog-Wines-NV-Sparkling-Rose.png" },
+];
+
+const techSheets = [
+  { name: "2023 Red Blend", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/TechSheetRescueDogWines2023RedBlend.pdf" },
+  { name: "2023 Cabernet Sauvignon", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet_RDW_2023-Cabernet-Sauvignon_DIGITAL.pdf" },
+  { name: "2024 Chardonnay", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet_RDW_2024-Chardonnay_DIGITAL.pdf" },
+  { name: "2024 Rosé", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet_RDW_2024-Rose-Estate-Grown-Grenache.pdf" },
+  { name: "2024 Sauvignon Blanc", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet-2024-Sauv-Blanc-.pdf" },
+  { name: "2021 Pinot Noir", url: "https://rescuedogwines.com/wp-content/uploads/2024/04/Tech-Sheet_RDW_2021-Pinot-Noir_DIGITAL.pdf" },
+  { name: "NV Demi-Sec Sparkling Wine", url: "https://rescuedogwines.com/wp-content/uploads/2024/04/Tech-Sheet_RDW_NV-Sparkling-Demi-Sec_DIGITAL.pdf" },
+  { name: "NV Sparkling Rosé", url: "https://rescuedogwines.com/wp-content/uploads/2024/04/Tech-Sheet_RDW_NV-Sparkling-Rose_DIGITAL.pdf" },
+];
+
 
 const salesContacts = [
   {
@@ -94,7 +117,21 @@ const WholesalePage = () => {
           subtitle="Partner with Rescue Dog Wines. Every bottle makes a difference for our furry friends."
         />
 
-        {/* Distribution Info */}
+        {/* Jump to Brand Assets button */}
+        <div className="bg-primary/5 py-4">
+          <div className="container mx-auto px-4 text-center">
+            <Button
+              variant="destructive"
+              size="lg"
+              onClick={() => document.getElementById('brand-assets')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Brand Assets & Tech Sheets
+            </Button>
+          </div>
+        </div>
+
+
         <section className="py-16">
           <div className="container mx-auto px-4 max-w-4xl">
             <h2 className="font-display text-3xl font-bold text-foreground text-center mb-10">Distribution</h2>
@@ -214,6 +251,67 @@ const WholesalePage = () => {
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center text-sm text-muted-foreground">
               <span className="flex items-center gap-1"><Mail className="h-4 w-4" /> info@rescuedogwines.com</span>
               <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> California, USA</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Brand Assets */}
+        <section id="brand-assets" className="py-16">
+          <div className="container mx-auto px-4">
+            <h2 className="font-display text-3xl font-bold text-foreground text-center mb-4">Brand Assets</h2>
+            <p className="text-muted-foreground text-center mb-10 max-w-2xl mx-auto">
+              Download bottle shots, tech sheets, and logo assets for your menus, marketing, and displays.
+            </p>
+
+            {/* Logo */}
+            <div className="max-w-xs mx-auto mb-16 text-center">
+              <h3 className="font-display text-xl font-bold text-foreground mb-4">Logo</h3>
+              <a href="https://rescuedogwines.com/wp-content/uploads/2023/08/RDW-logo.png" target="_blank" rel="noopener noreferrer" className="block">
+                <img
+                  src="https://rescuedogwines.com/wp-content/uploads/2023/09/rescue-dog-wines-5.png"
+                  alt="Rescue Dog Wines Logo"
+                  className="mx-auto h-24 object-contain mb-3"
+                />
+                <span className="text-sm text-primary hover:underline flex items-center justify-center gap-1">
+                  <Download className="h-3 w-3" /> Download Logo
+                </span>
+              </a>
+            </div>
+
+            {/* Bottle Shots */}
+            <h3 className="font-display text-xl font-bold text-foreground text-center mb-6">Bottle Shots</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 max-w-5xl mx-auto mb-16">
+              {bottleShots.map((bottle) => (
+                <a
+                  key={bottle.name}
+                  href={bottle.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group text-center"
+                >
+                  <div className="bg-white rounded-lg border border-border p-4 mb-2 group-hover:border-primary/40 transition-colors">
+                    <img src={bottle.url} alt={bottle.name} className="h-48 object-contain mx-auto" loading="lazy" />
+                  </div>
+                  <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">{bottle.name}</p>
+                </a>
+              ))}
+            </div>
+
+            {/* Tech Sheets */}
+            <h3 className="font-display text-xl font-bold text-foreground text-center mb-6">Tech Sheets</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+              {techSheets.map((sheet) => (
+                <a
+                  key={sheet.name}
+                  href={sheet.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/40 bg-card transition-colors"
+                >
+                  <FileText className="h-5 w-5 text-primary shrink-0" />
+                  <span className="text-sm text-foreground">{sheet.name}</span>
+                </a>
+              ))}
             </div>
           </div>
         </section>

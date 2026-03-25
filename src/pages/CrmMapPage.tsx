@@ -71,7 +71,7 @@ export default function CrmMapPage() {
   }, [unmapped, upsertAccount]);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col" style={{ minHeight: 0 }}>
       <div className="p-4 border-b border-border flex items-center gap-3 flex-wrap">
         <h2 className="font-bold text-foreground">Account Map</h2>
         <Select value={stateFilter} onValueChange={(v) => setStateFilter(v === "all" ? "" : v)}>

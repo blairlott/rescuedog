@@ -56,7 +56,7 @@ const MerchHomePage = () => {
                 size="lg"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
               >
-                <Link to="/shop">Shop Online</Link>
+                <Link to="/merch#products">Shop Online</Link>
               </Button>
             </div>
             <div className="aspect-[4/3] bg-secondary overflow-hidden">

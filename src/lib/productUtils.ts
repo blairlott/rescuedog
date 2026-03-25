@@ -1,6 +1,6 @@
 import { ShopifyProduct } from "@/lib/shopify";
 
-const WINE_REGEX = /cabernet|pinot|chardonnay|rosé|rose|sauvignon|sparkling|blend|méthode|demi/i;
+const WINE_REGEX = /cabernet|pinot|chardonnay|rosé|rose|sauvignon|sparkling|blend|méthode|demi|sampler/i;
 
 export function isWineProduct(product: ShopifyProduct): boolean {
   const title = product.node.title.toLowerCase();

@@ -20,6 +20,7 @@ export function AccountFormDialog({ open, onOpenChange, account }: Props) {
   const [form, setForm] = useState({
     account_name: "", buyer_name: "", buyer_title: "", rep_name: "",
     premise_type: "off", status: "prospect", distributor: "", distributor_rep: "",
+    distributor_rep_email: "", distributor_rep_phone: "",
     street_address: "", city: "", state: "GA", zip: "", phone: "", email: "",
     website: "", sales_order: "", notes: "", priority_rank: 0,
   });

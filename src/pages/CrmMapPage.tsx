@@ -1,14 +1,17 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { Link } from "react-router-dom";
-import { useSalesAccounts } from "@/hooks/useSalesAccounts";
+import { useSalesAccounts, useUpsertAccount } from "@/hooks/useSalesAccounts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { US_STATES } from "@/lib/usStates";
+import { GOOGLE_MAPS_API_KEY } from "@/lib/googleMaps";
 import { Badge } from "@/components/ui/badge";
+import { Loader2, MapPin } from "lucide-react";
+import { toast } from "sonner";
 import "leaflet/dist/leaflet.css";
 
-// Fix default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
@@ -22,29 +25,50 @@ const premiseIcon = (type: string) =>
       ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png"
       : "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
     shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
+    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
   });
 
 export default function CrmMapPage() {
   const [stateFilter, setStateFilter] = useState("");
   const [premiseFilter, setPremiseFilter] = useState("");
+  const [geocoding, setGeocoding] = useState(false);
+  const upsertAccount = useUpsertAccount();
 
   const { data: accounts = [] } = useSalesAccounts({
     state: stateFilter || undefined,
     premiseType: premiseFilter || undefined,
   });
 
-  const mappable = useMemo(
-    () => accounts.filter((a) => a.latitude && a.longitude),
-    [accounts]
-  );
+  const mappable = useMemo(() => accounts.filter((a) => a.latitude && a.longitude), [accounts]);
+  const unmapped = useMemo(() => accounts.filter((a) => !a.latitude && !a.longitude && a.street_address && a.city), [accounts]);
 
   const center: [number, number] = mappable.length > 0
     ? [mappable[0].latitude!, mappable[0].longitude!]
-    : [33.749, -84.388]; // Default to Atlanta
+    : [33.749, -84.388];
+
+  const geocodeAll = useCallback(async () => {
+    if (unmapped.length === 0) { toast.info("All accounts are already geocoded"); return; }
+    setGeocoding(true);
+    let success = 0;
+
+    for (const account of unmapped) {
+      const addr = [account.street_address, account.city, account.state, account.zip].filter(Boolean).join(", ");
+      try {
+        const res = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${GOOGLE_MAPS_API_KEY}`
+        );
+        const data = await res.json();
+        if (data.results?.[0]?.geometry?.location) {
+          const { lat, lng } = data.results[0].geometry.location;
+          await upsertAccount.mutateAsync({ id: account.id, account_name: account.account_name, latitude: lat, longitude: lng });
+          success++;
+        }
+      } catch { /* skip */ }
+    }
+
+    toast.success(`Geocoded ${success} of ${unmapped.length} accounts`);
+    setGeocoding(false);
+  }, [unmapped, upsertAccount]);
 
   return (
     <div className="h-full flex flex-col">
@@ -65,10 +89,15 @@ export default function CrmMapPage() {
             <SelectItem value="off">Off Premise</SelectItem>
           </SelectContent>
         </Select>
-        <div className="text-sm text-muted-foreground ml-auto">
-          {mappable.length} of {accounts.length} accounts mapped
-          {accounts.length > mappable.length && (
-            <span className="text-xs ml-1">(geocode addresses to show more)</span>
+        <div className="flex items-center gap-3 ml-auto">
+          <span className="text-sm text-muted-foreground">
+            {mappable.length} of {accounts.length} mapped
+          </span>
+          {unmapped.length > 0 && (
+            <Button variant="outline" size="sm" onClick={geocodeAll} disabled={geocoding} className="gap-1">
+              {geocoding ? <Loader2 className="h-3 w-3 animate-spin" /> : <MapPin className="h-3 w-3" />}
+              {geocoding ? "Geocoding..." : `Geocode ${unmapped.length} Accounts`}
+            </Button>
           )}
         </div>
       </div>

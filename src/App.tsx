@@ -20,6 +20,12 @@ import ContactPage from "./pages/ContactPage";
 import WineClubPage from "./pages/WineClubPage";
 import DonationPage from "./pages/DonationPage";
 import NotFound from "./pages/NotFound";
+import CrmLoginPage from "./pages/CrmLoginPage";
+import CrmLayout from "./components/crm/CrmLayout";
+import CrmDashboard from "./pages/CrmDashboard";
+import CrmAccountDetail from "./pages/CrmAccountDetail";
+import CrmMapPage from "./pages/CrmMapPage";
+import CrmRoutePlanner from "./pages/CrmRoutePlanner";
 
 const queryClient = new QueryClient();
 

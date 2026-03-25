@@ -34,7 +34,9 @@ export function Header() {
       {/* Announcement Bar */}
       <div className="bg-primary text-primary-foreground text-center py-2.5 px-4">
         <p className="text-sm tracking-wide">
-          Use code STOCKUP for 20% off your order of 12 bottles or more (shipping included)!
+          {isMerch
+            ? "Free shipping on orders over $50! Every purchase supports rescue dogs."
+            : "Use code STOCKUP for 20% off your order of 12 bottles or more (shipping included)!"}
         </p>
       </div>
 

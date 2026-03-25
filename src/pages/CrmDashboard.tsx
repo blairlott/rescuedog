@@ -182,6 +182,17 @@ export default function CrmDashboard() {
                           {a.status}
                         </span>
                       </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const level = getStaleness((a as any).last_order_date);
+                          return (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded ${getStalenessColor(level)}`}>
+                              {level && level !== "fresh" && <Clock className="h-3 w-3" />}
+                              {getStalenessLabel(level)}
+                            </span>
+                          );
+                        })()}
+                      </TableCell>
                       <TableCell>{[a.city, a.state].filter(Boolean).join(", ") || "—"}</TableCell>
                       <TableCell>
                         {roleInfo?.isAdminOrOwner ? (

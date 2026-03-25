@@ -44,12 +44,12 @@ const instagramPosts = [
 ];
 
 const Index = () => {
+  const { data: products, isLoading } = useProducts(50);
+  const [showVideo, setShowVideo] = useState(false);
+
   if (isRescueDogDomain()) {
     return <MerchHomePage />;
   }
-
-  const { data: products, isLoading } = useProducts(50);
-  const [showVideo, setShowVideo] = useState(false);
 
   const wines = products?.filter((p: ShopifyProduct) => isWineProduct(p)) || [];
   const merch = products?.filter((p: ShopifyProduct) => !isWineProduct(p)) || [];

@@ -26,18 +26,17 @@ const GRAPPOS_UID = "TG-5727723373";
 
 const StoreLocatorPage = () => {
   useEffect(() => {
+    // Set global config before loading script
+    (window as any).grapposConfig = { uid: GRAPPOS_UID };
+
     const script = document.createElement("script");
-    script.src = "https://locator.grappos.com/embed.js";
-    script.async = true;
-    script.onload = () => {
-      (window as any).GrapposLocator?.init({
-        uid: GRAPPOS_UID,
-        target: "#grappos-locator",
-      });
-    };
+    script.src = "https://locator.grappos.com/init.js";
+    script.type = "text/javascript";
     document.body.appendChild(script);
+
     return () => {
       document.body.removeChild(script);
+      delete (window as any).grapposConfig;
     };
   }, []);
   return (

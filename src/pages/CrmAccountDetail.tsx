@@ -74,6 +74,7 @@ export default function CrmAccountDetail() {
   const upsertAccount = useUpsertAccount();
   const [activityText, setActivityText] = useState("");
   const [activityType, setActivityType] = useState("note");
+  const [editOpen, setEditOpen] = useState(false);
 
   if (isLoading) return <div className="p-6 text-muted-foreground">Loading...</div>;
   if (!account) return <div className="p-6 text-muted-foreground">Account not found</div>;

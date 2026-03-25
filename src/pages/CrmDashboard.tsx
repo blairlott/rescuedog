@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useSalesAccounts, useDeleteAccount } from "@/hooks/useSalesAccounts";
 import { AccountFormDialog } from "@/components/crm/AccountFormDialog";
+import { BulkImportDialog } from "@/components/crm/BulkImportDialog";
 import { US_STATES } from "@/lib/usStates";
 import { toast } from "sonner";
 import type { SalesAccount } from "@/hooks/useSalesAccounts";

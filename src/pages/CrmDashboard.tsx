@@ -24,9 +24,9 @@ const statusColors: Record<string, string> = {
 };
 
 const SALES_MANAGERS = [
-  { name: "Jana Ritter", region: "National" },
-  { name: "Jake Lenz", region: "CA/West" },
-  { name: "Blair Lott", region: "GA/Southeast" },
+  { name: "Jana Ritter", region: "National", tabId: "jana-ritter" },
+  { name: "Jake Lenz", region: "CA/West", tabId: "jake-lenz" },
+  { name: "", region: "GA/Southeast", tabId: "ga-southeast" },
 ];
 
 export default function CrmDashboard() {
@@ -53,15 +53,20 @@ export default function CrmDashboard() {
   const repNames = [...new Set(accounts.map((a) => a.rep_name).filter(Boolean))] as string[];
   // Ensure sales managers always appear in rep dropdown
   for (const mgr of SALES_MANAGERS) {
-    if (!repNames.includes(mgr.name)) repNames.push(mgr.name);
+    if (mgr.name && !repNames.includes(mgr.name)) repNames.push(mgr.name);
   }
   const myName = roleInfo?.profile?.full_name || "";
 
   // Filter accounts by tab
   const filteredAccounts = accounts.filter((a) => {
-    const managerTab = SALES_MANAGERS.find(m => m.name.toLowerCase().replace(/\s+/g, '-') === activeTab);
+    const managerTab = SALES_MANAGERS.find(m => m.tabId === activeTab);
     if (managerTab) {
-      return a.rep_name?.toLowerCase() === managerTab.name.toLowerCase();
+      if (managerTab.name) {
+        return a.rep_name?.toLowerCase() === managerTab.name.toLowerCase();
+      }
+      // Empty name tab (GA/Southeast) — show accounts in GA region not assigned to other managers
+      const otherManagerNames = SALES_MANAGERS.filter(m => m.name).map(m => m.name.toLowerCase());
+      return !otherManagerNames.includes((a.rep_name || '').toLowerCase());
     }
     if (activeTab === "prospects") {
       return a.status === "prospect";
@@ -104,8 +109,8 @@ export default function CrmDashboard() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           {SALES_MANAGERS.map((mgr) => (
-            <TabsTrigger key={mgr.name} value={mgr.name.toLowerCase().replace(/\s+/g, '-')}>
-              {mgr.name} ({mgr.region})
+            <TabsTrigger key={mgr.tabId} value={mgr.tabId}>
+              {mgr.name ? `${mgr.name} (${mgr.region})` : mgr.region}
             </TabsTrigger>
           ))}
           <TabsTrigger value="active">Active</TabsTrigger>

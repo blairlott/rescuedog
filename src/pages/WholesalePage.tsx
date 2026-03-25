@@ -39,6 +39,7 @@ const techSheets = [
 ];
 
 
+const salesContacts = [
   {
     name: "Jana Ritter",
     title: "National Commercial Director",

@@ -30,10 +30,13 @@ function AppContent() {
       <Route path="/" element={<Index />} />
       <Route path="/merch" element={<MerchHomePage />} />
       <Route path="/product/:handle" element={<ProductDetail />} />
+      <Route path="/shop-wine/:handle" element={<ProductDetail />} />
       <Route path="/wines" element={<WinesPage />} />
       <Route path="/shop" element={<ShopPage />} />
+      <Route path="/shop-wine" element={<ShopPage />} />
       <Route path="/store-locator" element={<StoreLocatorPage />} />
       <Route path="/wholesale" element={<WholesalePage />} />
+      <Route path="/trade-and-media" element={<WholesalePage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/mission" element={<MissionPage />} />
       <Route path="/events" element={<EventsPage />} />

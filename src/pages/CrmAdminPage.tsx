@@ -55,7 +55,7 @@ export default function CrmAdminPage() {
     const { data: profiles } = await supabase.from("profiles").select("id, email, full_name, approved");
     const { data: roles } = await supabase.from("user_roles").select("user_id, role");
 
-    const userMap = new Map<string, UserWithRoles>();
+    const userMap: globalThis.Map<string, UserWithRoles> = new globalThis.Map();
     (profiles || []).forEach((p: any) => {
       userMap.set(p.id, { id: p.id, email: p.email, full_name: p.full_name, approved: p.approved ?? false, roles: [] });
     });

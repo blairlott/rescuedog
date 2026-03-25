@@ -12,7 +12,7 @@ export default function CrmLayout() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const { data: roleInfo } = useUserRole();
+  const { data: roleInfo, isLoading: roleLoading } = useUserRole();
   const [profileOpen, setProfileOpen] = useState(false);
 
   const navItems = [
@@ -38,8 +38,26 @@ export default function CrmLayout() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+  if (loading || roleLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   if (!user) return null;
+
+  // Block unapproved users (except admins/owners who are always approved)
+  const isApproved = roleInfo?.profile && (roleInfo.profile as any).approved;
+  if (!isApproved && !roleInfo?.isAdminOrOwner) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <h1 className="text-2xl font-bold text-foreground">Account Pending Approval</h1>
+          <p className="text-muted-foreground">
+            Your account has been created but is waiting for admin approval. You'll be able to access the CRM once approved.
+          </p>
+          <Button variant="outline" onClick={async () => { await supabase.auth.signOut(); navigate("/crm/login"); }}>
+            <LogOut className="h-4 w-4 mr-1" /> Sign Out
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
@@ -69,20 +87,10 @@ export default function CrmLayout() {
           })}
         </nav>
         <div className="p-2 border-t border-border space-y-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-2"
-            onClick={() => setProfileOpen(true)}
-          >
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={() => setProfileOpen(true)}>
             <UserCircle className="h-4 w-4" /> My Contact Info
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-2"
-            onClick={async () => { await supabase.auth.signOut(); navigate("/crm/login"); }}
-          >
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={async () => { await supabase.auth.signOut(); navigate("/crm/login"); }}>
             <LogOut className="h-4 w-4" /> Sign Out
           </Button>
         </div>

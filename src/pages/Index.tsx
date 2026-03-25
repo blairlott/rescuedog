@@ -8,7 +8,7 @@ import { ArrowRight, Building2, Loader2, Play, ChevronDown, Volume2, VolumeX } f
 import { ShopifyProduct } from "@/lib/shopify";
 import { isWineProduct, isRescueDogDomain } from "@/lib/productUtils";
 import MerchHomePage from "./MerchHomePage";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const instagramPosts = [
   {

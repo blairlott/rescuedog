@@ -46,7 +46,18 @@ const instagramPosts = [
 const Index = () => {
   const { data: products, isLoading } = useProducts(50);
   const [isMuted, setIsMuted] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const toggleMute = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: 'command', func: isMuted ? 'unMute' : 'mute', args: [] }),
+        '*'
+      );
+    }
+    setIsMuted(!isMuted);
+  }, [isMuted]);
 
   if (isRescueDogDomain()) {
     return <MerchHomePage />;

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border py-12 mt-16">
+    <footer className="border-t border-border py-14 mt-20 bg-secondary/30">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Shop */}
@@ -69,8 +69,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-border mt-8 pt-8 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()}, RescueDogWines.</p>
+        <div className="border-t border-border mt-10 pt-8 text-xs text-muted-foreground tracking-wide">
+          <p>© {new Date().getFullYear()} RescueDogWines. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -51,6 +51,7 @@ export default function CrmDashboard() {
   const { data: roleInfo } = useUserRole();
   const deleteAccount = useDeleteAccount();
   const upsertAccount = useUpsertAccount();
+  const approvalCount = useApprovalCount();
 
   const repNames = [...new Set(accounts.map((a) => a.rep_name).filter(Boolean))] as string[];
   for (const mgr of SALES_MANAGERS) {

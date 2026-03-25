@@ -18,8 +18,7 @@ const ALL_ROLES: { value: AppRole; label: string }[] = [
   { value: "national_manager", label: "National Manager" },
   { value: "regional_manager", label: "Regional Manager" },
   { value: "state_manager", label: "State Manager" },
-  { value: "brand_ambassador", label: "Brand Ambassador" },
-  { value: "sales_rep", label: "Sales Rep" },
+  { value: "brand_ambassador", label: "Brand Ambassador / Sales Rep" },
 ];
 
 interface PendingUser {

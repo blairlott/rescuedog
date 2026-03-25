@@ -24,6 +24,10 @@ const navItems: NavItem[] = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const isMerch = location.pathname === "/merch" || isRescueDogDomain();
+  const logo = isMerch ? rescueDogLogo : rdwLogo;
+  const logoAlt = isMerch ? "Rescue Dog" : "Rescue Dog Wines";
 
   return (
     <header className="sticky top-0 z-50 bg-background">

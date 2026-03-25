@@ -122,9 +122,13 @@ const MissionPage = () => {
                     {displayed.map((org, i) => (
                       <tr key={org.name} className={i % 2 === 0 ? "bg-background" : "bg-secondary/50"}>
                         <td className="py-3 px-4 text-sm">
-                          <a href={org.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            {org.name}
-                          </a>
+                          {org.url ? (
+                            <a href={org.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              {org.name}
+                            </a>
+                          ) : (
+                            <span className="text-foreground">{org.name}</span>
+                          )}
                         </td>
                         <td className="py-3 px-4 text-sm text-muted-foreground hidden md:table-cell">{org.city}</td>
                         <td className="py-3 px-4 text-sm text-muted-foreground">{org.state}</td>

@@ -27,8 +27,7 @@ const ALL_ROLES: { value: AppRole; label: string; icon: typeof Shield }[] = [
   { value: "national_manager", label: "National Manager", icon: Globe },
   { value: "regional_manager", label: "Regional Manager", icon: Map },
   { value: "state_manager", label: "State Manager", icon: MapPin },
-  { value: "brand_ambassador", label: "Brand Ambassador", icon: UserCog },
-  { value: "sales_rep", label: "Sales Rep", icon: UserCog },
+  { value: "brand_ambassador", label: "Brand Ambassador / Sales Rep", icon: UserCog },
 ];
 
 const roleBadgeColors: Record<string, string> = {
@@ -38,7 +37,6 @@ const roleBadgeColors: Record<string, string> = {
   regional_manager: "bg-indigo-100 text-indigo-800",
   state_manager: "bg-purple-100 text-purple-800",
   brand_ambassador: "bg-amber-100 text-amber-800",
-  sales_rep: "bg-muted text-muted-foreground",
 };
 
 export default function CrmAdminPage() {

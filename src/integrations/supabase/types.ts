@@ -128,6 +128,39 @@ export type Database = {
         }
         Relationships: []
       }
+      wholesale_inquiries: {
+        Row: {
+          business: string
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          region: string
+        }
+        Insert: {
+          business: string
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          region: string
+        }
+        Update: {
+          business?: string
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          region?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

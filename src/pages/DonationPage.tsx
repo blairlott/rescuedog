@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Heart } from "lucide-react";
+import { Heart, Upload, X } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const US_STATES = [
   "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia",
@@ -28,8 +29,17 @@ const SERVICE_OPTIONS = [
   "Financial assistance to keep pets at risk of surrender in their homes",
 ];
 
+const MAX_FILE_SIZE = 12 * 1024 * 1024; // 12 MB
+const ALLOWED_TYPES = [
+  "application/pdf",
+  "text/plain",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
 const DonationPage = () => {
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Organization Info
   const [orgName, setOrgName] = useState("");
@@ -40,6 +50,7 @@ const DonationPage = () => {
   const [mailingState, setMailingState] = useState("");
   const [mailingZip, setMailingZip] = useState("");
   const [ein, setEin] = useState("");
+  const [irsLetterFile, setIrsLetterFile] = useState<File | null>(null);
 
   // Primary Contact
   const [firstName, setFirstName] = useState("");
@@ -65,6 +76,7 @@ const DonationPage = () => {
   const [numAttendees, setNumAttendees] = useState("");
   const [otherBeverages, setOtherBeverages] = useState("");
   const [sponsorBenefits, setSponsorBenefits] = useState("");
+  const [sponsorshipFile, setSponsorshipFile] = useState<File | null>(null);
 
   // Additional
   const [howIntendToUse, setHowIntendToUse] = useState("");
@@ -78,16 +90,140 @@ const DonationPage = () => {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateFile = (file: File): string | null => {
+    if (file.size > MAX_FILE_SIZE) return `File "${file.name}" exceeds 12 MB limit.`;
+    if (!ALLOWED_TYPES.includes(file.type)) return `File "${file.name}" must be PDF, TXT, or DOC.`;
+    return null;
+  };
+
+  const handleFileSelect = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: (f: File | null) => void
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const error = validateFile(file);
+    if (error) {
+      toast({ title: "Invalid file", description: error, variant: "destructive" });
+      e.target.value = "";
+      return;
+    }
+    setter(file);
+  };
+
+  const uploadFile = async (file: File, prefix: string): Promise<string | null> => {
+    const ext = file.name.split('.').pop();
+    const path = `${prefix}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage
+      .from('donation-documents')
+      .upload(path, file, { contentType: file.type });
+    if (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+    return path;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dataConsent || !personalAck) {
       toast({ title: "Required", description: "Please accept the consent and acknowledgement checkboxes.", variant: "destructive" });
       return;
     }
-    toast({
-      title: "Request submitted!",
-      description: "We'll review your donation request and get back to you soon.",
-    });
+
+    setIsSubmitting(true);
+
+    try {
+      // Upload files
+      let irsLetterPath: string | null = null;
+      let sponsorshipFilePath: string | null = null;
+
+      if (irsLetterFile) {
+        irsLetterPath = await uploadFile(irsLetterFile, 'irs-letters');
+        if (!irsLetterPath) throw new Error('Failed to upload IRS letter');
+      }
+
+      if (sponsorshipFile) {
+        sponsorshipFilePath = await uploadFile(sponsorshipFile, 'sponsorship-files');
+        if (!sponsorshipFilePath) throw new Error('Failed to upload sponsorship file');
+      }
+
+      // Insert donation request
+      const { data: donation, error: insertError } = await supabase
+        .from('donation_requests')
+        .insert({
+          org_name: orgName,
+          is_nonprofit: isNonprofit,
+          services,
+          mailing_street: mailingStreet,
+          mailing_city: mailingCity,
+          mailing_state: mailingState,
+          mailing_zip: mailingZip,
+          ein,
+          first_name: firstName,
+          last_name: lastName,
+          telephone,
+          email,
+          is_virtual: isVirtual,
+          venue_name: venueName,
+          venue_street: venueStreet,
+          venue_city: venueCity,
+          venue_state: venueState,
+          venue_zip: venueZip,
+          event_name: eventName,
+          event_description: eventDescription,
+          event_date: eventDate || null,
+          event_url: eventUrl || null,
+          how_heard: howHeard || null,
+          who_know: whoKnow || null,
+          partnered_before: partneredBefore || null,
+          participated_before: participatedBefore || null,
+          num_attendees: numAttendees || null,
+          other_beverages: otherBeverages || null,
+          sponsor_benefits: sponsorBenefits,
+          how_intend_to_use: howIntendToUse || null,
+          affiliate_interest: affiliateInterest || null,
+          irs_letter_path: irsLetterPath,
+          sponsorship_file_path: sponsorshipFilePath,
+        })
+        .select('id')
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Trigger email notification
+      if (donation?.id) {
+        await supabase.functions.invoke('send-donation-notification', {
+          body: { donationRequestId: donation.id },
+        });
+      }
+
+      toast({
+        title: "Request submitted!",
+        description: "We'll review your donation request and get back to you soon.",
+      });
+
+      // Reset form
+      setOrgName(""); setIsNonprofit(""); setServices([]); setMailingStreet(""); setMailingCity("");
+      setMailingState(""); setMailingZip(""); setEin(""); setIrsLetterFile(null);
+      setFirstName(""); setLastName(""); setTelephone(""); setEmail("");
+      setIsVirtual(""); setVenueName(""); setVenueStreet(""); setVenueCity("");
+      setVenueState(""); setVenueZip(""); setEventName(""); setEventDescription("");
+      setEventDate(""); setEventUrl(""); setHowHeard(""); setWhoKnow("");
+      setPartneredBefore(""); setParticipatedBefore(""); setNumAttendees("");
+      setOtherBeverages(""); setSponsorBenefits(""); setSponsorshipFile(null);
+      setHowIntendToUse(""); setDataConsent(false); setPersonalAck(false);
+      setAffiliateInterest("");
+    } catch (error) {
+      console.error('Submission error:', error);
+      toast({
+        title: "Submission failed",
+        description: "Something went wrong. Please try again or contact us directly.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -186,6 +322,27 @@ const DonationPage = () => {
                   <div>
                     <Label htmlFor="ein">EIN Number</Label>
                     <Input id="ein" value={ein} onChange={(e) => setEin(e.target.value)} />
+                  </div>
+
+                  <div>
+                    <Label>IRS Determination Letter (501c) Upload</Label>
+                    <p className="text-xs text-muted-foreground mb-2">Max file size 12 MB. Accepted: PDF, TXT, DOC</p>
+                    {irsLetterFile ? (
+                      <div className="flex items-center gap-2 p-3 bg-secondary border border-border rounded-md">
+                        <Upload className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span className="text-sm text-foreground truncate flex-1">{irsLetterFile.name}</span>
+                        <button type="button" onClick={() => setIrsLetterFile(null)} className="p-1 hover:bg-muted rounded">
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </div>
+                    ) : (
+                      <Input
+                        type="file"
+                        accept=".pdf,.txt,.doc,.docx"
+                        onChange={(e) => handleFileSelect(e, setIrsLetterFile)}
+                        className="cursor-pointer"
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -338,7 +495,28 @@ const DonationPage = () => {
 
                 {/* Additional Information */}
                 <div className="space-y-6">
-                  <h2 className="text-2xl font-bold text-foreground border-b border-border pb-3">Additional Information</h2>
+                  <h2 className="text-2xl font-bold text-foreground border-b border-border pb-3">Additional Sponsorship Information</h2>
+
+                  <div>
+                    <Label>Upload File</Label>
+                    <p className="text-xs text-muted-foreground mb-2">Max file size 12 MB. Accepted: PDF, TXT, DOC</p>
+                    {sponsorshipFile ? (
+                      <div className="flex items-center gap-2 p-3 bg-secondary border border-border rounded-md">
+                        <Upload className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span className="text-sm text-foreground truncate flex-1">{sponsorshipFile.name}</span>
+                        <button type="button" onClick={() => setSponsorshipFile(null)} className="p-1 hover:bg-muted rounded">
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </div>
+                    ) : (
+                      <Input
+                        type="file"
+                        accept=".pdf,.txt,.doc,.docx"
+                        onChange={(e) => handleFileSelect(e, setSponsorshipFile)}
+                        className="cursor-pointer"
+                      />
+                    )}
+                  </div>
 
                   <div>
                     <Label htmlFor="howIntendToUse">How Do You Intend To Use This Donation?</Label>
@@ -380,8 +558,13 @@ const DonationPage = () => {
                   * Denotes Required Field. Confirmation emails are sent from web@rescuedogwines.com and might be hidden by your junk/spam filters.
                 </p>
 
-                <Button type="submit" size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6">
-                  Submit Donation Form
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={isSubmitting}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Donation Form"}
                 </Button>
               </form>
             </div>

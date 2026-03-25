@@ -70,6 +70,31 @@ export default function CrmLoginPage() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "..." : isSignUp ? "Sign Up" : "Sign In"}
           </Button>
+          {!isSignUp && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!email) {
+                    toast.error("Enter your email address first.");
+                    return;
+                  }
+                  try {
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: `${window.location.origin}/crm/reset-password`,
+                    });
+                    if (error) throw error;
+                    toast.success("Check your email for a password reset link.");
+                  } catch (err: any) {
+                    toast.error(err.message);
+                  }
+                }}
+                className="text-xs text-muted-foreground hover:text-primary hover:underline transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
         </form>
 
         <p className="text-center text-sm text-muted-foreground">

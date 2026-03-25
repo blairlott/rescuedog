@@ -108,11 +108,6 @@ export default function CrmDashboard() {
               {mgr.name ? `${mgr.name} (${mgr.region})` : mgr.region}
             </TabsTrigger>
           ))}
-          {distRepNames.map((name) => (
-            <TabsTrigger key={`dist-rep:${name}`} value={`dist-rep:${name}`}>
-              📦 {name}
-            </TabsTrigger>
-          ))}
           <TabsTrigger value="active">Active</TabsTrigger>
           <TabsTrigger value="prospects">Prospects</TabsTrigger>
           <TabsTrigger value="all-accounts">All Accounts</TabsTrigger>

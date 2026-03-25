@@ -63,7 +63,12 @@ export default function CrmDashboard() {
     if (activeTab === "jana-ritter") return true; // National manager sees all
     const managerTab = SALES_MANAGERS.find(m => m.tabId === activeTab);
     if (managerTab && managerTab.tabId !== "jana-ritter") {
-      return a.rep_name?.toLowerCase() === managerTab.name.toLowerCase();
+      if (managerTab.name) {
+        return a.rep_name?.toLowerCase() === managerTab.name.toLowerCase();
+      }
+      // Empty name tab: show accounts not assigned to any named manager
+      const namedManagers = SALES_MANAGERS.filter(m => m.name).map(m => m.name.toLowerCase());
+      return !namedManagers.includes((a.rep_name || '').toLowerCase());
     }
     if (activeTab === "prospects") return a.status === "prospect";
     if (activeTab === "active") return a.status === "active";

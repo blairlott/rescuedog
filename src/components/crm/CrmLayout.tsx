@@ -68,7 +68,15 @@ export default function CrmLayout() {
             );
           })}
         </nav>
-        <div className="p-2 border-t border-border">
+        <div className="p-2 border-t border-border space-y-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start gap-2"
+            onClick={() => setProfileOpen(true)}
+          >
+            <UserCircle className="h-4 w-4" /> My Contact Info
+          </Button>
           <Button
             variant="ghost"
             size="sm"

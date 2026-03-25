@@ -23,6 +23,11 @@ const statusColors: Record<string, string> = {
   lost: "bg-destructive/10 text-destructive",
 };
 
+const SALES_MANAGERS = [
+  { name: "Jana Ritter", region: "National" },
+  { name: "Jake Lenz", region: "CA/West" },
+];
+
 export default function CrmDashboard() {
   const [stateFilter, setStateFilter] = useState("");
   const [premiseFilter, setPremiseFilter] = useState("");
@@ -31,7 +36,7 @@ export default function CrmDashboard() {
   const [formOpen, setFormOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<SalesAccount | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("my-accounts");
+  const [activeTab, setActiveTab] = useState("jana-ritter");
 
   const { data: accounts = [], isLoading } = useSalesAccounts({
     state: stateFilter || undefined,
@@ -45,13 +50,17 @@ export default function CrmDashboard() {
   const upsertAccount = useUpsertAccount();
 
   const repNames = [...new Set(accounts.map((a) => a.rep_name).filter(Boolean))] as string[];
+  // Ensure sales managers always appear in rep dropdown
+  for (const mgr of SALES_MANAGERS) {
+    if (!repNames.includes(mgr.name)) repNames.push(mgr.name);
+  }
   const myName = roleInfo?.profile?.full_name || "";
-  const canEdit = roleInfo?.isAdminOrOwner;
 
   // Filter accounts by tab
   const filteredAccounts = accounts.filter((a) => {
-    if (activeTab === "my-accounts") {
-      return a.rep_name?.toLowerCase() === myName.toLowerCase();
+    const managerTab = SALES_MANAGERS.find(m => m.name.toLowerCase().replace(/\s+/g, '-') === activeTab);
+    if (managerTab) {
+      return a.rep_name?.toLowerCase() === managerTab.name.toLowerCase();
     }
     if (activeTab === "prospects") {
       return a.status === "prospect";

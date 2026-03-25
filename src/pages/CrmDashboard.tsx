@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, Eye, Pencil, Trash2, Upload, Clock } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Trash2, Upload, Clock, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -189,7 +189,16 @@ export default function CrmDashboard() {
                 <TableBody>
                   {filteredAccounts.map((a) => (
                     <TableRow key={a.id}>
-                      <TableCell className="font-medium text-xs">{a.account_name}</TableCell>
+                      <TableCell className="font-medium text-xs">
+                        <div className="flex items-center gap-1.5">
+                          {a.account_name}
+                          <Link to={`/crm/account/${a.id}`}>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 text-primary hover:text-primary/80">
+                              <Info className="h-3.5 w-3.5" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-xs max-w-[180px]">
                         {[a.street_address, a.city, a.state, a.zip].filter(Boolean).join(", ") || "—"}
                       </TableCell>

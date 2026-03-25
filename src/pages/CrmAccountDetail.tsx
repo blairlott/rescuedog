@@ -79,6 +79,7 @@ export default function CrmAccountDetail() {
           </Button>
           <Button variant="outline" onClick={() => setEditOpen(true)}>Edit</Button>
         </div>
+      </div>
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Details */}

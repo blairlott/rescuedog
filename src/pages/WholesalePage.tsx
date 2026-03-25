@@ -18,7 +18,6 @@ import bottleRose from "@/assets/bottles/rose.png";
 import bottlePinotNoir from "@/assets/bottles/pinot-noir.png";
 import bottleSparklingDemiSec from "@/assets/bottles/sparkling-demi-sec.png";
 import bottleSparklingRose from "@/assets/bottles/sparkling-rose.png";
-import brandLogo from "@/assets/brand/logo.png";
 import brandLogoFull from "@/assets/brand/logo-full.png";
 
 const regions = [
@@ -279,7 +278,7 @@ const WholesalePage = () => {
               <h3 className="font-display text-xl font-bold text-foreground mb-4">Logo</h3>
               <a href={brandLogoFull} target="_blank" rel="noopener noreferrer" download className="block">
                 <img
-                  src={brandLogo}
+                  src={brandLogoFull}
                   alt="Rescue Dog Wines Logo"
                   className="mx-auto h-24 object-contain mb-3"
                 />

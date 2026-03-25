@@ -117,7 +117,21 @@ const WholesalePage = () => {
           subtitle="Partner with Rescue Dog Wines. Every bottle makes a difference for our furry friends."
         />
 
-        {/* Distribution Info */}
+        {/* Jump to Brand Assets button */}
+        <div className="bg-primary/5 py-4">
+          <div className="container mx-auto px-4 text-center">
+            <Button
+              variant="destructive"
+              size="lg"
+              onClick={() => document.getElementById('brand-assets')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Brand Assets & Tech Sheets
+            </Button>
+          </div>
+        </div>
+
+
         <section className="py-16">
           <div className="container mx-auto px-4 max-w-4xl">
             <h2 className="font-display text-3xl font-bold text-foreground text-center mb-10">Distribution</h2>

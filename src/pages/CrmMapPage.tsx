@@ -22,7 +22,7 @@ L.Icon.Default.mergeOptions({
 const MARKER_COLORS = {
   mine: "red",
   prospect: "gold",
-  others: "blue",
+  active: "blue",
 } as const;
 
 const makeColorIcon = (color: string) =>
@@ -56,9 +56,9 @@ export default function CrmMapPage() {
     : [33.749, -84.388];
 
   const getMarkerColor = useCallback((account: typeof accounts[0]) => {
-    if (account.status === "prospect") return MARKER_COLORS.prospect;
     if (myName && account.rep_name?.toLowerCase() === myName.toLowerCase()) return MARKER_COLORS.mine;
-    return MARKER_COLORS.others;
+    if (account.status === "prospect") return MARKER_COLORS.prospect;
+    return MARKER_COLORS.active;
   }, [myName]);
 
   // Initialize map
@@ -159,7 +159,7 @@ export default function CrmMapPage() {
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-red-500" /> My Accounts</span>
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-yellow-400" /> Prospects</span>
-          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-blue-500" /> Other Reps</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-blue-500" /> Active</span>
         </div>
 
         <div className="flex items-center gap-3 ml-auto">

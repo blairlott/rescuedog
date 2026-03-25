@@ -1,10 +1,13 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
+
+type SortField = "name" | "city" | "state";
+type SortDir = "asc" | "desc";
 import { rescuePartners, TOTAL_PARTNER_COUNT } from "@/data/rescuePartners";
 
 const pillars = [
@@ -20,17 +23,42 @@ const ITEMS_PER_PAGE = 25;
 const MissionPage = () => {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const filtered = useMemo(() => {
-    if (!search) return rescuePartners;
-    const q = search.toLowerCase();
-    return rescuePartners.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.city.toLowerCase().includes(q) || p.state.toLowerCase().includes(q)
-    );
-  }, [search]);
+    let result = rescuePartners;
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (p) => p.name.toLowerCase().includes(q) || p.city.toLowerCase().includes(q) || p.state.toLowerCase().includes(q)
+      );
+    }
+    result = [...result].sort((a, b) => {
+      const valA = a[sortField].toLowerCase();
+      const valB = b[sortField].toLowerCase();
+      return sortDir === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+    return result;
+  }, [search, sortField, sortDir]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const displayed = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+    setCurrentPage(1);
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 inline opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1 inline" /> : <ArrowDown className="h-3 w-3 ml-1 inline" />;
+  };
 
   const handleSearch = (value: string) => {
     setSearch(value);
@@ -113,9 +141,9 @@ const MissionPage = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-secondary">
-                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground">Organization Name</th>
-                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground hidden md:table-cell">City</th>
-                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground">State</th>
+                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground cursor-pointer select-none" onClick={() => handleSort("name")}>Organization Name <SortIcon field="name" /></th>
+                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground hidden md:table-cell cursor-pointer select-none" onClick={() => handleSort("city")}>City <SortIcon field="city" /></th>
+                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground cursor-pointer select-none" onClick={() => handleSort("state")}>State <SortIcon field="state" /></th>
                     </tr>
                   </thead>
                   <tbody>

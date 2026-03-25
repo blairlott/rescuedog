@@ -54,8 +54,8 @@ export function Header() {
           {/* Center: Logo */}
           <Link to="/" className="flex justify-center px-1 md:px-2 min-w-0">
             <img
-              src={rdwLogo}
-              alt="Rescue Dog Wines"
+              src={logo}
+              alt={logoAlt}
               className="w-full max-w-[320px] md:max-w-[500px] h-auto object-contain"
             />
           </Link>

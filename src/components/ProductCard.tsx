@@ -31,6 +31,8 @@ export function ProductCard({ product }: ProductCardProps) {
   const price = node.priceRange.minVariantPrice;
   const firstVariant = node.variants.edges[0]?.node;
   const award = getAwardBadge(node.tags || []);
+  const titleLower = node.title.toLowerCase();
+  const isSampler = titleLower.includes('sampler') || titleLower.includes('sample') || titleLower.includes('6 bottle') || titleLower.includes('6-bottle');
 
   const priceNum = parseFloat(price.amount);
   const dollars = Math.floor(priceNum);

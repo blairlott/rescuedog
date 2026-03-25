@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import type { SalesAccount } from "@/hooks/useSalesAccounts";
 import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 import { EditableSelect } from "@/components/crm/EditableSelect";
+import { ApprovalQueueTab, useApprovalCount } from "@/components/crm/ApprovalQueueTab";
 
 const statusColors: Record<string, string> = {
   prospect: "bg-muted text-muted-foreground",
@@ -50,6 +51,7 @@ export default function CrmDashboard() {
   const { data: roleInfo } = useUserRole();
   const deleteAccount = useDeleteAccount();
   const upsertAccount = useUpsertAccount();
+  const approvalCount = useApprovalCount();
 
   const repNames = [...new Set(accounts.map((a) => a.rep_name).filter(Boolean))] as string[];
   for (const mgr of SALES_MANAGERS) {
@@ -113,8 +115,21 @@ export default function CrmDashboard() {
           <TabsTrigger value="active">Active</TabsTrigger>
           <TabsTrigger value="prospects">Prospects</TabsTrigger>
           <TabsTrigger value="all-accounts">All Accounts</TabsTrigger>
+          {roleInfo?.isAdminOrOwner && (
+            <TabsTrigger value="approvals" className="gap-1">
+              Approvals
+              {approvalCount > 0 && (
+                <Badge className="bg-yellow-100 text-yellow-800 ml-1 text-xs">{approvalCount}</Badge>
+              )}
+            </TabsTrigger>
+          )}
         </TabsList>
 
+        {activeTab === "approvals" ? (
+          <div className="mt-4">
+            <ApprovalQueueTab />
+          </div>
+        ) : (
         <div className="mt-4 space-y-4">
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -317,6 +332,7 @@ export default function CrmDashboard() {
             </div>
           )}
         </div>
+        )}
       </Tabs>
 
       <AccountFormDialog open={formOpen} onOpenChange={setFormOpen} account={editAccount} />

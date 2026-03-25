@@ -78,7 +78,7 @@ const Index = () => {
       {/* Hero — Full-bleed image background */}
       <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden">
         <img
-          src="/src/assets/hero-red-blend.jpg"
+          src={heroRedBlend}
           alt="Friends enjoying Rescue Dog Wines with the 2023 Red Blend"
           className="absolute inset-0 w-full h-full object-cover"
         />

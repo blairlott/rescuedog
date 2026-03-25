@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useSalesAccount, useAccountActivities, useAddActivity } from "@/hooks/useSalesAccounts";
+import { useSalesAccount, useAccountActivities, useAddActivity, useUpsertAccount } from "@/hooks/useSalesAccounts";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AccountFormDialog } from "@/components/crm/AccountFormDialog";
+import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 
 export default function CrmAccountDetail() {
   const { id } = useParams<{ id: string }>();

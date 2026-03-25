@@ -177,8 +177,8 @@ export default function CrmDashboard() {
           {isLoading ? (
             <p className="text-muted-foreground">Loading...</p>
           ) : (
-            <div className="border border-border">
-              <Table>
+            <div className="border border-border overflow-x-auto">
+              <Table className="min-w-[1200px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Account</TableHead>

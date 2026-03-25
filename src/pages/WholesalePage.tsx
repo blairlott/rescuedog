@@ -295,13 +295,14 @@ const WholesalePage = () => {
               {bottleShots.map((bottle) => (
                 <a
                   key={bottle.name}
-                  href={bottle.url}
+                  href={bottle.img}
                   target="_blank"
                   rel="noopener noreferrer"
+                  download
                   className="group text-center"
                 >
                   <div className="bg-white rounded-lg border border-border p-4 mb-2 group-hover:border-primary/40 transition-colors">
-                    <img src={bottle.url} alt={bottle.name} className="h-48 object-contain mx-auto" loading="lazy" />
+                    <img src={bottle.img} alt={bottle.name} className="h-48 object-contain mx-auto" loading="lazy" />
                   </div>
                   <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">{bottle.name}</p>
                 </a>

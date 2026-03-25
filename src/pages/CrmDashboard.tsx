@@ -91,6 +91,7 @@ export default function CrmDashboard() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="my-accounts">My Accounts</TabsTrigger>
+          <TabsTrigger value="active">Active</TabsTrigger>
           <TabsTrigger value="prospects">Prospects</TabsTrigger>
           <TabsTrigger value="all-accounts">All Accounts</TabsTrigger>
         </TabsList>

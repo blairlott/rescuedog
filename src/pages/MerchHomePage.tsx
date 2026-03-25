@@ -32,7 +32,7 @@ const MerchHomePage = () => {
             size="lg"
             className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
           >
-            <Link to="/shop">Shop Now</Link>
+            <Link to="/merch#products">Shop Now</Link>
           </Button>
         </div>
       </section>

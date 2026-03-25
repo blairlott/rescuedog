@@ -135,13 +135,27 @@ const MissionPage = () => {
             </div>
 
             <div className="max-w-4xl mx-auto">
-              <div className="mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <Input
                   placeholder="Search by name, city, or state..."
                   value={search}
                   onChange={(e) => handleSearch(e.target.value)}
                   className="max-w-sm"
                 />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Show</span>
+                  <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                    <SelectTrigger className="w-[70px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAGE_SIZE_OPTIONS.map((size) => (
+                        <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span>entries</span>
+                </div>
               </div>
 
               <div className="border border-border overflow-hidden">

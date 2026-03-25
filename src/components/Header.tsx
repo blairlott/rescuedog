@@ -65,6 +65,9 @@ export function Header() {
               {isMerch && (
                 <span className="absolute top-[10%] -right-3 md:-right-4 text-[0.5rem] md:text-[0.6rem] font-semibold text-muted-foreground leading-none">TM</span>
               )}
+              {!isMerch && (
+                <span className="absolute top-[18%] -right-2 md:-right-3 text-[0.45rem] md:text-[0.55rem] font-semibold text-foreground leading-none">®</span>
+              )}
             </span>
           </Link>
 

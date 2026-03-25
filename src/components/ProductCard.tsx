@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
 import { Button } from "@/components/ui/button";
-import { Loader2, Award } from "lucide-react";
+import { Loader2, Award, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProductCardProps {
@@ -12,13 +12,13 @@ interface ProductCardProps {
 function getAwardBadge(tags: string[]): { label: string; className: string } | null {
   const tagSet = new Set(tags.map(t => t.toLowerCase()));
   if (tagSet.has("double gold")) {
-    return { label: "Double Gold", className: "bg-amber-500 text-white" };
+    return { label: "Double Gold", className: "bg-brand-gold text-foreground" };
   }
   if (tagSet.has("gold")) {
-    return { label: "Gold", className: "bg-yellow-500 text-white" };
+    return { label: "Gold", className: "bg-brand-gold/80 text-foreground" };
   }
   if (tagSet.has("silver")) {
-    return { label: "Silver", className: "bg-gray-400 text-white" };
+    return { label: "Silver", className: "bg-muted-foreground text-primary-foreground" };
   }
   return null;
 }
@@ -52,56 +52,69 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Link to={`/product/${node.handle}`} className="group block text-center">
-      <div className="overflow-hidden mb-4 relative">
+    <Link to={`/product/${node.handle}`} className="group block">
+      {/* Image container with overlay add-to-cart */}
+      <div className="relative overflow-hidden mb-3">
         <div className="aspect-[3/4] overflow-hidden bg-secondary">
           {image ? (
             <img
               src={image.url}
               alt={image.altText || node.title}
-              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.03]"
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs uppercase tracking-brand">
               No image
             </div>
           )}
         </div>
+
+        {/* Award badge */}
         {award && (
-          <span className={`absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow ${award.className}`}>
+          <span className={`absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase tracking-brand shadow-sm ${award.className}`}>
             <Award className="w-3 h-3" />
             {award.label}
           </span>
         )}
+
+        {/* Hover overlay with add-to-cart button */}
+        <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out p-3">
+          <Button
+            onClick={handleAddToCart}
+            disabled={isLoading || !firstVariant?.availableForSale}
+            className="w-full uppercase tracking-brand text-xs font-bold bg-foreground text-background hover:bg-foreground/90 h-10"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : !firstVariant?.availableForSale ? (
+              "Sold Out"
+            ) : (
+              <>
+                <ShoppingBag className="w-3.5 h-3.5 mr-1.5" />
+                Add to Cart
+              </>
+            )}
+          </Button>
+        </div>
       </div>
-      <h3 className="text-sm font-medium text-foreground mb-1">
-        {node.title}
-      </h3>
-      <p className="text-foreground mb-1">
-        <span className="text-xs align-top">$</span>
-        <span className="text-lg font-medium">{dollars}</span>
-        <span className="text-xs align-top">.{cents}</span>
-      </p>
-      <p className="text-xs text-primary mb-3">
-        <Link to="/club" onClick={(e) => e.stopPropagation()} className="hover:underline">
-          ${(priceNum * 0.8).toFixed(2)} Wine Club Price
-        </Link>
-      </p>
-      <Button
-        onClick={handleAddToCart}
-        disabled={isLoading || !firstVariant?.availableForSale}
-        size="sm"
-        className="uppercase tracking-brand text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 px-6"
-      >
-        {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : !firstVariant?.availableForSale ? (
-          "Sold Out"
-        ) : (
-          "Add to Cart"
-        )}
-      </Button>
+
+      {/* Product info */}
+      <div className="space-y-1 text-center">
+        <h3 className="text-sm font-medium text-foreground tracking-brand leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-200">
+          {node.title}
+        </h3>
+        <p className="text-foreground">
+          <span className="text-[10px] align-top leading-none">$</span>
+          <span className="text-base font-semibold">{dollars}</span>
+          <span className="text-[10px] align-top leading-none">.{cents}</span>
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          <Link to="/club" onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">
+            Club Price: ${(priceNum * 0.8).toFixed(2)}
+          </Link>
+        </p>
+      </div>
     </Link>
   );
 }

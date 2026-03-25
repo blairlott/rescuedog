@@ -83,6 +83,8 @@ const DonationPage = () => {
   const [dataConsent, setDataConsent] = useState(false);
   const [personalAck, setPersonalAck] = useState(false);
   const [affiliateInterest, setAffiliateInterest] = useState("");
+  const [servicesOther, setServicesOther] = useState("");
+  const [servicesOtherChecked, setServicesOtherChecked] = useState(false);
 
   const toggleService = (service: string) => {
     setServices((prev) =>

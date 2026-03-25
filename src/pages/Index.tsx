@@ -93,7 +93,7 @@ const Index = () => {
                 asChild
                 size="lg"
                 variant="outline"
-                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 uppercase tracking-brand text-sm font-bold px-10 py-6"
+                className="border-primary-foreground text-primary-foreground bg-transparent hover:bg-primary-foreground/10 uppercase tracking-brand text-sm font-bold px-10 py-6"
               >
                 <Link to="/store-locator">Find a Store</Link>
               </Button>

@@ -51,10 +51,10 @@ export default function CrmDashboard() {
   const upsertAccount = useUpsertAccount();
 
   const repNames = [...new Set(accounts.map((a) => a.rep_name).filter(Boolean))] as string[];
-  // Ensure sales managers always appear in rep dropdown
   for (const mgr of SALES_MANAGERS) {
     if (mgr.name && !repNames.includes(mgr.name)) repNames.push(mgr.name);
   }
+  const distRepNames = [...new Set(accounts.map((a) => a.distributor_rep).filter(Boolean))] as string[];
   const myName = roleInfo?.profile?.full_name || "";
 
   // Filter accounts by tab

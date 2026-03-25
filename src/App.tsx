@@ -57,6 +57,7 @@ function AppContent() {
         <Route path="account/:id" element={<CrmAccountDetail />} />
         <Route path="map" element={<CrmMapPage />} />
         <Route path="routes" element={<CrmRoutePlanner />} />
+        <Route path="admin" element={<CrmAdminPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

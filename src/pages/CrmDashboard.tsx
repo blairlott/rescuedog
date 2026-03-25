@@ -27,7 +27,7 @@ const statusColors: Record<string, string> = {
 const SALES_MANAGERS = [
   { name: "Jana Ritter", region: "National", tabId: "jana-ritter" },
   { name: "Jake Lenz", region: "CA/West", tabId: "jake-lenz" },
-  { name: "Mike Bell", region: "GA/Southeast", tabId: "ga-southeast" },
+  { name: "", region: "GA/Southeast", tabId: "ga-southeast" },
 ];
 
 export default function CrmDashboard() {

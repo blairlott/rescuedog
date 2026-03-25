@@ -15,6 +15,7 @@ import { US_STATES } from "@/lib/usStates";
 import { toast } from "sonner";
 import type { SalesAccount } from "@/hooks/useSalesAccounts";
 import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
+import { EditableSelect } from "@/components/crm/EditableSelect";
 
 const statusColors: Record<string, string> = {
   prospect: "bg-muted text-muted-foreground",
@@ -220,25 +221,17 @@ export default function CrmDashboard() {
                       <TableCell className="text-xs">{[a.city, a.state].filter(Boolean).join(", ") || "—"}</TableCell>
                       <TableCell className="text-xs">{a.distributor || "—"}</TableCell>
                       <TableCell>
-                        <Select
+                        <EditableSelect
                           value={a.distributor_rep || ""}
-                          onValueChange={(v) => {
+                          options={distRepNames}
+                          placeholder="Assign"
+                          onChange={(v) => {
                             upsertAccount.mutate(
-                              { id: a.id, account_name: a.account_name, distributor_rep: v === "none" ? null : v },
-                              { onSuccess: () => toast.success(`Dist. rep set to ${v === "none" ? "none" : v}`) }
+                              { id: a.id, account_name: a.account_name, distributor_rep: v },
+                              { onSuccess: () => toast.success(`Dist. rep set to ${v || "none"}`) }
                             );
                           }}
-                        >
-                          <SelectTrigger className="h-7 w-[120px] text-xs">
-                            <SelectValue placeholder="Assign" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {distRepNames.map((name) => (
-                              <SelectItem key={name} value={name}>{name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        />
                       </TableCell>
                       <TableCell>
                         {roleInfo?.isAdminOrOwner ? (

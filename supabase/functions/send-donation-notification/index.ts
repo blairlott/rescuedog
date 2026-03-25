@@ -222,8 +222,8 @@ Affiliate Interest: ${donation.affiliate_interest || 'N/A'}
       },
       body: JSON.stringify({
         from: 'Rescue Dog Wines <donations@rescuedogwines.com>',
-        to: ['lara.hill@rescuedogwines.com'],
-        cc: ['info@rescuedogwine.com', donation.email],
+        to: ['info@rescuedogwines.com', 'blair.lott@rescuedogwines.com', 'j.ritter@rescuedogwines.com', 'jo@rescuedogwines.com', 'lara.hill@rescuedogwines.com'],
+        cc: [donation.email],
         subject: `New Donation Request: ${donation.org_name}`,
         html: emailHtml,
         attachments: attachments.map(a => ({

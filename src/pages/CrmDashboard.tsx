@@ -169,19 +169,20 @@ export default function CrmDashboard() {
             <p className="text-muted-foreground">Loading...</p>
           ) : (
             <div className="border border-border overflow-x-auto">
-              <Table className="min-w-[1200px]">
+              <Table className="min-w-[1600px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Account</TableHead>
+                    <TableHead>Address</TableHead>
                     <TableHead>Buyer</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Last Order</TableHead>
-                    <TableHead>City, State</TableHead>
                     <TableHead>Distributor</TableHead>
                     <TableHead>Dist. Rep</TableHead>
+                    <TableHead>Dist. Rep Contact</TableHead>
                     <TableHead>Sales Rep</TableHead>
                     <TableHead className="w-[120px]">Actions</TableHead>
                   </TableRow>
@@ -189,7 +190,10 @@ export default function CrmDashboard() {
                 <TableBody>
                   {filteredAccounts.map((a) => (
                     <TableRow key={a.id}>
-                      <TableCell className="font-medium">{a.account_name}</TableCell>
+                      <TableCell className="font-medium text-xs">{a.account_name}</TableCell>
+                      <TableCell className="text-xs max-w-[180px]">
+                        {[a.street_address, a.city, a.state, a.zip].filter(Boolean).join(", ") || "—"}
+                      </TableCell>
                       <TableCell className="text-xs">{a.buyer_name || "—"}</TableCell>
                       <TableCell className="text-xs">
                         {a.phone ? <a href={`tel:${a.phone}`} className="text-primary hover:underline">{a.phone}</a> : "—"}
@@ -199,7 +203,7 @@ export default function CrmDashboard() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">
-                          {a.premise_type === "on" ? "On Premise" : "Off Premise"}
+                          {a.premise_type === "on" ? "On" : "Off"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -218,7 +222,6 @@ export default function CrmDashboard() {
                           );
                         })()}
                       </TableCell>
-                      <TableCell className="text-xs">{[a.city, a.state].filter(Boolean).join(", ") || "—"}</TableCell>
                       <TableCell className="text-xs">{a.distributor || "—"}</TableCell>
                       <TableCell>
                         <EditableSelect
@@ -232,6 +235,17 @@ export default function CrmDashboard() {
                             );
                           }}
                         />
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        <div className="space-y-0.5">
+                          {(a as any).distributor_rep_phone && (
+                            <a href={`tel:${(a as any).distributor_rep_phone}`} className="block text-primary hover:underline">{(a as any).distributor_rep_phone}</a>
+                          )}
+                          {(a as any).distributor_rep_email && (
+                            <a href={`mailto:${(a as any).distributor_rep_email}`} className="block text-primary hover:underline truncate max-w-[140px]">{(a as any).distributor_rep_email}</a>
+                          )}
+                          {!(a as any).distributor_rep_phone && !(a as any).distributor_rep_email && "—"}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {roleInfo?.isAdminOrOwner ? (
@@ -283,7 +297,7 @@ export default function CrmDashboard() {
                   ))}
                   {filteredAccounts.length === 0 && (
                     <TableRow>
-                       <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
+                       <TableCell colSpan={14} className="text-center text-muted-foreground py-8">
                         No accounts found
                       </TableCell>
                     </TableRow>

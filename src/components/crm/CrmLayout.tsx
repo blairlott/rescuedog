@@ -3,7 +3,8 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle } from "lucide-react";
+import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { Link, useLocation } from "react-router-dom";
 
 export default function CrmLayout() {
@@ -12,6 +13,7 @@ export default function CrmLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: roleInfo } = useUserRole();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const navItems = [
     { to: "/crm", label: "Dashboard", icon: LayoutDashboard },
@@ -66,7 +68,15 @@ export default function CrmLayout() {
             );
           })}
         </nav>
-        <div className="p-2 border-t border-border">
+        <div className="p-2 border-t border-border space-y-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start gap-2"
+            onClick={() => setProfileOpen(true)}
+          >
+            <UserCircle className="h-4 w-4" /> My Contact Info
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -80,6 +90,7 @@ export default function CrmLayout() {
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </div>
   );
 }

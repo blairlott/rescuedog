@@ -20,6 +20,7 @@ export function AccountFormDialog({ open, onOpenChange, account }: Props) {
   const [form, setForm] = useState({
     account_name: "", buyer_name: "", buyer_title: "", rep_name: "",
     premise_type: "off", status: "prospect", distributor: "", distributor_rep: "",
+    distributor_rep_email: "", distributor_rep_phone: "",
     street_address: "", city: "", state: "GA", zip: "", phone: "", email: "",
     website: "", sales_order: "", notes: "", priority_rank: 0,
   });
@@ -35,6 +36,8 @@ export function AccountFormDialog({ open, onOpenChange, account }: Props) {
         status: account.status || "prospect",
         distributor: account.distributor || "",
         distributor_rep: account.distributor_rep || "",
+        distributor_rep_email: (account as any).distributor_rep_email || "",
+        distributor_rep_phone: (account as any).distributor_rep_phone || "",
         street_address: account.street_address || "",
         city: account.city || "",
         state: account.state || "GA",
@@ -50,6 +53,7 @@ export function AccountFormDialog({ open, onOpenChange, account }: Props) {
       setForm({
         account_name: "", buyer_name: "", buyer_title: "", rep_name: "",
         premise_type: "off", status: "prospect", distributor: "", distributor_rep: "",
+        distributor_rep_email: "", distributor_rep_phone: "",
         street_address: "", city: "", state: "GA", zip: "", phone: "", email: "",
         website: "", sales_order: "", notes: "", priority_rank: 0,
       });
@@ -122,6 +126,14 @@ export function AccountFormDialog({ open, onOpenChange, account }: Props) {
             <div className="space-y-2">
               <Label>Distributor Rep</Label>
               <Input value={form.distributor_rep} onChange={(e) => set("distributor_rep", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Dist. Rep Email</Label>
+              <Input type="email" value={form.distributor_rep_email} onChange={(e) => set("distributor_rep_email", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Dist. Rep Phone</Label>
+              <Input type="tel" value={form.distributor_rep_phone} onChange={(e) => set("distributor_rep_phone", e.target.value)} />
             </div>
           </div>
 

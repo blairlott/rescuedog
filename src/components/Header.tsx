@@ -1,8 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Search, Menu, X, User, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
 import rdwLogo from "@/assets/rdw-logo.png";
+import rescueDogLogo from "@/assets/rescue-dog-logo.png";
+import { isRescueDogDomain } from "@/lib/productUtils";
 
 interface NavItem {
   label: string;

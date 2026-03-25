@@ -111,7 +111,9 @@ export function ProductCard({ product }: ProductCardProps) {
           <span className="text-base font-semibold">{dollars}</span>
           <span className="text-[10px] align-top leading-none">.{cents}</span>
         </p>
-        {!isSampler && (
+        {isSampler ? (
+          <p className="text-[10px] text-muted-foreground italic">Not valid with any other offer</p>
+        ) : (
           <p className="text-[11px] text-muted-foreground">
             <Link to="/club" onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">
               Club Price: ${(priceNum * 0.8).toFixed(2)}

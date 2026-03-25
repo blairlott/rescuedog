@@ -90,6 +90,7 @@ export default function CrmLayout() {
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </div>
   );
 }

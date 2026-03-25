@@ -116,25 +116,30 @@ export default function CrmAccountDetail() {
             <Badge className="capitalize">{account.status}</Badge>
           </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={async () => {
-            const today = new Date().toISOString().split('T')[0];
-            try {
-              await upsertAccount.mutateAsync({
-                id: account.id, account_name: account.account_name, last_order_date: today,
-              } as any);
-              await addActivity.mutateAsync({
-                account_id: account.id, activity_type: 'order', description: `Order marked on ${today}`,
-              });
-              toast.success('Marked as ordered today');
-            } catch (err: any) {
-              toast.error(err.message);
-            }
-          }}
-        >
-          <ShoppingCart className="h-4 w-4 mr-1" /> Mark Ordered
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              const today = new Date().toISOString().split('T')[0];
+              try {
+                await upsertAccount.mutateAsync({
+                  id: account.id, account_name: account.account_name, last_order_date: today,
+                } as any);
+                await addActivity.mutateAsync({
+                  account_id: account.id, activity_type: 'order', description: `Order marked on ${today}`,
+                });
+                toast.success('Marked as ordered today');
+              } catch (err: any) {
+                toast.error(err.message);
+              }
+            }}
+          >
+            <ShoppingCart className="h-4 w-4 mr-1" /> Mark Ordered
+          </Button>
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-4 w-4 mr-1" /> Edit
+          </Button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">

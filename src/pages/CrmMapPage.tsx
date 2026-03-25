@@ -88,10 +88,22 @@ export default function CrmMapPage() {
       if (layer instanceof L.Marker) map.removeLayer(layer);
     });
 
-    mappable.forEach((a) => {
+    // Sort so active/blue pins render last (on top)
+    const sorted = [...mappable].sort((a, b) => {
+      const order = (acc: typeof a) => {
+        const c = getMarkerColor(acc);
+        if (c === "gold") return 0;
+        if (c === "blue") return 1;
+        return 2; // red (mine) on top
+      };
+      return order(a) - order(b);
+    });
+
+    sorted.forEach((a) => {
       const color = getMarkerColor(a);
       const marker = L.marker([a.latitude!, a.longitude!], {
         icon: makeColorIcon(color),
+        zIndexOffset: color === "red" ? 2000 : color === "blue" ? 1000 : 0,
       }).addTo(map);
 
       marker.bindPopup(`

@@ -23,6 +23,7 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
+      <Route path="/merch" element={<MerchHomePage />} />
       <Route path="/product/:handle" element={<ProductDetail />} />
       <Route path="/wines" element={<WinesPage />} />
       <Route path="/shop" element={<ShopPage />} />

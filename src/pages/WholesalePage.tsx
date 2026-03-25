@@ -5,10 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wine, Truck, Users, Mail, MapPin, Globe, FileText, Download, Image } from "lucide-react";
+import { Wine, Truck, Users, Mail, MapPin, Globe, FileText, Download } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+
+import bottleRedBlend from "@/assets/bottles/red-blend.png";
+import bottleCabernet from "@/assets/bottles/cabernet.png";
+import bottleSauvBlanc from "@/assets/bottles/sauvignon-blanc.png";
+import bottleChardonnay from "@/assets/bottles/chardonnay.png";
+import bottleRose from "@/assets/bottles/rose.png";
+import bottlePinotNoir from "@/assets/bottles/pinot-noir.png";
+import bottleSparklingDemiSec from "@/assets/bottles/sparkling-demi-sec.png";
+import bottleSparklingRose from "@/assets/bottles/sparkling-rose.png";
+import brandLogo from "@/assets/brand/logo.png";
+import brandLogoFull from "@/assets/brand/logo-full.png";
 
 const regions = [
   { value: "ca-west", label: "California & Western Region", contact: "Jake Lenz" },
@@ -17,25 +28,25 @@ const regions = [
 ];
 
 const bottleShots = [
-  { name: "2023 Red Blend", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/9-25-25-RedBlend-BS_SMALL-imgupscaler.ai_Sharpen_4K-1.png" },
-  { name: "2023 Cabernet Sauvignon", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/9-25-25-Cabernet-BS-SMALL_imgupscaler.ai_Sharpen_4K.png" },
-  { name: "2024 Sauvignon Blanc", url: "https://rescuedogwines.com/wp-content/uploads/2025/10/2024-SB-LP-design.png" },
-  { name: "2024 Chardonnay", url: "https://rescuedogwines.com/wp-content/uploads/2025/12/9-25-25-Chardonnay-BS-SMALL_imgupscaler.ai_Sharpen_4K-1.png" },
-  { name: "2024 Rosé Estate Grown Grenache", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/9-25-25-Rose-BS-SMALL_imgupscaler.ai_Sharpen_4K.png" },
-  { name: "2021 Pinot Noir", url: "https://rescuedogwines.com/wp-content/uploads/2023/09/RescueDogWines2021PinotNoir.png" },
-  { name: "NV Demi-Sec Sparkling Wine", url: "https://rescuedogwines.com/wp-content/uploads/2023/09/Rescue-Dog-Wines-NV-Demi-Sec-Sparkling.png" },
-  { name: "NV Sparkling Rosé", url: "https://rescuedogwines.com/wp-content/uploads/2023/09/Rescue-Dog-Wines-NV-Sparkling-Rose.png" },
+  { name: "2023 Red Blend", img: bottleRedBlend },
+  { name: "2023 Cabernet Sauvignon", img: bottleCabernet },
+  { name: "2024 Sauvignon Blanc", img: bottleSauvBlanc },
+  { name: "2024 Chardonnay", img: bottleChardonnay },
+  { name: "2024 Rosé Estate Grown Grenache", img: bottleRose },
+  { name: "2021 Pinot Noir", img: bottlePinotNoir },
+  { name: "NV Demi-Sec Sparkling Wine", img: bottleSparklingDemiSec },
+  { name: "NV Sparkling Rosé", img: bottleSparklingRose },
 ];
 
 const techSheets = [
-  { name: "2023 Red Blend", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/TechSheetRescueDogWines2023RedBlend.pdf" },
-  { name: "2023 Cabernet Sauvignon", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet_RDW_2023-Cabernet-Sauvignon_DIGITAL.pdf" },
-  { name: "2024 Chardonnay", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet_RDW_2024-Chardonnay_DIGITAL.pdf" },
-  { name: "2024 Rosé", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet_RDW_2024-Rose-Estate-Grown-Grenache.pdf" },
-  { name: "2024 Sauvignon Blanc", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet-2024-Sauv-Blanc-.pdf" },
-  { name: "2021 Pinot Noir", url: "https://rescuedogwines.com/wp-content/uploads/2024/04/Tech-Sheet_RDW_2021-Pinot-Noir_DIGITAL.pdf" },
-  { name: "NV Demi-Sec Sparkling Wine", url: "https://rescuedogwines.com/wp-content/uploads/2024/04/Tech-Sheet_RDW_NV-Sparkling-Demi-Sec_DIGITAL.pdf" },
-  { name: "NV Sparkling Rosé", url: "https://rescuedogwines.com/wp-content/uploads/2024/04/Tech-Sheet_RDW_NV-Sparkling-Rose_DIGITAL.pdf" },
+  { name: "2023 Red Blend", url: "/assets/tech-sheets/2023-red-blend.pdf" },
+  { name: "2023 Cabernet Sauvignon", url: "/assets/tech-sheets/2023-cabernet-sauvignon.pdf" },
+  { name: "2024 Chardonnay", url: "/assets/tech-sheets/2024-chardonnay.pdf" },
+  { name: "2024 Rosé", url: "/assets/tech-sheets/2024-rose.pdf" },
+  { name: "2024 Sauvignon Blanc", url: "/assets/tech-sheets/2024-sauvignon-blanc.pdf" },
+  { name: "2021 Pinot Noir", url: "/assets/tech-sheets/2021-pinot-noir.pdf" },
+  { name: "NV Demi-Sec Sparkling Wine", url: "/assets/tech-sheets/nv-sparkling-demi-sec.pdf" },
+  { name: "NV Sparkling Rosé", url: "/assets/tech-sheets/nv-sparkling-rose.pdf" },
 ];
 
 

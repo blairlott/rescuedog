@@ -254,6 +254,67 @@ const WholesalePage = () => {
             </div>
           </div>
         </section>
+
+        {/* Brand Assets */}
+        <section id="brand-assets" className="py-16">
+          <div className="container mx-auto px-4">
+            <h2 className="font-display text-3xl font-bold text-foreground text-center mb-4">Brand Assets</h2>
+            <p className="text-muted-foreground text-center mb-10 max-w-2xl mx-auto">
+              Download bottle shots, tech sheets, and logo assets for your menus, marketing, and displays.
+            </p>
+
+            {/* Logo */}
+            <div className="max-w-xs mx-auto mb-16 text-center">
+              <h3 className="font-display text-xl font-bold text-foreground mb-4">Logo</h3>
+              <a href="https://rescuedogwines.com/wp-content/uploads/2023/08/RDW-logo.png" target="_blank" rel="noopener noreferrer" className="block">
+                <img
+                  src="https://rescuedogwines.com/wp-content/uploads/2023/09/rescue-dog-wines-5.png"
+                  alt="Rescue Dog Wines Logo"
+                  className="mx-auto h-24 object-contain mb-3"
+                />
+                <span className="text-sm text-primary hover:underline flex items-center justify-center gap-1">
+                  <Download className="h-3 w-3" /> Download Logo
+                </span>
+              </a>
+            </div>
+
+            {/* Bottle Shots */}
+            <h3 className="font-display text-xl font-bold text-foreground text-center mb-6">Bottle Shots</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 max-w-5xl mx-auto mb-16">
+              {bottleShots.map((bottle) => (
+                <a
+                  key={bottle.name}
+                  href={bottle.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group text-center"
+                >
+                  <div className="bg-white rounded-lg border border-border p-4 mb-2 group-hover:border-primary/40 transition-colors">
+                    <img src={bottle.url} alt={bottle.name} className="h-48 object-contain mx-auto" loading="lazy" />
+                  </div>
+                  <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">{bottle.name}</p>
+                </a>
+              ))}
+            </div>
+
+            {/* Tech Sheets */}
+            <h3 className="font-display text-xl font-bold text-foreground text-center mb-6">Tech Sheets</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+              {techSheets.map((sheet) => (
+                <a
+                  key={sheet.name}
+                  href={sheet.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/40 bg-card transition-colors"
+                >
+                  <FileText className="h-5 w-5 text-primary shrink-0" />
+                  <span className="text-sm text-foreground">{sheet.name}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
       </main>
       <Footer />
     </div>

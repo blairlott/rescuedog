@@ -21,7 +21,7 @@ export function useUserRole() {
 
       const [{ data: roleRows }, { data: profile }] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", user.id),
-        supabase.from("profiles").select("id, email, full_name").eq("id", user.id).single(),
+        supabase.from("profiles").select("id, email, full_name, approved").eq("id", user.id).single(),
       ]);
 
       const roles = (roleRows || []).map((r: any) => r.role as AppRole);

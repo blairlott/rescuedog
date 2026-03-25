@@ -54,7 +54,7 @@ export function Header() {
           </div>
 
           {/* Center: Logo */}
-          <Link to="/" className="flex justify-center px-1 md:px-2 min-w-0">
+          <Link to={isMerch ? "/merch" : "/"} className="flex justify-center px-1 md:px-2 min-w-0">
             <img
               src={logo}
               alt={logoAlt}

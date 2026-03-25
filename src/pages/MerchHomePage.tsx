@@ -32,7 +32,7 @@ const MerchHomePage = () => {
             size="lg"
             className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
           >
-            <Link to="/shop">Shop Now</Link>
+            <Link to="/merch#products">Shop Now</Link>
           </Button>
         </div>
       </section>
@@ -56,7 +56,7 @@ const MerchHomePage = () => {
                 size="lg"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
               >
-                <Link to="/shop">Shop Online</Link>
+                <Link to="/merch#products">Shop Online</Link>
               </Button>
             </div>
             <div className="aspect-[4/3] bg-secondary overflow-hidden">
@@ -71,11 +71,11 @@ const MerchHomePage = () => {
       </section>
 
       {/* Merch Grid */}
-      <section className="py-16 bg-secondary">
+      <section id="products" className="py-16 bg-secondary">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-10">
             <h2 className="text-2xl font-bold text-foreground">Our Products</h2>
-            <Link to="/shop" className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 uppercase tracking-brand">
+            <Link to="/merch#products" className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 uppercase tracking-brand">
               View All <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

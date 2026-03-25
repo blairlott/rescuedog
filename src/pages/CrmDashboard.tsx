@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, Eye, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useSalesAccounts, useDeleteAccount } from "@/hooks/useSalesAccounts";
 import { AccountFormDialog } from "@/components/crm/AccountFormDialog";
+import { BulkImportDialog } from "@/components/crm/BulkImportDialog";
 import { US_STATES } from "@/lib/usStates";
 import { toast } from "sonner";
 import type { SalesAccount } from "@/hooks/useSalesAccounts";
@@ -26,6 +27,7 @@ export default function CrmDashboard() {
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<SalesAccount | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const { data: accounts = [], isLoading } = useSalesAccounts({
     state: stateFilter || undefined,
@@ -48,9 +50,14 @@ export default function CrmDashboard() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Accounts</h1>
-        <Button onClick={() => { setEditAccount(null); setFormOpen(true); }}>
-          <Plus className="h-4 w-4 mr-1" /> Add Account
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" /> Import CSV
+          </Button>
+          <Button onClick={() => { setEditAccount(null); setFormOpen(true); }}>
+            <Plus className="h-4 w-4 mr-1" /> Add Account
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -166,6 +173,7 @@ export default function CrmDashboard() {
       )}
 
       <AccountFormDialog open={formOpen} onOpenChange={setFormOpen} account={editAccount} />
+      <BulkImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

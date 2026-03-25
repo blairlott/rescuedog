@@ -59,22 +59,22 @@ export default function CrmDashboard() {
 
   // Filter accounts by tab
   const filteredAccounts = accounts.filter((a) => {
+    // Distributor rep tabs
+    if (activeTab.startsWith("dist-rep:")) {
+      const distName = activeTab.replace("dist-rep:", "");
+      return a.distributor_rep?.toLowerCase() === distName.toLowerCase();
+    }
     const managerTab = SALES_MANAGERS.find(m => m.tabId === activeTab);
     if (managerTab) {
       if (managerTab.name) {
         return a.rep_name?.toLowerCase() === managerTab.name.toLowerCase();
       }
-      // Empty name tab (GA/Southeast) — show accounts in GA region not assigned to other managers
       const otherManagerNames = SALES_MANAGERS.filter(m => m.name).map(m => m.name.toLowerCase());
       return !otherManagerNames.includes((a.rep_name || '').toLowerCase());
     }
-    if (activeTab === "prospects") {
-      return a.status === "prospect";
-    }
-    if (activeTab === "active") {
-      return a.status === "active";
-    }
-    return true; // all-accounts
+    if (activeTab === "prospects") return a.status === "prospect";
+    if (activeTab === "active") return a.status === "active";
+    return true;
   });
 
   const stats = {

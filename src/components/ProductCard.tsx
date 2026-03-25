@@ -2,11 +2,25 @@ import { Link } from "react-router-dom";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Award } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProductCardProps {
   product: ShopifyProduct;
+}
+
+function getAwardBadge(tags: string[]): { label: string; className: string } | null {
+  const tagSet = new Set(tags.map(t => t.toLowerCase()));
+  if (tagSet.has("double gold")) {
+    return { label: "Double Gold", className: "bg-amber-500 text-white" };
+  }
+  if (tagSet.has("gold")) {
+    return { label: "Gold", className: "bg-yellow-500 text-white" };
+  }
+  if (tagSet.has("silver")) {
+    return { label: "Silver", className: "bg-gray-400 text-white" };
+  }
+  return null;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
@@ -16,6 +30,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const image = node.images.edges[0]?.node;
   const price = node.priceRange.minVariantPrice;
   const firstVariant = node.variants.edges[0]?.node;
+  const award = getAwardBadge(node.tags || []);
 
   const priceNum = parseFloat(price.amount);
   const dollars = Math.floor(priceNum);
@@ -38,7 +53,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link to={`/product/${node.handle}`} className="group block text-center">
-      <div className="overflow-hidden mb-4">
+      <div className="overflow-hidden mb-4 relative">
         <div className="aspect-square overflow-hidden bg-secondary">
           {image ? (
             <img
@@ -53,6 +68,12 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
         </div>
+        {award && (
+          <span className={`absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow ${award.className}`}>
+            <Award className="w-3 h-3" />
+            {award.label}
+          </span>
+        )}
       </div>
       <h3 className="text-sm font-medium text-foreground mb-1">
         {node.title}

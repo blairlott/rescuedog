@@ -59,11 +59,6 @@ export default function CrmDashboard() {
 
   // Filter accounts by tab
   const filteredAccounts = accounts.filter((a) => {
-    // Distributor rep tabs
-    if (activeTab.startsWith("dist-rep:")) {
-      const distName = activeTab.replace("dist-rep:", "");
-      return a.distributor_rep?.toLowerCase() === distName.toLowerCase();
-    }
     const managerTab = SALES_MANAGERS.find(m => m.tabId === activeTab);
     if (managerTab) {
       if (managerTab.name) {

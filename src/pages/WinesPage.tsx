@@ -8,16 +8,16 @@ import { useState, useMemo } from "react";
 
 // Desired display order matching rescuedogwines.com/shop-wine
 const WINE_SORT_ORDER = [
-  "6-bottle-sampler-shipping-included",
-  "rescue-dog-wines-cabernet-sauvignon",
-  "rescue-dog-wines-red-blend",
+  "6bottle-sampler",
+  "cabernet-sauvignon",
+  "red-wine-blend",
   "rescue-dog-wines-sauvignon-blanc",
-  "rescue-dog-wines-chardonnay",
+  "chardonnay",
   "rescue-dog-wines-ros-of-pinot-noir",
-  "rescue-dog-wines-rose-of-pinot-noir",
-  "rescue-dog-wines-pinot-noir",
-  "rescue-dog-wines-methode-champenoise-demi-sec",
-  "rescue-dog-wines-methode-champenoise-sparkling-rose",
+  "2023-rose-estate-grown-grenache",
+  "central-coast-pinot-noir",
+  "demisec-mthode-champenoise-sparkling-wine",
+  "mthode-champenoise-sparkling-ros",
 ];
 
 const categories = [

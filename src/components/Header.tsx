@@ -4,7 +4,13 @@ import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
 import rdwLogo from "@/assets/rdw-logo.png";
 
-const navItems = [
+interface NavItem {
+  label: string;
+  to: string;
+  external?: boolean;
+}
+
+const navItems: NavItem[] = [
   { label: "SHOP WINES", to: "/wines" },
   { label: "WINE CLUB", to: "/wines" },
   { label: "FIND A STORE", to: "/shop" },

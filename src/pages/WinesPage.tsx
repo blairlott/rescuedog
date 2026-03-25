@@ -1,12 +1,13 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { ProductCard } from "@/components/ProductCard";
+import { PageHero } from "@/components/PageHero";
+import { FeaturedProduct } from "@/components/FeaturedProduct";
+import { AnimatedProductGrid } from "@/components/AnimatedProductGrid";
 import { useProducts } from "@/hooks/useProducts";
 import { Loader2 } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useState, useMemo } from "react";
 
-// Desired display order matching rescuedogwines.com/shop-wine
 const WINE_SORT_ORDER = [
   "6bottle-sampler",
   "cabernet-sauvignon",
@@ -19,6 +20,8 @@ const WINE_SORT_ORDER = [
   "demisec-mthode-champenoise-sparkling-wine",
   "mthode-champenoise-sparkling-ros",
 ];
+
+const FEATURED_HANDLE = "6bottle-sampler";
 
 const categories = [
   { label: "All", filter: "product_type:Wine" },
@@ -33,35 +36,49 @@ const WinesPage = () => {
   const [activeCategory, setActiveCategory] = useState(0);
   const { data: products, isLoading } = useProducts(50, categories[activeCategory].filter);
 
-  const sortedProducts = useMemo(() => {
-    if (!products) return [];
-    return [...products].sort((a, b) => {
+  const { featured, sortedProducts } = useMemo(() => {
+    if (!products) return { featured: null, sortedProducts: [] };
+    const feat = activeCategory === 0
+      ? products.find((p) => p.node.handle === FEATURED_HANDLE) || null
+      : null;
+    const rest = feat
+      ? products.filter((p) => p.node.handle !== FEATURED_HANDLE)
+      : [...products];
+    rest.sort((a, b) => {
       const idxA = WINE_SORT_ORDER.indexOf(a.node.handle);
       const idxB = WINE_SORT_ORDER.indexOf(b.node.handle);
       const posA = idxA === -1 ? WINE_SORT_ORDER.length : idxA;
       const posB = idxB === -1 ? WINE_SORT_ORDER.length : idxB;
       return posA - posB;
     });
-  }, [products]);
+    return { featured: feat, sortedProducts: rest };
+  }, [products, activeCategory]);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+
+      <PageHero
+        title="Our Wines"
+        subtitle="Award-winning, sustainably crafted wines — every bottle supports dog rescue."
+        backgroundImage="https://rescuedogwines.com/wp-content/uploads/2025/03/rdw-estate-vineyard-3.webp"
+      />
+
+      {/* Featured product spotlight */}
+      {featured && <FeaturedProduct product={featured} label="Best Seller" />}
+
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Our Wines</h1>
-          <p className="text-muted-foreground mb-8">Handcrafted wines that support rescue dogs.</p>
-
           {/* Category Tabs */}
-          <div className="flex flex-wrap gap-2 mb-8 border-b border-border pb-4">
+          <div className="flex flex-wrap gap-2 mb-10 border-b border-border pb-4">
             {categories.map((cat, i) => (
               <button
                 key={cat.label}
                 onClick={() => setActiveCategory(i)}
-                className={`px-4 py-2 text-sm font-bold tracking-brand uppercase transition-colors ${
+                className={`px-5 py-2.5 text-xs font-bold tracking-brand uppercase transition-colors ${
                   activeCategory === i
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-foreground hover:bg-muted"
+                    ? "bg-foreground text-background"
+                    : "bg-transparent text-foreground border border-border hover:bg-muted"
                 }`}
               >
                 {cat.label}
@@ -70,18 +87,17 @@ const WinesPage = () => {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
-          ) : !products || products.length === 0 ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : sortedProducts.length === 0 ? (
             <p className="text-center text-muted-foreground py-12">No wines found in this category.</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {sortedProducts.map((product: ShopifyProduct) => (
-                <ProductCard key={product.node.id} product={product} />
-              ))}
-            </div>
+            <AnimatedProductGrid products={sortedProducts} />
           )}
         </div>
       </main>
+
       <Footer />
     </div>
   );

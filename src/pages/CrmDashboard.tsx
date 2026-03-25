@@ -53,6 +53,9 @@ export default function CrmDashboard() {
     if (activeTab === "prospects") {
       return a.status === "prospect";
     }
+    if (activeTab === "active") {
+      return a.status === "active";
+    }
     return true; // all-accounts
   });
 

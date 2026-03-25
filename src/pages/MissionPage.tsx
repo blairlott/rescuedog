@@ -44,8 +44,8 @@ const MissionPage = () => {
     return result;
   }, [search, sortField, sortDir]);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const displayed = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const displayed = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {

@@ -1,5 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import L from "leaflet";
 import { Link } from "react-router-dom";
 import { useSalesAccounts, useUpsertAccount } from "@/hooks/useSalesAccounts";
@@ -19,7 +18,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-const premiseIcon = (type: string) =>
+const makePremiseIcon = (type: string) =>
   new L.Icon({
     iconUrl: type === "on"
       ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png"
@@ -32,6 +31,8 @@ export default function CrmMapPage() {
   const [stateFilter, setStateFilter] = useState("");
   const [premiseFilter, setPremiseFilter] = useState("");
   const [geocoding, setGeocoding] = useState(false);
+  const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const upsertAccount = useUpsertAccount();
 
   const { data: accounts = [] } = useSalesAccounts({
@@ -45,6 +46,58 @@ export default function CrmMapPage() {
   const center: [number, number] = mappable.length > 0
     ? [mappable[0].latitude!, mappable[0].longitude!]
     : [33.749, -84.388];
+
+  // Initialize map with vanilla Leaflet
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const map = L.map(mapContainerRef.current).setView(center, 8);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    mapRef.current = map;
+
+    // Fix map size after render
+    setTimeout(() => map.invalidateSize(), 100);
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  // Update markers when data changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear existing markers
+    map.eachLayer((layer) => {
+      if (layer instanceof L.Marker) map.removeLayer(layer);
+    });
+
+    // Add markers
+    mappable.forEach((a) => {
+      const marker = L.marker([a.latitude!, a.longitude!], {
+        icon: makePremiseIcon(a.premise_type || "off"),
+      }).addTo(map);
+
+      marker.bindPopup(`
+        <div style="min-width:150px">
+          <p style="font-weight:bold;margin:0 0 4px">${a.account_name}</p>
+          <p style="font-size:12px;margin:0 0 2px">${a.premise_type === "on" ? "On Premise" : "Off Premise"}</p>
+          ${a.city ? `<p style="font-size:12px;margin:0 0 4px">${a.city}, ${a.state}</p>` : ""}
+          <a href="/crm/account/${a.id}" style="font-size:12px">View Details →</a>
+        </div>
+      `);
+    });
+
+    if (mappable.length > 0) {
+      const bounds = L.latLngBounds(mappable.map((a) => [a.latitude!, a.longitude!]));
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [mappable]);
 
   const geocodeAll = useCallback(async () => {
     if (unmapped.length === 0) { toast.info("All accounts are already geocoded"); return; }
@@ -71,7 +124,7 @@ export default function CrmMapPage() {
   }, [unmapped, upsertAccount]);
 
   return (
-    <div className="h-full flex flex-col" style={{ minHeight: 0 }}>
+    <div className="p-0" style={{ height: "100%" }}>
       <div className="p-4 border-b border-border flex items-center gap-3 flex-wrap">
         <h2 className="font-bold text-foreground">Account Map</h2>
         <Select value={stateFilter} onValueChange={(v) => setStateFilter(v === "all" ? "" : v)}>
@@ -102,26 +155,10 @@ export default function CrmMapPage() {
         </div>
       </div>
 
-      <div className="flex-1 relative" style={{ minHeight: "calc(100vh - 120px)" }}>
-        <MapContainer center={center} zoom={8} className="absolute inset-0 z-0">
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {mappable.map((a) => (
-            <Marker key={a.id} position={[a.latitude!, a.longitude!]} icon={premiseIcon(a.premise_type || "off")}>
-              <Popup>
-                <div className="space-y-1">
-                  <p className="font-semibold">{a.account_name}</p>
-                  <Badge variant="outline" className="text-xs">{a.premise_type === "on" ? "On Premise" : "Off Premise"}</Badge>
-                  {a.city && <p className="text-xs">{a.city}, {a.state}</p>}
-                  <Link to={`/crm/account/${a.id}`} className="text-xs text-primary hover:underline block">View Details →</Link>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </div>
+      <div
+        ref={mapContainerRef}
+        style={{ height: "calc(100vh - 120px)", width: "100%" }}
+      />
     </div>
   );
 }

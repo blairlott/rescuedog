@@ -136,12 +136,24 @@ const MissionPage = () => {
 
             <div className="max-w-4xl mx-auto">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <Input
-                  placeholder="Search by name, city, or state..."
-                  value={search}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="max-w-sm"
-                />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Input
+                    placeholder="Search by name, city, or state..."
+                    value={search}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="max-w-sm"
+                  />
+                  {(search || sortField !== "name" || sortDir !== "asc") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setSearch(""); setSortField("name"); setSortDir("asc"); setCurrentPage(1); }}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      Reset filters
+                    </Button>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span>Show</span>
                   <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>

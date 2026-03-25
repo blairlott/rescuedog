@@ -128,6 +128,149 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string | null
+        }
+        Relationships: []
+      }
+      sales_accounts: {
+        Row: {
+          account_name: string
+          buyer_name: string | null
+          buyer_title: string | null
+          city: string | null
+          created_at: string | null
+          created_by: string | null
+          distributor: string | null
+          distributor_rep: string | null
+          email: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          notes: string | null
+          phone: string | null
+          premise_type: string | null
+          priority_rank: number | null
+          rep_name: string | null
+          sales_order: string | null
+          state: string | null
+          status: string | null
+          street_address: string | null
+          updated_at: string | null
+          website: string | null
+          zip: string | null
+        }
+        Insert: {
+          account_name: string
+          buyer_name?: string | null
+          buyer_title?: string | null
+          city?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          distributor?: string | null
+          distributor_rep?: string | null
+          email?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          phone?: string | null
+          premise_type?: string | null
+          priority_rank?: number | null
+          rep_name?: string | null
+          sales_order?: string | null
+          state?: string | null
+          status?: string | null
+          street_address?: string | null
+          updated_at?: string | null
+          website?: string | null
+          zip?: string | null
+        }
+        Update: {
+          account_name?: string
+          buyer_name?: string | null
+          buyer_title?: string | null
+          city?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          distributor?: string | null
+          distributor_rep?: string | null
+          email?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          phone?: string | null
+          premise_type?: string | null
+          priority_rank?: number | null
+          rep_name?: string | null
+          sales_order?: string | null
+          state?: string | null
+          status?: string | null
+          street_address?: string | null
+          updated_at?: string | null
+          website?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
+      sales_activities: {
+        Row: {
+          account_id: string
+          activity_type: string | null
+          created_at: string | null
+          description: string
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          account_id: string
+          activity_type?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          account_id?: string
+          activity_type?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_activities_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "sales_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wholesale_inquiries: {
         Row: {
           business: string

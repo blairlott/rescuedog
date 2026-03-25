@@ -4,7 +4,21 @@ import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 import { Loader2 } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+
+// Desired display order matching rescuedogwines.com/shop-wine
+const WINE_SORT_ORDER = [
+  "6-bottle-sampler-shipping-included",
+  "rescue-dog-wines-cabernet-sauvignon",
+  "rescue-dog-wines-red-blend",
+  "rescue-dog-wines-sauvignon-blanc",
+  "rescue-dog-wines-chardonnay",
+  "rescue-dog-wines-ros-of-pinot-noir",
+  "rescue-dog-wines-rose-of-pinot-noir",
+  "rescue-dog-wines-pinot-noir",
+  "rescue-dog-wines-methode-champenoise-demi-sec",
+  "rescue-dog-wines-methode-champenoise-sparkling-rose",
+];
 
 const categories = [
   { label: "All", filter: "product_type:Wine" },

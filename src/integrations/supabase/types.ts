@@ -14,7 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      donation_requests: {
+        Row: {
+          affiliate_interest: string | null
+          created_at: string
+          ein: string | null
+          email: string
+          event_date: string | null
+          event_description: string
+          event_name: string
+          event_url: string | null
+          first_name: string
+          how_heard: string | null
+          how_intend_to_use: string | null
+          id: string
+          irs_letter_path: string | null
+          is_nonprofit: string | null
+          is_virtual: string | null
+          last_name: string
+          mailing_city: string | null
+          mailing_state: string | null
+          mailing_street: string | null
+          mailing_zip: string | null
+          num_attendees: string | null
+          org_name: string
+          other_beverages: string | null
+          participated_before: string | null
+          partnered_before: string | null
+          services: string[] | null
+          sponsor_benefits: string
+          sponsorship_file_path: string | null
+          telephone: string
+          venue_city: string | null
+          venue_name: string | null
+          venue_state: string | null
+          venue_street: string | null
+          venue_zip: string | null
+          who_know: string | null
+        }
+        Insert: {
+          affiliate_interest?: string | null
+          created_at?: string
+          ein?: string | null
+          email: string
+          event_date?: string | null
+          event_description: string
+          event_name: string
+          event_url?: string | null
+          first_name: string
+          how_heard?: string | null
+          how_intend_to_use?: string | null
+          id?: string
+          irs_letter_path?: string | null
+          is_nonprofit?: string | null
+          is_virtual?: string | null
+          last_name: string
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_street?: string | null
+          mailing_zip?: string | null
+          num_attendees?: string | null
+          org_name: string
+          other_beverages?: string | null
+          participated_before?: string | null
+          partnered_before?: string | null
+          services?: string[] | null
+          sponsor_benefits: string
+          sponsorship_file_path?: string | null
+          telephone: string
+          venue_city?: string | null
+          venue_name?: string | null
+          venue_state?: string | null
+          venue_street?: string | null
+          venue_zip?: string | null
+          who_know?: string | null
+        }
+        Update: {
+          affiliate_interest?: string | null
+          created_at?: string
+          ein?: string | null
+          email?: string
+          event_date?: string | null
+          event_description?: string
+          event_name?: string
+          event_url?: string | null
+          first_name?: string
+          how_heard?: string | null
+          how_intend_to_use?: string | null
+          id?: string
+          irs_letter_path?: string | null
+          is_nonprofit?: string | null
+          is_virtual?: string | null
+          last_name?: string
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_street?: string | null
+          mailing_zip?: string | null
+          num_attendees?: string | null
+          org_name?: string
+          other_beverages?: string | null
+          participated_before?: string | null
+          partnered_before?: string | null
+          services?: string[] | null
+          sponsor_benefits?: string
+          sponsorship_file_path?: string | null
+          telephone?: string
+          venue_city?: string | null
+          venue_name?: string | null
+          venue_state?: string | null
+          venue_street?: string | null
+          venue_zip?: string | null
+          who_know?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

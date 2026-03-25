@@ -4,11 +4,11 @@ import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowRight, Building2, Loader2, Play, ChevronDown } from "lucide-react";
+import { ArrowRight, Building2, Loader2, ChevronDown, Volume2, VolumeX } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
 import { isWineProduct, isRescueDogDomain } from "@/lib/productUtils";
 import MerchHomePage from "./MerchHomePage";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const instagramPosts = [
   {
@@ -45,7 +45,8 @@ const instagramPosts = [
 
 const Index = () => {
   const { data: products, isLoading } = useProducts(50);
-  const [showVideo, setShowVideo] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   if (isRescueDogDomain()) {
     return <MerchHomePage />;
@@ -189,37 +190,10 @@ const Index = () => {
         </div>
       </section>
 
-      {/* YouTube Video + About Section */}
+      {/* About Us Section */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            {/* Video */}
-            <div className="relative aspect-video bg-foreground overflow-hidden group cursor-pointer" onClick={() => setShowVideo(true)}>
-              {showVideo ? (
-                <iframe
-                  src="https://www.youtube.com/embed/rNxSRJpqz_w?autoplay=1"
-                  title="About Rescue Dog Wines"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full"
-                />
-              ) : (
-                <>
-                  <img
-                    src="https://rescuedogwines.com/wp-content/uploads/2024/03/rdw-video-thumb.jpg"
-                    alt="About Rescue Dog Wines video"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 bg-primary/90 flex items-center justify-center group-hover:bg-primary transition-colors">
-                      <Play className="h-7 w-7 text-primary-foreground ml-1" fill="currentColor" />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* About */}
             <div>
               <p className="text-xs tracking-brand uppercase text-muted-foreground mb-2">About us:</p>
               <h2 className="text-3xl md:text-4xl font-bold text-primary leading-tight mb-4">
@@ -237,8 +211,50 @@ const Index = () => {
                 <Link to="/about">Learn About Our Mission</Link>
               </Button>
             </div>
+            <div className="aspect-[4/3] bg-secondary overflow-hidden">
+              <img
+                src="https://rescuedogwines.com/wp-content/uploads/2024/03/rdw-video-thumb.jpg"
+                alt="About Rescue Dog Wines"
+                className="w-full h-full object-cover"
+              />
+            </div>
           </div>
         </div>
+      </section>
+
+      {/* Video Background Section */}
+      <section className="relative h-[60vh] min-h-[400px] flex items-center overflow-hidden">
+        <video
+          ref={videoRef}
+          autoPlay
+          muted={isMuted}
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          poster="https://rescuedogwines.com/wp-content/uploads/2024/03/rdw-video-thumb.jpg"
+        >
+          <source src="https://rescuedogwines.com/wp-content/uploads/2024/01/rescue-organization-partners.mp4" type="video/mp4" />
+          <source src="https://rescuedogwines.com/wp-content/uploads/2024/01/rescue-organization-partners.webm" type="video/webm" />
+        </video>
+        <div className="absolute inset-0 bg-foreground/40" />
+        <div className="relative container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-5xl font-bold text-primary-foreground mb-4 uppercase">
+            50% of Profits Support Rescue Organizations
+          </h2>
+          <p className="text-primary-foreground/80 text-lg max-w-2xl mx-auto">
+            Every bottle you enjoy helps rescue dogs find their forever homes.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setIsMuted(!isMuted);
+            if (videoRef.current) videoRef.current.muted = !isMuted;
+          }}
+          className="absolute bottom-6 right-6 text-primary-foreground/60 hover:text-primary-foreground transition-colors z-10 bg-foreground/30 backdrop-blur-sm p-2 rounded-full"
+          aria-label={isMuted ? "Unmute video" : "Mute video"}
+        >
+          {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+        </button>
       </section>
 
       {/* Lodi Rules */}

@@ -102,7 +102,7 @@ export default function CrmMapPage() {
         </div>
       </div>
 
-      <div className="flex-1 relative" style={{ minHeight: "500px" }}>
+      <div className="flex-1 relative" style={{ minHeight: "calc(100vh - 120px)" }}>
         <MapContainer center={center} zoom={8} className="absolute inset-0 z-0">
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

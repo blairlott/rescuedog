@@ -69,14 +69,25 @@ export function Header() {
             <ul className="flex items-center justify-center gap-8 py-3">
               {navItems.map((item) => (
                 <li key={item.label}>
-                  <Link
-                    to={item.to}
-                    className="text-sm font-medium tracking-brand uppercase text-foreground hover:text-primary transition-colors"
-                  >
-                    {item.label}
-                  </Link>
+                  {item.external ? (
+                    <a
+                      href={item.to}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium tracking-brand uppercase text-foreground hover:text-primary transition-colors"
+                    >
+                      {item.label}
+                    </a>
+                  ) : (
+                    <Link
+                      to={item.to}
+                      className="text-sm font-medium tracking-brand uppercase text-foreground hover:text-primary transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  )}
                 </li>
-              ))}
+              ))
             </ul>
           </div>
         </nav>

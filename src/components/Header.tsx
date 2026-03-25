@@ -25,8 +25,9 @@ const navItems: NavItem[] = [
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const isMerch = location.pathname === "/merch" || isRescueDogDomain();
-  const logo = isMerch ? rescueDogLogo : "https://rescuedogwines.myshopify.com/cdn/shop/files/rdw_black_4x_7dece252-0ae7-4039-b832-0a86b7adec60.png?height=66&v=1742847391";
+  const merchPaths = ["/merch", "/about", "/mission", "/donation"];
+  const isMerch = merchPaths.includes(location.pathname) || isRescueDogDomain();
+  const logo = isMerch ? rescueDogLogo : "https://rescuedogwines.myshopify.com/cdn/shop/files/rdw_black_4x_7dece252-0ae7-4039-b832-0a86b7adec60.png?v=1742847391";
   const logoAlt = isMerch ? "Rescue Dog" : "Rescue Dog Wines";
 
   return (

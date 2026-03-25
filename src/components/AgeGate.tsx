@@ -1,10 +1,25 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { isRescueDogDomain } from "@/lib/productUtils";
 import rdwLogo from "@/assets/rdw-logo.png";
+
+const MERCH_ONLY_ROUTES = ["/merch", "/shop"];
+
+function isMerchOnlyRoute(pathname: string): boolean {
+  return MERCH_ONLY_ROUTES.includes(pathname);
+}
+
+function needsAgeGate(pathname: string): boolean {
+  if (isRescueDogDomain() && isMerchOnlyRoute(pathname)) return false;
+  if (pathname === "/merch") return false;
+  return true;
+}
 
 export function AgeGate({ children }: { children: React.ReactNode }) {
   const [verified, setVerified] = useState<boolean | null>(null);
   const [denied, setDenied] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const stored = localStorage.getItem("rdw-age-verified");
@@ -20,6 +35,9 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
   const handleNo = () => {
     setDenied(true);
   };
+
+  // Skip age gate on merch-only routes
+  if (!needsAgeGate(location.pathname)) return <>{children}</>;
 
   if (verified === null) return null; // loading
 

@@ -33,7 +33,17 @@ const WinesPage = () => {
   const [activeCategory, setActiveCategory] = useState(0);
   const { data: products, isLoading } = useProducts(50, categories[activeCategory].filter);
 
-  return (
+  const sortedProducts = useMemo(() => {
+    if (!products) return [];
+    return [...products].sort((a, b) => {
+      const idxA = WINE_SORT_ORDER.indexOf(a.node.handle);
+      const idxB = WINE_SORT_ORDER.indexOf(b.node.handle);
+      const posA = idxA === -1 ? WINE_SORT_ORDER.length : idxA;
+      const posB = idxB === -1 ? WINE_SORT_ORDER.length : idxB;
+      return posA - posB;
+    });
+  }, [products]);
+
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 py-12">

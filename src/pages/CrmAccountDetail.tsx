@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSalesAccount, useAccountActivities, useAddActivity, useUpsertAccount } from "@/hooks/useSalesAccounts";
 import { useState } from "react";
+import { AccountFormDialog } from "@/components/crm/AccountFormDialog";
 import { toast } from "sonner";
 import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 import { US_STATES } from "@/lib/usStates";

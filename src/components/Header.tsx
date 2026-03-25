@@ -96,15 +96,28 @@ export function Header() {
       {/* Mobile Nav */}
       {mobileMenuOpen && (
         <nav className="md:hidden border-b border-border bg-background px-4 py-4 space-y-3">
-          {[...navItems, { label: "WHOLESALE / B2B", to: "/wholesale" }].map((item) => (
-            <Link
-              key={item.label}
-              to={item.to}
-              className="block text-sm font-medium tracking-brand uppercase text-foreground"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {item.label}
-            </Link>
+          {[...navItems, { label: "WHOLESALE / B2B", to: "/wholesale" } as NavItem].map((item) => (
+            item.external ? (
+              <a
+                key={item.label}
+                href={item.to}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-sm font-medium tracking-brand uppercase text-foreground"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                key={item.label}
+                to={item.to}
+                className="block text-sm font-medium tracking-brand uppercase text-foreground"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            )
           ))}
         </nav>
       )}

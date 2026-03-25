@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wine, Truck, Users, Phone, Mail, MapPin, Globe, FileText } from "lucide-react";
+import { Wine, Truck, Users, Mail, MapPin, Globe, FileText } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const regions = [
-  { value: "ca-west", label: "California & Western Region", contact: "Jake Lenz", email: "jake@rescuedogwines.com" },
-  { value: "us-national", label: "US National & Other States", contact: "Jana Ritter", email: "j.ritter@rescuedogwines.com" },
-  { value: "international", label: "International", contact: "Jana Ritter", email: "j.ritter@rescuedogwines.com" },
+  { value: "ca-west", label: "California & Western Region", contact: "Jake Lenz" },
+  { value: "us-national", label: "US National & Other States", contact: "Jana Ritter" },
+  { value: "international", label: "International", contact: "Jana Ritter" },
 ];
 
 const salesContacts = [
@@ -32,6 +33,7 @@ const salesContacts = [
 
 const WholesalePage = () => {
   const [formData, setFormData] = useState({ name: '', business: '', email: '', phone: '', region: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,15 +43,44 @@ const WholesalePage = () => {
       return;
     }
 
-    // Open mailto with the correct regional contact
-    const subject = encodeURIComponent(`Wholesale Inquiry from ${formData.business}`);
-    const body = encodeURIComponent(
-      `Name: ${formData.name}\nBusiness: ${formData.business}\nEmail: ${formData.email}\nPhone: ${formData.phone || 'N/A'}\nRegion: ${selectedRegion.label}\n\n${formData.message}`
-    );
-    window.open(`mailto:${selectedRegion.email}?subject=${subject}&body=${body}`, '_self');
+    setIsSubmitting(true);
+    try {
+      // Insert into database
+      const id = crypto.randomUUID();
+      const { error: insertError } = await supabase
+        .from('wholesale_inquiries')
+        .insert({
+          id,
+          name: formData.name,
+          business: formData.business,
+          email: formData.email,
+          phone: formData.phone || null,
+          region: formData.region,
+          message: formData.message,
+        });
 
-    toast.success(`Thank you! Your inquiry has been directed to ${selectedRegion.contact}.`, { position: "top-center" });
-    setFormData({ name: '', business: '', email: '', phone: '', region: '', message: '' });
+      if (insertError) {
+        throw new Error(insertError.message);
+      }
+
+      // Trigger notification emails
+      const { error: fnError } = await supabase.functions.invoke('send-wholesale-notification', {
+        body: { inquiryId: id },
+      });
+
+      if (fnError) {
+        console.error('Notification error:', fnError);
+        // Still show success — the inquiry was saved
+      }
+
+      toast.success(`Thank you! Your inquiry has been sent to ${selectedRegion.contact}.`, { position: "top-center" });
+      setFormData({ name: '', business: '', email: '', phone: '', region: '', message: '' });
+    } catch (err) {
+      console.error('Submission error:', err);
+      toast.error("Something went wrong. Please try again or email us directly.", { position: "top-center" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const selectedRegion = regions.find(r => r.value === formData.region);
@@ -174,8 +205,9 @@ const WholesalePage = () => {
                 <label className="text-sm font-medium mb-1 block">Tell us what you're looking to achieve *</label>
                 <Textarea required value={formData.message} onChange={(e) => setFormData(p => ({ ...p, message: e.target.value }))} rows={4} placeholder="Wine preferences, estimated volume, delivery requirements..." />
               </div>
-              <Button type="submit" size="lg" className="w-full">
-                <Mail className="mr-2 h-4 w-4" />Submit Inquiry
+              <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+                <Mail className="mr-2 h-4 w-4" />
+                {isSubmitting ? 'Submitting...' : 'Submit Inquiry'}
               </Button>
             </form>
 

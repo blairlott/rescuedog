@@ -16,7 +16,29 @@ const regions = [
   { value: "international", label: "International", contact: "Jana Ritter" },
 ];
 
-const salesContacts = [
+const bottleShots = [
+  { name: "2023 Red Blend", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/9-25-25-RedBlend-BS_SMALL-imgupscaler.ai_Sharpen_4K-1.png" },
+  { name: "2023 Cabernet Sauvignon", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/9-25-25-Cabernet-BS-SMALL_imgupscaler.ai_Sharpen_4K.png" },
+  { name: "2024 Sauvignon Blanc", url: "https://rescuedogwines.com/wp-content/uploads/2025/10/2024-SB-LP-design.png" },
+  { name: "2024 Chardonnay", url: "https://rescuedogwines.com/wp-content/uploads/2025/12/9-25-25-Chardonnay-BS-SMALL_imgupscaler.ai_Sharpen_4K-1.png" },
+  { name: "2024 Rosé Estate Grown Grenache", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/9-25-25-Rose-BS-SMALL_imgupscaler.ai_Sharpen_4K.png" },
+  { name: "2021 Pinot Noir", url: "https://rescuedogwines.com/wp-content/uploads/2023/09/RescueDogWines2021PinotNoir.png" },
+  { name: "NV Demi-Sec Sparkling Wine", url: "https://rescuedogwines.com/wp-content/uploads/2023/09/Rescue-Dog-Wines-NV-Demi-Sec-Sparkling.png" },
+  { name: "NV Sparkling Rosé", url: "https://rescuedogwines.com/wp-content/uploads/2023/09/Rescue-Dog-Wines-NV-Sparkling-Rose.png" },
+];
+
+const techSheets = [
+  { name: "2023 Red Blend", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/TechSheetRescueDogWines2023RedBlend.pdf" },
+  { name: "2023 Cabernet Sauvignon", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet_RDW_2023-Cabernet-Sauvignon_DIGITAL.pdf" },
+  { name: "2024 Chardonnay", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet_RDW_2024-Chardonnay_DIGITAL.pdf" },
+  { name: "2024 Rosé", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet_RDW_2024-Rose-Estate-Grown-Grenache.pdf" },
+  { name: "2024 Sauvignon Blanc", url: "https://rescuedogwines.com/wp-content/uploads/2026/01/Tech-Sheet-2024-Sauv-Blanc-.pdf" },
+  { name: "2021 Pinot Noir", url: "https://rescuedogwines.com/wp-content/uploads/2024/04/Tech-Sheet_RDW_2021-Pinot-Noir_DIGITAL.pdf" },
+  { name: "NV Demi-Sec Sparkling Wine", url: "https://rescuedogwines.com/wp-content/uploads/2024/04/Tech-Sheet_RDW_NV-Sparkling-Demi-Sec_DIGITAL.pdf" },
+  { name: "NV Sparkling Rosé", url: "https://rescuedogwines.com/wp-content/uploads/2024/04/Tech-Sheet_RDW_NV-Sparkling-Rose_DIGITAL.pdf" },
+];
+
+
   {
     name: "Jana Ritter",
     title: "National Commercial Director",

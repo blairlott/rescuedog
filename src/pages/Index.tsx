@@ -4,7 +4,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowRight, Building2, Loader2, Play, ChevronDown, Volume2, VolumeX } from "lucide-react";
+import { ArrowRight, Building2, Loader2, Play, ChevronDown } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
 import { isWineProduct, isRescueDogDomain } from "@/lib/productUtils";
 import MerchHomePage from "./MerchHomePage";

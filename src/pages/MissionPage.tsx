@@ -3,6 +3,7 @@ import { Footer } from "@/components/Footer";
 import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
 
@@ -18,11 +19,12 @@ const pillars = [
 ];
 
 
-const ITEMS_PER_PAGE = 25;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const MissionPage = () => {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -42,8 +44,8 @@ const MissionPage = () => {
     return result;
   }, [search, sortField, sortDir]);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const displayed = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const displayed = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -62,6 +64,11 @@ const MissionPage = () => {
 
   const handleSearch = (value: string) => {
     setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
     setCurrentPage(1);
   };
 
@@ -128,13 +135,27 @@ const MissionPage = () => {
             </div>
 
             <div className="max-w-4xl mx-auto">
-              <div className="mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <Input
                   placeholder="Search by name, city, or state..."
                   value={search}
                   onChange={(e) => handleSearch(e.target.value)}
                   className="max-w-sm"
                 />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Show</span>
+                  <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                    <SelectTrigger className="w-[70px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAGE_SIZE_OPTIONS.map((size) => (
+                        <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span>entries</span>
+                </div>
               </div>
 
               <div className="border border-border overflow-hidden">

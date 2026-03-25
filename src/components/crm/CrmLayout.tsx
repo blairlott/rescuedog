@@ -3,7 +3,8 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle } from "lucide-react";
+import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { Link, useLocation } from "react-router-dom";
 
 export default function CrmLayout() {

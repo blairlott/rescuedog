@@ -164,6 +164,7 @@ export type Database = {
           distributor_rep: string | null
           email: string | null
           id: string
+          last_order_date: string | null
           latitude: number | null
           longitude: number | null
           notes: string | null
@@ -190,6 +191,7 @@ export type Database = {
           distributor_rep?: string | null
           email?: string | null
           id?: string
+          last_order_date?: string | null
           latitude?: number | null
           longitude?: number | null
           notes?: string | null
@@ -216,6 +218,7 @@ export type Database = {
           distributor_rep?: string | null
           email?: string | null
           id?: string
+          last_order_date?: string | null
           latitude?: number | null
           longitude?: number | null
           notes?: string | null

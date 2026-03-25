@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, Eye, Pencil, Trash2, Upload } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Trash2, Upload, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +14,7 @@ import { BulkImportDialog } from "@/components/crm/BulkImportDialog";
 import { US_STATES } from "@/lib/usStates";
 import { toast } from "sonner";
 import type { SalesAccount } from "@/hooks/useSalesAccounts";
+import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 
 const statusColors: Record<string, string> = {
   prospect: "bg-muted text-muted-foreground",
@@ -160,6 +161,7 @@ export default function CrmDashboard() {
                     <TableHead>Buyer</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Last Order</TableHead>
                     <TableHead>City, State</TableHead>
                     <TableHead>Rep</TableHead>
                     <TableHead className="w-[120px]">Actions</TableHead>
@@ -179,6 +181,17 @@ export default function CrmDashboard() {
                         <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${statusColors[a.status || "prospect"]}`}>
                           {a.status}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const level = getStaleness((a as any).last_order_date);
+                          return (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded ${getStalenessColor(level)}`}>
+                              {level && level !== "fresh" && <Clock className="h-3 w-3" />}
+                              {getStalenessLabel(level)}
+                            </span>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>{[a.city, a.state].filter(Boolean).join(", ") || "—"}</TableCell>
                       <TableCell>
@@ -231,7 +244,7 @@ export default function CrmDashboard() {
                   ))}
                   {filteredAccounts.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         {activeTab === "my-accounts" && !myName
                           ? "Set your full name in your profile to see your accounts"
                           : "No accounts found"}

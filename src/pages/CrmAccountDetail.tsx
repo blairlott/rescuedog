@@ -1,19 +1,21 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, MapPin, Phone, Mail, Globe, Plus } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, Mail, Globe, Plus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useSalesAccount, useAccountActivities, useAddActivity } from "@/hooks/useSalesAccounts";
+import { useSalesAccount, useAccountActivities, useAddActivity, useUpsertAccount } from "@/hooks/useSalesAccounts";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AccountFormDialog } from "@/components/crm/AccountFormDialog";
+import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 
 export default function CrmAccountDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: account, isLoading } = useSalesAccount(id);
   const { data: activities = [] } = useAccountActivities(id);
   const addActivity = useAddActivity();
+  const upsertAccount = useUpsertAccount();
   const [activityText, setActivityText] = useState("");
   const [activityType, setActivityType] = useState("note");
   const [editOpen, setEditOpen] = useState(false);
@@ -51,7 +53,32 @@ export default function CrmAccountDetail() {
             <Badge className="capitalize">{account.status}</Badge>
           </div>
         </div>
-        <Button variant="outline" onClick={() => setEditOpen(true)}>Edit</Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              const today = new Date().toISOString().split('T')[0];
+              try {
+                await upsertAccount.mutateAsync({
+                  id: account.id,
+                  account_name: account.account_name,
+                  last_order_date: today,
+                } as any);
+                await addActivity.mutateAsync({
+                  account_id: account.id,
+                  activity_type: 'order',
+                  description: `Order marked on ${today}`,
+                });
+                toast.success('Marked as ordered today');
+              } catch (err: any) {
+                toast.error(err.message);
+              }
+            }}
+          >
+            <ShoppingCart className="h-4 w-4 mr-1" /> Mark Ordered
+          </Button>
+          <Button variant="outline" onClick={() => setEditOpen(true)}>Edit</Button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -60,6 +87,19 @@ export default function CrmAccountDetail() {
           <h3 className="font-semibold text-foreground text-sm uppercase tracking-brand">Details</h3>
           {account.buyer_name && <p className="text-sm"><span className="text-muted-foreground">Buyer:</span> {account.buyer_name} {account.buyer_title && `(${account.buyer_title})`}</p>}
           {account.rep_name && <p className="text-sm"><span className="text-muted-foreground">Rep:</span> {account.rep_name}</p>}
+          <p className="text-sm">
+            <span className="text-muted-foreground">Last Order:</span>{' '}
+            {(() => {
+              const level = getStaleness((account as any).last_order_date);
+              return (
+                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${getStalenessColor(level)}`}>
+                  {(account as any).last_order_date
+                    ? `${new Date((account as any).last_order_date).toLocaleDateString()} (${getStalenessLabel(level)})`
+                    : getStalenessLabel(level)}
+                </span>
+              );
+            })()}
+          </p>
           {account.distributor && <p className="text-sm"><span className="text-muted-foreground">Distributor:</span> {account.distributor}</p>}
           {account.distributor_rep && <p className="text-sm"><span className="text-muted-foreground">Dist. Rep:</span> {account.distributor_rep}</p>}
           {account.sales_order && <p className="text-sm"><span className="text-muted-foreground">Order:</span> {account.sales_order}</p>}

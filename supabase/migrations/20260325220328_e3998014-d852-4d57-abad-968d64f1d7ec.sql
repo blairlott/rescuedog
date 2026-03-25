@@ -1,0 +1,1 @@
+ALTER TABLE public.sales_accounts ADD COLUMN last_order_date date DEFAULT NULL;

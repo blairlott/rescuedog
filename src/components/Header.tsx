@@ -56,7 +56,7 @@ export function Header() {
 
           {/* Center: Logo */}
           <Link to={isMerch ? "/merch" : "/"} className="flex justify-center px-1 md:px-2 min-w-0">
-            <span className="relative inline-flex items-center">
+            <span className="relative inline-flex items-center overflow-visible leading-none pb-1">
               <img
                 src={logo}
                 alt={logoAlt}

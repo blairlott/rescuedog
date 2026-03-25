@@ -46,8 +46,6 @@ const instagramPosts = [
 const Index = () => {
   const { data: products, isLoading } = useProducts(50);
   const [showVideo, setShowVideo] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   if (isRescueDogDomain()) {
     return <MerchHomePage />;

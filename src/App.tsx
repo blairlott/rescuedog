@@ -27,6 +27,7 @@ import CrmAccountDetail from "./pages/CrmAccountDetail";
 import CrmMapPage from "./pages/CrmMapPage";
 import CrmRoutePlanner from "./pages/CrmRoutePlanner";
 import CrmAdminPage from "./pages/CrmAdminPage";
+import CrmResetPasswordPage from "./pages/CrmResetPasswordPage";
 
 const queryClient = new QueryClient();
 

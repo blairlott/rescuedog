@@ -235,20 +235,16 @@ const Index = () => {
 
       {/* Video Background Section */}
       <section className="relative h-[60vh] min-h-[400px] flex items-center overflow-hidden">
-        <video
-          ref={videoRef}
-          autoPlay
-          muted={isMuted}
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-          poster="https://rescuedogwines.com/wp-content/uploads/2024/03/rdw-video-thumb.jpg"
-        >
-          <source src="https://rescuedogwines.com/wp-content/uploads/2024/01/rescue-organization-partners.mp4" type="video/mp4" />
-          <source src="https://rescuedogwines.com/wp-content/uploads/2024/01/rescue-organization-partners.webm" type="video/webm" />
-        </video>
-        <div className="absolute inset-0 bg-foreground/40" />
-        <div className="relative container mx-auto px-4 text-center">
+        <iframe
+          ref={iframeRef}
+          className="absolute inset-0 w-full h-full scale-[1.5] pointer-events-none"
+          src="https://www.youtube.com/embed/rNxSRJpqz_w?autoplay=1&mute=1&controls=0&loop=1&playlist=rNxSRJpqz_w&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=*"
+          title="Rescue Dog Wines"
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+        />
+        <div className="absolute inset-0 bg-foreground/40 pointer-events-none" />
+        <div className="relative container mx-auto px-4 text-center z-10">
           <h2 className="text-3xl md:text-5xl font-bold text-primary-foreground mb-4 uppercase">
             50% of Profits Support Rescue Organizations
           </h2>
@@ -257,10 +253,7 @@ const Index = () => {
           </p>
         </div>
         <button
-          onClick={() => {
-            setIsMuted(!isMuted);
-            if (videoRef.current) videoRef.current.muted = !isMuted;
-          }}
+          onClick={toggleMute}
           className="absolute bottom-6 right-6 text-primary-foreground/60 hover:text-primary-foreground transition-colors z-10 bg-foreground/30 backdrop-blur-sm p-2 rounded-full"
           aria-label={isMuted ? "Unmute video" : "Mute video"}
         >

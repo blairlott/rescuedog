@@ -273,6 +273,7 @@ export default function CrmAccountDetail() {
           {activities.length === 0 && <p className="text-sm text-muted-foreground">No activities yet.</p>}
         </div>
       </div>
+      <AccountFormDialog open={editOpen} onOpenChange={setEditOpen} account={account} />
     </div>
   );
 }

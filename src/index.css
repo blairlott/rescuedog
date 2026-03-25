@@ -2,29 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap');
 
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 10%;
+    --foreground: 0 0% 0%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 0 0% 0%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 0 0% 0%;
 
-    --primary: 350 100% 40%;
+    --primary: 350 100% 38%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 10%;
+    --secondary-foreground: 0 0% 0%;
 
     --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted-foreground: 0 0% 50%;
 
-    --accent: 350 100% 40%;
+    --accent: 350 100% 38%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
@@ -32,14 +32,17 @@
 
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 350 100% 40%;
+    --ring: 350 100% 38%;
 
     --radius: 0rem;
 
-    --brand-red: 350 100% 40%;
-    --brand-black: 0 0% 10%;
+    --brand-red: 350 100% 38%;
+    --brand-black: 0 0% 0%;
     --brand-white: 0 0% 100%;
-    --brand-gray: 0 0% 96%;
+    --brand-grey: 0 0% 50%;
+    --brand-gold: 44 100% 50%;
+    --brand-pink: 338 89% 73%;
+    --brand-dark-blue: 229 100% 21%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -61,7 +64,7 @@
     --popover: 0 0% 5%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 350 100% 45%;
+    --primary: 350 100% 42%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 15%;
@@ -70,7 +73,7 @@
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 60%;
 
-    --accent: 350 100% 45%;
+    --accent: 350 100% 42%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
@@ -78,7 +81,7 @@
 
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 350 100% 45%;
+    --ring: 350 100% 42%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -98,10 +101,10 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Cabin', Arial, sans-serif;
+    font-family: 'Nunito Sans', 'Avenir Next', 'Avenir', system-ui, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cabin', Arial, sans-serif;
+    font-family: 'Nunito Sans', 'Avenir Next', 'Avenir', system-ui, sans-serif;
   }
 }

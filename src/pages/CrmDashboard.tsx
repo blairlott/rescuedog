@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSalesAccounts, useDeleteAccount } from "@/hooks/useSalesAccounts";
+import { useSalesAccounts, useDeleteAccount, useUpsertAccount } from "@/hooks/useSalesAccounts";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AccountFormDialog } from "@/components/crm/AccountFormDialog";
 import { BulkImportDialog } from "@/components/crm/BulkImportDialog";
@@ -41,7 +41,9 @@ export default function CrmDashboard() {
 
   const { data: roleInfo } = useUserRole();
   const deleteAccount = useDeleteAccount();
+  const upsertAccount = useUpsertAccount();
 
+  const repNames = [...new Set(accounts.map((a) => a.rep_name).filter(Boolean))] as string[];
   const myName = roleInfo?.profile?.full_name || "";
   const canEdit = roleInfo?.isAdminOrOwner;
 
@@ -179,7 +181,31 @@ export default function CrmDashboard() {
                         </span>
                       </TableCell>
                       <TableCell>{[a.city, a.state].filter(Boolean).join(", ") || "—"}</TableCell>
-                      <TableCell>{a.rep_name || "—"}</TableCell>
+                      <TableCell>
+                        {roleInfo?.isAdminOrOwner ? (
+                          <Select
+                            value={a.rep_name || ""}
+                            onValueChange={(v) => {
+                              upsertAccount.mutate(
+                                { id: a.id, account_name: a.account_name, rep_name: v === "unassigned" ? null : v },
+                                { onSuccess: () => toast.success(`Reassigned to ${v === "unassigned" ? "nobody" : v}`) }
+                              );
+                            }}
+                          >
+                            <SelectTrigger className="h-7 w-[130px] text-xs">
+                              <SelectValue placeholder="Assign rep" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unassigned">Unassigned</SelectItem>
+                              {repNames.map((name) => (
+                                <SelectItem key={name} value={name}>{name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          a.rep_name || "—"
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Link to={`/crm/account/${a.id}`}>

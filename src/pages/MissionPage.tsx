@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Heart, PawPrint, Wine, TreePine } from "lucide-react";
+import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
@@ -41,9 +41,11 @@ const rescuePartners = [
   { name: "Footbridge Foundation", city: "San Antonio", state: "TX", url: "https://www.footbridgefoundation.org/" },
 ];
 
+const ITEMS_PER_PAGE = 25;
+
 const MissionPage = () => {
   const [search, setSearch] = useState("");
-  const [showAll, setShowAll] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filtered = useMemo(() => {
     if (!search) return rescuePartners;
@@ -53,7 +55,13 @@ const MissionPage = () => {
     );
   }, [search]);
 
-  const displayed = showAll ? filtered : filtered.slice(0, 10);
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const displayed = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -122,7 +130,7 @@ const MissionPage = () => {
                 <Input
                   placeholder="Search by name, city, or state..."
                   value={search}
-                  onChange={(e) => { setSearch(e.target.value); setShowAll(true); }}
+                  onChange={(e) => handleSearch(e.target.value)}
                   className="max-w-sm"
                 />
               </div>
@@ -152,13 +160,46 @@ const MissionPage = () => {
                 </table>
               </div>
 
-              {!showAll && filtered.length > 10 && (
-                <div className="text-center mt-6">
-                  <Button variant="outline" onClick={() => setShowAll(true)} className="uppercase tracking-brand text-sm font-bold">
-                    Show All {filtered.length} Organizations
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="gap-1"
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Previous
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={page === currentPage ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="gap-1"
+                  >
+                    Next <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
               )}
+
+              <p className="text-center text-sm text-muted-foreground mt-4">
+                Page {currentPage} of {totalPages} · Showing {displayed.length} of {filtered.length} organizations
+              </p>
             </div>
           </div>
         </section>

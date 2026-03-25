@@ -59,9 +59,14 @@ export default function CrmDashboard() {
 
   // Filter accounts by tab
   const filteredAccounts = accounts.filter((a) => {
-    const managerTab = SALES_MANAGERS.find(m => m.name.toLowerCase().replace(/\s+/g, '-') === activeTab);
+    const managerTab = SALES_MANAGERS.find(m => m.tabId === activeTab);
     if (managerTab) {
-      return a.rep_name?.toLowerCase() === managerTab.name.toLowerCase();
+      if (managerTab.name) {
+        return a.rep_name?.toLowerCase() === managerTab.name.toLowerCase();
+      }
+      // Empty name tab (GA/Southeast) — show accounts in GA region not assigned to other managers
+      const otherManagerNames = SALES_MANAGERS.filter(m => m.name).map(m => m.name.toLowerCase());
+      return !otherManagerNames.includes((a.rep_name || '').toLowerCase());
     }
     if (activeTab === "prospects") {
       return a.status === "prospect";

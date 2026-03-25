@@ -173,15 +173,16 @@ export default function CrmDashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Account</TableHead>
+                    <TableHead>Address</TableHead>
                     <TableHead>Buyer</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Last Order</TableHead>
-                    <TableHead>City, State</TableHead>
                     <TableHead>Distributor</TableHead>
                     <TableHead>Dist. Rep</TableHead>
+                    <TableHead>Dist. Rep Contact</TableHead>
                     <TableHead>Sales Rep</TableHead>
                     <TableHead className="w-[120px]">Actions</TableHead>
                   </TableRow>

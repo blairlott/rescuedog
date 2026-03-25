@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Users } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -18,6 +21,7 @@ export function ProfileDialog({ open, onOpenChange }: Props) {
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const qc = useQueryClient();
+  const { data: roleInfo } = useUserRole();
 
   useEffect(() => {
     if (!open) return;
@@ -76,6 +80,13 @@ export function ProfileDialog({ open, onOpenChange }: Props) {
           <p className="text-xs text-muted-foreground">
             This info is shared with your team so accounts can show your contact details.
           </p>
+          {roleInfo?.isAdminOrOwner && (
+            <Link to="/crm/admin" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" className="w-full gap-2">
+                <Users className="h-4 w-4" /> Manage Users & Roles
+              </Button>
+            </Link>
+          )}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving}>Save</Button>

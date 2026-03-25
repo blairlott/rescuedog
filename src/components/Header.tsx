@@ -56,11 +56,16 @@ export function Header() {
 
           {/* Center: Logo */}
           <Link to={isMerch ? "/merch" : "/"} className="flex justify-center px-1 md:px-2 min-w-0">
-            <img
-              src={logo}
-              alt={logoAlt}
-              className="w-full max-w-[320px] md:max-w-[500px] h-auto object-contain"
-            />
+            <span className="relative inline-flex items-center">
+              <img
+                src={logo}
+                alt={logoAlt}
+                className={`w-full h-auto object-contain ${isMerch ? "max-w-[240px] md:max-w-[380px]" : "max-w-[320px] md:max-w-[500px]"}`}
+              />
+              {isMerch && (
+                <span className="absolute top-[10%] -right-3 md:-right-4 text-[0.5rem] md:text-[0.6rem] font-semibold text-muted-foreground leading-none">TM</span>
+              )}
+            </span>
           </Link>
 
           {/* Right: Account + Cart */}

@@ -1,8 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Search, Menu, X, User, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
 import rdwLogo from "@/assets/rdw-logo.png";
+import rescueDogLogo from "@/assets/rescue-dog-logo.png";
+import { isRescueDogDomain } from "@/lib/productUtils";
 
 interface NavItem {
   label: string;
@@ -22,6 +24,10 @@ const navItems: NavItem[] = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const isMerch = location.pathname === "/merch" || isRescueDogDomain();
+  const logo = isMerch ? rescueDogLogo : rdwLogo;
+  const logoAlt = isMerch ? "Rescue Dog" : "Rescue Dog Wines";
 
   return (
     <header className="sticky top-0 z-50 bg-background">
@@ -48,8 +54,8 @@ export function Header() {
           {/* Center: Logo */}
           <Link to="/" className="flex justify-center px-1 md:px-2 min-w-0">
             <img
-              src={rdwLogo}
-              alt="Rescue Dog Wines"
+              src={logo}
+              alt={logoAlt}
               className="w-full max-w-[320px] md:max-w-[500px] h-auto object-contain"
             />
           </Link>

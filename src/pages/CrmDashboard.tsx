@@ -53,6 +53,9 @@ export default function CrmDashboard() {
     if (activeTab === "prospects") {
       return a.status === "prospect";
     }
+    if (activeTab === "active") {
+      return a.status === "active";
+    }
     return true; // all-accounts
   });
 
@@ -88,6 +91,7 @@ export default function CrmDashboard() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="my-accounts">My Accounts</TabsTrigger>
+          <TabsTrigger value="active">Active</TabsTrigger>
           <TabsTrigger value="prospects">Prospects</TabsTrigger>
           <TabsTrigger value="all-accounts">All Accounts</TabsTrigger>
         </TabsList>

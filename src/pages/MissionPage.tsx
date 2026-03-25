@@ -141,9 +141,9 @@ const MissionPage = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-secondary">
-                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground">Organization Name</th>
-                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground hidden md:table-cell">City</th>
-                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground">State</th>
+                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground cursor-pointer select-none" onClick={() => handleSort("name")}>Organization Name <SortIcon field="name" /></th>
+                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground hidden md:table-cell cursor-pointer select-none" onClick={() => handleSort("city")}>City <SortIcon field="city" /></th>
+                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground cursor-pointer select-none" onClick={() => handleSort("state")}>State <SortIcon field="state" /></th>
                     </tr>
                   </thead>
                   <tbody>

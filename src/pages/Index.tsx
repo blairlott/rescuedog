@@ -64,13 +64,20 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      {/* Hero — Full-bleed image background */}
+      {/* Hero — Full-bleed video background */}
       <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden">
-        <img
-          src="https://rescuedogwines.myshopify.com/cdn/shop/files/unnamed_9.png?v=1746019287&width=2000"
-          alt="Rescue Dog Wines hero - dogs and wine"
+        <video
+          ref={videoRef}
+          autoPlay
+          muted={isMuted}
+          loop
+          playsInline
           className="absolute inset-0 w-full h-full object-cover"
-        />
+          poster="https://rescuedogwines.myshopify.com/cdn/shop/files/unnamed_9.png?v=1746019287&width=2000"
+        >
+          <source src="https://rescuedogwines.com/wp-content/uploads/2024/01/rescue-organization-partners.mp4" type="video/mp4" />
+          <source src="https://rescuedogwines.com/wp-content/uploads/2024/01/rescue-organization-partners.webm" type="video/webm" />
+        </video>
         <div className="absolute inset-0 bg-foreground/30" />
 
         <div className="relative container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">

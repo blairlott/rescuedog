@@ -9,7 +9,7 @@ export interface UserRoleInfo {
   isAdmin: boolean;
   isAdminOrOwner: boolean;
   isSalesRep: boolean;
-  profile: { id: string; email: string | null; full_name: string | null } | null;
+  profile: { id: string; email: string | null; full_name: string | null; approved?: boolean } | null;
 }
 
 export function useUserRole() {

@@ -4,7 +4,21 @@ import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 import { Loader2 } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+
+// Desired display order matching rescuedogwines.com/shop-wine
+const WINE_SORT_ORDER = [
+  "6bottle-sampler",
+  "cabernet-sauvignon",
+  "red-wine-blend",
+  "rescue-dog-wines-sauvignon-blanc",
+  "chardonnay",
+  "rescue-dog-wines-ros-of-pinot-noir",
+  "2023-rose-estate-grown-grenache",
+  "central-coast-pinot-noir",
+  "demisec-mthode-champenoise-sparkling-wine",
+  "mthode-champenoise-sparkling-ros",
+];
 
 const categories = [
   { label: "All", filter: "product_type:Wine" },
@@ -18,6 +32,17 @@ const categories = [
 const WinesPage = () => {
   const [activeCategory, setActiveCategory] = useState(0);
   const { data: products, isLoading } = useProducts(50, categories[activeCategory].filter);
+
+  const sortedProducts = useMemo(() => {
+    if (!products) return [];
+    return [...products].sort((a, b) => {
+      const idxA = WINE_SORT_ORDER.indexOf(a.node.handle);
+      const idxB = WINE_SORT_ORDER.indexOf(b.node.handle);
+      const posA = idxA === -1 ? WINE_SORT_ORDER.length : idxA;
+      const posB = idxB === -1 ? WINE_SORT_ORDER.length : idxB;
+      return posA - posB;
+    });
+  }, [products]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -50,7 +75,7 @@ const WinesPage = () => {
             <p className="text-center text-muted-foreground py-12">No wines found in this category.</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {products.map((product: ShopifyProduct) => (
+              {sortedProducts.map((product: ShopifyProduct) => (
                 <ProductCard key={product.node.id} product={product} />
               ))}
             </div>

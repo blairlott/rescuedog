@@ -50,9 +50,14 @@ export default function CrmDashboard() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Accounts</h1>
-        <Button onClick={() => { setEditAccount(null); setFormOpen(true); }}>
-          <Plus className="h-4 w-4 mr-1" /> Add Account
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" /> Import CSV
+          </Button>
+          <Button onClick={() => { setEditAccount(null); setFormOpen(true); }}>
+            <Plus className="h-4 w-4 mr-1" /> Add Account
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

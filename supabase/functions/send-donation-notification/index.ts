@@ -5,6 +5,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// Helper to encode ArrayBuffer to base64
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -39,36 +49,109 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate signed URLs for uploaded documents
-    const attachmentLinks: string[] = [];
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+
+    if (!RESEND_API_KEY) {
+      console.error('RESEND_API_KEY not configured.');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Email service not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Fetch file attachments from storage
+    const attachments: Array<{ filename: string; content: string }> = [];
 
     if (donation.irs_letter_path) {
-      const { data: irsUrl } = await supabase.storage
-        .from('donation-documents')
-        .createSignedUrl(donation.irs_letter_path, 60 * 60 * 24 * 30); // 30 days
-      if (irsUrl?.signedUrl) {
-        attachmentLinks.push(`<li><a href="${irsUrl.signedUrl}">IRS Determination Letter (501c)</a></li>`);
+      try {
+        const { data: fileData, error: fileError } = await supabase.storage
+          .from('donation-documents')
+          .download(donation.irs_letter_path);
+        if (fileData && !fileError) {
+          const buffer = await fileData.arrayBuffer();
+          const base64 = arrayBufferToBase64(buffer);
+          const filename = donation.irs_letter_path.split('/').pop() || 'irs-determination-letter';
+          attachments.push({ filename, content: base64 });
+        } else {
+          console.error('Error downloading IRS letter:', fileError);
+        }
+      } catch (e) {
+        console.error('Failed to download IRS letter:', e);
       }
     }
 
     if (donation.sponsorship_file_path) {
-      const { data: sponsorUrl } = await supabase.storage
-        .from('donation-documents')
-        .createSignedUrl(donation.sponsorship_file_path, 60 * 60 * 24 * 30);
-      if (sponsorUrl?.signedUrl) {
-        attachmentLinks.push(`<li><a href="${sponsorUrl.signedUrl}">Additional Sponsorship File</a></li>`);
+      try {
+        const { data: fileData, error: fileError } = await supabase.storage
+          .from('donation-documents')
+          .download(donation.sponsorship_file_path);
+        if (fileData && !fileError) {
+          const buffer = await fileData.arrayBuffer();
+          const base64 = arrayBufferToBase64(buffer);
+          const filename = donation.sponsorship_file_path.split('/').pop() || 'sponsorship-file';
+          attachments.push({ filename, content: base64 });
+        } else {
+          console.error('Error downloading sponsorship file:', fileError);
+        }
+      } catch (e) {
+        console.error('Failed to download sponsorship file:', e);
       }
     }
-
-    const documentsSection = attachmentLinks.length > 0
-      ? `<h3 style="color:#333;margin-top:20px;">Uploaded Documents</h3><ul>${attachmentLinks.join('')}</ul>`
-      : '';
 
     const servicesText = donation.services?.length
       ? donation.services.join(', ')
       : 'None specified';
 
-    // Build email HTML
+    // Build submission summary as plain text for attachment
+    const summaryText = `DONATION REQUEST SUMMARY
+========================
+Submitted: ${new Date(donation.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+
+ORGANIZATION INFORMATION
+Organization: ${donation.org_name}
+Nonprofit: ${donation.is_nonprofit || 'N/A'}
+Services: ${servicesText}
+Address: ${[donation.mailing_street, donation.mailing_city, donation.mailing_state, donation.mailing_zip].filter(Boolean).join(', ') || 'N/A'}
+EIN: ${donation.ein || 'N/A'}
+
+PRIMARY CONTACT
+Name: ${donation.first_name} ${donation.last_name}
+Phone: ${donation.telephone}
+Email: ${donation.email}
+
+EVENT INFORMATION
+Event Name: ${donation.event_name}
+Virtual Event: ${donation.is_virtual || 'N/A'}
+Event Date: ${donation.event_date || 'N/A'}
+Venue: ${donation.venue_name || 'N/A'}
+Venue Address: ${[donation.venue_street, donation.venue_city, donation.venue_state, donation.venue_zip].filter(Boolean).join(', ') || 'N/A'}
+Event URL: ${donation.event_url || 'N/A'}
+Attendees (21+): ${donation.num_attendees || 'N/A'}
+Other Beverages: ${donation.other_beverages || 'N/A'}
+
+Event Description:
+${donation.event_description}
+
+Sponsor Benefits:
+${donation.sponsor_benefits}
+
+${donation.how_intend_to_use ? `How They Intend to Use Donation:\n${donation.how_intend_to_use}\n` : ''}
+ADDITIONAL
+How Heard About Us: ${donation.how_heard || 'N/A'}
+Who They Know: ${donation.who_know || 'N/A'}
+Partnered Before: ${donation.partnered_before || 'N/A'}
+Participated Before: ${donation.participated_before || 'N/A'}
+Affiliate Interest: ${donation.affiliate_interest || 'N/A'}
+`;
+
+    // Add summary as a text file attachment
+    const summaryBase64 = btoa(unescape(encodeURIComponent(summaryText)));
+    attachments.push({
+      filename: `donation-request-${donation.org_name.replace(/[^a-zA-Z0-9]/g, '-')}.txt`,
+      content: summaryBase64,
+    });
+
+    // Build notification email HTML
     const emailHtml = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
         <div style="background:#c41e3a;color:white;padding:20px;text-align:center;">
@@ -121,7 +204,7 @@ Deno.serve(async (req) => {
             <tr><td style="padding:6px 0;font-weight:bold;">Affiliate Interest:</td><td>${donation.affiliate_interest || 'N/A'}</td></tr>
           </table>
 
-          ${documentsSection}
+          ${attachments.length > 1 ? '<p style="margin-top:15px;color:#666;font-style:italic;">📎 Uploaded documents and submission summary are attached to this email.</p>' : '<p style="margin-top:15px;color:#666;font-style:italic;">📎 Submission summary is attached to this email.</p>'}
         </div>
 
         <p style="color:#999;font-size:12px;text-align:center;margin-top:20px;">
@@ -130,46 +213,112 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    // Send notification email using Resend or fallback
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-    
-    if (RESEND_API_KEY) {
-      const emailResponse = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'Rescue Dog Wines <donations@rescuedogwines.com>',
-          to: ['lara.hill@rescuedogwines.com'],
-          cc: ['info@rescuedogwine.com'],
-          subject: `New Donation Request: ${donation.org_name}`,
-          html: emailHtml,
-        }),
-      });
+    // Send notification email to team with CC to submitter
+    const notificationResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Rescue Dog Wines <donations@rescuedogwines.com>',
+        to: ['lara.hill@rescuedogwines.com'],
+        cc: ['info@rescuedogwine.com', donation.email],
+        subject: `New Donation Request: ${donation.org_name}`,
+        html: emailHtml,
+        attachments: attachments.map(a => ({
+          filename: a.filename,
+          content: a.content,
+        })),
+      }),
+    });
 
-      const emailResult = await emailResponse.json();
-      console.log('Email sent:', emailResult);
+    const notificationResult = await notificationResponse.json();
+    console.log('Notification email result:', notificationResult);
 
-      if (!emailResponse.ok) {
-        console.error('Email send failed:', emailResult);
-        return new Response(
-          JSON.stringify({ success: true, emailSent: false, emailError: emailResult }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    } else {
-      console.log('RESEND_API_KEY not configured. Email notification skipped.');
-      console.log('Donation request stored with ID:', donationRequestId);
-      return new Response(
-        JSON.stringify({ success: true, emailSent: false, note: 'Email not configured yet' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!notificationResponse.ok) {
+      console.error('Notification email failed:', notificationResult);
     }
 
+    // Send confirmation email to submitter
+    const confirmationHtml = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+        <div style="background:#c41e3a;color:white;padding:20px;text-align:center;">
+          <h1 style="margin:0;font-size:24px;">Thank You for Your Request!</h1>
+        </div>
+        
+        <div style="padding:30px 20px;background:#f9f9f9;border:1px solid #ddd;">
+          <p style="font-size:16px;color:#333;line-height:1.6;">
+            Dear ${donation.first_name},
+          </p>
+          
+          <p style="font-size:16px;color:#333;line-height:1.6;">
+            Thank you for submitting a donation request on behalf of <strong>${donation.org_name}</strong>. 
+            We truly appreciate your interest in partnering with Rescue Dog Wines!
+          </p>
+          
+          <p style="font-size:16px;color:#333;line-height:1.6;">
+            Our donation coordinator will review your request and contact you as soon as possible. 
+            Please note that we receive a large number of donation requests, so it may take some time 
+            for us to respond. We appreciate your patience and understanding.
+          </p>
+
+          <p style="font-size:16px;color:#333;line-height:1.6;">
+            You have been copied on the submission email for your records, which includes all the 
+            details you provided along with any uploaded documents.
+          </p>
+          
+          <div style="background:#fff;border-left:4px solid #c41e3a;padding:15px;margin:25px 0;">
+            <p style="margin:0;font-size:14px;color:#555;">
+              <strong>Your Request Details:</strong><br/>
+              Organization: ${donation.org_name}<br/>
+              Event: ${donation.event_name}<br/>
+              ${donation.event_date ? `Event Date: ${donation.event_date}<br/>` : ''}
+              Submitted: ${new Date(donation.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+
+          <p style="font-size:16px;color:#333;line-height:1.6;">
+            If you have any questions in the meantime, please don't hesitate to reach out to us.
+          </p>
+          
+          <p style="font-size:16px;color:#333;line-height:1.6;">
+            Warm regards,<br/>
+            <strong>The Rescue Dog Wines Team</strong>
+          </p>
+        </div>
+
+        <div style="text-align:center;padding:20px;">
+          <a href="https://www.rescuedogwines.com" style="color:#c41e3a;text-decoration:none;font-size:14px;">
+            www.rescuedogwines.com
+          </a>
+        </div>
+      </div>
+    `;
+
+    const confirmationResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Rescue Dog Wines <donations@rescuedogwines.com>',
+        to: [donation.email],
+        subject: `Donation Request Received - ${donation.org_name}`,
+        html: confirmationHtml,
+      }),
+    });
+
+    const confirmationResult = await confirmationResponse.json();
+    console.log('Confirmation email result:', confirmationResult);
+
     return new Response(
-      JSON.stringify({ success: true, emailSent: true }),
+      JSON.stringify({
+        success: true,
+        notificationSent: notificationResponse.ok,
+        confirmationSent: confirmationResponse.ok,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

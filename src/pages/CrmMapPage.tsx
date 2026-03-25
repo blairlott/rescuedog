@@ -56,9 +56,9 @@ export default function CrmMapPage() {
     : [33.749, -84.388];
 
   const getMarkerColor = useCallback((account: typeof accounts[0]) => {
-    if (account.status === "prospect") return MARKER_COLORS.prospect;
     if (myName && account.rep_name?.toLowerCase() === myName.toLowerCase()) return MARKER_COLORS.mine;
-    return MARKER_COLORS.others;
+    if (account.status === "prospect") return MARKER_COLORS.prospect;
+    return MARKER_COLORS.active;
   }, [myName]);
 
   // Initialize map

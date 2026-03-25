@@ -69,8 +69,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-border mt-8 pt-8 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()}, RescueDogWines.</p>
+        <div className="border-t border-border mt-10 pt-8 text-xs text-muted-foreground tracking-wide">
+          <p>© {new Date().getFullYear()} RescueDogWines. All rights reserved.</p>
         </div>
       </div>
     </footer>

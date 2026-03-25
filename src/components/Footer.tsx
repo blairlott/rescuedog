@@ -38,6 +38,7 @@ export function Footer() {
               <li><a href="#" className="hover:text-primary transition-colors">Refund Policy</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Shipping Policy</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
+              <li><Link to="/crm/login" className="hover:text-primary transition-colors">Sales CRM</Link></li>
             </ul>
           </div>
 

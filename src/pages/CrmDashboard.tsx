@@ -257,10 +257,8 @@ export default function CrmDashboard() {
                   ))}
                   {filteredAccounts.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                        {activeTab === "my-accounts" && !myName
-                          ? "Set your full name in your profile to see your accounts"
-                          : "No accounts found"}
+                       <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        No accounts found
                       </TableCell>
                     </TableRow>
                   )}

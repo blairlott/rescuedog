@@ -64,7 +64,7 @@ const WinesPage = () => {
             <p className="text-center text-muted-foreground py-12">No wines found in this category.</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {products.map((product: ShopifyProduct) => (
+              {sortedProducts.map((product: ShopifyProduct) => (
                 <ProductCard key={product.node.id} product={product} />
               ))}
             </div>

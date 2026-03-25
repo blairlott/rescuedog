@@ -21,6 +21,7 @@ export function ProfileDialog({ open, onOpenChange }: Props) {
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const qc = useQueryClient();
+  const { data: roleInfo } = useUserRole();
 
   useEffect(() => {
     if (!open) return;

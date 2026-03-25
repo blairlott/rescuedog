@@ -4,9 +4,16 @@ import { PageHero } from "@/components/PageHero";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Wine, Truck, Users, Phone, Mail, MapPin, Globe, FileText, Download } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Wine, Truck, Users, Phone, Mail, MapPin, Globe, FileText } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+const regions = [
+  { value: "ca-west", label: "California & Western Region", contact: "Jake Lenz", email: "jake@rescuedogwines.com" },
+  { value: "us-national", label: "US National & Other States", contact: "Jana Ritter", email: "j.ritter@rescuedogwines.com" },
+  { value: "international", label: "International", contact: "Jana Ritter", email: "j.ritter@rescuedogwines.com" },
+];
 
 const salesContacts = [
   {
@@ -24,13 +31,28 @@ const salesContacts = [
 ];
 
 const WholesalePage = () => {
-  const [formData, setFormData] = useState({ name: '', business: '', email: '', phone: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', business: '', email: '', phone: '', region: '', message: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Thank you! Our team will be in touch shortly.", { position: "top-center" });
-    setFormData({ name: '', business: '', email: '', phone: '', message: '' });
+    const selectedRegion = regions.find(r => r.value === formData.region);
+    if (!selectedRegion) {
+      toast.error("Please select a region.", { position: "top-center" });
+      return;
+    }
+
+    // Open mailto with the correct regional contact
+    const subject = encodeURIComponent(`Wholesale Inquiry from ${formData.business}`);
+    const body = encodeURIComponent(
+      `Name: ${formData.name}\nBusiness: ${formData.business}\nEmail: ${formData.email}\nPhone: ${formData.phone || 'N/A'}\nRegion: ${selectedRegion.label}\n\n${formData.message}`
+    );
+    window.open(`mailto:${selectedRegion.email}?subject=${subject}&body=${body}`, '_self');
+
+    toast.success(`Thank you! Your inquiry has been directed to ${selectedRegion.contact}.`, { position: "top-center" });
+    setFormData({ name: '', business: '', email: '', phone: '', region: '', message: '' });
   };
+
+  const selectedRegion = regions.find(r => r.value === formData.region);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -107,9 +129,27 @@ const WholesalePage = () => {
           <div className="container mx-auto px-4 max-w-2xl">
             <h2 className="font-display text-3xl font-bold text-foreground text-center mb-3">Get In Touch</h2>
             <p className="text-muted-foreground text-center mb-8">
-              Interested in carrying Rescue Dog Wines? Fill out the form below and our sales team will reach out.
+              Select your region below and your inquiry will be directed to the right sales contact.
             </p>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Your Region *</label>
+                <Select value={formData.region} onValueChange={(val) => setFormData(p => ({ ...p, region: val }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your region..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {regions.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedRegion && (
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Your inquiry will be sent to <span className="font-medium text-foreground">{selectedRegion.contact}</span>
+                  </p>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">Your Name *</label>

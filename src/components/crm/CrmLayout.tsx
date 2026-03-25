@@ -1,21 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-
-const navItems = [
-  { to: "/crm", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/crm/map", label: "Map", icon: Map },
-  { to: "/crm/routes", label: "Route Planner", icon: Route },
-];
 
 export default function CrmLayout() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  const { data: roleInfo } = useUserRole();
+
+  const navItems = [
+    { to: "/crm", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/crm/map", label: "Map", icon: Map },
+    { to: "/crm/routes", label: "Route Planner", icon: Route },
+    ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin", label: "Users", icon: Users }] : []),
+  ];
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
@@ -38,11 +41,13 @@ export default function CrmLayout() {
 
   return (
     <div className="h-screen bg-background flex overflow-hidden">
-      {/* Sidebar */}
       <aside className="w-56 border-r border-border bg-card flex flex-col shrink-0">
         <div className="p-4 border-b border-border">
           <h2 className="font-bold text-foreground text-sm tracking-brand uppercase">Sales CRM</h2>
-          <p className="text-xs text-muted-foreground truncate mt-1">{user.email}</p>
+          <p className="text-xs text-muted-foreground truncate mt-1">{roleInfo?.profile?.full_name || user.email}</p>
+          {roleInfo?.roles && roleInfo.roles.length > 0 && (
+            <p className="text-xs text-primary mt-0.5 capitalize">{roleInfo.roles[0]}</p>
+          )}
         </div>
         <nav className="flex-1 p-2 space-y-1">
           {navItems.map((item) => {
@@ -72,8 +77,6 @@ export default function CrmLayout() {
           </Button>
         </div>
       </aside>
-
-      {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>

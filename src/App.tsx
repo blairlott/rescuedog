@@ -26,6 +26,7 @@ import CrmDashboard from "./pages/CrmDashboard";
 import CrmAccountDetail from "./pages/CrmAccountDetail";
 import CrmMapPage from "./pages/CrmMapPage";
 import CrmRoutePlanner from "./pages/CrmRoutePlanner";
+import CrmAdminPage from "./pages/CrmAdminPage";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ function AppContent() {
         <Route path="account/:id" element={<CrmAccountDetail />} />
         <Route path="map" element={<CrmMapPage />} />
         <Route path="routes" element={<CrmRoutePlanner />} />
+        <Route path="admin" element={<CrmAdminPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

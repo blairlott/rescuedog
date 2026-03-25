@@ -67,6 +67,11 @@ const MissionPage = () => {
     setCurrentPage(1);
   };
 
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />

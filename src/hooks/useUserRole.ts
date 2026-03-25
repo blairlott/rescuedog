@@ -33,7 +33,7 @@ export function useUserRole() {
         isOwner,
         isAdmin,
         isAdminOrOwner: isOwner || isAdmin,
-        isSalesRep: roles.includes("sales_rep") || roles.length === 0,
+        isSalesRep: roles.includes("brand_ambassador") || roles.length === 0,
         profile,
       };
     },

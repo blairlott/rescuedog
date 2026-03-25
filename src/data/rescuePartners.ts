@@ -142,7 +142,6 @@ export const rescuePartners = [
   { name: "Polk County Bully Project", city: "Lakeland", state: "FL", url: "" },
   { name: "Tampa Bay Strays", city: "Tampa", state: "FL", url: "" },
   { name: "Bosley’s Place", city: "Smyrna", state: "GA", url: "" },
-  { name: "Athens Area Humane Society", city: "Athens", state: "GA", url: "" },
   { name: "Atlanta Humane Society", city: "Atlanta", state: "GA", url: "" },
   { name: "Georgia English Bull Dog Rescue", city: "Winder", state: "GA", url: "" },
   { name: "Hearts 'n Homes Dog Rescue", city: "Sharpsburg", state: "GA", url: "" },
@@ -181,7 +180,6 @@ export const rescuePartners = [
   { name: "Hope For Cleo Animal Rescue", city: "Smithtown", state: "NY", url: "" },
   { name: "Muddy Paws Rescue", city: "New York", state: "NY", url: "" },
   { name: "Ridge's Rescue", city: "Rochester", state: "NY", url: "" },
-  { name: "Muddy Paws Rescue", city: "New York", state: "NY", url: "" },
   { name: "Silver Hearts Sanctuary", city: "Centereach", state: "NY", url: "" },
   { name: "Humane Society of Greater Dayton", city: "Dayton", state: "OH", url: "" },
   { name: "Three Pits and a Lady", city: "Stoutsville", state: "OH", url: "" },
@@ -206,11 +204,9 @@ export const rescuePartners = [
   { name: "Humane Society Silicon Valley", city: "San Jose", state: "CA", url: "https://www.hssv.org/" },
   { name: "Pets In Need", city: "Palo Alto", state: "CA", url: "" },
   { name: "Saving Paws Animal Rescue of Kentucky", city: "Owensboro", state: "KY", url: "https://rescuedogwines.com/event/saving-paws-animal-rescue-of-kentucky" },
-  { name: "New Leash on Life", city: "Lebanon", state: "TN", url: "https://www.newleashonline.org/" },
   { name: "Misfit Mutts Dog Rescue", city: "Green Bay", state: "WI", url: "https://misfitmuttsdogrescue.com/" },
   { name: "Almost Home Animal Rescue", city: "", state: "", url: "https://www.almosthomear.com/" },
   { name: "Gone Rogue Girls Rescue Inc", city: "Long Branch", state: "NJ", url: "https://www.goneroguegirlsrescueinc.com/" },
-  { name: "Peace of Mind Dog Rescue", city: "Pacific Grove", state: "CA", url: "https://www.peaceofminddogrescue.org/" },
 ];
 
-export const TOTAL_PARTNER_COUNT = 212;
+export const TOTAL_PARTNER_COUNT = 208;

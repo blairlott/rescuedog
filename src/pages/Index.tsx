@@ -64,20 +64,13 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      {/* Hero — Full-bleed video background */}
+      {/* Hero — Full-bleed image background */}
       <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden">
-        <video
-          ref={videoRef}
-          autoPlay
-          muted={isMuted}
-          loop
-          playsInline
+        <img
+          src="https://rescuedogwines.myshopify.com/cdn/shop/files/unnamed_9.png?v=1746019287&width=2000"
+          alt="Rescue Dog Wines hero - dogs and wine"
           className="absolute inset-0 w-full h-full object-cover"
-          poster="https://rescuedogwines.myshopify.com/cdn/shop/files/unnamed_9.png?v=1746019287&width=2000"
-        >
-          <source src="https://rescuedogwines.com/wp-content/uploads/2024/01/rescue-organization-partners.mp4" type="video/mp4" />
-          <source src="https://rescuedogwines.com/wp-content/uploads/2024/01/rescue-organization-partners.webm" type="video/webm" />
-        </video>
+        />
         <div className="absolute inset-0 bg-foreground/30" />
 
         <div className="relative container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -118,18 +111,6 @@ const Index = () => {
             />
           </div>
         </div>
-
-        {/* Sound Toggle */}
-        <button
-          onClick={() => {
-            setIsMuted(!isMuted);
-            if (videoRef.current) videoRef.current.muted = !isMuted;
-          }}
-          className="absolute bottom-8 right-8 text-primary-foreground/60 hover:text-primary-foreground transition-colors z-10 bg-foreground/30 backdrop-blur-sm p-2 rounded-full"
-          aria-label={isMuted ? "Unmute video" : "Mute video"}
-        >
-          {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-        </button>
 
         {/* Scroll Indicator */}
         <button

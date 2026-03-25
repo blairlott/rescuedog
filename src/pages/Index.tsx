@@ -9,6 +9,7 @@ import { ShopifyProduct } from "@/lib/shopify";
 import { isWineProduct, isRescueDogDomain } from "@/lib/productUtils";
 import MerchHomePage from "./MerchHomePage";
 import { useState, useRef, useCallback } from "react";
+import heroRedBlend from "@/assets/hero-red-blend.jpg";
 
 const instagramPosts = [
   {
@@ -77,8 +78,8 @@ const Index = () => {
       {/* Hero — Full-bleed image background */}
       <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden">
         <img
-          src="https://rescuedogwines.myshopify.com/cdn/shop/files/unnamed_9.png?v=1746019287&width=2000"
-          alt="Rescue Dog Wines hero - dogs and wine"
+          src={heroRedBlend}
+          alt="Friends enjoying Rescue Dog Wines with the 2023 Red Blend"
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-foreground/30" />

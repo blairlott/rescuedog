@@ -134,6 +134,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          phone: string | null
           role: string | null
         }
         Insert: {
@@ -141,6 +142,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          phone?: string | null
           role?: string | null
         }
         Update: {
@@ -148,6 +150,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          phone?: string | null
           role?: string | null
         }
         Relationships: []
@@ -162,6 +165,8 @@ export type Database = {
           created_by: string | null
           distributor: string | null
           distributor_rep: string | null
+          distributor_rep_email: string | null
+          distributor_rep_phone: string | null
           email: string | null
           id: string
           last_order_date: string | null
@@ -189,6 +194,8 @@ export type Database = {
           created_by?: string | null
           distributor?: string | null
           distributor_rep?: string | null
+          distributor_rep_email?: string | null
+          distributor_rep_phone?: string | null
           email?: string | null
           id?: string
           last_order_date?: string | null
@@ -216,6 +223,8 @@ export type Database = {
           created_by?: string | null
           distributor?: string | null
           distributor_rep?: string | null
+          distributor_rep_email?: string | null
+          distributor_rep_phone?: string | null
           email?: string | null
           id?: string
           last_order_date?: string | null

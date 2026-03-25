@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
+import { rescuePartners, TOTAL_PARTNER_COUNT } from "@/data/rescuePartners";
 
 const pillars = [
   { icon: Heart, title: "50% of Profits Donated", desc: "Half of every dollar we earn goes directly to rescue organizations helping dogs find forever homes." },
@@ -13,33 +14,6 @@ const pillars = [
   { icon: TreePine, title: "Sustainable Farming", desc: "Lodi Rules certified sustainable vineyards ensure we protect the land while producing exceptional grapes." },
 ];
 
-const rescuePartners = [
-  { name: "Texas Critter Crusaders", city: "Taylor", state: "TX", url: "https://texascrittercrusaders.com/" },
-  { name: "Caring Hearts 4 Paws", city: "Toledo", state: "WA", url: "https://caringhearts4paws.org/" },
-  { name: "Furry Friends Humane", city: "Jupiter", state: "FL", url: "https://ffhumane.org/" },
-  { name: "San Francisco SPCA", city: "San Francisco", state: "CA", url: "https://www.sfspca.org/" },
-  { name: "Heaven Can Wait Rescue", city: "Congers", state: "NY", url: "https://heavencanwaitlv.org/" },
-  { name: "Ho-Bo Care Boxer Rescue", city: "Denver", state: "CO", url: "https://www.hobocare.org/" },
-  { name: "Annenberg Pet Space", city: "Playa Vista", state: "CA", url: "https://annenbergpetspace.org/" },
-  { name: "Safe Animal Shelter of Orange County", city: "Orange", state: "FL", url: "https://www.safeanimalshelter.com/" },
-  { name: "Reagan and Rowan's Rescue", city: "Illinois City", state: "IL", url: "https://reaganandrowansrescue.com/" },
-  { name: "Pawsitive Change", city: "Athens", state: "GA", url: "https://pawsitive-change.org/" },
-  { name: "Lodi Animal Services Foundation", city: "Lodi", state: "CA", url: "https://www.thelasf.org/" },
-  { name: "El Dorado County German Shepherd Rescue", city: "Shingle Springs", state: "CA", url: "https://www.grcgla.org/" },
-  { name: "Golden Retriever Club Of Greater Los Angeles", city: "Los Angeles", state: "CA", url: "https://www.grcgla.org/" },
-  { name: "Whitman County Humane Society", city: "Pullman", state: "WA", url: "https://www.whitmanpets.org/" },
-  { name: "Forget Me Not Animal Rescue", city: "Joliet", state: "IL", url: "https://forgetmenotrescue.com/" },
-  { name: "Bakersfield SPCA", city: "Bakersfield", state: "CA", url: "https://bakersfieldspca.org/" },
-  { name: "Better Together Pet Resource Center", city: "Niagara Falls", state: "NY", url: "https://www.bettertogetherpetresourcecenter.org/" },
-  { name: "The Animal Pad", city: "San Diego", state: "CA", url: "https://theanimalpad.org/" },
-  { name: "Relay For Rescue Inc.", city: "Longmont", state: "CO", url: "http://relayforrescue.com/" },
-  { name: "Hard Luck Animal Welfare Advocates", city: "Sacramento", state: "CA", url: "https://www.hardluckawa.org/" },
-  { name: "Triad Golden Retriever Rescue", city: "Greensboro", state: "NC", url: "https://tgrr.org/" },
-  { name: "PAALS", city: "Columbia", state: "SC", url: "http://paals.org/" },
-  { name: "It's a Pittie Rescue", city: "Morris", state: "IL", url: "http://rescueapittie.org/" },
-  { name: "New York Bully Crew", city: "East Patchogue", state: "NY", url: "https://www.nybullycrew.org/" },
-  { name: "Footbridge Foundation", city: "San Antonio", state: "TX", url: "https://www.footbridgefoundation.org/" },
-];
 
 const ITEMS_PER_PAGE = 25;
 
@@ -122,7 +96,7 @@ const MissionPage = () => {
             <div className="text-center mb-8">
               <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Our Network</h2>
               <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Supported Rescue Organizations</h3>
-              <p className="text-muted-foreground">Showing {filtered.length} of 216+ partner organizations</p>
+              <p className="text-muted-foreground">Showing {filtered.length} of {TOTAL_PARTNER_COUNT}+ partner organizations</p>
             </div>
 
             <div className="max-w-4xl mx-auto">
@@ -148,9 +122,13 @@ const MissionPage = () => {
                     {displayed.map((org, i) => (
                       <tr key={org.name} className={i % 2 === 0 ? "bg-background" : "bg-secondary/50"}>
                         <td className="py-3 px-4 text-sm">
-                          <a href={org.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            {org.name}
-                          </a>
+                          {org.url ? (
+                            <a href={org.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              {org.name}
+                            </a>
+                          ) : (
+                            <span className="text-foreground">{org.name}</span>
+                          )}
                         </td>
                         <td className="py-3 px-4 text-sm text-muted-foreground hidden md:table-cell">{org.city}</td>
                         <td className="py-3 px-4 text-sm text-muted-foreground">{org.state}</td>

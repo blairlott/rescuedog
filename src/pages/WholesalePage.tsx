@@ -18,7 +18,6 @@ import bottleRose from "@/assets/bottles/rose.png";
 import bottlePinotNoir from "@/assets/bottles/pinot-noir.png";
 import bottleSparklingDemiSec from "@/assets/bottles/sparkling-demi-sec.png";
 import bottleSparklingRose from "@/assets/bottles/sparkling-rose.png";
-import brandLogo from "@/assets/brand/logo.png";
 import brandLogoFull from "@/assets/brand/logo-full.png";
 
 const regions = [

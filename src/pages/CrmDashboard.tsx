@@ -102,7 +102,11 @@ export default function CrmDashboard() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="my-accounts">My Accounts</TabsTrigger>
+          {SALES_MANAGERS.map((mgr) => (
+            <TabsTrigger key={mgr.name} value={mgr.name.toLowerCase().replace(/\s+/g, '-')}>
+              {mgr.name} ({mgr.region})
+            </TabsTrigger>
+          ))}
           <TabsTrigger value="active">Active</TabsTrigger>
           <TabsTrigger value="prospects">Prospects</TabsTrigger>
           <TabsTrigger value="all-accounts">All Accounts</TabsTrigger>

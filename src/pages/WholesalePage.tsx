@@ -273,19 +273,35 @@ const WholesalePage = () => {
               Download bottle shots, tech sheets, and logo assets for your menus, marketing, and displays.
             </p>
 
-            {/* Logo */}
-            <div className="max-w-xs mx-auto mb-16 text-center">
-              <h3 className="font-display text-xl font-bold text-foreground mb-4">Logo</h3>
-              <a href={brandLogoFull} target="_blank" rel="noopener noreferrer" download className="block">
-                <img
-                  src={brandLogoFull}
-                  alt="Rescue Dog Wines Logo"
-                  className="mx-auto h-24 object-contain mb-3"
-                />
-                <span className="text-sm text-primary hover:underline flex items-center justify-center gap-1">
-                  <Download className="h-3 w-3" /> Download Logo
-                </span>
-              </a>
+            {/* Logo & Media Kit */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-10 mb-16">
+              <div className="text-center">
+                <h3 className="font-display text-xl font-bold text-foreground mb-4">Logo</h3>
+                <a href={brandLogoFull} target="_blank" rel="noopener noreferrer" download className="block">
+                  <img
+                    src={brandLogoFull}
+                    alt="Rescue Dog Wines Logo"
+                    className="mx-auto h-24 object-contain mb-3"
+                  />
+                  <span className="text-sm text-primary hover:underline flex items-center justify-center gap-1">
+                    <Download className="h-3 w-3" /> Download Logo
+                  </span>
+                </a>
+              </div>
+              <div className="text-center">
+                <h3 className="font-display text-xl font-bold text-foreground mb-4">Media Kit</h3>
+                <a
+                  href="/assets/tech-sheets/media-kit.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-2 p-6 rounded-lg border border-border hover:border-primary/40 bg-card transition-colors"
+                >
+                  <FileText className="h-10 w-10 text-primary" />
+                  <span className="text-sm text-primary hover:underline flex items-center gap-1">
+                    <Download className="h-3 w-3" /> Download Media Kit (PDF)
+                  </span>
+                </a>
+              </div>
             </div>
 
             {/* Bottle Shots */}

@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
   { label: "MERCH", to: "/merch" },
   { label: "ABOUT", to: "/about" },
   { label: "MISSION", to: "/mission" },
+  { label: "DONATION", to: "/donation" },
   { label: "EVENTS", to: "/events" },
 ];
 

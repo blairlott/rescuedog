@@ -161,6 +161,7 @@ export default function CrmDashboard() {
                     <TableHead>Buyer</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Last Order</TableHead>
                     <TableHead>City, State</TableHead>
                     <TableHead>Rep</TableHead>
                     <TableHead className="w-[120px]">Actions</TableHead>

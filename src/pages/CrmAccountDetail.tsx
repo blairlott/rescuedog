@@ -15,6 +15,7 @@ export default function CrmAccountDetail() {
   const { data: account, isLoading } = useSalesAccount(id);
   const { data: activities = [] } = useAccountActivities(id);
   const addActivity = useAddActivity();
+  const upsertAccount = useUpsertAccount();
   const [activityText, setActivityText] = useState("");
   const [activityType, setActivityType] = useState("note");
   const [editOpen, setEditOpen] = useState(false);

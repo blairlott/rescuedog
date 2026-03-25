@@ -14,6 +14,7 @@ import { BulkImportDialog } from "@/components/crm/BulkImportDialog";
 import { US_STATES } from "@/lib/usStates";
 import { toast } from "sonner";
 import type { SalesAccount } from "@/hooks/useSalesAccounts";
+import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 
 const statusColors: Record<string, string> = {
   prospect: "bg-muted text-muted-foreground",

@@ -9,6 +9,7 @@ import { ShopifyProduct } from "@/lib/shopify";
 import { isWineProduct, isRescueDogDomain } from "@/lib/productUtils";
 import MerchHomePage from "./MerchHomePage";
 import { useState, useRef, useCallback } from "react";
+import heroRedBlend from "@/assets/hero-red-blend.jpg";
 
 const instagramPosts = [
   {

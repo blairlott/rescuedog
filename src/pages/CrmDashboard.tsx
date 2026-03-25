@@ -125,6 +125,11 @@ export default function CrmDashboard() {
           )}
         </TabsList>
 
+        {activeTab === "approvals" ? (
+          <div className="mt-4">
+            <ApprovalQueueTab />
+          </div>
+        ) : (
         <div className="mt-4 space-y-4">
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

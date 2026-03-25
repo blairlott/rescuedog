@@ -51,30 +51,30 @@ export default function CrmDashboard() {
   const upsertAccount = useUpsertAccount();
 
   const repNames = [...new Set(accounts.map((a) => a.rep_name).filter(Boolean))] as string[];
-  // Ensure sales managers always appear in rep dropdown
   for (const mgr of SALES_MANAGERS) {
     if (mgr.name && !repNames.includes(mgr.name)) repNames.push(mgr.name);
   }
+  const distRepNames = [...new Set(accounts.map((a) => a.distributor_rep).filter(Boolean))] as string[];
   const myName = roleInfo?.profile?.full_name || "";
 
   // Filter accounts by tab
   const filteredAccounts = accounts.filter((a) => {
+    // Distributor rep tabs
+    if (activeTab.startsWith("dist-rep:")) {
+      const distName = activeTab.replace("dist-rep:", "");
+      return a.distributor_rep?.toLowerCase() === distName.toLowerCase();
+    }
     const managerTab = SALES_MANAGERS.find(m => m.tabId === activeTab);
     if (managerTab) {
       if (managerTab.name) {
         return a.rep_name?.toLowerCase() === managerTab.name.toLowerCase();
       }
-      // Empty name tab (GA/Southeast) — show accounts in GA region not assigned to other managers
       const otherManagerNames = SALES_MANAGERS.filter(m => m.name).map(m => m.name.toLowerCase());
       return !otherManagerNames.includes((a.rep_name || '').toLowerCase());
     }
-    if (activeTab === "prospects") {
-      return a.status === "prospect";
-    }
-    if (activeTab === "active") {
-      return a.status === "active";
-    }
-    return true; // all-accounts
+    if (activeTab === "prospects") return a.status === "prospect";
+    if (activeTab === "active") return a.status === "active";
+    return true;
   });
 
   const stats = {
@@ -107,10 +107,15 @@ export default function CrmDashboard() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           {SALES_MANAGERS.map((mgr) => (
             <TabsTrigger key={mgr.tabId} value={mgr.tabId}>
               {mgr.name ? `${mgr.name} (${mgr.region})` : mgr.region}
+            </TabsTrigger>
+          ))}
+          {distRepNames.map((name) => (
+            <TabsTrigger key={`dist-rep:${name}`} value={`dist-rep:${name}`}>
+              📦 {name}
             </TabsTrigger>
           ))}
           <TabsTrigger value="active">Active</TabsTrigger>
@@ -172,17 +177,21 @@ export default function CrmDashboard() {
           {isLoading ? (
             <p className="text-muted-foreground">Loading...</p>
           ) : (
-            <div className="border border-border">
-              <Table>
+            <div className="border border-border overflow-x-auto">
+              <Table className="min-w-[1200px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Account</TableHead>
                     <TableHead>Buyer</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Last Order</TableHead>
                     <TableHead>City, State</TableHead>
-                    <TableHead>Rep</TableHead>
+                    <TableHead>Distributor</TableHead>
+                    <TableHead>Dist. Rep</TableHead>
+                    <TableHead>Sales Rep</TableHead>
                     <TableHead className="w-[120px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -190,7 +199,13 @@ export default function CrmDashboard() {
                   {filteredAccounts.map((a) => (
                     <TableRow key={a.id}>
                       <TableCell className="font-medium">{a.account_name}</TableCell>
-                      <TableCell>{a.buyer_name || "—"}</TableCell>
+                      <TableCell className="text-xs">{a.buyer_name || "—"}</TableCell>
+                      <TableCell className="text-xs">
+                        {a.phone ? <a href={`tel:${a.phone}`} className="text-primary hover:underline">{a.phone}</a> : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {a.email ? <a href={`mailto:${a.email}`} className="text-primary hover:underline">{a.email}</a> : "—"}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">
                           {a.premise_type === "on" ? "On Premise" : "Off Premise"}
@@ -212,7 +227,29 @@ export default function CrmDashboard() {
                           );
                         })()}
                       </TableCell>
-                      <TableCell>{[a.city, a.state].filter(Boolean).join(", ") || "—"}</TableCell>
+                      <TableCell className="text-xs">{[a.city, a.state].filter(Boolean).join(", ") || "—"}</TableCell>
+                      <TableCell className="text-xs">{a.distributor || "—"}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={a.distributor_rep || ""}
+                          onValueChange={(v) => {
+                            upsertAccount.mutate(
+                              { id: a.id, account_name: a.account_name, distributor_rep: v === "none" ? null : v },
+                              { onSuccess: () => toast.success(`Dist. rep set to ${v === "none" ? "none" : v}`) }
+                            );
+                          }}
+                        >
+                          <SelectTrigger className="h-7 w-[120px] text-xs">
+                            <SelectValue placeholder="Assign" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {distRepNames.map((name) => (
+                              <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                       <TableCell>
                         {roleInfo?.isAdminOrOwner ? (
                           <Select
@@ -263,7 +300,7 @@ export default function CrmDashboard() {
                   ))}
                   {filteredAccounts.length === 0 && (
                     <TableRow>
-                       <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                       <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                         No accounts found
                       </TableCell>
                     </TableRow>

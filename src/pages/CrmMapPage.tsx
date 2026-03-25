@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import L from "leaflet";
 import { Link } from "react-router-dom";
 import { useSalesAccounts, useUpsertAccount } from "@/hooks/useSalesAccounts";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { US_STATES } from "@/lib/usStates";
@@ -18,11 +19,15 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-const makePremiseIcon = (type: string) =>
+const MARKER_COLORS = {
+  mine: "red",
+  prospect: "gold",
+  others: "blue",
+} as const;
+
+const makeColorIcon = (color: string) =>
   new L.Icon({
-    iconUrl: type === "on"
-      ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png"
-      : "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
+    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
     shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
     iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
   });
@@ -34,6 +39,9 @@ export default function CrmMapPage() {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const upsertAccount = useUpsertAccount();
+  const { data: roleInfo } = useUserRole();
+
+  const myName = roleInfo?.profile?.full_name || "";
 
   const { data: accounts = [] } = useSalesAccounts({
     state: stateFilter || undefined,
@@ -47,7 +55,13 @@ export default function CrmMapPage() {
     ? [mappable[0].latitude!, mappable[0].longitude!]
     : [33.749, -84.388];
 
-  // Initialize map with vanilla Leaflet
+  const getMarkerColor = useCallback((account: typeof accounts[0]) => {
+    if (account.status === "prospect") return MARKER_COLORS.prospect;
+    if (myName && account.rep_name?.toLowerCase() === myName.toLowerCase()) return MARKER_COLORS.mine;
+    return MARKER_COLORS.others;
+  }, [myName]);
+
+  // Initialize map
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
@@ -57,8 +71,6 @@ export default function CrmMapPage() {
     }).addTo(map);
 
     mapRef.current = map;
-
-    // Fix map size after render
     setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
@@ -67,26 +79,26 @@ export default function CrmMapPage() {
     };
   }, []);
 
-  // Update markers when data changes
+  // Update markers
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    // Clear existing markers
     map.eachLayer((layer) => {
       if (layer instanceof L.Marker) map.removeLayer(layer);
     });
 
-    // Add markers
     mappable.forEach((a) => {
+      const color = getMarkerColor(a);
       const marker = L.marker([a.latitude!, a.longitude!], {
-        icon: makePremiseIcon(a.premise_type || "off"),
+        icon: makeColorIcon(color),
       }).addTo(map);
 
       marker.bindPopup(`
         <div style="min-width:150px">
           <p style="font-weight:bold;margin:0 0 4px">${a.account_name}</p>
-          <p style="font-size:12px;margin:0 0 2px">${a.premise_type === "on" ? "On Premise" : "Off Premise"}</p>
+          <p style="font-size:12px;margin:0 0 2px">${a.premise_type === "on" ? "On Premise" : "Off Premise"} · ${a.status || "prospect"}</p>
+          ${a.rep_name ? `<p style="font-size:12px;margin:0 0 2px">Rep: ${a.rep_name}</p>` : ""}
           ${a.city ? `<p style="font-size:12px;margin:0 0 4px">${a.city}, ${a.state}</p>` : ""}
           <a href="/crm/account/${a.id}" style="font-size:12px">View Details →</a>
         </div>
@@ -97,7 +109,7 @@ export default function CrmMapPage() {
       const bounds = L.latLngBounds(mappable.map((a) => [a.latitude!, a.longitude!]));
       map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [mappable]);
+  }, [mappable, getMarkerColor]);
 
   const geocodeAll = useCallback(async () => {
     if (unmapped.length === 0) { toast.info("All accounts are already geocoded"); return; }
@@ -142,6 +154,14 @@ export default function CrmMapPage() {
             <SelectItem value="off">Off Premise</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-red-500" /> My Accounts</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-yellow-400" /> Prospects</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-blue-500" /> Other Reps</span>
+        </div>
+
         <div className="flex items-center gap-3 ml-auto">
           <span className="text-sm text-muted-foreground">
             {mappable.length} of {accounts.length} mapped

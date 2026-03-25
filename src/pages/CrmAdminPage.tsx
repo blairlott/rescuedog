@@ -37,7 +37,6 @@ const roleBadgeColors: Record<string, string> = {
   regional_manager: "bg-indigo-100 text-indigo-800",
   state_manager: "bg-purple-100 text-purple-800",
   brand_ambassador: "bg-amber-100 text-amber-800",
-  sales_rep: "bg-muted text-muted-foreground",
 };
 
 export default function CrmAdminPage() {

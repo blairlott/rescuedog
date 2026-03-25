@@ -1,8 +1,7 @@
+import { useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { MapPin } from "lucide-react";
 
 const storeLocatorLinks = [
   {
@@ -23,7 +22,24 @@ const storeLocatorLinks = [
   },
 ];
 
+const GRAPPOS_UID = "TG-5727723373";
+
 const StoreLocatorPage = () => {
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://locator.grappos.com/embed.js";
+    script.async = true;
+    script.onload = () => {
+      (window as any).GrapposLocator?.init({
+        uid: GRAPPOS_UID,
+        target: "#grappos-locator",
+      });
+    };
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -57,15 +73,7 @@ const StoreLocatorPage = () => {
         {/* Grappos Store Locator Embed */}
         <section className="pb-12 md:pb-16">
           <div className="container mx-auto px-4">
-            <div className="w-full max-w-5xl mx-auto overflow-hidden rounded-lg border border-border">
-              <iframe
-                src="https://locator.grappos.com/TG-5727723373"
-                title="Rescue Dog Wines Store Locator"
-                className="w-full border-0"
-                style={{ height: "600px" }}
-                allow="geolocation"
-              />
-            </div>
+            <div id="grappos-locator" className="w-full max-w-5xl mx-auto overflow-hidden rounded-lg border border-border" style={{ minHeight: "600px" }} />
           </div>
         </section>
 

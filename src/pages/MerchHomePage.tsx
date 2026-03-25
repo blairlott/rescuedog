@@ -6,17 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight, Building2, Loader2 } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
-import { isWineProduct, isRescueDogDomain } from "@/lib/productUtils";
-import MerchHomePage from "./MerchHomePage";
+import { isWineProduct } from "@/lib/productUtils";
 
-const Index = () => {
-  if (isRescueDogDomain()) {
-    return <MerchHomePage />;
-  }
-
+const MerchHomePage = () => {
   const { data: products, isLoading } = useProducts(50);
 
-  const wines = products?.filter((p: ShopifyProduct) => isWineProduct(p)) || [];
   const merch = products?.filter((p: ShopifyProduct) => !isWineProduct(p)) || [];
 
   return (
@@ -25,20 +19,20 @@ const Index = () => {
 
       {/* Hero */}
       <section className="relative h-[70vh] min-h-[500px] flex items-center bg-foreground">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1920')] bg-cover bg-center opacity-60" />
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1920')] bg-cover bg-center opacity-60" />
         <div className="relative container mx-auto px-4">
           <p className="text-primary-foreground/80 text-sm tracking-brand uppercase mb-4">
-            Our wine is for the dogs
+            Gear up for the dogs
           </p>
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 max-w-3xl leading-tight">
-            Award-Winning Wines with a Purpose
+            Merch & Accessories That Make a Difference
           </h1>
           <Button
             asChild
             size="lg"
             className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
           >
-            <Link to="/wines">Shop Wines</Link>
+            <Link to="/shop">Shop Now</Link>
           </Button>
         </div>
       </section>
@@ -52,7 +46,7 @@ const Index = () => {
                 50% of our PROFITS SUPPORT RESCUE ORGANIZATIONS
               </h2>
               <p className="text-foreground leading-relaxed mb-4">
-                At Rescue Dog Wines, we craft award-winning wines from sustainable grapes. Enjoy our wines knowing half our profits support animal rescue organizations.
+                At Rescue Dog, we create products you'll love — knowing half our profits support animal rescue organizations across the country.
               </p>
               <p className="text-foreground mb-6">
                 We ship to most of the US from our online store!
@@ -67,8 +61,8 @@ const Index = () => {
             </div>
             <div className="aspect-[4/3] bg-secondary overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1474722883778-792e7990302f?w=800"
-                alt="Wine bottle with dog"
+                src="https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800"
+                alt="Rescue dog with merchandise"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -76,12 +70,12 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Featured Wines */}
-      <section className="py-16">
+      {/* Merch Grid */}
+      <section className="py-16 bg-secondary">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-10">
-            <h2 className="text-2xl font-bold text-foreground">Our Wines</h2>
-            <Link to="/wines" className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 uppercase tracking-brand">
+            <h2 className="text-2xl font-bold text-foreground">Our Products</h2>
+            <Link to="/shop" className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 uppercase tracking-brand">
               View All <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -89,36 +83,17 @@ const Index = () => {
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : wines.length === 0 ? (
-            <p className="text-center text-muted-foreground py-12">No wines found.</p>
+          ) : merch.length === 0 ? (
+            <p className="text-center text-muted-foreground py-12">No products found.</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              {wines.slice(0, 10).map((product: ShopifyProduct) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {merch.map((product: ShopifyProduct) => (
                 <ProductCard key={product.node.id} product={product} />
               ))}
             </div>
           )}
         </div>
       </section>
-
-      {/* Merch Section */}
-      {merch.length > 0 && (
-        <section className="py-16 bg-secondary">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-10">
-              <h2 className="text-2xl font-bold text-foreground">Merch & Accessories</h2>
-              <Link to="/shop" className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 uppercase tracking-brand">
-                View All <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {merch.slice(0, 4).map((product: ShopifyProduct) => (
-                <ProductCard key={product.node.id} product={product} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* About Section */}
       <section className="py-16 md:py-20">
@@ -127,7 +102,7 @@ const Index = () => {
             <div className="aspect-[4/3] bg-secondary overflow-hidden">
               <img
                 src="https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800"
-                alt="Wine vineyard"
+                alt="Our mission"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -137,7 +112,7 @@ const Index = () => {
                 Responsible, Sustainable, Exceptional.
               </h2>
               <p className="text-foreground leading-relaxed mb-6">
-                Our wines are crafted from sustainably grown grapes in California's finest vineyards. We believe in creating exceptional wines while giving back to the community.
+                We believe in creating exceptional products while giving back to the community. Every purchase helps support rescue dogs in need.
               </p>
               <Button
                 asChild
@@ -161,7 +136,7 @@ const Index = () => {
               Wholesale & B2B Partners
             </h2>
             <p className="text-primary-foreground/80 max-w-xl mx-auto mb-6">
-              Restaurants, retailers, and distributors — get volume pricing and dedicated support for your business.
+              Retailers and distributors — get volume pricing and dedicated support for your business.
             </p>
             <Button
               asChild
@@ -179,4 +154,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default MerchHomePage;

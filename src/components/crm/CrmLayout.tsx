@@ -37,7 +37,7 @@ export default function CrmLayout() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="h-screen bg-background flex overflow-hidden">
       {/* Sidebar */}
       <aside className="w-56 border-r border-border bg-card flex flex-col shrink-0">
         <div className="p-4 border-b border-border">

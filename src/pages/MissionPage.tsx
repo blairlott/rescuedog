@@ -148,7 +148,7 @@ const MissionPage = () => {
                   </thead>
                   <tbody>
                     {displayed.map((org, i) => (
-                      <tr key={org.name} className={i % 2 === 0 ? "bg-background" : "bg-secondary/50"}>
+                      <tr key={`${org.name}-${org.city}-${org.state}`} className={i % 2 === 0 ? "bg-background" : "bg-secondary/50"}>
                         <td className="py-3 px-4 text-sm">
                           {org.url ? (
                             <a href={org.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">

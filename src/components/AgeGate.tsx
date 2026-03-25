@@ -19,16 +19,22 @@ function needsAgeGate(pathname: string): boolean {
 export function AgeGate({ children }: { children: React.ReactNode }) {
   const [verified, setVerified] = useState<boolean | null>(null);
   const [denied, setDenied] = useState(false);
+  const [remember, setRemember] = useState(true);
   const location = useLocation();
 
   useEffect(() => {
     const stored = localStorage.getItem("rdw-age-verified");
-    if (stored === "true") setVerified(true);
+    const session = sessionStorage.getItem("rdw-age-verified");
+    if (stored === "true" || session === "true") setVerified(true);
     else setVerified(false);
   }, []);
 
   const handleYes = () => {
-    localStorage.setItem("rdw-age-verified", "true");
+    if (remember) {
+      localStorage.setItem("rdw-age-verified", "true");
+    } else {
+      sessionStorage.setItem("rdw-age-verified", "true");
+    }
     setVerified(true);
   };
 
@@ -36,11 +42,8 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
     setDenied(true);
   };
 
-  // Skip age gate on merch-only routes
   if (!needsAgeGate(location.pathname)) return <>{children}</>;
-
-  if (verified === null) return null; // loading
-
+  if (verified === null) return null;
   if (verified) return <>{children}</>;
 
   return (
@@ -59,12 +62,12 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
         ) : (
           <>
             <h2 className="text-xl font-bold text-foreground mb-2">
-              Are you 21 or older?
+              Are you over 21 years of age?
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
               You must be of legal drinking age to enter this site.
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center mb-6">
               <Button
                 onClick={handleYes}
                 size="lg"
@@ -81,6 +84,15 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
                 No
               </Button>
             </div>
+            <label className="flex items-center justify-center gap-2 cursor-pointer text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="accent-primary"
+              />
+              Remember me
+            </label>
           </>
         )}
       </div>

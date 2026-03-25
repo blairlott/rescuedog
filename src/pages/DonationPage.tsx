@@ -290,6 +290,25 @@ const DonationPage = () => {
                           {service}
                         </label>
                       ))}
+                      <label className="flex items-start gap-2 cursor-pointer text-sm text-foreground">
+                        <Checkbox
+                          checked={servicesOtherChecked}
+                          onCheckedChange={(v) => {
+                            setServicesOtherChecked(v === true);
+                            if (!v) setServicesOther("");
+                          }}
+                          className="mt-0.5"
+                        />
+                        Other
+                      </label>
+                      {servicesOtherChecked && (
+                        <Input
+                          placeholder="Please specify..."
+                          value={servicesOther}
+                          onChange={(e) => setServicesOther(e.target.value)}
+                          className="ml-6 max-w-sm"
+                        />
+                      )}
                     </div>
                   </div>
 

@@ -27,6 +27,7 @@ export default function CrmDashboard() {
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<SalesAccount | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const { data: accounts = [], isLoading } = useSalesAccounts({
     state: stateFilter || undefined,

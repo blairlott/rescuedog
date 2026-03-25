@@ -53,7 +53,7 @@ export default function CrmDashboard() {
   const repNames = [...new Set(accounts.map((a) => a.rep_name).filter(Boolean))] as string[];
   // Ensure sales managers always appear in rep dropdown
   for (const mgr of SALES_MANAGERS) {
-    if (!repNames.includes(mgr.name)) repNames.push(mgr.name);
+    if (mgr.name && !repNames.includes(mgr.name)) repNames.push(mgr.name);
   }
   const myName = roleInfo?.profile?.full_name || "";
 

@@ -22,7 +22,7 @@ L.Icon.Default.mergeOptions({
 const MARKER_COLORS = {
   mine: "red",
   prospect: "gold",
-  others: "blue",
+  active: "blue",
 } as const;
 
 const makeColorIcon = (color: string) =>

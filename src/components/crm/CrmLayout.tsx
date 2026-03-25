@@ -13,6 +13,7 @@ export default function CrmLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: roleInfo } = useUserRole();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const navItems = [
     { to: "/crm", label: "Dashboard", icon: LayoutDashboard },

@@ -35,7 +35,7 @@ export function Header() {
       <div className="bg-primary text-primary-foreground text-center py-2.5 px-4">
         <p className="text-sm tracking-wide">
           {isMerch
-            ? "Free shipping on orders over $50! Every purchase supports rescue dogs."
+            ? "50% of our profits supports rescue organizations."
             : "Use code STOCKUP for 20% off your order of 12 bottles or more (shipping included)!"}
         </p>
       </div>

@@ -83,6 +83,8 @@ const DonationPage = () => {
   const [dataConsent, setDataConsent] = useState(false);
   const [personalAck, setPersonalAck] = useState(false);
   const [affiliateInterest, setAffiliateInterest] = useState("");
+  const [servicesOther, setServicesOther] = useState("");
+  const [servicesOtherChecked, setServicesOtherChecked] = useState(false);
 
   const toggleService = (service: string) => {
     setServices((prev) =>
@@ -154,7 +156,7 @@ const DonationPage = () => {
         .insert({
           org_name: orgName,
           is_nonprofit: isNonprofit,
-          services,
+          services: servicesOtherChecked && servicesOther ? [...services, `Other: ${servicesOther}`] : services,
           mailing_street: mailingStreet,
           mailing_city: mailingCity,
           mailing_state: mailingState,
@@ -288,6 +290,25 @@ const DonationPage = () => {
                           {service}
                         </label>
                       ))}
+                      <label className="flex items-start gap-2 cursor-pointer text-sm text-foreground">
+                        <Checkbox
+                          checked={servicesOtherChecked}
+                          onCheckedChange={(v) => {
+                            setServicesOtherChecked(v === true);
+                            if (!v) setServicesOther("");
+                          }}
+                          className="mt-0.5"
+                        />
+                        Other
+                      </label>
+                      {servicesOtherChecked && (
+                        <Input
+                          placeholder="Please specify..."
+                          value={servicesOther}
+                          onChange={(e) => setServicesOther(e.target.value)}
+                          className="ml-6 max-w-sm"
+                        />
+                      )}
                     </div>
                   </div>
 

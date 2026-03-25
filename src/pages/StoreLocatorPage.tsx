@@ -73,15 +73,7 @@ const StoreLocatorPage = () => {
         {/* Grappos Store Locator Embed */}
         <section className="pb-12 md:pb-16">
           <div className="container mx-auto px-4">
-            <div className="w-full max-w-5xl mx-auto overflow-hidden rounded-lg border border-border">
-              <iframe
-                src="https://locator.grappos.com/TG-5727723373"
-                title="Rescue Dog Wines Store Locator"
-                className="w-full border-0"
-                style={{ height: "600px" }}
-                allow="geolocation"
-              />
-            </div>
+            <div id="grappos-locator" className="w-full max-w-5xl mx-auto overflow-hidden rounded-lg border border-border" style={{ minHeight: "600px" }} />
           </div>
         </section>
 

@@ -96,7 +96,7 @@ const MissionPage = () => {
             <div className="text-center mb-8">
               <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Our Network</h2>
               <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Supported Rescue Organizations</h3>
-              <p className="text-muted-foreground">Showing {filtered.length} of 216+ partner organizations</p>
+              <p className="text-muted-foreground">Showing {filtered.length} of {TOTAL_PARTNER_COUNT}+ partner organizations</p>
             </div>
 
             <div className="max-w-4xl mx-auto">

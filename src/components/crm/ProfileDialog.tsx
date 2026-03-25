@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Users } from "lucide-react";
 
 interface Props {
   open: boolean;

@@ -179,7 +179,31 @@ export default function CrmDashboard() {
                         </span>
                       </TableCell>
                       <TableCell>{[a.city, a.state].filter(Boolean).join(", ") || "—"}</TableCell>
-                      <TableCell>{a.rep_name || "—"}</TableCell>
+                      <TableCell>
+                        {roleInfo?.isAdminOrOwner ? (
+                          <Select
+                            value={a.rep_name || ""}
+                            onValueChange={(v) => {
+                              upsertAccount.mutate(
+                                { id: a.id, account_name: a.account_name, rep_name: v === "unassigned" ? null : v },
+                                { onSuccess: () => toast.success(`Reassigned to ${v === "unassigned" ? "nobody" : v}`) }
+                              );
+                            }}
+                          >
+                            <SelectTrigger className="h-7 w-[130px] text-xs">
+                              <SelectValue placeholder="Assign rep" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unassigned">Unassigned</SelectItem>
+                              {repNames.map((name) => (
+                                <SelectItem key={name} value={name}>{name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          a.rep_name || "—"
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Link to={`/crm/account/${a.id}`}>

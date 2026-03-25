@@ -127,6 +127,14 @@ export function AccountFormDialog({ open, onOpenChange, account }: Props) {
               <Label>Distributor Rep</Label>
               <Input value={form.distributor_rep} onChange={(e) => set("distributor_rep", e.target.value)} />
             </div>
+            <div className="space-y-2">
+              <Label>Dist. Rep Email</Label>
+              <Input type="email" value={form.distributor_rep_email} onChange={(e) => set("distributor_rep_email", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Dist. Rep Phone</Label>
+              <Input type="tel" value={form.distributor_rep_phone} onChange={(e) => set("distributor_rep_phone", e.target.value)} />
+            </div>
           </div>
 
           <div className="border-t border-border pt-4">

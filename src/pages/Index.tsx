@@ -201,27 +201,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* About Us Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4 max-w-3xl text-center">
-            <p className="text-xs tracking-brand uppercase text-muted-foreground mb-2">About us:</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-primary leading-tight mb-4">
-              Responsible, Sustainable, Exceptional.
-            </h2>
-            <p className="text-foreground leading-relaxed mb-6">
-              Our mission is to support the placement of as many rescue dogs as possible into loving homes through wine sales and donations. Our business is producing fine wines; our passion is helping rescue dogs.
-            </p>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="uppercase tracking-brand text-sm font-bold border-foreground text-foreground hover:bg-foreground hover:text-background px-10"
-            >
-              <Link to="/about">Learn About Our Mission</Link>
-            </Button>
-        </div>
-      </section>
-
       {/* Video Background Section */}
       <section className="relative h-[60vh] min-h-[400px] flex items-center overflow-hidden">
         <iframe
@@ -248,6 +227,27 @@ const Index = () => {
         >
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </button>
+      </section>
+
+      {/* About Us Section */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-4 max-w-3xl text-center">
+            <p className="text-xs tracking-brand uppercase text-muted-foreground mb-2">About us:</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-primary leading-tight mb-4">
+              Responsible, Sustainable, Exceptional.
+            </h2>
+            <p className="text-foreground leading-relaxed mb-6">
+              Our mission is to support the placement of as many rescue dogs as possible into loving homes through wine sales and donations. Our business is producing fine wines; our passion is helping rescue dogs.
+            </p>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="uppercase tracking-brand text-sm font-bold border-foreground text-foreground hover:bg-foreground hover:text-background px-10"
+            >
+              <Link to="/about">Learn About Our Mission</Link>
+            </Button>
+        </div>
       </section>
 
       {/* Lodi Rules */}

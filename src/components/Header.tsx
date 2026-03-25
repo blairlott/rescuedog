@@ -14,7 +14,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "SHOP WINES", to: "/wines" },
-  { label: "WINE CLUB", to: "/wines" },
+  { label: "WINE CLUB", to: "/club" },
   { label: "FIND A STORE", to: "/store-locator" },
   { label: "MERCH", to: "/merch" },
   { label: "ABOUT", to: "/about" },

@@ -15,6 +15,10 @@ import WholesalePage from "./pages/WholesalePage";
 import AboutPage from "./pages/AboutPage";
 import MissionPage from "./pages/MissionPage";
 import EventsPage from "./pages/EventsPage";
+import VineyardPage from "./pages/VineyardPage";
+import ContactPage from "./pages/ContactPage";
+import WineClubPage from "./pages/WineClubPage";
+import DonationPage from "./pages/DonationPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +37,10 @@ function AppContent() {
       <Route path="/about" element={<AboutPage />} />
       <Route path="/mission" element={<MissionPage />} />
       <Route path="/events" element={<EventsPage />} />
+      <Route path="/vineyard" element={<VineyardPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/club" element={<WineClubPage />} />
+      <Route path="/donation" element={<DonationPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

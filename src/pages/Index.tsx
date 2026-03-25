@@ -119,6 +119,18 @@ const Index = () => {
           </div>
         </div>
 
+        {/* Sound Toggle */}
+        <button
+          onClick={() => {
+            setIsMuted(!isMuted);
+            if (videoRef.current) videoRef.current.muted = !isMuted;
+          }}
+          className="absolute bottom-8 right-8 text-primary-foreground/60 hover:text-primary-foreground transition-colors z-10 bg-foreground/30 backdrop-blur-sm p-2 rounded-full"
+          aria-label={isMuted ? "Unmute video" : "Mute video"}
+        >
+          {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+        </button>
+
         {/* Scroll Indicator */}
         <button
           onClick={scrollToContent}

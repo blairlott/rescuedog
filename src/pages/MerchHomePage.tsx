@@ -71,11 +71,11 @@ const MerchHomePage = () => {
       </section>
 
       {/* Merch Grid */}
-      <section className="py-16 bg-secondary">
+      <section id="products" className="py-16 bg-secondary">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-10">
             <h2 className="text-2xl font-bold text-foreground">Our Products</h2>
-            <Link to="/shop" className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 uppercase tracking-brand">
+            <Link to="/merch#products" className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 uppercase tracking-brand">
               View All <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

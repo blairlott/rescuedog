@@ -19,17 +19,28 @@ const CmsLoginPage = () => {
     setLoading(true);
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      toast({ title: "Login failed", description: error.message, variant: "destructive" });
+    if (error || !data.user) {
+      toast({
+        title: "Login failed",
+        description: error?.message || "Unable to sign in with those credentials.",
+        variant: "destructive",
+      });
       setLoading(false);
       return;
     }
 
     // Check if user has CMS access
-    const { data: isCmsEditor } = await supabase.rpc("is_cms_editor", { _user_id: data.user.id });
-    if (!isCmsEditor) {
+    const { data: isCmsEditor, error: roleError } = await supabase.rpc("is_cms_editor", {
+      _user_id: data.user.id,
+    });
+
+    if (roleError || !isCmsEditor) {
       await supabase.auth.signOut();
-      toast({ title: "Access denied", description: "Your account does not have CMS editing permissions.", variant: "destructive" });
+      toast({
+        title: "Access denied",
+        description: roleError?.message || "Your account does not have CMS editing permissions.",
+        variant: "destructive",
+      });
       setLoading(false);
       return;
     }

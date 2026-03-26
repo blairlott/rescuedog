@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CmsAuthContextType {
@@ -16,29 +17,45 @@ export const CmsAuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data } = await supabase.rpc("is_cms_editor", { _user_id: session.user.id });
-        setIsCmsEditor(!!data);
+    let isMounted = true;
+
+    const syncCmsAccess = async (session: Session | null) => {
+      if (!isMounted) return;
+      setLoading(true);
+
+      if (session?.user?.id) {
+        const { data, error } = await supabase.rpc("is_cms_editor", {
+          _user_id: session.user.id,
+        });
+
+        if (!isMounted) return;
+        setIsCmsEditor(!error && !!data);
       } else {
         setIsCmsEditor(false);
       }
-      setLoading(false);
+
+      if (isMounted) setLoading(false);
     };
 
-    check();
+    const initialize = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      await syncCmsAccess(session);
+    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        const { data } = await supabase.rpc("is_cms_editor", { _user_id: session.user.id });
-        setIsCmsEditor(!!data);
-      } else {
-        setIsCmsEditor(false);
-      }
+    void initialize();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void syncCmsAccess(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const logout = async () => {

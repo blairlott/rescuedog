@@ -1,7 +1,7 @@
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 
 export interface CartSettings {
-  freeShippingThreshold: number;
+  freeShippingBottleCount: number;
   halfCaseCount: number;
   fullCaseCount: number;
   fullCaseDiscount: number;
@@ -9,7 +9,7 @@ export interface CartSettings {
 }
 
 const DEFAULTS: CartSettings = {
-  freeShippingThreshold: 150,
+  freeShippingBottleCount: 6,
   halfCaseCount: 6,
   fullCaseCount: 12,
   fullCaseDiscount: 10,
@@ -20,7 +20,7 @@ export function useCartSettings(): CartSettings & { isLoading: boolean } {
   const { content, isLoading } = useCmsContent("cart_settings");
 
   return {
-    freeShippingThreshold: Number(getCmsValue(content, "thresholds", "free_shipping", String(DEFAULTS.freeShippingThreshold))),
+    freeShippingBottleCount: Number(getCmsValue(content, "thresholds", "free_shipping_bottles", String(DEFAULTS.freeShippingBottleCount))),
     halfCaseCount: Number(getCmsValue(content, "thresholds", "half_case_count", String(DEFAULTS.halfCaseCount))),
     fullCaseCount: Number(getCmsValue(content, "thresholds", "full_case_count", String(DEFAULTS.fullCaseCount))),
     fullCaseDiscount: Number(getCmsValue(content, "thresholds", "full_case_discount", String(DEFAULTS.fullCaseDiscount))),

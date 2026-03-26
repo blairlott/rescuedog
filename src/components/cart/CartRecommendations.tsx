@@ -41,10 +41,10 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
       quantity: 1,
       selectedOptions: variant.selectedOptions || [],
     });
-    const newTotal = cartTotal + parseFloat(variant.price.amount);
-    const remaining = freeShippingThreshold - newTotal;
+    const currentBottles = useCartStore.getState().items.reduce((sum, i) => sum + i.quantity, 0);
+    const remaining = freeShippingBottleCount - currentBottles;
     if (remaining > 0) {
-      toast.success(`${product.node.title} added! $${remaining.toFixed(2)} to free shipping`, { position: "top-center" });
+      toast.success(`${product.node.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for free shipping`, { position: "top-center" });
     } else {
       toast.success(`${product.node.title} added! You qualify for free shipping! 🎉`, { position: "top-center" });
     }

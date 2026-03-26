@@ -55,7 +55,7 @@ export const CartDrawer = () => {
             <>
               {/* Free shipping progress bar */}
               <div className="flex-shrink-0 mb-3">
-                <FreeShippingBar cartTotal={totalPrice} />
+                <FreeShippingBar totalBottles={totalItems} />
               </div>
 
               {/* Cart items */}

@@ -1,15 +1,18 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Plus, Pencil, Trash2, LogIn, LogOut } from "lucide-react";
+import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Link } from "react-router-dom";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRescuePartners, RescuePartner } from "@/hooks/useRescuePartners";
 import { RescuePartnerDialog } from "@/components/RescuePartnerDialog";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useCmsAuth } from "@/hooks/useCmsAuth";
+import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
+import { CmsEditButton } from "@/components/cms/CmsEditButton";
+import { CmsEditDialog } from "@/components/cms/CmsEditDialog";
+import { CmsToolbar } from "@/components/cms/CmsToolbar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,43 +42,17 @@ const MissionPage = () => {
   const [pageSize, setPageSize] = useState(25);
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const { toast } = useToast();
+  const { isCmsEditor: isAdmin } = useCmsAuth();
+  const { content, upsert } = useCmsContent("mission");
+  const [editSection, setEditSection] = useState<string | null>(null);
 
-  // Admin auth state
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-
-  // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<RescuePartner | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: partners = [], isLoading, addPartner, updatePartner, deletePartner } = useRescuePartners();
 
-  // Check if current user is admin/owner
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data } = await supabase.rpc("is_admin_or_owner", { _user_id: session.user.id });
-        setIsAdmin(!!data);
-      } else {
-        setIsAdmin(false);
-      }
-      setCheckingAuth(false);
-    };
-    checkAdmin();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        const { data } = await supabase.rpc("is_admin_or_owner", { _user_id: session.user.id });
-        setIsAdmin(!!data);
-      } else {
-        setIsAdmin(false);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+  const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
 
   const filtered = useMemo(() => {
     let result = partners;
@@ -111,40 +88,58 @@ const MissionPage = () => {
     return sortDir === "asc" ? <ArrowUp className="h-3 w-3 ml-1 inline" /> : <ArrowDown className="h-3 w-3 ml-1 inline" />;
   };
 
-  const handleSearch = (value: string) => {
-    setSearch(value);
-    setCurrentPage(1);
-  };
-
-  const handlePageSizeChange = (value: string) => {
-    setPageSize(Number(value));
-    setCurrentPage(1);
-  };
+  const handleSearch = (value: string) => { setSearch(value); setCurrentPage(1); };
+  const handlePageSizeChange = (value: string) => { setPageSize(Number(value)); setCurrentPage(1); };
 
   const handleSave = (data: { id?: string; name: string; city: string; state: string; url: string }) => {
     if (data.id) {
-      updatePartner.mutate({ id: data.id, name: data.name, city: data.city, state: data.state, url: data.url }, {
-        onSuccess: () => setDialogOpen(false),
-      });
+      updatePartner.mutate({ id: data.id, name: data.name, city: data.city, state: data.state, url: data.url }, { onSuccess: () => setDialogOpen(false) });
     } else {
-      addPartner.mutate({ name: data.name, city: data.city, state: data.state, url: data.url }, {
-        onSuccess: () => setDialogOpen(false),
-      });
+      addPartner.mutate({ name: data.name, city: data.city, state: data.state, url: data.url }, { onSuccess: () => setDialogOpen(false) });
     }
   };
 
   const handleDelete = () => {
     if (deleteId) {
-      deletePartner.mutate(deleteId, {
-        onSuccess: () => setDeleteId(null),
-      });
+      deletePartner.mutate(deleteId, { onSuccess: () => setDeleteId(null) });
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setIsAdmin(false);
-    toast({ title: "Logged out" });
+  const handleCmsSave = (sectionKey: string) => (values: Record<string, string>) => {
+    upsert.mutate({ sectionKey, content: values }, { onSuccess: () => setEditSection(null) });
+  };
+
+  const sectionFields: Record<string, { title: string; fields: any[] }> = {
+    hero: {
+      title: "Hero Section",
+      fields: [
+        { key: "title", label: "Title", type: "text", value: getVal("hero", "title", "Our Mission") },
+        { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("hero", "subtitle", "Through wine sales and donations, our mission is to support the placement of as many rescue dogs as possible into loving homes.") },
+        { key: "image", label: "Background Image URL", type: "url", value: getVal("hero", "image", "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1920") },
+      ],
+    },
+    how_we_give: {
+      title: "How We Give",
+      fields: [
+        { key: "heading", label: "Heading", type: "text", value: getVal("how_we_give", "heading", "How We Give") },
+        { key: "paragraph1", label: "Paragraph 1", type: "textarea", value: getVal("how_we_give", "paragraph1", "We support rescue dogs in many ways, ranging from wine donations for fundraising events, to endowments, to volunteering our time and personally fostering dogs.") },
+        { key: "paragraph2", label: "Paragraph 2", type: "textarea", value: getVal("how_we_give", "paragraph2", "We prefer to donate wine for fundraising. We tend to donate locally in California or in other states where we have distribution, so our partners can donate on our behalf. If you're really close by, our team can potentially show up and pour our wines at your rescue organization's event!") },
+      ],
+    },
+    partner_cta: {
+      title: "Partner CTA",
+      fields: [
+        { key: "heading", label: "Heading", type: "text", value: getVal("partner_cta", "heading", "Partner with Us") },
+        { key: "body", label: "Body Text", type: "textarea", value: getVal("partner_cta", "body", "If you'd like for us to consider your rescue organization for a donation, please complete our Donation Request form. We appreciate your understanding that we are a small, family-owned winery with limited resources.") },
+      ],
+    },
+    quote: {
+      title: "Quote",
+      fields: [
+        { key: "text", label: "Quote Text", type: "text", value: getVal("quote", "text", "Our wine is for the dogs.") },
+        { key: "attribution", label: "Attribution", type: "text", value: getVal("quote", "attribution", "— Rescue Dog Wines") },
+      ],
+    },
   };
 
   return (
@@ -153,11 +148,12 @@ const MissionPage = () => {
       <main className="flex-1">
         {/* Hero */}
         <section className="relative h-[50vh] min-h-[400px] flex items-center bg-foreground">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1920')] bg-cover bg-center opacity-50" />
+          <CmsEditButton onClick={() => setEditSection("hero")} />
+          <div className="absolute inset-0 bg-cover bg-center opacity-50" style={{ backgroundImage: `url('${getVal("hero", "image", "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=1920")}')` }} />
           <div className="relative container mx-auto px-4 text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">Our Mission</h1>
+            <h1 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">{getVal("hero", "title", "Our Mission")}</h1>
             <p className="text-primary-foreground/80 text-lg max-w-2xl mx-auto">
-              Through wine sales and donations, our mission is to support the placement of as many rescue dogs as possible into loving homes.
+              {getVal("hero", "subtitle", "Through wine sales and donations, our mission is to support the placement of as many rescue dogs as possible into loving homes.")}
             </p>
           </div>
         </section>
@@ -186,15 +182,16 @@ const MissionPage = () => {
         </section>
 
         {/* How We Give */}
-        <section className="py-16 bg-secondary">
+        <section className="py-16 bg-secondary relative">
+          <CmsEditButton onClick={() => setEditSection("how_we_give")} />
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">How We Give</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">{getVal("how_we_give", "heading", "How We Give")}</h2>
               <p className="text-foreground leading-relaxed mb-4">
-                We support rescue dogs in many ways, ranging from wine donations for fundraising events, to endowments, to volunteering our time and personally fostering dogs.
+                {getVal("how_we_give", "paragraph1", "We support rescue dogs in many ways, ranging from wine donations for fundraising events, to endowments, to volunteering our time and personally fostering dogs.")}
               </p>
               <p className="text-foreground leading-relaxed">
-                We prefer to donate wine for fundraising. We tend to donate locally in California or in other states where we have distribution, so our partners can donate on our behalf. If you're really close by, our team can potentially show up and pour our wines at your rescue organization's event!
+                {getVal("how_we_give", "paragraph2", "We prefer to donate wine for fundraising. We tend to donate locally in California or in other states where we have distribution, so our partners can donate on our behalf. If you're really close by, our team can potentially show up and pour our wines at your rescue organization's event!")}
               </p>
             </div>
           </div>
@@ -212,15 +209,10 @@ const MissionPage = () => {
             {/* Admin toolbar */}
             {isAdmin && (
               <div className="max-w-4xl mx-auto mb-4 flex items-center justify-between bg-primary/10 border border-primary/20 rounded-md px-4 py-3">
-                <span className="text-sm font-medium text-foreground">Admin Mode</span>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={() => { setEditingPartner(null); setDialogOpen(true); }} className="gap-1">
-                    <Plus className="h-4 w-4" /> Add Partner
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={handleLogout} className="gap-1">
-                    <LogOut className="h-4 w-4" /> Logout
-                  </Button>
-                </div>
+                <span className="text-sm font-medium text-foreground">Edit Mode</span>
+                <Button size="sm" onClick={() => { setEditingPartner(null); setDialogOpen(true); }} className="gap-1">
+                  <Plus className="h-4 w-4" /> Add Partner
+                </Button>
               </div>
             )}
 
@@ -280,9 +272,7 @@ const MissionPage = () => {
                         <tr key={org.id} className={i % 2 === 0 ? "bg-background" : "bg-secondary/50"}>
                           <td className="py-3 px-4 text-sm">
                             {org.url ? (
-                              <a href={org.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                {org.name}
-                              </a>
+                              <a href={org.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{org.name}</a>
                             ) : (
                               <span className="text-foreground">{org.name}</span>
                             )}
@@ -308,38 +298,17 @@ const MissionPage = () => {
                 </table>
               </div>
 
-              {/* Pagination Controls */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="gap-1"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="gap-1">
                     <ChevronLeft className="h-4 w-4" /> Previous
                   </Button>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <Button
-                        key={page}
-                        variant={page === currentPage ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(page)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {page}
-                      </Button>
+                      <Button key={page} variant={page === currentPage ? "default" : "outline"} size="sm" onClick={() => setCurrentPage(page)} className="w-8 h-8 p-0">{page}</Button>
                     ))}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="gap-1"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="gap-1">
                     Next <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -353,11 +322,12 @@ const MissionPage = () => {
         </section>
 
         {/* Partner CTA */}
-        <section className="py-16 bg-secondary">
+        <section className="py-16 bg-secondary relative">
+          <CmsEditButton onClick={() => setEditSection("partner_cta")} />
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-4">Partner with Us</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-4">{getVal("partner_cta", "heading", "Partner with Us")}</h2>
             <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-              If you'd like for us to consider your rescue organization for a donation, please complete our Donation Request form. We appreciate your understanding that we are a small, family-owned winery with limited resources.
+              {getVal("partner_cta", "body", "If you'd like for us to consider your rescue organization for a donation, please complete our Donation Request form. We appreciate your understanding that we are a small, family-owned winery with limited resources.")}
             </p>
             <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6">
               <Link to="/donation">Donation Request Form</Link>
@@ -366,18 +336,20 @@ const MissionPage = () => {
         </section>
 
         {/* Quote */}
-        <section className="py-16">
+        <section className="py-16 relative">
+          <CmsEditButton onClick={() => setEditSection("quote")} />
           <div className="container mx-auto px-4 text-center">
             <blockquote className="text-2xl md:text-3xl font-bold text-primary italic max-w-3xl mx-auto leading-relaxed">
-              "Our wine is for the dogs."
+              "{getVal("quote", "text", "Our wine is for the dogs.")}"
             </blockquote>
-            <p className="text-muted-foreground mt-4 text-sm tracking-brand uppercase">— Rescue Dog Wines</p>
+            <p className="text-muted-foreground mt-4 text-sm tracking-brand uppercase">{getVal("quote", "attribution", "— Rescue Dog Wines")}</p>
           </div>
         </section>
       </main>
       <Footer />
+      <CmsToolbar />
 
-      {/* Add/Edit Dialog */}
+      {/* Partner Add/Edit Dialog */}
       <RescuePartnerDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -391,18 +363,26 @@ const MissionPage = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Partner</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to remove this rescue partner? This action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Are you sure you want to remove this rescue partner? This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* CMS Section Edit Dialogs */}
+      {editSection && sectionFields[editSection] && (
+        <CmsEditDialog
+          open={!!editSection}
+          onOpenChange={(open) => !open && setEditSection(null)}
+          title={sectionFields[editSection].title}
+          fields={sectionFields[editSection].fields}
+          onSave={handleCmsSave(editSection)}
+          isSaving={upsert.isPending}
+        />
+      )}
     </div>
   );
 };

@@ -25,6 +25,8 @@ export const useRescuePartners = () => {
       if (error) throw error;
       return data as RescuePartner[];
     },
+    retry: 3,
+    staleTime: 5 * 60 * 1000,
   });
 
   const addPartner = useMutation({

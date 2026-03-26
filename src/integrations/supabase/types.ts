@@ -340,6 +340,63 @@ export type Database = {
           },
         ]
       }
+      subscription_signups: {
+        Row: {
+          created_at: string
+          discount_percent: number
+          email: string
+          first_name: string
+          frequency: string
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          product_handle: string | null
+          product_title: string | null
+          status: string
+          subscription_type: string
+          tier: string | null
+          variant_id: string | null
+          wine_preferences: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          discount_percent?: number
+          email: string
+          first_name: string
+          frequency?: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          product_handle?: string | null
+          product_title?: string | null
+          status?: string
+          subscription_type?: string
+          tier?: string | null
+          variant_id?: string | null
+          wine_preferences?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          discount_percent?: number
+          email?: string
+          first_name?: string
+          frequency?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          product_handle?: string | null
+          product_title?: string | null
+          status?: string
+          subscription_type?: string
+          tier?: string | null
+          variant_id?: string | null
+          wine_preferences?: string[] | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

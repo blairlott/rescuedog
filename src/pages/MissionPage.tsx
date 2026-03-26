@@ -119,10 +119,10 @@ const MissionPage = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setIsAdmin(false);
-    toast({ title: "Logged out" });
+  const handleCmsSave = (sectionKey: string) => (values: Record<string, string>) => {
+    upsert.mutate({ sectionKey, content: values }, {
+      onSuccess: () => setEditSection(null),
+    });
   };
 
   return (

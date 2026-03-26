@@ -158,8 +158,11 @@ const AccountPage = () => {
             </Button>
           </div>
 
-          <Tabs defaultValue="profile">
+          <Tabs defaultValue="for-you">
             <TabsList className="mb-6">
+              <TabsTrigger value="for-you" className="gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" /> For You
+              </TabsTrigger>
               <TabsTrigger value="profile" className="gap-1.5">
                 <User className="h-3.5 w-3.5" /> Profile
               </TabsTrigger>
@@ -173,6 +176,14 @@ const AccountPage = () => {
                 <Gift className="h-3.5 w-3.5" /> Referrals
               </TabsTrigger>
             </TabsList>
+
+            {/* For You Tab */}
+            <TabsContent value="for-you">
+              <PersonalizedRecommendations
+                favoriteHandles={favorites.map((f: any) => f.product_handle)}
+                winePreferences={profile?.wine_preferences || []}
+              />
+            </TabsContent>
 
             {/* Profile Tab */}
             <TabsContent value="profile">

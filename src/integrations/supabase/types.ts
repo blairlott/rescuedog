@@ -158,6 +158,33 @@ export type Database = {
         }
         Relationships: []
       }
+      rescue_partners: {
+        Row: {
+          city: string
+          created_at: string
+          id: string
+          name: string
+          state: string
+          url: string
+        }
+        Insert: {
+          city?: string
+          created_at?: string
+          id?: string
+          name: string
+          state?: string
+          url?: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          id?: string
+          name?: string
+          state?: string
+          url?: string
+        }
+        Relationships: []
+      }
       sales_accounts: {
         Row: {
           account_name: string

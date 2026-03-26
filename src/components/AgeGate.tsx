@@ -11,6 +11,8 @@ function isMerchOnlyRoute(pathname: string): boolean {
 }
 
 function needsAgeGate(pathname: string): boolean {
+  const lower = pathname.toLowerCase();
+  if (lower.startsWith("/cms") || lower.startsWith("/crm")) return false;
   if (isRescueDogDomain() && isMerchOnlyRoute(pathname)) return false;
   if (pathname === "/merch") return false;
   return true;

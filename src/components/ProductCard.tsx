@@ -29,6 +29,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore(state => state.addItem);
   const isLoading = useCartStore(state => state.isLoading);
   const { freeShippingBottleCount } = useCartSettings();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const { node } = product;
   const image = node.images.edges[0]?.node;
   const price = node.priceRange.minVariantPrice;

@@ -113,8 +113,8 @@ export function Header() {
 
           {/* Right: Account + Cart */}
           <div className="flex items-center justify-end gap-3 min-w-0">
-            <Link to="#" className="hidden md:block p-1 text-foreground hover:text-primary transition-colors">
-              <User className="h-5 w-5" />
+            <Link to={user ? "/account" : "/login"} className="hidden md:block p-1 text-foreground hover:text-primary transition-colors" title={user ? "My Account" : "Sign In"}>
+              {user ? <User className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
             </Link>
             <CartDrawer />
           </div>

@@ -190,13 +190,10 @@ const MissionPage = () => {
             {/* Admin toolbar */}
             {isAdmin && (
               <div className="max-w-4xl mx-auto mb-4 flex items-center justify-between bg-primary/10 border border-primary/20 rounded-md px-4 py-3">
-                <span className="text-sm font-medium text-foreground">Admin Mode</span>
+                <span className="text-sm font-medium text-foreground">Edit Mode</span>
                 <div className="flex items-center gap-2">
                   <Button size="sm" onClick={() => { setEditingPartner(null); setDialogOpen(true); }} className="gap-1">
                     <Plus className="h-4 w-4" /> Add Partner
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={handleLogout} className="gap-1">
-                    <LogOut className="h-4 w-4" /> Logout
                   </Button>
                 </div>
               </div>

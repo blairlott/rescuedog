@@ -148,10 +148,19 @@ const ProductDetail = () => {
                 </div>
               </div>
 
+              {/* Subscribe & Save */}
+              <SubscribeAndSave
+                price={parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount) * quantity}
+                onSubscriptionChange={(isSub, freq) => {
+                  setSubscribeMode(isSub);
+                  setSubFrequency(freq);
+                }}
+              />
+
               {/* Bulk pricing note */}
               {quantity >= 6 && (
-                <div className="bg-gold/10 border border-gold/30 rounded-md p-3 text-sm">
-                  <strong className="text-gold">Bulk order!</strong> Contact us at <Link to="/wholesale" className="text-primary underline">wholesale</Link> for volume pricing on orders of 6+ bottles.
+                <div className="bg-brand-gold/10 border border-brand-gold/30 rounded-md p-3 text-sm">
+                  <strong className="text-brand-gold">Bulk order!</strong> Contact us at <Link to="/wholesale" className="text-primary underline">wholesale</Link> for volume pricing on orders of 6+ bottles.
                 </div>
               )}
 
@@ -165,6 +174,11 @@ const ProductDetail = () => {
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : !selectedVariant?.availableForSale ? (
                   "Sold Out"
+                ) : subscribeMode ? (
+                  <>
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Subscribe — ${(parseFloat(selectedVariant.price.amount) * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}/shipment
+                  </>
                 ) : (
                   <>
                     <ShoppingCart className="w-4 h-4 mr-2" />

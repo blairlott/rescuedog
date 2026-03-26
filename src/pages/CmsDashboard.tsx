@@ -463,6 +463,11 @@ const CmsDashboard = () => {
               </div>
             </div>
           </TabsContent>
+
+          {/* ── Settings Tab ──────────────────────────────── */}
+          <TabsContent value="settings">
+            <CartSettingsPanel />
+          </TabsContent>
         </Tabs>
       </main>
 

@@ -3,13 +3,13 @@ import { Truck, PartyPopper } from "lucide-react";
 import { useCartSettings } from "@/hooks/useCartSettings";
 
 interface FreeShippingBarProps {
-  cartTotal: number;
+  totalBottles: number;
 }
 
-export function FreeShippingBar({ cartTotal }: FreeShippingBarProps) {
-  const { freeShippingThreshold } = useCartSettings();
-  const remaining = Math.max(0, freeShippingThreshold - cartTotal);
-  const progress = Math.min(100, (cartTotal / freeShippingThreshold) * 100);
+export function FreeShippingBar({ totalBottles }: FreeShippingBarProps) {
+  const { freeShippingBottleCount } = useCartSettings();
+  const remaining = Math.max(0, freeShippingBottleCount - totalBottles);
+  const progress = Math.min(100, (totalBottles / freeShippingBottleCount) * 100);
   const qualified = remaining <= 0;
 
   return (
@@ -26,7 +26,7 @@ export function FreeShippingBar({ cartTotal }: FreeShippingBarProps) {
           <>
             <Truck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <span className="text-foreground">
-              Add <strong>${remaining.toFixed(2)}</strong> more for <strong>FREE shipping</strong>
+              Add <strong>{remaining} more bottle{remaining !== 1 ? 's' : ''}</strong> for <strong>FREE shipping</strong>
             </span>
           </>
         )}

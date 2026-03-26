@@ -60,7 +60,7 @@ type CmsContentRow = {
 function CartSettingsPanel() {
   const { content, upsert } = useCmsContent("cart_settings");
   const [values, setValues] = useState({
-    free_shipping: "",
+    free_shipping_bottles: "",
     half_case_count: "",
     full_case_count: "",
     full_case_discount: "",
@@ -71,7 +71,7 @@ function CartSettingsPanel() {
   useEffect(() => {
     if (!initialized && content) {
       setValues({
-        free_shipping: getCmsValue(content, "thresholds", "free_shipping", String(CART_DEFAULTS.freeShippingThreshold)),
+        free_shipping_bottles: getCmsValue(content, "thresholds", "free_shipping_bottles", String(CART_DEFAULTS.freeShippingBottleCount)),
         half_case_count: getCmsValue(content, "thresholds", "half_case_count", String(CART_DEFAULTS.halfCaseCount)),
         full_case_count: getCmsValue(content, "thresholds", "full_case_count", String(CART_DEFAULTS.fullCaseCount)),
         full_case_discount: getCmsValue(content, "thresholds", "full_case_discount", String(CART_DEFAULTS.fullCaseDiscount)),
@@ -89,7 +89,7 @@ function CartSettingsPanel() {
   };
 
   const fields = [
-    { key: "free_shipping", label: "Free Shipping Threshold ($)", description: "Customers must spend at least this amount to qualify for free shipping" },
+    { key: "free_shipping_bottles", label: "Free Shipping Bottle Count", description: "Customers must add at least this many bottles to qualify for free shipping" },
     { key: "half_case_count", label: "Half-Case Bottle Count", description: "Number of bottles in a half-case (used for upsell messaging)" },
     { key: "full_case_count", label: "Full-Case Bottle Count", description: "Number of bottles in a full case" },
     { key: "full_case_discount", label: "Full-Case Discount (%)", description: "Percentage discount shown when customer reaches a full case" },

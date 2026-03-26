@@ -16,7 +16,7 @@ const ProductDetail = () => {
   const { data: product, isLoading } = useProductByHandle(handle || "");
   const addItem = useCartStore(state => state.addItem);
   const cartLoading = useCartStore(state => state.isLoading);
-  const { freeShippingThreshold } = useCartSettings();
+  const { freeShippingBottleCount } = useCartSettings();
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -63,10 +63,10 @@ const ProductDetail = () => {
       quantity,
       selectedOptions: selectedVariant.selectedOptions || [],
     });
-    const currentTotal = useCartStore.getState().items.reduce((sum, i) => sum + (parseFloat(i.price.amount) * i.quantity), 0);
-    const remaining = freeShippingThreshold - currentTotal;
+    const currentBottles = useCartStore.getState().items.reduce((sum, i) => sum + i.quantity, 0);
+    const remaining = freeShippingBottleCount - currentBottles;
     if (remaining > 0) {
-      toast.success(`${product.title} added! $${remaining.toFixed(2)} more for free shipping`, { position: "top-center" });
+      toast.success(`${product.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for free shipping`, { position: "top-center" });
     } else {
       toast.success(`${product.title} added! You qualify for free shipping! 🎉`, { position: "top-center" });
     }

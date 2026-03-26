@@ -10,6 +10,9 @@ import { isWineProduct, isRescueDogDomain } from "@/lib/productUtils";
 import MerchHomePage from "./MerchHomePage";
 import { useState, useRef, useCallback } from "react";
 import heroRedBlend from "@/assets/hero-red-blend-v2.jpg";
+import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
+import { CmsEditButton } from "@/components/cms/CmsEditButton";
+import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 
 const instagramPosts = [
   {
@@ -44,10 +47,65 @@ const instagramPosts = [
   },
 ];
 
+type EditSection = "hero" | "mission" | "about_us" | "lodi" | "club_cta" | null;
+
 const Index = () => {
   const { data: products, isLoading } = useProducts(50);
   const [isMuted, setIsMuted] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { content, upsert } = useCmsContent("homepage");
+  const [editSection, setEditSection] = useState<EditSection>(null);
+
+  const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
+
+  const handleSave = (sectionKey: string) => (values: Record<string, string>) => {
+    upsert.mutate({ sectionKey, content: values }, {
+      onSuccess: () => setEditSection(null),
+    });
+  };
+
+  const sectionFields: Record<string, { title: string; fields: CmsField[] }> = {
+    hero: {
+      title: "Homepage Hero",
+      fields: [
+        { key: "headline", label: "Headline (line 1)", type: "text", value: getVal("hero", "headline", "Our Wine") },
+        { key: "headline2", label: "Headline (line 2)", type: "text", value: getVal("hero", "headline2", "Is For The") },
+        { key: "headline3", label: "Headline (line 3)", type: "text", value: getVal("hero", "headline3", "Dogs") },
+        { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("hero", "subtitle", "Award-winning, sustainable wines. 50% of our profits support animal rescue organizations.") },
+      ],
+    },
+    mission: {
+      title: "Mission Statement",
+      fields: [
+        { key: "tagline", label: "Tagline", type: "text", value: getVal("mission", "tagline", "Our wine is for the dogs") },
+        { key: "heading", label: "Heading", type: "text", value: getVal("mission", "heading", "50% of our PROFITS SUPPORT RESCUE ORGANIZATIONS") },
+        { key: "paragraph1", label: "Paragraph 1", type: "textarea", value: getVal("mission", "paragraph1", "At Rescue Dog Wines®, we craft award-winning wines from sustainable grapes. Enjoy our wines knowing half our profits support animal rescue organizations.") },
+        { key: "paragraph2", label: "Paragraph 2", type: "textarea", value: getVal("mission", "paragraph2", "Rescue Dog™ ships to most of the US from our online store!") },
+        { key: "image", label: "Image URL", type: "url", value: getVal("mission", "image", "https://rescuedogwines.com/wp-content/uploads/2023/09/rescue-dog-wines-1.jpg") },
+      ],
+    },
+    about_us: {
+      title: "About Us Section",
+      fields: [
+        { key: "heading", label: "Heading", type: "text", value: getVal("about_us", "heading", "Responsible, Sustainable, Exceptional.") },
+        { key: "body", label: "Body", type: "textarea", value: getVal("about_us", "body", "Our mission is to support the placement of as many rescue dogs as possible into loving homes through wine sales and donations. Our business is producing fine wines; our passion is helping rescue dogs.") },
+      ],
+    },
+    lodi: {
+      title: "Lodi Rules Section",
+      fields: [
+        { key: "heading", label: "Heading", type: "text", value: getVal("lodi", "heading", "Lodi Rules Certified Green") },
+        { key: "body", label: "Body", type: "textarea", value: getVal("lodi", "body", "Our grapes are grown under one of the most rigorous third-party sustainability certifications in the wine industry, ensuring every bottle is as responsible as it is delicious.") },
+      ],
+    },
+    club_cta: {
+      title: "Wine Club CTA",
+      fields: [
+        { key: "heading", label: "Heading", type: "text", value: getVal("club_cta", "heading", "Club") },
+        { key: "body", label: "Body", type: "textarea", value: getVal("club_cta", "body", "Get 20% off wine purchases! Join us in our commitment to support animal rescue organizations and receive regular shipments of award-winning wines — plus perks!") },
+      ],
+    },
+  };
 
   const toggleMute = useCallback(() => {
     const iframe = iframeRef.current;
@@ -77,6 +135,7 @@ const Index = () => {
 
       {/* Hero — Full-bleed image background */}
       <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden">
+        <CmsEditButton onClick={() => setEditSection("hero")} />
         <img
           src={heroRedBlend}
           alt="Friends enjoying Rescue Dog Wines with the 2023 Red Blend"
@@ -87,12 +146,12 @@ const Index = () => {
         <div className="relative container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="max-w-xl">
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-primary-foreground mb-6 leading-[0.9] uppercase">
-              Our Wine<br />
-              Is For The<br />
-              Dogs
+              {getVal("hero", "headline", "Our Wine")}<br />
+              {getVal("hero", "headline2", "Is For The")}<br />
+              {getVal("hero", "headline3", "Dogs")}
             </h1>
             <p className="text-primary-foreground/80 text-lg mb-8 max-w-md">
-              Award-winning, sustainable wines. 50% of our profits support animal rescue organizations.
+              {getVal("hero", "subtitle", "Award-winning, sustainable wines. 50% of our profits support animal rescue organizations.")}
             </p>
             <div className="flex flex-wrap gap-4">
               <Button
@@ -134,19 +193,22 @@ const Index = () => {
       </section>
 
       {/* Mission Statement */}
-      <section id="mission-section" className="py-16 md:py-24">
+      <section id="mission-section" className="py-16 md:py-24 relative">
+        <CmsEditButton onClick={() => setEditSection("mission")} />
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
-              <p className="text-sm tracking-brand uppercase text-primary font-bold mb-2">Our wine is for the dogs</p>
+              <p className="text-sm tracking-brand uppercase text-primary font-bold mb-2">
+                {getVal("mission", "tagline", "Our wine is for the dogs")}
+              </p>
               <h2 className="text-sm font-bold tracking-brand uppercase text-foreground mb-4">
-                50% of our PROFITS SUPPORT RESCUE ORGANIZATIONS
+                {getVal("mission", "heading", "50% of our PROFITS SUPPORT RESCUE ORGANIZATIONS")}
               </h2>
               <p className="text-foreground leading-relaxed mb-4">
-                At Rescue Dog Wines®, we craft award-winning wines from sustainable grapes. Enjoy our wines knowing half our profits support animal rescue organizations.
+                {getVal("mission", "paragraph1", "At Rescue Dog Wines®, we craft award-winning wines from sustainable grapes. Enjoy our wines knowing half our profits support animal rescue organizations.")}
               </p>
               <p className="text-foreground mb-6">
-                Rescue Dog™ ships to most of the US from our online store!
+                {getVal("mission", "paragraph2", "Rescue Dog™ ships to most of the US from our online store!")}
               </p>
               <div className="flex flex-wrap gap-4">
                 <Button
@@ -168,7 +230,7 @@ const Index = () => {
             </div>
             <div className="aspect-[4/3] bg-secondary overflow-hidden">
               <img
-                src="https://rescuedogwines.com/wp-content/uploads/2023/09/rescue-dog-wines-1.jpg"
+                src={getVal("mission", "image", "https://rescuedogwines.com/wp-content/uploads/2023/09/rescue-dog-wines-1.jpg")}
                 alt="Rescue Dog Wines bottles"
                 className="w-full h-full object-cover"
               />
@@ -231,14 +293,15 @@ const Index = () => {
       </section>
 
       {/* About Us Section */}
-      <section className="py-16 md:py-24">
+      <section className="py-16 md:py-24 relative">
+        <CmsEditButton onClick={() => setEditSection("about_us")} />
         <div className="container mx-auto px-4 max-w-3xl text-center">
             <p className="text-xs tracking-brand uppercase text-muted-foreground mb-2">About us:</p>
             <h2 className="text-3xl md:text-4xl font-bold text-primary leading-tight mb-4">
-              Responsible, Sustainable, Exceptional.
+              {getVal("about_us", "heading", "Responsible, Sustainable, Exceptional.")}
             </h2>
             <p className="text-foreground leading-relaxed mb-6">
-              Our mission is to support the placement of as many rescue dogs as possible into loving homes through wine sales and donations. Our business is producing fine wines; our passion is helping rescue dogs.
+              {getVal("about_us", "body", "Our mission is to support the placement of as many rescue dogs as possible into loving homes through wine sales and donations. Our business is producing fine wines; our passion is helping rescue dogs.")}
             </p>
             <Button
               asChild
@@ -252,7 +315,8 @@ const Index = () => {
       </section>
 
       {/* Lodi Rules */}
-      <section className="py-16 bg-secondary">
+      <section className="py-16 bg-secondary relative">
+        <CmsEditButton onClick={() => setEditSection("lodi")} />
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="flex justify-center">
@@ -263,9 +327,11 @@ const Index = () => {
               />
             </div>
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">Lodi Rules Certified Green</h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                {getVal("lodi", "heading", "Lodi Rules Certified Green")}
+              </h2>
               <p className="text-foreground leading-relaxed mb-6">
-                Our grapes are grown under one of the most rigorous third-party sustainability certifications in the wine industry, ensuring every bottle is as responsible as it is delicious.
+                {getVal("lodi", "body", "Our grapes are grown under one of the most rigorous third-party sustainability certifications in the wine industry, ensuring every bottle is as responsible as it is delicious.")}
               </p>
               <Button
                 asChild
@@ -347,13 +413,16 @@ const Index = () => {
       </section>
 
       {/* Wine Club CTA */}
-      <section className="py-16 md:py-24">
+      <section className="py-16 md:py-24 relative">
+        <CmsEditButton onClick={() => setEditSection("club_cta")} />
         <div className="container mx-auto px-4">
           <div className="bg-primary p-8 md:p-16 text-center">
             <p className="text-primary-foreground/80 text-sm uppercase tracking-brand font-bold mb-2">Join Our</p>
-            <h2 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">Club</h2>
+            <h2 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">
+              {getVal("club_cta", "heading", "Club")}
+            </h2>
             <p className="text-primary-foreground/80 text-lg max-w-xl mx-auto mb-4">
-              Get 20% off wine purchases! Join us in our commitment to support animal rescue organizations and receive regular shipments of award-winning wines — plus perks!
+              {getVal("club_cta", "body", "Get 20% off wine purchases! Join us in our commitment to support animal rescue organizations and receive regular shipments of award-winning wines — plus perks!")}
             </p>
             <Button
               asChild
@@ -376,8 +445,8 @@ const Index = () => {
                 View All <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {merch.slice(0, 4).map((product: ShopifyProduct) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              {merch.slice(0, 5).map((product: ShopifyProduct) => (
                 <ProductCard key={product.node.id} product={product} />
               ))}
             </div>
@@ -385,29 +454,39 @@ const Index = () => {
         </section>
       )}
 
-      {/* B2B CTA */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="border border-border p-8 md:p-12 text-center">
-            <Building2 className="h-10 w-10 text-primary mx-auto mb-4" />
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-              Wholesale & B2B Partners
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto mb-6">
-              Restaurants, retailers, and distributors — get volume pricing and dedicated support for your business.
-            </p>
-            <Button
-              asChild
-              size="lg"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10"
-            >
-              <Link to="/wholesale">Learn About Wholesale <ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
+      {/* Wholesale CTA */}
+      <section className="py-12 border-t border-border">
+        <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <Building2 className="h-6 w-6 text-muted-foreground" />
+            <div>
+              <p className="font-bold text-foreground text-sm uppercase tracking-brand">Trade & Media</p>
+              <p className="text-sm text-muted-foreground">Interested in carrying our wines? Let's talk.</p>
+            </div>
           </div>
+          <Button
+            asChild
+            variant="outline"
+            className="uppercase tracking-brand text-xs font-bold border-foreground text-foreground hover:bg-foreground hover:text-background px-8"
+          >
+            <Link to="/wholesale">Learn More</Link>
+          </Button>
         </div>
       </section>
 
       <Footer />
+
+      {/* CMS Edit Dialogs */}
+      {editSection && sectionFields[editSection] && (
+        <CmsEditDialog
+          open={!!editSection}
+          onOpenChange={(open) => { if (!open) setEditSection(null); }}
+          title={sectionFields[editSection].title}
+          fields={sectionFields[editSection].fields}
+          onSave={handleSave(editSection)}
+          isSaving={upsert.isPending}
+        />
+      )}
     </div>
   );
 };

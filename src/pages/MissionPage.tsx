@@ -1,15 +1,28 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Plus, Pencil, Trash2, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Link } from "react-router-dom";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRescuePartners, RescuePartner } from "@/hooks/useRescuePartners";
+import { RescuePartnerDialog } from "@/components/RescuePartnerDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type SortField = "name" | "city" | "state";
 type SortDir = "asc" | "desc";
-import { rescuePartners, TOTAL_PARTNER_COUNT } from "@/data/rescuePartners";
 
 const pillars = [
   { icon: Heart, title: "50% of Profits Donated", desc: "Half of every dollar we earn goes directly to rescue organizations helping dogs find forever homes." },
@@ -17,7 +30,6 @@ const pillars = [
   { icon: Wine, title: "Award-Winning Quality", desc: "Our wines have earned Gold and Double Gold medals at prestigious competitions — great wine for a great cause." },
   { icon: TreePine, title: "Sustainable Farming", desc: "Lodi Rules certified sustainable vineyards ensure we protect the land while producing exceptional grapes." },
 ];
-
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -27,9 +39,46 @@ const MissionPage = () => {
   const [pageSize, setPageSize] = useState(25);
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const { toast } = useToast();
+
+  // Admin auth state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPartner, setEditingPartner] = useState<RescuePartner | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const { data: partners = [], isLoading, addPartner, updatePartner, deletePartner } = useRescuePartners();
+
+  // Check if current user is admin/owner
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data } = await supabase.rpc("is_admin_or_owner", { _user_id: session.user.id });
+        setIsAdmin(!!data);
+      } else {
+        setIsAdmin(false);
+      }
+      setCheckingAuth(false);
+    };
+    checkAdmin();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        const { data } = await supabase.rpc("is_admin_or_owner", { _user_id: session.user.id });
+        setIsAdmin(!!data);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const filtered = useMemo(() => {
-    let result = rescuePartners;
+    let result = partners;
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -42,7 +91,7 @@ const MissionPage = () => {
       return sortDir === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
     });
     return result;
-  }, [search, sortField, sortDir]);
+  }, [search, sortField, sortDir, partners]);
 
   const totalPages = Math.ceil(filtered.length / pageSize);
   const displayed = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -70,6 +119,32 @@ const MissionPage = () => {
   const handlePageSizeChange = (value: string) => {
     setPageSize(Number(value));
     setCurrentPage(1);
+  };
+
+  const handleSave = (data: { id?: string; name: string; city: string; state: string; url: string }) => {
+    if (data.id) {
+      updatePartner.mutate({ id: data.id, name: data.name, city: data.city, state: data.state, url: data.url }, {
+        onSuccess: () => setDialogOpen(false),
+      });
+    } else {
+      addPartner.mutate({ name: data.name, city: data.city, state: data.state, url: data.url }, {
+        onSuccess: () => setDialogOpen(false),
+      });
+    }
+  };
+
+  const handleDelete = () => {
+    if (deleteId) {
+      deletePartner.mutate(deleteId, {
+        onSuccess: () => setDeleteId(null),
+      });
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsAdmin(false);
+    toast({ title: "Logged out" });
   };
 
   return (
@@ -131,8 +206,23 @@ const MissionPage = () => {
             <div className="text-center mb-8">
               <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Our Network</h2>
               <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Supported Rescue Organizations</h3>
-              <p className="text-muted-foreground">Showing {filtered.length} of {TOTAL_PARTNER_COUNT}+ partner organizations</p>
+              <p className="text-muted-foreground">Showing {filtered.length} of {partners.length}+ partner organizations</p>
             </div>
+
+            {/* Admin toolbar */}
+            {isAdmin && (
+              <div className="max-w-4xl mx-auto mb-4 flex items-center justify-between bg-primary/10 border border-primary/20 rounded-md px-4 py-3">
+                <span className="text-sm font-medium text-foreground">Admin Mode</span>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={() => { setEditingPartner(null); setDialogOpen(true); }} className="gap-1">
+                    <Plus className="h-4 w-4" /> Add Partner
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={handleLogout} className="gap-1">
+                    <LogOut className="h-4 w-4" /> Logout
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <div className="max-w-4xl mx-auto">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -177,24 +267,43 @@ const MissionPage = () => {
                       <th className="text-left py-3 px-4 text-sm font-bold text-foreground cursor-pointer select-none" onClick={() => handleSort("name")}>Organization Name <SortIcon field="name" /></th>
                       <th className="text-left py-3 px-4 text-sm font-bold text-foreground hidden md:table-cell cursor-pointer select-none" onClick={() => handleSort("city")}>City <SortIcon field="city" /></th>
                       <th className="text-left py-3 px-4 text-sm font-bold text-foreground cursor-pointer select-none" onClick={() => handleSort("state")}>State <SortIcon field="state" /></th>
+                      {isAdmin && <th className="py-3 px-4 text-sm font-bold text-foreground w-24">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {displayed.map((org, i) => (
-                      <tr key={`${org.name}-${org.city}-${org.state}`} className={i % 2 === 0 ? "bg-background" : "bg-secondary/50"}>
-                        <td className="py-3 px-4 text-sm">
-                          {org.url ? (
-                            <a href={org.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                              {org.name}
-                            </a>
-                          ) : (
-                            <span className="text-foreground">{org.name}</span>
+                    {isLoading ? (
+                      <tr><td colSpan={isAdmin ? 4 : 3} className="py-8 text-center text-muted-foreground">Loading...</td></tr>
+                    ) : displayed.length === 0 ? (
+                      <tr><td colSpan={isAdmin ? 4 : 3} className="py-8 text-center text-muted-foreground">No organizations found</td></tr>
+                    ) : (
+                      displayed.map((org, i) => (
+                        <tr key={org.id} className={i % 2 === 0 ? "bg-background" : "bg-secondary/50"}>
+                          <td className="py-3 px-4 text-sm">
+                            {org.url ? (
+                              <a href={org.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                {org.name}
+                              </a>
+                            ) : (
+                              <span className="text-foreground">{org.name}</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground hidden md:table-cell">{org.city}</td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground">{org.state}</td>
+                          {isAdmin && (
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setEditingPartner(org); setDialogOpen(true); }}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => setDeleteId(org.id)}>
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </td>
                           )}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-muted-foreground hidden md:table-cell">{org.city}</td>
-                        <td className="py-3 px-4 text-sm text-muted-foreground">{org.state}</td>
-                      </tr>
-                    ))}
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -267,6 +376,33 @@ const MissionPage = () => {
         </section>
       </main>
       <Footer />
+
+      {/* Add/Edit Dialog */}
+      <RescuePartnerDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        partner={editingPartner}
+        onSave={handleSave}
+        isSaving={addPartner.isPending || updatePartner.isPending}
+      />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Partner</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this rescue partner? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

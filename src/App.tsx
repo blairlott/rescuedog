@@ -30,6 +30,7 @@ import CrmRoutePlanner from "./pages/CrmRoutePlanner";
 import CrmAdminPage from "./pages/CrmAdminPage";
 import CrmResetPasswordPage from "./pages/CrmResetPasswordPage";
 import CmsLoginPage from "./pages/CmsLoginPage";
+import CmsDashboard from "./pages/CmsDashboard";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ function AppContent() {
       <Route path="/crm/login" element={<CrmLoginPage />} />
       <Route path="/crm/reset-password" element={<CrmResetPasswordPage />} />
       <Route path="/cms/login" element={<CmsLoginPage />} />
+      <Route path="/cms" element={<CmsDashboard />} />
       <Route path="/crm" element={<CrmLayout />}>
         <Route index element={<CrmDashboard />} />
         <Route path="account/:id" element={<CrmAccountDetail />} />

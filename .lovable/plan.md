@@ -1,18 +1,67 @@
 
 
-## Add Page Size Selector to Rescue Partners Table
+## Cart Marketing Features Plan
 
-Add a dropdown selector allowing users to choose how many organizations to display per page (10, 25, 50, 100), matching the DataTables-style pattern from the original site.
+Wine industry e-commerce sites (like Winc, Naked Wines, WTSO) use smart cart nudges to increase AOV. Here's what we'll build:
 
-### Changes
+### Features
 
-**File: `src/pages/MissionPage.tsx`**
+**1. Free Shipping Progress Bar**
+A visual progress bar in the CartDrawer showing how close the customer is to free shipping. Configurable threshold (e.g., $150 or 6 bottles). Shows messages like "Add 2 more bottles for FREE shipping!" with a filled progress indicator.
 
-1. Replace the `ITEMS_PER_PAGE` constant with a `pageSize` state initialized to 25
-2. Add a Select dropdown above the table (next to the search input) with options: 10, 25, 50, 100
-3. When page size changes, reset to page 1
-4. Update all references from `ITEMS_PER_PAGE` to `pageSize`
-5. Import `Select, SelectTrigger, SelectValue, SelectContent, SelectItem` from the existing UI components
+**2. Bottle Count Upsell Banner**
+Contextual nudge when the customer is 1-2 bottles away from a case (12 bottles) or half-case (6 bottles) discount tier. Example: "You're 2 bottles away from a full case -- save 10%!"
 
-Layout: Search input on the left, page size selector on the right, in a flex row above the table. Label: "Show [dropdown] entries".
+**3. Wine Club Savings Callout**
+A persistent banner in the cart showing how much the customer *would* save as a Wine Club member (20% off). Links to the Wine Club signup page. Only shown to non-club members.
+
+**4. "Complete Your Collection" Product Suggestion**
+Below cart items, show 1-2 recommended products from the same category the customer is already buying (e.g., if they have reds, suggest another red). Uses existing Shopify product data.
+
+**5. Add-to-Cart Toast Enhancement**
+After adding an item, the success toast includes a brief nudge like "Add 1 more for free shipping" instead of just "Added to cart."
+
+### Technical Approach
+
+All changes are frontend-only, no new database tables or edge functions needed.
+
+**Files to create:**
+- `src/components/cart/FreeShippingBar.tsx` -- progress bar component with configurable threshold
+- `src/components/cart/CartUpsellBanner.tsx` -- contextual nudge messages (case discount, club savings)
+- `src/components/cart/CartRecommendations.tsx` -- suggested products from existing Shopify data
+
+**Files to modify:**
+- `src/components/CartDrawer.tsx` -- integrate the new components above the item list and between total/checkout
+- `src/components/ProductCard.tsx` -- enhance the add-to-cart toast with shipping nudge
+- `src/pages/ProductDetail.tsx` -- same toast enhancement
+
+**Configuration:**
+- Free shipping threshold: $150 (or 6+ bottles), defined as constants
+- Case discount messaging at 6 and 12 bottle thresholds
+- Wine Club savings calculated at 20% off current cart total
+
+### Cart Drawer Layout (top to bottom)
+
+```text
++----------------------------------+
+| Shopping Cart (header)           |
++----------------------------------+
+| [=====>-------] $42 to free ship |  <-- FreeShippingBar
++----------------------------------+
+| 🍷 Wine A        $25  qty: 2    |
+| 🍷 Wine B        $30  qty: 1    |
++----------------------------------+
+| "Add 1 more bottle for a        |  <-- CartUpsellBanner
+|  half-case & save on shipping!"  |
++----------------------------------+
+| 💡 Wine Club members save $16   |  <-- Club savings callout
+|    on this order. Join now →     |
++----------------------------------+
+| You might also like:             |  <-- CartRecommendations
+| [Wine C thumbnail] Add $22      |
++----------------------------------+
+| Subtotal              $80.00    |
+| [Checkout Button]               |
++----------------------------------+
+```
 

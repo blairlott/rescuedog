@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCartSync } from "@/hooks/useCartSync";
 import { AgeGate } from "@/components/AgeGate";
 import { CmsAuthProvider } from "@/hooks/useCmsAuth";
+import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
 import Index from "./pages/Index";
 import MerchHomePage from "./pages/MerchHomePage";
 import ProductDetail from "./pages/ProductDetail";
@@ -21,6 +22,11 @@ import ContactPage from "./pages/ContactPage";
 import WineClubPage from "./pages/WineClubPage";
 import DonationPage from "./pages/DonationPage";
 import SubscribePage from "./pages/SubscribePage";
+import CustomerLoginPage from "./pages/CustomerLoginPage";
+import CustomerSignupPage from "./pages/CustomerSignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import CustomerResetPasswordPage from "./pages/CustomerResetPasswordPage";
+import AccountPage from "./pages/AccountPage";
 import NotFound from "./pages/NotFound";
 import CrmLoginPage from "./pages/CrmLoginPage";
 import CrmLayout from "./components/crm/CrmLayout";
@@ -57,6 +63,11 @@ function AppContent() {
       <Route path="/club" element={<WineClubPage />} />
       <Route path="/donation" element={<DonationPage />} />
       <Route path="/subscribe" element={<SubscribePage />} />
+      <Route path="/login" element={<CustomerLoginPage />} />
+      <Route path="/signup" element={<CustomerSignupPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<CustomerResetPasswordPage />} />
+      <Route path="/account" element={<AccountPage />} />
       <Route path="/crm/login" element={<CrmLoginPage />} />
       <Route path="/crm/reset-password" element={<CrmResetPasswordPage />} />
       <Route caseSensitive path="/CMS/login" element={<Navigate to="/cms/login" replace />} />
@@ -81,11 +92,13 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <CmsAuthProvider>
-          <AgeGate>
-            <AppContent />
-          </AgeGate>
-        </CmsAuthProvider>
+        <CustomerAuthProvider>
+          <CmsAuthProvider>
+            <AgeGate>
+              <AppContent />
+            </AgeGate>
+          </CmsAuthProvider>
+        </CustomerAuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

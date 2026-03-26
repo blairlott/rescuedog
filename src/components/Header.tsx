@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { Search, Menu, X, User, ShoppingCart } from "lucide-react";
+import { Search, Menu, X, User, LogIn } from "lucide-react";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
 import rdwLogo from "@/assets/rdw-logo.png";
@@ -30,6 +31,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [editSection, setEditSection] = useState<"logos" | "banner" | null>(null);
   const location = useLocation();
+  const { user } = useCustomerAuth();
   const { content, upsert } = useCmsContent("header");
   const merchPaths = ["/merch", "/about", "/mission", "/donation"];
   const isMerch = merchPaths.includes(location.pathname) || isRescueDogDomain();
@@ -111,8 +113,8 @@ export function Header() {
 
           {/* Right: Account + Cart */}
           <div className="flex items-center justify-end gap-3 min-w-0">
-            <Link to="#" className="hidden md:block p-1 text-foreground hover:text-primary transition-colors">
-              <User className="h-5 w-5" />
+            <Link to={user ? "/account" : "/login"} className="hidden md:block p-1 text-foreground hover:text-primary transition-colors" title={user ? "My Account" : "Sign In"}>
+              {user ? <User className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
             </Link>
             <CartDrawer />
           </div>

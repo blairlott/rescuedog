@@ -264,7 +264,9 @@ const MissionPage = () => {
                   </thead>
                   <tbody>
                     {isLoading ? (
-                      <tr><td colSpan={isAdmin ? 4 : 3} className="py-8 text-center text-muted-foreground">Loading...</td></tr>
+                      <tr><td colSpan={isAdmin ? 4 : 3} className="py-8 text-center text-muted-foreground">Loading rescue partners...</td></tr>
+                    ) : error ? (
+                      <tr><td colSpan={isAdmin ? 4 : 3} className="py-8 text-center text-destructive">Error loading partners. Please refresh the page.</td></tr>
                     ) : displayed.length === 0 ? (
                       <tr><td colSpan={isAdmin ? 4 : 3} className="py-8 text-center text-muted-foreground">No organizations found</td></tr>
                     ) : (

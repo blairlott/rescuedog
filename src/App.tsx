@@ -30,6 +30,7 @@ import CrmRoutePlanner from "./pages/CrmRoutePlanner";
 import CrmAdminPage from "./pages/CrmAdminPage";
 import CrmResetPasswordPage from "./pages/CrmResetPasswordPage";
 import CmsLoginPage from "./pages/CmsLoginPage";
+import CmsDashboard from "./pages/CmsDashboard";
 
 const queryClient = new QueryClient();
 

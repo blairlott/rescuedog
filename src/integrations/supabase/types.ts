@@ -41,6 +41,75 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          product_handle: string
+          product_image_url: string | null
+          product_price: string | null
+          product_title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_handle: string
+          product_image_url?: string | null
+          product_price?: string | null
+          product_title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_handle?: string
+          product_image_url?: string | null
+          product_price?: string | null
+          product_title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      customer_profiles: {
+        Row: {
+          birth_date: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          referral_code: string | null
+          referred_by: string | null
+          updated_at: string
+          wine_preferences: string[] | null
+        }
+        Insert: {
+          birth_date?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
+          updated_at?: string
+          wine_preferences?: string[] | null
+        }
+        Update: {
+          birth_date?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
+          updated_at?: string
+          wine_preferences?: string[] | null
+        }
+        Relationships: []
+      }
       donation_requests: {
         Row: {
           affiliate_interest: string | null

@@ -60,7 +60,7 @@ type CmsContentRow = {
 function CartSettingsPanel() {
   const { content, upsert } = useCmsContent("cart_settings");
   const [values, setValues] = useState({
-    free_shipping: "",
+    free_shipping_bottles: "",
     half_case_count: "",
     full_case_count: "",
     full_case_discount: "",
@@ -71,7 +71,7 @@ function CartSettingsPanel() {
   useEffect(() => {
     if (!initialized && content) {
       setValues({
-        free_shipping: getCmsValue(content, "thresholds", "free_shipping", String(CART_DEFAULTS.freeShippingThreshold)),
+        free_shipping_bottles: getCmsValue(content, "thresholds", "free_shipping_bottles", String(CART_DEFAULTS.freeShippingBottleCount)),
         half_case_count: getCmsValue(content, "thresholds", "half_case_count", String(CART_DEFAULTS.halfCaseCount)),
         full_case_count: getCmsValue(content, "thresholds", "full_case_count", String(CART_DEFAULTS.fullCaseCount)),
         full_case_discount: getCmsValue(content, "thresholds", "full_case_discount", String(CART_DEFAULTS.fullCaseDiscount)),

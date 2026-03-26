@@ -1,15 +1,18 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Plus, Pencil, Trash2, LogIn, LogOut } from "lucide-react";
+import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Link } from "react-router-dom";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRescuePartners, RescuePartner } from "@/hooks/useRescuePartners";
 import { RescuePartnerDialog } from "@/components/RescuePartnerDialog";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useCmsAuth } from "@/hooks/useCmsAuth";
+import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
+import { CmsEditButton } from "@/components/cms/CmsEditButton";
+import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
+import { CmsToolbar } from "@/components/cms/CmsToolbar";
 import {
   AlertDialog,
   AlertDialogAction,

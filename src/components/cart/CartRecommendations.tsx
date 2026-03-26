@@ -14,6 +14,7 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
   const { data: allProducts } = useProducts(50);
   const addItem = useCartStore(state => state.addItem);
   const isLoading = useCartStore(state => state.isLoading);
+  const { freeShippingThreshold } = useCartSettings();
 
   if (!allProducts || allProducts.length === 0) return null;
 

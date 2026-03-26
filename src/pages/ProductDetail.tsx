@@ -16,6 +16,7 @@ const ProductDetail = () => {
   const { data: product, isLoading } = useProductByHandle(handle || "");
   const addItem = useCartStore(state => state.addItem);
   const cartLoading = useCartStore(state => state.isLoading);
+  const { freeShippingThreshold } = useCartSettings();
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);

@@ -10,6 +10,7 @@ import { useState } from "react";
 import { SubscribeAndSave, DISCOUNT_PERCENT } from "@/components/SubscribeAndSave";
 import { supabase } from "@/integrations/supabase/client";
 import { useCartSettings } from "@/hooks/useCartSettings";
+import { useFavorites } from "@/hooks/useFavorites";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();

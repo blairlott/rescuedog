@@ -42,11 +42,9 @@ const MissionPage = () => {
   const [pageSize, setPageSize] = useState(25);
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const { toast } = useToast();
-
-  // Admin auth state
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const { isCmsEditor: isAdmin } = useCmsAuth();
+  const { content, upsert } = useCmsContent("mission");
+  const [editSection, setEditSection] = useState<string | null>(null);
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -55,30 +53,7 @@ const MissionPage = () => {
 
   const { data: partners = [], isLoading, addPartner, updatePartner, deletePartner } = useRescuePartners();
 
-  // Check if current user is admin/owner
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data } = await supabase.rpc("is_admin_or_owner", { _user_id: session.user.id });
-        setIsAdmin(!!data);
-      } else {
-        setIsAdmin(false);
-      }
-      setCheckingAuth(false);
-    };
-    checkAdmin();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        const { data } = await supabase.rpc("is_admin_or_owner", { _user_id: session.user.id });
-        setIsAdmin(!!data);
-      } else {
-        setIsAdmin(false);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+  const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
 
   const filtered = useMemo(() => {
     let result = partners;

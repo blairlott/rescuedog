@@ -103,6 +103,15 @@ export function ProductCard({ product }: ProductCardProps) {
           </span>
         )}
 
+        {/* Favorite heart button */}
+        <button
+          onClick={handleToggleFavorite}
+          className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-background/80 backdrop-blur-sm border border-border hover:bg-background transition-colors z-10"
+          aria-label={faved ? "Remove from favorites" : "Add to favorites"}
+        >
+          <Heart className={`w-4 h-4 transition-colors ${faved ? 'fill-destructive text-destructive' : 'text-muted-foreground hover:text-destructive'}`} />
+        </button>
+
         {/* Hover overlay with add-to-cart button */}
         <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out p-3">
           <Button

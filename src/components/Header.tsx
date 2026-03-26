@@ -5,6 +5,9 @@ import { CartDrawer } from "./CartDrawer";
 import rdwLogo from "@/assets/rdw-logo.png";
 import rescueDogLogo from "@/assets/rescue-dog-logo-hd.png";
 import { isRescueDogDomain } from "@/lib/productUtils";
+import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
+import { CmsEditButton } from "./cms/CmsEditButton";
+import { CmsEditDialog, CmsField } from "./cms/CmsEditDialog";
 
 interface NavItem {
   label: string;
@@ -25,11 +28,41 @@ const navItems: NavItem[] = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [editSection, setEditSection] = useState<"logos" | "banner" | null>(null);
   const location = useLocation();
+  const { content, upsert } = useCmsContent("header");
   const merchPaths = ["/merch", "/about", "/mission", "/donation"];
   const isMerch = merchPaths.includes(location.pathname) || isRescueDogDomain();
-  const logo = isMerch ? rescueDogLogo : "https://rescuedogwines.myshopify.com/cdn/shop/files/rdw_black_4x_7dece252-0ae7-4039-b832-0a86b7adec60.png?v=1742847391";
+
+  const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
+
+  const wineLogo = getVal("logos", "wine_logo", "https://rescuedogwines.myshopify.com/cdn/shop/files/rdw_black_4x_7dece252-0ae7-4039-b832-0a86b7adec60.png?v=1742847391");
+  const merchLogo = getVal("logos", "merch_logo", rescueDogLogo);
+  const logo = isMerch ? merchLogo : wineLogo;
   const logoAlt = isMerch ? "Rescue Dog" : "Rescue Dog Wines";
+
+  const handleSave = (sectionKey: string) => (values: Record<string, string>) => {
+    upsert.mutate({ sectionKey, content: values }, {
+      onSuccess: () => setEditSection(null),
+    });
+  };
+
+  const sectionFields: Record<string, { title: string; fields: CmsField[] }> = {
+    logos: {
+      title: "Site Logos",
+      fields: [
+        { key: "wine_logo", label: "Wine Site Logo URL", type: "url", value: wineLogo },
+        { key: "merch_logo", label: "Merch Site Logo URL", type: "url", value: merchLogo },
+      ],
+    },
+    banner: {
+      title: "Announcement Banner",
+      fields: [
+        { key: "wine_banner", label: "Wine Site Banner Text", type: "text", value: getVal("banner", "wine_banner", "Use code STOCKUP for 20% off your order of 12 bottles or more (shipping included)!") },
+        { key: "merch_banner", label: "Merch Site Banner Text", type: "text", value: getVal("banner", "merch_banner", "50% of our profits supports rescue organizations.") },
+      ],
+    },
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-background">

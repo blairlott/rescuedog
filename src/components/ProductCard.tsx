@@ -27,7 +27,7 @@ function getAwardBadge(tags: string[]): { label: string; className: string } | n
 export function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore(state => state.addItem);
   const isLoading = useCartStore(state => state.isLoading);
-  const { freeShippingThreshold } = useCartSettings();
+  const { freeShippingBottleCount } = useCartSettings();
   const { node } = product;
   const image = node.images.edges[0]?.node;
   const price = node.priceRange.minVariantPrice;

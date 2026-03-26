@@ -57,8 +57,8 @@ function AppContent() {
       <Route path="/donation" element={<DonationPage />} />
       <Route path="/crm/login" element={<CrmLoginPage />} />
       <Route path="/crm/reset-password" element={<CrmResetPasswordPage />} />
-      <Route path="/CMS/login" element={<Navigate to="/cms/login" replace />} />
-      <Route path="/CMS/*" element={<Navigate to="/cms" replace />} />
+      <Route caseSensitive path="/CMS/login" element={<Navigate to="/cms/login" replace />} />
+      <Route caseSensitive path="/CMS/*" element={<Navigate to="/cms" replace />} />
       <Route path="/cms/login" element={<CmsLoginPage />} />
       <Route path="/cms" element={<CmsDashboard />} />
       <Route path="/crm" element={<CrmLayout />}>

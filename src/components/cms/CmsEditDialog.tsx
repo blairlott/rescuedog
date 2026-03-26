@@ -3,7 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Upload, Loader2, ImageIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface CmsField {
   key: string;
@@ -23,6 +26,9 @@ interface Props {
 
 export const CmsEditDialog = ({ open, onOpenChange, title, fields, onSave, isSaving }: Props) => {
   const [values, setValues] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const { toast } = useToast();
 
   useEffect(() => {
     const initial: Record<string, string> = {};
@@ -33,6 +39,46 @@ export const CmsEditDialog = ({ open, onOpenChange, title, fields, onSave, isSav
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(values);
+  };
+
+  const handleFileUpload = async (fieldKey: string, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Invalid file", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Max file size is 20MB.", variant: "destructive" });
+      return;
+    }
+
+    setUploading((u) => ({ ...u, [fieldKey]: true }));
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke('upload-to-shopify', {
+        body: formData,
+      });
+
+      if (res.error) throw new Error(res.error.message);
+      const data = res.data as { url?: string; error?: string };
+      if (data.error) throw new Error(data.error);
+      if (!data.url) throw new Error('No URL returned from upload');
+
+      setValues((v) => ({ ...v, [fieldKey]: data.url }));
+      toast({ title: "Image uploaded", description: "Image uploaded to Shopify successfully." });
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      toast({ title: "Upload failed", description: err.message || "Could not upload image.", variant: "destructive" });
+    } finally {
+      setUploading((u) => ({ ...u, [fieldKey]: false }));
+    }
+  };
+
+  const isImageUrl = (url: string) => {
+    if (!url) return false;
+    return /\.(jpg|jpeg|png|gif|webp|svg)/i.test(url) || url.includes('shopify') || url.includes('unsplash') || url.includes('rescuedogwines');
   };
 
   return (
@@ -52,10 +98,59 @@ export const CmsEditDialog = ({ open, onOpenChange, title, fields, onSave, isSav
                   onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
                   rows={4}
                 />
+              ) : field.type === "url" ? (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      id={`cms-${field.key}`}
+                      type="url"
+                      value={values[field.key] || ""}
+                      onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
+                      className="flex-1"
+                      placeholder="Enter URL or upload image"
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      ref={(el) => { fileInputRefs.current[field.key] = el; }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(field.key, file);
+                        e.target.value = '';
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={!!uploading[field.key]}
+                      onClick={() => fileInputRefs.current[field.key]?.click()}
+                      title="Upload image"
+                    >
+                      {uploading[field.key] ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  {/* Preview */}
+                  {values[field.key] && isImageUrl(values[field.key]) && (
+                    <div className="relative w-full h-24 bg-muted rounded overflow-hidden border border-border">
+                      <img
+                        src={values[field.key]}
+                        alt="Preview"
+                        className="w-full h-full object-contain"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    </div>
+                  )}
+                </div>
               ) : (
                 <Input
                   id={`cms-${field.key}`}
-                  type={field.type === "url" ? "url" : "text"}
+                  type="text"
                   value={values[field.key] || ""}
                   onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
                 />
@@ -64,7 +159,7 @@ export const CmsEditDialog = ({ open, onOpenChange, title, fields, onSave, isSav
           ))}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={isSaving}>
+            <Button type="submit" disabled={isSaving || Object.values(uploading).some(Boolean)}>
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </div>

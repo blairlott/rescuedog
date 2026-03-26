@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCartSync } from "@/hooks/useCartSync";
 import { AgeGate } from "@/components/AgeGate";
+import { CmsAuthProvider } from "@/hooks/useCmsAuth";
 import Index from "./pages/Index";
 import MerchHomePage from "./pages/MerchHomePage";
 import ProductDetail from "./pages/ProductDetail";
@@ -28,6 +29,7 @@ import CrmMapPage from "./pages/CrmMapPage";
 import CrmRoutePlanner from "./pages/CrmRoutePlanner";
 import CrmAdminPage from "./pages/CrmAdminPage";
 import CrmResetPasswordPage from "./pages/CrmResetPasswordPage";
+import CmsLoginPage from "./pages/CmsLoginPage";
 
 const queryClient = new QueryClient();
 

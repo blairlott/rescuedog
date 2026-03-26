@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -57,6 +57,8 @@ function AppContent() {
       <Route path="/donation" element={<DonationPage />} />
       <Route path="/crm/login" element={<CrmLoginPage />} />
       <Route path="/crm/reset-password" element={<CrmResetPasswordPage />} />
+      <Route path="/CMS/login" element={<Navigate to="/cms/login" replace />} />
+      <Route path="/CMS/*" element={<Navigate to="/cms" replace />} />
       <Route path="/cms/login" element={<CmsLoginPage />} />
       <Route path="/cms" element={<CmsDashboard />} />
       <Route path="/crm" element={<CrmLayout />}>

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Loader2, ArrowLeft, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { SubscribeAndSave, DISCOUNT_PERCENT } from "@/components/SubscribeAndSave";
+import { supabase } from "@/integrations/supabase/client";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();

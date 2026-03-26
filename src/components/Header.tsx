@@ -31,6 +31,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [editSection, setEditSection] = useState<"logos" | "banner" | null>(null);
   const location = useLocation();
+  const { user } = useCustomerAuth();
   const { content, upsert } = useCmsContent("header");
   const merchPaths = ["/merch", "/about", "/mission", "/donation"];
   const isMerch = merchPaths.includes(location.pathname) || isRescueDogDomain();

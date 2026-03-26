@@ -4,12 +4,13 @@ import { useCartStore } from "@/stores/cartStore";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Loader2, ArrowLeft, Minus, Plus } from "lucide-react";
+import { ShoppingCart, Loader2, ArrowLeft, Minus, Plus, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { SubscribeAndSave, DISCOUNT_PERCENT } from "@/components/SubscribeAndSave";
 import { supabase } from "@/integrations/supabase/client";
 import { useCartSettings } from "@/hooks/useCartSettings";
+import { useFavorites } from "@/hooks/useFavorites";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -22,6 +23,7 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [subscribeMode, setSubscribeMode] = useState(false);
   const [subFrequency, setSubFrequency] = useState("monthly");
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   if (isLoading) {
     return (
@@ -104,11 +106,27 @@ const ProductDetail = () => {
 
             {/* Product Info */}
             <div className="space-y-6">
-              <div>
-                <h1 className="font-display text-3xl font-bold text-foreground mb-2">{product.title}</h1>
-                <p className="text-2xl font-bold text-primary">
-                  ${parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount).toFixed(2)}
-                </p>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h1 className="font-display text-3xl font-bold text-foreground mb-2">{product.title}</h1>
+                  <p className="text-2xl font-bold text-primary">
+                    ${parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount).toFixed(2)}
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    toggleFavorite.mutate({
+                      handle: product.handle,
+                      title: product.title,
+                      imageUrl: product.images.edges[0]?.node?.url,
+                      price: parseFloat(product.priceRange.minVariantPrice.amount).toFixed(2),
+                    })
+                  }
+                  className="mt-1 w-10 h-10 flex items-center justify-center rounded-full border border-border hover:bg-muted transition-colors flex-shrink-0"
+                  aria-label={isFavorite(product.handle) ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <Heart className={`w-5 h-5 transition-colors ${isFavorite(product.handle) ? 'fill-destructive text-destructive' : 'text-muted-foreground hover:text-destructive'}`} />
+                </button>
               </div>
 
               {product.description && (

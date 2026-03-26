@@ -2,8 +2,9 @@ import { Link } from "react-router-dom";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
 import { useCartSettings } from "@/hooks/useCartSettings";
+import { useFavorites } from "@/hooks/useFavorites";
 import { Button } from "@/components/ui/button";
-import { Loader2, Award, ShoppingBag } from "lucide-react";
+import { Loader2, Award, ShoppingBag, Heart } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProductCardProps {
@@ -28,6 +29,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore(state => state.addItem);
   const isLoading = useCartStore(state => state.isLoading);
   const { freeShippingBottleCount } = useCartSettings();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const { node } = product;
   const image = node.images.edges[0]?.node;
   const price = node.priceRange.minVariantPrice;
@@ -61,6 +63,19 @@ export function ProductCard({ product }: ProductCardProps) {
     }
   };
 
+  const faved = isFavorite(node.handle);
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavorite.mutate({
+      handle: node.handle,
+      title: node.title,
+      imageUrl: image?.url,
+      price: priceNum.toFixed(2),
+    });
+  };
+
   return (
     <Link to={`/product/${node.handle}`} className="group block">
       {/* Image container with overlay add-to-cart */}
@@ -87,6 +102,15 @@ export function ProductCard({ product }: ProductCardProps) {
             {award.label}
           </span>
         )}
+
+        {/* Favorite heart button */}
+        <button
+          onClick={handleToggleFavorite}
+          className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-background/80 backdrop-blur-sm border border-border hover:bg-background transition-colors z-10"
+          aria-label={faved ? "Remove from favorites" : "Add to favorites"}
+        >
+          <Heart className={`w-4 h-4 transition-colors ${faved ? 'fill-destructive text-destructive' : 'text-muted-foreground hover:text-destructive'}`} />
+        </button>
 
         {/* Hover overlay with add-to-cart button */}
         <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out p-3">

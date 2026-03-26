@@ -56,6 +56,7 @@ function AppContent() {
       <Route path="/donation" element={<DonationPage />} />
       <Route path="/crm/login" element={<CrmLoginPage />} />
       <Route path="/crm/reset-password" element={<CrmResetPasswordPage />} />
+      <Route path="/cms/login" element={<CmsLoginPage />} />
       <Route path="/crm" element={<CrmLayout />}>
         <Route index element={<CrmDashboard />} />
         <Route path="account/:id" element={<CrmAccountDetail />} />

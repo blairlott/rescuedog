@@ -23,6 +23,7 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [subscribeMode, setSubscribeMode] = useState(false);
   const [subFrequency, setSubFrequency] = useState("monthly");
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   if (isLoading) {
     return (

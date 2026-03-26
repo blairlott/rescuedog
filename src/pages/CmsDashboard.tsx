@@ -83,8 +83,10 @@ const CmsDashboard = () => {
       if (error) throw error;
 
       const cmsRoles = roles.filter(
-        (r) =>
-          r.role === "owner" || r.role === "admin" || r.role === "cms_editor"
+        (r) => {
+          const role = r.role as string;
+          return role === "owner" || role === "admin" || role === "cms_editor";
+        }
       );
 
       // Get profiles for those users

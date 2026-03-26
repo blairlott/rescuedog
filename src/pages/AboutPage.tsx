@@ -31,9 +31,9 @@ const teamMembers = [
     bio: "The Lodi region's premier \"rockstar\" maker of Méthode Champenoise wines, Eric utilizes his finely tuned mastercraft skills to create our unique, ultra-premium sparkling wines. Eric is a graduate of Miami University in Oxford, Ohio and completed the UC Davis Extension Viticulture and Enology Program.",
   },
   {
-    name: "Keith Crawford",
+    name: "TBD",
     title: "Chief Financial Officer",
-    bio: "Keith is a proud New Orleanian and wine lover who joined the Rescue Dog Wines team in 2023. He is responsible for financial strategy, planning, and reporting, as well as budgeting and forecasting. Keith has over 30 years' experience in senior financial roles crossing many industries, including healthcare, fashion, real estate, and marketing. He currently serves as treasurer of three separate nonprofit organizations. Keith is currently between pets but has rescued Great Danes in the past on two separate occasions.",
+    bio: "",
   },
 ];
 

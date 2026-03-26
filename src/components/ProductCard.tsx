@@ -2,8 +2,9 @@ import { Link } from "react-router-dom";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
 import { useCartSettings } from "@/hooks/useCartSettings";
+import { useFavorites } from "@/hooks/useFavorites";
 import { Button } from "@/components/ui/button";
-import { Loader2, Award, ShoppingBag } from "lucide-react";
+import { Loader2, Award, ShoppingBag, Heart } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProductCardProps {

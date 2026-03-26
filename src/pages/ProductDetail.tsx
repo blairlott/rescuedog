@@ -9,12 +9,14 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { SubscribeAndSave, DISCOUNT_PERCENT } from "@/components/SubscribeAndSave";
 import { supabase } from "@/integrations/supabase/client";
+import { useCartSettings } from "@/hooks/useCartSettings";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
   const { data: product, isLoading } = useProductByHandle(handle || "");
   const addItem = useCartStore(state => state.addItem);
   const cartLoading = useCartStore(state => state.isLoading);
+  const { freeShippingThreshold } = useCartSettings();
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -62,7 +64,7 @@ const ProductDetail = () => {
       selectedOptions: selectedVariant.selectedOptions || [],
     });
     const currentTotal = useCartStore.getState().items.reduce((sum, i) => sum + (parseFloat(i.price.amount) * i.quantity), 0);
-    const remaining = 150 - currentTotal;
+    const remaining = freeShippingThreshold - currentTotal;
     if (remaining > 0) {
       toast.success(`${product.title} added! $${remaining.toFixed(2)} more for free shipping`, { position: "top-center" });
     } else {

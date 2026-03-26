@@ -3,7 +3,7 @@ import { useCartStore, CartItem } from "@/stores/cartStore";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { FREE_SHIPPING_THRESHOLD } from "./FreeShippingBar";
+import { useCartSettings } from "@/hooks/useCartSettings";
 
 interface CartRecommendationsProps {
   cartItems: CartItem[];
@@ -14,6 +14,7 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
   const { data: allProducts } = useProducts(50);
   const addItem = useCartStore(state => state.addItem);
   const isLoading = useCartStore(state => state.isLoading);
+  const { freeShippingThreshold } = useCartSettings();
 
   if (!allProducts || allProducts.length === 0) return null;
 
@@ -41,7 +42,7 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
       selectedOptions: variant.selectedOptions || [],
     });
     const newTotal = cartTotal + parseFloat(variant.price.amount);
-    const remaining = FREE_SHIPPING_THRESHOLD - newTotal;
+    const remaining = freeShippingThreshold - newTotal;
     if (remaining > 0) {
       toast.success(`${product.node.title} added! $${remaining.toFixed(2)} to free shipping`, { position: "top-center" });
     } else {

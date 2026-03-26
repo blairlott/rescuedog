@@ -1,15 +1,15 @@
 import { Progress } from "@/components/ui/progress";
 import { Truck, PartyPopper } from "lucide-react";
-
-const FREE_SHIPPING_THRESHOLD = 150;
+import { useCartSettings } from "@/hooks/useCartSettings";
 
 interface FreeShippingBarProps {
   cartTotal: number;
 }
 
 export function FreeShippingBar({ cartTotal }: FreeShippingBarProps) {
-  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal);
-  const progress = Math.min(100, (cartTotal / FREE_SHIPPING_THRESHOLD) * 100);
+  const { freeShippingThreshold } = useCartSettings();
+  const remaining = Math.max(0, freeShippingThreshold - cartTotal);
+  const progress = Math.min(100, (cartTotal / freeShippingThreshold) * 100);
   const qualified = remaining <= 0;
 
   return (
@@ -35,5 +35,3 @@ export function FreeShippingBar({ cartTotal }: FreeShippingBarProps) {
     </div>
   );
 }
-
-export { FREE_SHIPPING_THRESHOLD };

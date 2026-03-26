@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
+import { useCartSettings } from "@/hooks/useCartSettings";
 import { Button } from "@/components/ui/button";
 import { Loader2, Award, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ function getAwardBadge(tags: string[]): { label: string; className: string } | n
 export function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore(state => state.addItem);
   const isLoading = useCartStore(state => state.isLoading);
+  const { freeShippingThreshold } = useCartSettings();
   const { node } = product;
   const image = node.images.edges[0]?.node;
   const price = node.priceRange.minVariantPrice;
@@ -51,7 +53,7 @@ export function ProductCard({ product }: ProductCardProps) {
       selectedOptions: firstVariant.selectedOptions || [],
     });
     const currentTotal = useCartStore.getState().items.reduce((sum, i) => sum + (parseFloat(i.price.amount) * i.quantity), 0);
-    const remaining = 150 - currentTotal;
+    const remaining = freeShippingThreshold - currentTotal;
     if (remaining > 0) {
       toast.success(`${node.title} added! $${remaining.toFixed(2)} more for free shipping`, { position: "top-center" });
     } else {

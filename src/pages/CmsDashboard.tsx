@@ -33,7 +33,11 @@ import {
   Trash2,
   Clock,
   ArrowLeft,
+  Settings,
+  Loader2,
 } from "lucide-react";
+import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
+import { CART_DEFAULTS } from "@/hooks/useCartSettings";
 
 // ─── Types ───────────────────────────────────────────────────
 type CmsUser = {
@@ -51,6 +55,83 @@ type CmsContentRow = {
   updated_at: string;
   updated_by: string | null;
 };
+
+// ─── Cart Settings Panel ─────────────────────────────────────
+function CartSettingsPanel() {
+  const { content, upsert } = useCmsContent("cart_settings");
+  const [values, setValues] = useState({
+    free_shipping: "",
+    half_case_count: "",
+    full_case_count: "",
+    full_case_discount: "",
+    club_discount: "",
+  });
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!initialized && content) {
+      setValues({
+        free_shipping: getCmsValue(content, "thresholds", "free_shipping", String(CART_DEFAULTS.freeShippingThreshold)),
+        half_case_count: getCmsValue(content, "thresholds", "half_case_count", String(CART_DEFAULTS.halfCaseCount)),
+        full_case_count: getCmsValue(content, "thresholds", "full_case_count", String(CART_DEFAULTS.fullCaseCount)),
+        full_case_discount: getCmsValue(content, "thresholds", "full_case_discount", String(CART_DEFAULTS.fullCaseDiscount)),
+        club_discount: getCmsValue(content, "thresholds", "club_discount", String(CART_DEFAULTS.clubDiscount)),
+      });
+      setInitialized(true);
+    }
+  }, [content, initialized]);
+
+  const handleSave = () => {
+    upsert.mutate({
+      sectionKey: "thresholds",
+      content: values,
+    });
+  };
+
+  const fields = [
+    { key: "free_shipping", label: "Free Shipping Threshold ($)", description: "Customers must spend at least this amount to qualify for free shipping" },
+    { key: "half_case_count", label: "Half-Case Bottle Count", description: "Number of bottles in a half-case (used for upsell messaging)" },
+    { key: "full_case_count", label: "Full-Case Bottle Count", description: "Number of bottles in a full case" },
+    { key: "full_case_discount", label: "Full-Case Discount (%)", description: "Percentage discount shown when customer reaches a full case" },
+    { key: "club_discount", label: "Wine Club Discount (%)", description: "Percentage discount shown in Wine Club savings callout" },
+  ];
+
+  return (
+    <div className="bg-background border border-border">
+      <div className="px-6 py-4 border-b border-border">
+        <h2 className="font-bold text-foreground">Cart & Shipping Settings</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Configure marketing thresholds for the shopping cart
+        </p>
+      </div>
+      <div className="p-6 space-y-6">
+        {fields.map(field => (
+          <div key={field.key} className="space-y-1.5">
+            <Label htmlFor={`cart-${field.key}`} className="text-sm font-medium">{field.label}</Label>
+            <Input
+              id={`cart-${field.key}`}
+              type="number"
+              min="0"
+              value={values[field.key as keyof typeof values]}
+              onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+              className="max-w-xs"
+            />
+            <p className="text-xs text-muted-foreground">{field.description}</p>
+          </div>
+        ))}
+        <div className="pt-4 border-t border-border">
+          <Button onClick={handleSave} disabled={upsert.isPending}>
+            {upsert.isPending ? (
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving...</>
+            ) : (
+              "Save Settings"
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Component ───────────────────────────────────────────────
 const CmsDashboard = () => {
@@ -284,6 +365,9 @@ const CmsDashboard = () => {
             <TabsTrigger value="users" className="gap-1.5">
               <Users className="h-3.5 w-3.5" /> Users
             </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-1.5">
+              <Settings className="h-3.5 w-3.5" /> Settings
+            </TabsTrigger>
           </TabsList>
 
           {/* ── Content Tab ───────────────────────────────── */}
@@ -455,6 +539,11 @@ const CmsDashboard = () => {
                 </p>
               </div>
             </div>
+          </TabsContent>
+
+          {/* ── Settings Tab ──────────────────────────────── */}
+          <TabsContent value="settings">
+            <CartSettingsPanel />
           </TabsContent>
         </Tabs>
       </main>

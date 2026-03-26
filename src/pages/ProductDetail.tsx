@@ -4,7 +4,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Loader2, ArrowLeft, Minus, Plus } from "lucide-react";
+import { ShoppingCart, Loader2, ArrowLeft, Minus, Plus, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { SubscribeAndSave, DISCOUNT_PERCENT } from "@/components/SubscribeAndSave";

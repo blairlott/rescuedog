@@ -42,7 +42,7 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
       selectedOptions: variant.selectedOptions || [],
     });
     const newTotal = cartTotal + parseFloat(variant.price.amount);
-    const remaining = FREE_SHIPPING_THRESHOLD - newTotal;
+    const remaining = freeShippingThreshold - newTotal;
     if (remaining > 0) {
       toast.success(`${product.node.title} added! $${remaining.toFixed(2)} to free shipping`, { position: "top-center" });
     } else {

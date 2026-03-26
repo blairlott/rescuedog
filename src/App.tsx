@@ -75,9 +75,11 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AgeGate>
-          <AppContent />
-        </AgeGate>
+        <CmsAuthProvider>
+          <AgeGate>
+            <AppContent />
+          </AgeGate>
+        </CmsAuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

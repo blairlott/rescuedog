@@ -53,7 +53,7 @@ export function ProductCard({ product }: ProductCardProps) {
       selectedOptions: firstVariant.selectedOptions || [],
     });
     const currentTotal = useCartStore.getState().items.reduce((sum, i) => sum + (parseFloat(i.price.amount) * i.quantity), 0);
-    const remaining = 150 - currentTotal;
+    const remaining = freeShippingThreshold - currentTotal;
     if (remaining > 0) {
       toast.success(`${node.title} added! $${remaining.toFixed(2)} more for free shipping`, { position: "top-center" });
     } else {

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { SubscribeAndSave, DISCOUNT_PERCENT } from "@/components/SubscribeAndSave";
 import { supabase } from "@/integrations/supabase/client";
+import { useCartSettings } from "@/hooks/useCartSettings";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();

@@ -50,7 +50,7 @@ const MissionPage = () => {
   const [editingPartner, setEditingPartner] = useState<RescuePartner | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { data: partners = [], isLoading, addPartner, updatePartner, deletePartner } = useRescuePartners();
+  const { data: partners = [], isLoading, error, addPartner, updatePartner, deletePartner } = useRescuePartners();
 
   const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
 

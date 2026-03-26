@@ -63,6 +63,19 @@ export function ProductCard({ product }: ProductCardProps) {
     }
   };
 
+  const faved = isFavorite(node.handle);
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavorite.mutate({
+      handle: node.handle,
+      title: node.title,
+      imageUrl: image?.url,
+      price: priceNum.toFixed(2),
+    });
+  };
+
   return (
     <Link to={`/product/${node.handle}`} className="group block">
       {/* Image container with overlay add-to-cart */}

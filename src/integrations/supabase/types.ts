@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      cms_content: {
+        Row: {
+          content: Json
+          id: string
+          page: string
+          section_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content?: Json
+          id?: string
+          page: string
+          section_key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: Json
+          id?: string
+          page?: string
+          section_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       donation_requests: {
         Row: {
           affiliate_interest: string | null
@@ -377,6 +404,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_cms_editor: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:

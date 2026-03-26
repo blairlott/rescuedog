@@ -33,7 +33,11 @@ import {
   Trash2,
   Clock,
   ArrowLeft,
+  Settings,
+  Loader2,
 } from "lucide-react";
+import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
+import { CART_DEFAULTS } from "@/hooks/useCartSettings";
 
 // ─── Types ───────────────────────────────────────────────────
 type CmsUser = {

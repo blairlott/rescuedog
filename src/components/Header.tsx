@@ -67,11 +67,12 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 bg-background">
       {/* Announcement Bar */}
-      <div className="bg-primary text-primary-foreground text-center py-2.5 px-4">
+      <div className="bg-primary text-primary-foreground text-center py-2.5 px-4 relative">
+        <CmsEditButton onClick={() => setEditSection("banner")} label="Edit Banner" />
         <p className="text-sm tracking-wide">
           {isMerch
-            ? "50% of our profits supports rescue organizations."
-            : "Use code STOCKUP for 20% off your order of 12 bottles or more (shipping included)!"}
+            ? getVal("banner", "merch_banner", "50% of our profits supports rescue organizations.")
+            : getVal("banner", "wine_banner", "Use code STOCKUP for 20% off your order of 12 bottles or more (shipping included)!")}
         </p>
       </div>
 

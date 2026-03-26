@@ -3,7 +3,7 @@ import { useCartStore, CartItem } from "@/stores/cartStore";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { FREE_SHIPPING_THRESHOLD } from "./FreeShippingBar";
+import { useCartSettings } from "@/hooks/useCartSettings";
 
 interface CartRecommendationsProps {
   cartItems: CartItem[];

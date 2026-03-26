@@ -18,6 +18,8 @@ const ProductDetail = () => {
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [subscribeMode, setSubscribeMode] = useState(false);
+  const [subFrequency, setSubFrequency] = useState("monthly");
 
   if (isLoading) {
     return (

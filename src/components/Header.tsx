@@ -178,6 +178,18 @@ export function Header() {
           ))}
         </nav>
       )}
+
+      {/* CMS Edit Dialogs */}
+      {editSection && sectionFields[editSection] && (
+        <CmsEditDialog
+          open={!!editSection}
+          onOpenChange={(open) => { if (!open) setEditSection(null); }}
+          title={sectionFields[editSection].title}
+          fields={sectionFields[editSection].fields}
+          onSave={handleSave(editSection)}
+          isSaving={upsert.isPending}
+        />
+      )}
     </header>
   );
 }

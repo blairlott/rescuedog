@@ -57,7 +57,13 @@ const ProductDetail = () => {
       quantity,
       selectedOptions: selectedVariant.selectedOptions || [],
     });
-    toast.success(`${product.title} added to cart`, { position: "top-center" });
+    const currentTotal = useCartStore.getState().items.reduce((sum, i) => sum + (parseFloat(i.price.amount) * i.quantity), 0);
+    const remaining = 150 - currentTotal;
+    if (remaining > 0) {
+      toast.success(`${product.title} added! $${remaining.toFixed(2)} more for free shipping`, { position: "top-center" });
+    } else {
+      toast.success(`${product.title} added! You qualify for free shipping! 🎉`, { position: "top-center" });
+    }
   };
 
   return (

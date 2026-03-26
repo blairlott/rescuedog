@@ -4,6 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2 } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
+import { FreeShippingBar } from "@/components/cart/FreeShippingBar";
+import { CartUpsellBanner } from "@/components/cart/CartUpsellBanner";
+import { CartRecommendations } from "@/components/cart/CartRecommendations";
 
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,7 +43,7 @@ export const CartDrawer = () => {
             {totalItems === 0 ? "Your cart is empty" : `${totalItems} item${totalItems !== 1 ? 's' : ''} in your cart`}
           </SheetDescription>
         </SheetHeader>
-        <div className="flex flex-col flex-1 pt-6 min-h-0">
+        <div className="flex flex-col flex-1 pt-4 min-h-0">
           {items.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
@@ -50,6 +53,12 @@ export const CartDrawer = () => {
             </div>
           ) : (
             <>
+              {/* Free shipping progress bar */}
+              <div className="flex-shrink-0 mb-3">
+                <FreeShippingBar cartTotal={totalPrice} />
+              </div>
+
+              {/* Cart items */}
               <div className="flex-1 overflow-y-auto pr-2 min-h-0">
                 <div className="space-y-4">
                   {items.map((item) => (
@@ -81,7 +90,19 @@ export const CartDrawer = () => {
                     </div>
                   ))}
                 </div>
+
+                {/* Upsell banners */}
+                <div className="mt-4">
+                  <CartUpsellBanner totalBottles={totalItems} cartTotal={totalPrice} />
+                </div>
+
+                {/* Product recommendations */}
+                <div className="mt-4">
+                  <CartRecommendations cartItems={items} cartTotal={totalPrice} />
+                </div>
               </div>
+
+              {/* Footer with total and checkout */}
               <div className="flex-shrink-0 space-y-4 pt-4 border-t">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-display font-semibold">Total</span>

@@ -20,6 +20,7 @@ import VineyardPage from "./pages/VineyardPage";
 import ContactPage from "./pages/ContactPage";
 import WineClubPage from "./pages/WineClubPage";
 import DonationPage from "./pages/DonationPage";
+import SubscribePage from "./pages/SubscribePage";
 import NotFound from "./pages/NotFound";
 import CrmLoginPage from "./pages/CrmLoginPage";
 import CrmLayout from "./components/crm/CrmLayout";

@@ -35,7 +35,7 @@ const CmsLoginPage = () => {
     }
 
     toast({ title: "Welcome back!", description: "You now have editing access." });
-    navigate("/about");
+    navigate("/cms");
     setLoading(false);
   };
 

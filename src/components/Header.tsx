@@ -5,6 +5,9 @@ import { CartDrawer } from "./CartDrawer";
 import rdwLogo from "@/assets/rdw-logo.png";
 import rescueDogLogo from "@/assets/rescue-dog-logo-hd.png";
 import { isRescueDogDomain } from "@/lib/productUtils";
+import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
+import { CmsEditButton } from "./cms/CmsEditButton";
+import { CmsEditDialog, CmsField } from "./cms/CmsEditDialog";
 
 interface NavItem {
   label: string;
@@ -25,20 +28,51 @@ const navItems: NavItem[] = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [editSection, setEditSection] = useState<"logos" | "banner" | null>(null);
   const location = useLocation();
+  const { content, upsert } = useCmsContent("header");
   const merchPaths = ["/merch", "/about", "/mission", "/donation"];
   const isMerch = merchPaths.includes(location.pathname) || isRescueDogDomain();
-  const logo = isMerch ? rescueDogLogo : "https://rescuedogwines.myshopify.com/cdn/shop/files/rdw_black_4x_7dece252-0ae7-4039-b832-0a86b7adec60.png?v=1742847391";
+
+  const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
+
+  const wineLogo = getVal("logos", "wine_logo", "https://rescuedogwines.myshopify.com/cdn/shop/files/rdw_black_4x_7dece252-0ae7-4039-b832-0a86b7adec60.png?v=1742847391");
+  const merchLogo = getVal("logos", "merch_logo", rescueDogLogo);
+  const logo = isMerch ? merchLogo : wineLogo;
   const logoAlt = isMerch ? "Rescue Dog" : "Rescue Dog Wines";
+
+  const handleSave = (sectionKey: string) => (values: Record<string, string>) => {
+    upsert.mutate({ sectionKey, content: values }, {
+      onSuccess: () => setEditSection(null),
+    });
+  };
+
+  const sectionFields: Record<string, { title: string; fields: CmsField[] }> = {
+    logos: {
+      title: "Site Logos",
+      fields: [
+        { key: "wine_logo", label: "Wine Site Logo URL", type: "url", value: wineLogo },
+        { key: "merch_logo", label: "Merch Site Logo URL", type: "url", value: merchLogo },
+      ],
+    },
+    banner: {
+      title: "Announcement Banner",
+      fields: [
+        { key: "wine_banner", label: "Wine Site Banner Text", type: "text", value: getVal("banner", "wine_banner", "Use code STOCKUP for 20% off your order of 12 bottles or more (shipping included)!") },
+        { key: "merch_banner", label: "Merch Site Banner Text", type: "text", value: getVal("banner", "merch_banner", "50% of our profits supports rescue organizations.") },
+      ],
+    },
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-background">
       {/* Announcement Bar */}
-      <div className="bg-primary text-primary-foreground text-center py-2.5 px-4">
+      <div className="bg-primary text-primary-foreground text-center py-2.5 px-4 relative">
+        <CmsEditButton onClick={() => setEditSection("banner")} label="Edit Banner" />
         <p className="text-sm tracking-wide">
           {isMerch
-            ? "50% of our profits supports rescue organizations."
-            : "Use code STOCKUP for 20% off your order of 12 bottles or more (shipping included)!"}
+            ? getVal("banner", "merch_banner", "50% of our profits supports rescue organizations.")
+            : getVal("banner", "wine_banner", "Use code STOCKUP for 20% off your order of 12 bottles or more (shipping included)!")}
         </p>
       </div>
 
@@ -56,21 +90,24 @@ export function Header() {
           </div>
 
           {/* Center: Logo */}
-          <Link to={isMerch ? "/merch" : "/"} className="flex justify-center px-1 md:px-2 min-w-0">
-            <span className="relative inline-flex items-center overflow-visible leading-none pb-1">
-              <img
-                src={logo}
-                alt={logoAlt}
-                className={`block w-full h-auto object-contain ${isMerch ? "max-w-[240px] md:max-w-[380px]" : "max-w-[320px] md:max-w-[500px]"}`}
-              />
-              {isMerch && (
-                <span className="absolute top-[10%] -right-3 md:-right-4 text-[0.5rem] md:text-[0.6rem] font-semibold text-muted-foreground leading-none">TM</span>
-              )}
-              {!isMerch && (
-                <span className="absolute top-[18%] -right-2 md:-right-3 text-[0.45rem] md:text-[0.55rem] font-semibold text-foreground leading-none">®</span>
-              )}
-            </span>
-          </Link>
+          <div className="relative flex justify-center px-1 md:px-2 min-w-0">
+            <CmsEditButton onClick={() => setEditSection("logos")} label="Edit Logo" />
+            <Link to={isMerch ? "/merch" : "/"} className="flex justify-center min-w-0">
+              <span className="relative inline-flex items-center overflow-visible leading-none pb-1">
+                <img
+                  src={logo}
+                  alt={logoAlt}
+                  className={`block w-full h-auto object-contain ${isMerch ? "max-w-[240px] md:max-w-[380px]" : "max-w-[320px] md:max-w-[500px]"}`}
+                />
+                {isMerch && (
+                  <span className="absolute top-[10%] -right-3 md:-right-4 text-[0.5rem] md:text-[0.6rem] font-semibold text-muted-foreground leading-none">TM</span>
+                )}
+                {!isMerch && (
+                  <span className="absolute top-[18%] -right-2 md:-right-3 text-[0.45rem] md:text-[0.55rem] font-semibold text-foreground leading-none">®</span>
+                )}
+              </span>
+            </Link>
+          </div>
 
           {/* Right: Account + Cart */}
           <div className="flex items-center justify-end gap-3 min-w-0">
@@ -140,6 +177,18 @@ export function Header() {
             )
           ))}
         </nav>
+      )}
+
+      {/* CMS Edit Dialogs */}
+      {editSection && sectionFields[editSection] && (
+        <CmsEditDialog
+          open={!!editSection}
+          onOpenChange={(open) => { if (!open) setEditSection(null); }}
+          title={sectionFields[editSection].title}
+          fields={sectionFields[editSection].fields}
+          onSave={handleSave(editSection)}
+          isSaving={upsert.isPending}
+        />
       )}
     </header>
   );

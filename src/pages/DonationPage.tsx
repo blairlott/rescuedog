@@ -252,8 +252,11 @@ const DonationPage = () => {
                   <Heart className="h-8 w-8 text-primary flex-shrink-0 mt-1" />
                   <div>
                     <h3 className="font-bold text-foreground mb-2">Important Information</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-2">
                       Please submit wine donation requests around 4–6 weeks prior to your event. If you request several months in advance, our response may be significantly delayed. We appreciate your understanding that we are a small, family-owned winery with limited resources.
+                    </p>
+                    <p className="text-sm text-muted-foreground leading-relaxed font-medium">
+                      Please note: We can only donate to registered 501(c) organizations.
                     </p>
                   </div>
                 </div>

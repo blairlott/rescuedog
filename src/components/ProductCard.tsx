@@ -50,7 +50,13 @@ export function ProductCard({ product }: ProductCardProps) {
       quantity: 1,
       selectedOptions: firstVariant.selectedOptions || [],
     });
-    toast.success(`${node.title} added to cart`, { position: "top-center" });
+    const currentTotal = useCartStore.getState().items.reduce((sum, i) => sum + (parseFloat(i.price.amount) * i.quantity), 0);
+    const remaining = 150 - currentTotal;
+    if (remaining > 0) {
+      toast.success(`${node.title} added! $${remaining.toFixed(2)} more for free shipping`, { position: "top-center" });
+    } else {
+      toast.success(`${node.title} added! You qualify for free shipping! 🎉`, { position: "top-center" });
+    }
   };
 
   return (

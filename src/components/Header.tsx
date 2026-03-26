@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { Search, Menu, X, User, ShoppingCart } from "lucide-react";
+import { Search, Menu, X, User, LogIn } from "lucide-react";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
 import rdwLogo from "@/assets/rdw-logo.png";

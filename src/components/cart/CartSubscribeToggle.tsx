@@ -12,7 +12,6 @@ const FREQUENCIES = [
 interface CartSubscribeToggleProps {
   price: number;
   quantity: number;
-  shippingIncluded?: boolean;
 }
 
 export function CartSubscribeToggle({ price, quantity, shippingIncluded = false }: CartSubscribeToggleProps) {

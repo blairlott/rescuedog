@@ -68,9 +68,9 @@ const ProductDetail = () => {
     const currentBottles = useCartStore.getState().items.reduce((sum, i) => sum + i.quantity, 0);
     const remaining = freeShippingBottleCount - currentBottles;
     if (remaining > 0) {
-      toast.success(`${product.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for free shipping`, { position: "top-center" });
+      toast.success(`${product.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for shipping included`, { position: "top-center" });
     } else {
-      toast.success(`${product.title} added! You qualify for free shipping! 🎉`, { position: "top-center" });
+      toast.success(`${product.title} added! Shipping included! 🎉`, { position: "top-center" });
     }
   };
 

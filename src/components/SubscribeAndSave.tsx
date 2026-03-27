@@ -85,7 +85,7 @@ export function SubscribeAndSave({ price, onSubscriptionChange }: SubscribeAndSa
           {/* Benefits list */}
           <ul className="space-y-1">
             {[
-              "Free shipping on every delivery",
+              "Shipping included on every delivery",
               "Skip or cancel anytime",
               "Priority access to new releases",
             ].map(benefit => (

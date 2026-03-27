@@ -10,7 +10,7 @@ import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 const perks = [
   { icon: Wine, title: "Curated Selections", desc: "Hand-picked wines from our award-winning portfolio, delivered to your door." },
   { icon: Gift, title: "Member-Only Pricing", desc: "Exclusive discounts on all wines — save on every bottle, every time." },
-  { icon: Truck, title: "Free Shipping", desc: "Complimentary shipping on all club shipments, so you never pay extra." },
+  { icon: Truck, title: "Shipping Included", desc: "Complimentary shipping on all club shipments, so you never pay extra." },
   { icon: Star, title: "Early Access", desc: "Be the first to taste new releases and limited-edition wines before anyone else." },
   { icon: Heart, title: "Double the Impact", desc: "Your membership means even more support for rescue organizations." },
   { icon: Users, title: "Exclusive Events", desc: "Invitations to member-only tastings, virtual events, and winery experiences." },

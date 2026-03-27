@@ -151,7 +151,7 @@ const SubscribePage = () => {
             </p>
             <div className="flex flex-wrap gap-6 justify-center text-sm text-background/60">
               {[
-                { icon: Truck, text: "Free Shipping Always" },
+                { icon: Truck, text: "Shipping Included" },
                 { icon: Gift, text: "Save Up to 33%" },
                 { icon: RefreshCw, text: "Skip or Cancel Anytime" },
               ].map(p => (
@@ -306,7 +306,7 @@ const SubscribePage = () => {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t border-border">
                     <Truck className="w-3.5 h-3.5" />
-                    <span>Free shipping included on every delivery</span>
+                    <span>Shipping included on every delivery</span>
                   </div>
                 </div>
               </div>

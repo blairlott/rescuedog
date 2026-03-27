@@ -778,6 +778,7 @@ export type Database = {
           bottle_count: number
           created_at: string | null
           description: string | null
+          discount_percent: number
           features: string[] | null
           frequency: string
           id: string
@@ -793,6 +794,7 @@ export type Database = {
           bottle_count: number
           created_at?: string | null
           description?: string | null
+          discount_percent?: number
           features?: string[] | null
           frequency: string
           id?: string
@@ -808,6 +810,7 @@ export type Database = {
           bottle_count?: number
           created_at?: string | null
           description?: string | null
+          discount_percent?: number
           features?: string[] | null
           frequency?: string
           id?: string

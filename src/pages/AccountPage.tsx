@@ -20,6 +20,7 @@ import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
 const AccountPage = () => {
   const { user, loading, signOut } = useCustomerAuth();
   const navigate = useNavigate();
+  const { data: membership, isLoading: membershipLoading } = useMyMembership();
   const queryClient = useQueryClient();
 
   useEffect(() => {

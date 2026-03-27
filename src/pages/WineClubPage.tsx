@@ -8,12 +8,12 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 import { useWineClubTiers, useMyMembership, useJoinClub } from "@/hooks/useWineClub";
 import type { WineClubTier, JoinClubData } from "@/hooks/useWineClub";
-import { TierCard } from "@/components/wine-club/TierCard";
+import { ClubConfigurator } from "@/components/wine-club/ClubConfigurator";
 import { ClubSignupForm } from "@/components/wine-club/ClubSignupForm";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useNavigate } from "react-router-dom";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 
 const perks = [
   { icon: Wine, title: "Curated Selections", desc: "Hand-picked wines from our award-winning portfolio, delivered to your door." },
@@ -34,20 +34,11 @@ const defaultFaqs = [
   { q: "How does AI curation work?", a: "Our AI learns your preferences over time and suggests wines you'll love. Every selection is reviewed by our team before shipping." },
 ];
 
-const frequencyFilters = [
-  { value: "all", label: "All" },
-  { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "bi-annual", label: "Bi-Annual" },
-  { value: "yearly", label: "Yearly" },
-];
-
 const WineClubPage = () => {
   const { content, upsert } = useCmsContent("wine_club");
   const [editSection, setEditSection] = useState<EditSection>(null);
   const [editFaqIdx, setEditFaqIdx] = useState<number | null>(null);
   const [selectedTier, setSelectedTier] = useState<WineClubTier | null>(null);
-  const [frequencyFilter, setFrequencyFilter] = useState("all");
 
   const { user } = useCustomerAuth();
   const navigate = useNavigate();
@@ -85,10 +76,6 @@ const WineClubPage = () => {
       onSuccess: () => setSelectedTier(null),
     });
   };
-
-  const filteredTiers = tiers?.filter(
-    (t) => frequencyFilter === "all" || t.frequency === frequencyFilter
-  );
 
   const sectionFields: Record<string, { title: string; fields: CmsField[] }> = {
     hero: {
@@ -175,39 +162,22 @@ const WineClubPage = () => {
                 ) : (
                   <>
                     <div className="text-center mb-10">
-                      <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Choose Your Club</h2>
+                      <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Build Your Club</h2>
                       <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                         {getVal("membership", "heading", "Choose Your Club")}
                       </h3>
-                      <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
+                      <p className="text-muted-foreground max-w-2xl mx-auto">
                         {getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase and free shipping on shipments.")}
                       </p>
-
-                      {/* Frequency Filter */}
-                      <Tabs value={frequencyFilter} onValueChange={setFrequencyFilter} className="mb-8">
-                        <TabsList>
-                          {frequencyFilters.map((f) => (
-                            <TabsTrigger key={f.value} value={f.value}>
-                              {f.label}
-                            </TabsTrigger>
-                          ))}
-                        </TabsList>
-                      </Tabs>
                     </div>
 
                     {tiersLoading ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="border border-border p-6 animate-pulse h-80 bg-muted/30" />
-                        ))}
+                      <div className="flex justify-center py-12">
+                        <div className="border border-border p-6 animate-pulse h-40 w-full max-w-2xl bg-muted/30" />
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredTiers?.map((tier) => (
-                          <TierCard key={tier.id} tier={tier} onSelect={handleSelectTier} />
-                        ))}
-                      </div>
-                    )}
+                    ) : tiers ? (
+                      <ClubConfigurator tiers={tiers} onSelect={handleSelectTier} />
+                    ) : null}
 
                     {!user && (
                       <p className="text-center text-sm text-muted-foreground mt-6">

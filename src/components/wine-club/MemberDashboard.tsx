@@ -58,9 +58,9 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
           <p className="text-sm text-muted-foreground">Next shipment</p>
         </div>
         <div className="border border-border p-6 text-center">
-          <Wine className="h-8 w-8 text-primary mx-auto mb-3" />
-          <p className="text-2xl font-bold text-foreground">{priceDisplay}</p>
-          <p className="text-sm text-muted-foreground">{frequencyLabel[tier.frequency]}</p>
+          <Percent className="h-8 w-8 text-primary mx-auto mb-3" />
+          <p className="text-2xl font-bold text-foreground">20% Off</p>
+          <p className="text-sm text-muted-foreground">All wine purchases</p>
         </div>
       </div>
 

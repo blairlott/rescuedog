@@ -68,6 +68,31 @@ const AccountPage = () => {
     enabled: !!user?.email,
   });
 
+  // Referral rewards
+  const { data: referralRewards = [] } = useQuery({
+    queryKey: ["referral-rewards", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("referral_rewards")
+        .select("*")
+        .or(`referrer_id.eq.${user!.id},referred_id.eq.${user!.id}`)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!user,
+  });
+
+  const totalPoints = referralRewards
+    .filter((r: any) => r.status === "approved")
+    .reduce((sum: number, r: any) => {
+      if (r.referrer_id === user?.id) return sum + (r.referrer_points || 0);
+      if (r.referred_id === user?.id) return sum + (r.referred_points || 0);
+      return sum;
+    }, 0);
+
+  const pendingReferrals = referralRewards.filter((r: any) => r.status === "pending").length;
+
   // Remove favorite
   const removeFav = useMutation({
     mutationFn: async (id: string) => {

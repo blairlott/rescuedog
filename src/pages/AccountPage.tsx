@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PersonalizedRecommendations } from "@/components/PersonalizedRecommendations";
+import { MyRescueTab } from "@/components/account/MyRescueTab";
 
 const AccountPage = () => {
   const { user, loading, signOut } = useCustomerAuth();

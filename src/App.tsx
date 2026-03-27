@@ -65,6 +65,8 @@ function AppContent() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/club" element={<WineClubPage />} />
       <Route path="/club/admin" element={<WineClubAdminPage />} />
+      <Route path="/club/login" element={<WineClubLoginPage />} />
+      <Route path="/club/reset-password" element={<WineClubResetPasswordPage />} />
       <Route path="/donation" element={<DonationPage />} />
       <Route path="/subscribe" element={<SubscribePage />} />
       <Route path="/login" element={<CustomerLoginPage />} />

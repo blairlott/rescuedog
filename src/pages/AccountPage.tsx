@@ -200,6 +200,9 @@ const AccountPage = () => {
               <TabsTrigger value="subscriptions" className="gap-1.5">
                 <Package className="h-3.5 w-3.5" /> Subscriptions
               </TabsTrigger>
+              <TabsTrigger value="wine-club" className="gap-1.5">
+                <Wine className="h-3.5 w-3.5" /> Wine Club
+              </TabsTrigger>
               <TabsTrigger value="referrals" className="gap-1.5">
                 <Gift className="h-3.5 w-3.5" /> Referrals
               </TabsTrigger>

@@ -95,7 +95,7 @@ const WineClubPage = () => {
       title: "Wine Club Hero",
       fields: [
         { key: "title", label: "Title", type: "text", value: getVal("hero", "title", "Wine Club") },
-        { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("hero", "subtitle", "Join our wine club and enjoy exclusive wines, member pricing, and the satisfaction of supporting rescue dogs with every shipment.") },
+        { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("hero", "subtitle", "Join one of our free wine clubs and enjoy monthly, quarterly or yearly shipments of Rescue Dog Wines at 20% off with shipping included — delivered to your doorstep or gift a membership to friends and family!") },
         { key: "image", label: "Background Image URL", type: "url", value: getVal("hero", "image", "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1920") },
       ],
     },

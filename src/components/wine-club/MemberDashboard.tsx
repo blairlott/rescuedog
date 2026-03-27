@@ -15,7 +15,6 @@ interface MemberDashboardProps {
 
 export function MemberDashboard({ membership }: MemberDashboardProps) {
   const tier = membership.tier;
-  const priceDisplay = `$${(tier.price_cents / 100).toFixed(0)}`;
 
   return (
     <div className="max-w-4xl mx-auto">

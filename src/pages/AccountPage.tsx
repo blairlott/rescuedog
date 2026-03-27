@@ -304,6 +304,26 @@ const AccountPage = () => {
               )}
             </TabsContent>
 
+            {/* Wine Club Tab */}
+            <TabsContent value="wine-club">
+              {membershipLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : membership ? (
+                <MemberDashboard membership={membership} />
+              ) : (
+                <div className="text-center py-12 border border-border">
+                  <Wine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-bold text-foreground mb-2">Not a Wine Club Member Yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Join one of our free clubs and enjoy 20% off all wine purchases with complimentary shipping.
+                  </p>
+                  <Button asChild><Link to="/club">Explore Wine Clubs</Link></Button>
+                </div>
+              )}
+            </TabsContent>
+
             {/* Referrals Tab */}
             <TabsContent value="referrals">
               <div className="space-y-6">

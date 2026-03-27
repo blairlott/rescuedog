@@ -197,6 +197,10 @@ const CustomerSignupPage = () => {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" required minLength={6} value={formData.password} onChange={e => setFormData(d => ({ ...d, password: e.target.value }))} placeholder="Min. 6 characters" />
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="referralCode">Referral Code <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Input id="referralCode" value={formData.referralCode} onChange={e => setFormData(d => ({ ...d, referralCode: e.target.value.trim() }))} placeholder="e.g. a1b2c3d4" />
+            </div>
             <Button type="submit" className="w-full h-12" disabled={isLoading || !ageConfirm}>
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-4 h-4 mr-2" />Create Account</>}
             </Button>

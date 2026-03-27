@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Truck } from "lucide-react";
 
 const FREQUENCIES = [
   { value: "monthly", label: "Monthly", discount: 15 },
@@ -12,9 +12,10 @@ const FREQUENCIES = [
 interface CartSubscribeToggleProps {
   price: number;
   quantity: number;
+  shippingIncluded?: boolean;
 }
 
-export function CartSubscribeToggle({ price, quantity }: CartSubscribeToggleProps) {
+export function CartSubscribeToggle({ price, quantity, shippingIncluded = false }: CartSubscribeToggleProps) {
   const [enabled, setEnabled] = useState(false);
   const [frequency, setFrequency] = useState("monthly");
 
@@ -50,6 +51,11 @@ export function CartSubscribeToggle({ price, quantity }: CartSubscribeToggleProp
           <p className="text-primary font-semibold">
             Save ${savings.toFixed(2)} per delivery
           </p>
+          {shippingIncluded && (
+            <p className="flex items-center gap-1 text-primary font-medium">
+              <Truck className="w-3.5 h-3.5" /> Shipping now included!
+            </p>
+          )}
         </div>
       )}
     </div>

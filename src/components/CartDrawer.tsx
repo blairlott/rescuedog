@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2 } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { FreeShippingBar } from "@/components/cart/FreeShippingBar";
+import { useCartSettings } from "@/hooks/useCartSettings";
 import { CartUpsellBanner } from "@/components/cart/CartUpsellBanner";
 import { CartRecommendations } from "@/components/cart/CartRecommendations";
 import { CartSubscribeToggle } from "@/components/cart/CartSubscribeToggle";
@@ -15,6 +16,8 @@ export const CartDrawer = () => {
   const { items, isLoading, isSyncing, updateQuantity, removeItem, getCheckoutUrl, syncCart } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
+  const { freeShippingBottleCount } = useCartSettings();
+  const shippingIncluded = totalItems >= freeShippingBottleCount;
 
   useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
 
@@ -94,6 +97,7 @@ export const CartDrawer = () => {
                       <CartSubscribeToggle
                         price={parseFloat(item.price.amount)}
                         quantity={item.quantity}
+                        shippingIncluded={shippingIncluded}
                       />
                     </div>
                   ))}

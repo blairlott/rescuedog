@@ -180,7 +180,7 @@ const WineClubPage = () => {
                         {getVal("membership", "heading", "Choose Your Club")}
                       </h3>
                       <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
-                        {getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All selections are AI-curated and customizable before each shipment.")}
+                        {getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase and free shipping on shipments.")}
                       </p>
 
                       {/* Frequency Filter */}

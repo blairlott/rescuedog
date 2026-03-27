@@ -34,20 +34,11 @@ const defaultFaqs = [
   { q: "How does AI curation work?", a: "Our AI learns your preferences over time and suggests wines you'll love. Every selection is reviewed by our team before shipping." },
 ];
 
-const frequencyFilters = [
-  { value: "all", label: "All" },
-  { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "bi-annual", label: "Bi-Annual" },
-  { value: "yearly", label: "Yearly" },
-];
-
 const WineClubPage = () => {
   const { content, upsert } = useCmsContent("wine_club");
   const [editSection, setEditSection] = useState<EditSection>(null);
   const [editFaqIdx, setEditFaqIdx] = useState<number | null>(null);
   const [selectedTier, setSelectedTier] = useState<WineClubTier | null>(null);
-  const [frequencyFilter, setFrequencyFilter] = useState("all");
 
   const { user } = useCustomerAuth();
   const navigate = useNavigate();

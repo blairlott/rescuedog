@@ -391,6 +391,14 @@ const AccountPage = () => {
                 )}
               </div>
             </TabsContent>
+
+            {/* My Rescue Tab */}
+            <TabsContent value="my-rescue">
+              <MyRescueTab
+                userId={user.id}
+                currentRescueId={(profile as any)?.favorite_rescue_id || null}
+              />
+            </TabsContent>
           </Tabs>
         </div>
       </main>

@@ -41,6 +41,35 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_favorite_rescues: {
+        Row: {
+          created_at: string
+          id: string
+          rescue_partner_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rescue_partner_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rescue_partner_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_favorite_rescues_rescue_partner_id_fkey"
+            columns: ["rescue_partner_id"]
+            isOneToOne: false
+            referencedRelation: "rescue_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_favorites: {
         Row: {
           created_at: string

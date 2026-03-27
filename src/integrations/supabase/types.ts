@@ -835,6 +835,7 @@ export type Database = {
       }
       is_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
       is_cms_editor: { Args: { _user_id: string }; Returns: boolean }
+      is_wine_club_manager: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:
@@ -845,6 +846,7 @@ export type Database = {
         | "regional_manager"
         | "state_manager"
         | "brand_ambassador"
+        | "wine_club_manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -980,6 +982,7 @@ export const Constants = {
         "regional_manager",
         "state_manager",
         "brand_ambassador",
+        "wine_club_manager",
       ],
     },
   },

@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { US_STATES } from "@/lib/usStates";
 import type { WineClubTier, JoinClubData } from "@/hooks/useWineClub";
-import { ArrowLeft, Wine } from "lucide-react";
+import { ArrowLeft, Wine, Gift, Percent } from "lucide-react";
 
 const winePreferenceOptions = [
   "Bold Reds",
@@ -34,6 +35,8 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
     shipping_zip: "",
     is_gift: false,
     gift_message: "",
+    gift_recipient_name: "",
+    gift_recipient_email: "",
   });
   const [preferences, setPreferences] = useState<string[]>([]);
 
@@ -60,7 +63,12 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
     });
   };
 
-  const priceDisplay = `$${(tier.price_cents / 100).toFixed(0)}`;
+  const frequencyLabel: Record<string, string> = {
+    monthly: "Monthly",
+    quarterly: "Quarterly",
+    "bi-annual": "Bi-Annual",
+    yearly: "Yearly",
+  };
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
@@ -69,25 +77,93 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
         onClick={onBack}
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tiers
+        <ArrowLeft className="h-4 w-4" /> Back to club selection
       </button>
 
       {/* Selected Tier Summary */}
       <div className="border border-primary bg-primary/5 p-6 mb-8">
-        <div className="flex items-center gap-3">
-          <Wine className="h-8 w-8 text-primary" />
-          <div>
-            <h3 className="font-bold text-foreground">{tier.name}</h3>
-            <p className="text-sm text-muted-foreground">
-              {priceDisplay}/shipment · {tier.bottle_count} bottles
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Wine className="h-8 w-8 text-primary" />
+            <div>
+              <h3 className="font-bold text-foreground">{tier.name}</h3>
+              <p className="text-sm text-muted-foreground">
+                {tier.bottle_count} bottles · {frequencyLabel[tier.frequency] || tier.frequency}
+              </p>
+            </div>
           </div>
+          <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-sm uppercase tracking-brand">
+            <Percent className="h-3 w-3" />
+            {tier.discount_percent}% Off
+          </span>
         </div>
+      </div>
+
+      {/* Gift Toggle */}
+      <div className="border border-border p-5 mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Gift className={`h-5 w-5 ${form.is_gift ? "text-primary" : "text-muted-foreground"}`} />
+            <div>
+              <p className="text-sm font-bold text-foreground">Gift a Membership</p>
+              <p className="text-xs text-muted-foreground">Send this wine club membership to someone special</p>
+            </div>
+          </div>
+          <Switch
+            checked={form.is_gift}
+            onCheckedChange={(checked) => update("is_gift", checked)}
+          />
+        </div>
+
+        {form.is_gift && (
+          <div className="mt-4 pt-4 border-t border-border space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="gift_name">Recipient's Name *</Label>
+                <Input
+                  id="gift_name"
+                  value={form.gift_recipient_name}
+                  onChange={(e) => update("gift_recipient_name", e.target.value)}
+                  placeholder="Their full name"
+                  required={form.is_gift}
+                />
+              </div>
+              <div>
+                <Label htmlFor="gift_email">Recipient's Email *</Label>
+                <Input
+                  id="gift_email"
+                  type="email"
+                  value={form.gift_recipient_email}
+                  onChange={(e) => update("gift_recipient_email", e.target.value)}
+                  placeholder="their@email.com"
+                  required={form.is_gift}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="gift_message">Gift Message (optional)</Label>
+              <Textarea
+                id="gift_message"
+                value={form.gift_message}
+                onChange={(e) => update("gift_message", e.target.value)}
+                placeholder="Add a personal note to your gift..."
+                rows={3}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Shipping Address */}
       <div className="mb-8">
-        <h3 className="text-lg font-bold text-foreground mb-4">Shipping Address</h3>
+        <h3 className="text-lg font-bold text-foreground mb-1">
+          {form.is_gift ? "Recipient's Shipping Address" : "Shipping Address"}
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          {form.is_gift
+            ? "Where should we ship the wine to your gift recipient?"
+            : "Where should we deliver your club shipments?"}
+        </p>
         <div className="space-y-4">
           <div>
             <Label htmlFor="line1">Street Address *</Label>
@@ -149,7 +225,9 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
       <div className="mb-8">
         <h3 className="text-lg font-bold text-foreground mb-2">Wine Preferences</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Help our AI curate the perfect selection for you. Select all that apply.
+          {form.is_gift
+            ? "What does the recipient enjoy? This helps us curate the perfect selection."
+            : "Help us curate the perfect selection for you. Select all that apply."}
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {winePreferenceOptions.map((pref) => (
@@ -171,45 +249,32 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
         </div>
       </div>
 
-      {/* Gift Option */}
-      <div className="mb-8">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <Checkbox
-            checked={form.is_gift}
-            onCheckedChange={(checked) => update("is_gift", !!checked)}
-          />
-          <span className="text-sm font-bold text-foreground">This is a gift</span>
-        </label>
-        {form.is_gift && (
-          <div className="mt-3">
-            <Label htmlFor="gift_message">Gift Message</Label>
-            <Textarea
-              id="gift_message"
-              value={form.gift_message}
-              onChange={(e) => update("gift_message", e.target.value)}
-              placeholder="Add a personal note..."
-              rows={3}
-            />
-          </div>
-        )}
-      </div>
-
       {/* Payment Simulation Notice */}
       <div className="border border-brand-gold/30 bg-brand-gold/5 p-4 mb-8 text-sm">
         <p className="font-bold text-foreground mb-1">💳 Payment (Simulated)</p>
         <p className="text-muted-foreground">
           Payment processing is not yet live. Your membership will be created in simulation mode.
-          You'll be charged {priceDisplay} per shipment once payments are enabled.
         </p>
       </div>
 
       <Button
         type="submit"
         size="lg"
-        disabled={isSubmitting || !form.shipping_address_line1 || !form.shipping_city || !form.shipping_state || !form.shipping_zip}
+        disabled={
+          isSubmitting ||
+          !form.shipping_address_line1 ||
+          !form.shipping_city ||
+          !form.shipping_state ||
+          !form.shipping_zip ||
+          (form.is_gift && (!form.gift_recipient_name || !form.gift_recipient_email))
+        }
         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold py-6"
       >
-        {isSubmitting ? "Joining..." : `Join ${tier.name}`}
+        {isSubmitting
+          ? "Processing..."
+          : form.is_gift
+          ? `Gift ${tier.name}`
+          : `Join ${tier.name}`}
       </Button>
     </form>
   );

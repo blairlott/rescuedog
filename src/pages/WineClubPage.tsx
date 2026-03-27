@@ -124,7 +124,7 @@ const WineClubPage = () => {
               {getVal("hero", "title", "Wine Club")}
             </h1>
             <p className="text-primary-foreground/80 text-lg max-w-2xl mx-auto">
-              {getVal("hero", "subtitle", "Join our wine club and enjoy exclusive wines, member pricing, and the satisfaction of supporting rescue dogs with every shipment.")}
+              {getVal("hero", "subtitle", "Join one of our free wine clubs and enjoy monthly, quarterly or yearly shipments of Rescue Dog Wines at 20% off with shipping included — delivered to your doorstep or gift a membership to friends and family!")}
             </p>
           </div>
         </section>

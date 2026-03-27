@@ -38,6 +38,7 @@ import CrmAdminPage from "./pages/CrmAdminPage";
 import CrmResetPasswordPage from "./pages/CrmResetPasswordPage";
 import CmsLoginPage from "./pages/CmsLoginPage";
 import CmsDashboard from "./pages/CmsDashboard";
+import WineClubAdminPage from "./pages/WineClubAdminPage";
 
 const queryClient = new QueryClient();
 

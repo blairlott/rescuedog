@@ -77,6 +77,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           email: string | null
+          favorite_rescue_id: string | null
           id: string
           phone: string | null
           referral_code: string | null
@@ -89,6 +90,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          favorite_rescue_id?: string | null
           id: string
           phone?: string | null
           referral_code?: string | null
@@ -101,6 +103,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          favorite_rescue_id?: string | null
           id?: string
           phone?: string | null
           referral_code?: string | null
@@ -108,7 +111,15 @@ export type Database = {
           updated_at?: string
           wine_preferences?: string[] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customer_profiles_favorite_rescue_id_fkey"
+            columns: ["favorite_rescue_id"]
+            isOneToOne: false
+            referencedRelation: "rescue_partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       donation_requests: {
         Row: {

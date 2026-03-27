@@ -1,0 +1,1 @@
+ALTER TABLE public.customer_profiles ADD COLUMN favorite_rescue_id uuid REFERENCES public.rescue_partners(id) ON DELETE SET NULL DEFAULT NULL;

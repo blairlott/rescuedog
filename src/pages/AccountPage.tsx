@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles, Trophy, Copy, Share2 } from "lucide-react";
+import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles, Trophy, Copy, Share2, PawPrint } from "lucide-react";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PersonalizedRecommendations } from "@/components/PersonalizedRecommendations";
+import { MyRescueTab } from "@/components/account/MyRescueTab";
 
 const AccountPage = () => {
   const { user, loading, signOut } = useCustomerAuth();
@@ -200,6 +201,9 @@ const AccountPage = () => {
               <TabsTrigger value="referrals" className="gap-1.5">
                 <Gift className="h-3.5 w-3.5" /> Referrals
               </TabsTrigger>
+              <TabsTrigger value="my-rescue" className="gap-1.5">
+                <PawPrint className="h-3.5 w-3.5" /> My Rescue
+              </TabsTrigger>
             </TabsList>
 
             {/* For You Tab */}
@@ -386,6 +390,14 @@ const AccountPage = () => {
                   </div>
                 )}
               </div>
+            </TabsContent>
+
+            {/* My Rescue Tab */}
+            <TabsContent value="my-rescue">
+              <MyRescueTab
+                userId={user.id}
+                currentRescueId={(profile as any)?.favorite_rescue_id || null}
+              />
             </TabsContent>
           </Tabs>
         </div>

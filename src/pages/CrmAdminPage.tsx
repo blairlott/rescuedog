@@ -10,8 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, ShieldCheck, UserCog, CheckCircle, XCircle, Clock, UserPlus, Globe, MapPin, Map } from "lucide-react";
+import { Shield, ShieldCheck, UserCog, CheckCircle, XCircle, Clock, UserPlus, Globe, MapPin, Map, Gift } from "lucide-react";
 import { toast } from "sonner";
+import { ReferralAdminTab } from "@/components/crm/ReferralAdminTab";
 
 interface UserWithRoles {
   id: string;

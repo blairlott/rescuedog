@@ -1,0 +1,1 @@
+ALTER TABLE public.wine_club_tiers ADD COLUMN discount_percent integer NOT NULL DEFAULT 20;

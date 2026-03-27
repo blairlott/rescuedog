@@ -77,10 +77,6 @@ const WineClubPage = () => {
     });
   };
 
-  const filteredTiers = tiers?.filter(
-    (t) => frequencyFilter === "all" || t.frequency === frequencyFilter
-  );
-
   const sectionFields: Record<string, { title: string; fields: CmsField[] }> = {
     hero: {
       title: "Wine Club Hero",

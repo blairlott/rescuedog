@@ -61,7 +61,8 @@ const statusColor: Record<string, string> = {
 
 const WineClubAdminPage = () => {
   const { user, loading: authLoading } = useCustomerAuth();
-  const { isAdminOrOwner, isLoading: roleLoading } = useUserRole();
+  const { data: roleInfo, isLoading: roleLoading } = useUserRole();
+  const isAdminOrOwner = roleInfo?.isAdminOrOwner ?? false;
   const { data: memberships, isLoading: membersLoading } = useAllMemberships();
   const { data: shipments, isLoading: shipmentsLoading } = useAllShipments();
 

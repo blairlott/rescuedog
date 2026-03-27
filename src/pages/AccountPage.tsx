@@ -7,17 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles, Trophy, Copy, Share2, PawPrint } from "lucide-react";
+import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles, Trophy, Copy, Share2, PawPrint, Wine } from "lucide-react";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PersonalizedRecommendations } from "@/components/PersonalizedRecommendations";
 import { MyRescueTab } from "@/components/account/MyRescueTab";
+import { useMyMembership } from "@/hooks/useWineClub";
+import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
 
 const AccountPage = () => {
   const { user, loading, signOut } = useCustomerAuth();
   const navigate = useNavigate();
+  const { data: membership, isLoading: membershipLoading } = useMyMembership();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -198,6 +201,9 @@ const AccountPage = () => {
               <TabsTrigger value="subscriptions" className="gap-1.5">
                 <Package className="h-3.5 w-3.5" /> Subscriptions
               </TabsTrigger>
+              <TabsTrigger value="wine-club" className="gap-1.5">
+                <Wine className="h-3.5 w-3.5" /> Wine Club
+              </TabsTrigger>
               <TabsTrigger value="referrals" className="gap-1.5">
                 <Gift className="h-3.5 w-3.5" /> Referrals
               </TabsTrigger>
@@ -294,6 +300,26 @@ const AccountPage = () => {
                       <p className="text-xs text-muted-foreground mt-2">Created {new Date(sub.created_at).toLocaleDateString()}</p>
                     </div>
                   ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Wine Club Tab */}
+            <TabsContent value="wine-club">
+              {membershipLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : membership ? (
+                <MemberDashboard membership={membership} />
+              ) : (
+                <div className="text-center py-12 border border-border">
+                  <Wine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-bold text-foreground mb-2">Not a Wine Club Member Yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Join one of our free clubs and enjoy 20% off all wine purchases with complimentary shipping.
+                  </p>
+                  <Button asChild><Link to="/club">Explore Wine Clubs</Link></Button>
                 </div>
               )}
             </TabsContent>

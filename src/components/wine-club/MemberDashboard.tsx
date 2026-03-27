@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Wine, Package, Calendar, Settings } from "lucide-react";
+import { Wine, Package, Calendar, Settings, Percent } from "lucide-react";
 import type { WineClubMembership, WineClubTier } from "@/hooks/useWineClub";
 
 const frequencyLabel: Record<string, string> = {
@@ -15,7 +15,6 @@ interface MemberDashboardProps {
 
 export function MemberDashboard({ membership }: MemberDashboardProps) {
   const tier = membership.tier;
-  const priceDisplay = `$${(tier.price_cents / 100).toFixed(0)}`;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -59,9 +58,9 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
           <p className="text-sm text-muted-foreground">Next shipment</p>
         </div>
         <div className="border border-border p-6 text-center">
-          <Wine className="h-8 w-8 text-primary mx-auto mb-3" />
-          <p className="text-2xl font-bold text-foreground">{priceDisplay}</p>
-          <p className="text-sm text-muted-foreground">{frequencyLabel[tier.frequency]}</p>
+          <Percent className="h-8 w-8 text-primary mx-auto mb-3" />
+          <p className="text-2xl font-bold text-foreground">20% Off</p>
+          <p className="text-sm text-muted-foreground">All wine purchases</p>
         </div>
       </div>
 

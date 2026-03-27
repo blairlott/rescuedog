@@ -50,8 +50,10 @@ export const MyRescueTab = ({ userId, currentRescueId }: MyRescueTabProps) => {
     mutationFn: async (rescueId: string | null) => {
       const { error } = await supabase
         .from("customer_profiles")
-        .update({ favorite_rescue_id: rescueId } as any)
-        .eq("id", userId);
+        .upsert(
+          { id: userId, favorite_rescue_id: rescueId },
+          { onConflict: "id" }
+        );
       if (error) throw error;
     },
     onSuccess: () => {

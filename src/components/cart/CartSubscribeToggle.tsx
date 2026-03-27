@@ -12,10 +12,9 @@ const FREQUENCIES = [
 interface CartSubscribeToggleProps {
   price: number;
   quantity: number;
-  shippingIncluded?: boolean;
 }
 
-export function CartSubscribeToggle({ price, quantity, shippingIncluded = false }: CartSubscribeToggleProps) {
+export function CartSubscribeToggle({ price, quantity }: CartSubscribeToggleProps) {
   const [enabled, setEnabled] = useState(false);
   const [frequency, setFrequency] = useState("monthly");
 
@@ -51,9 +50,9 @@ export function CartSubscribeToggle({ price, quantity, shippingIncluded = false 
           <p className="text-primary font-semibold">
             Save ${savings.toFixed(2)} per delivery
           </p>
-          {shippingIncluded && (
+          {quantity >= 6 && (
             <p className="flex items-center gap-1 text-primary font-medium">
-              <Truck className="w-3.5 h-3.5" /> Shipping now included!
+              <Truck className="w-3.5 h-3.5" /> Shipping now included with future Ship & Save Shipments
             </p>
           )}
         </div>

@@ -602,6 +602,225 @@ export type Database = {
         }
         Relationships: []
       }
+      wine_club_memberships: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string | null
+          gift_message: string | null
+          id: string
+          is_gift: boolean | null
+          joined_at: string | null
+          next_shipment_date: string | null
+          payment_status: string
+          shipping_address_line1: string | null
+          shipping_address_line2: string | null
+          shipping_city: string | null
+          shipping_state: string | null
+          shipping_zip: string | null
+          status: string
+          tier_id: string
+          updated_at: string | null
+          user_id: string
+          wine_preferences: string[] | null
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string | null
+          gift_message?: string | null
+          id?: string
+          is_gift?: boolean | null
+          joined_at?: string | null
+          next_shipment_date?: string | null
+          payment_status?: string
+          shipping_address_line1?: string | null
+          shipping_address_line2?: string | null
+          shipping_city?: string | null
+          shipping_state?: string | null
+          shipping_zip?: string | null
+          status?: string
+          tier_id: string
+          updated_at?: string | null
+          user_id: string
+          wine_preferences?: string[] | null
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string | null
+          gift_message?: string | null
+          id?: string
+          is_gift?: boolean | null
+          joined_at?: string | null
+          next_shipment_date?: string | null
+          payment_status?: string
+          shipping_address_line1?: string | null
+          shipping_address_line2?: string | null
+          shipping_city?: string | null
+          shipping_state?: string | null
+          shipping_zip?: string | null
+          status?: string
+          tier_id?: string
+          updated_at?: string | null
+          user_id?: string
+          wine_preferences?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wine_club_memberships_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wine_club_shipment_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_ai_suggested: boolean | null
+          is_customer_swap: boolean | null
+          price_cents: number | null
+          product_handle: string
+          product_image_url: string | null
+          product_title: string
+          quantity: number | null
+          shipment_id: string
+          variant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_ai_suggested?: boolean | null
+          is_customer_swap?: boolean | null
+          price_cents?: number | null
+          product_handle: string
+          product_image_url?: string | null
+          product_title: string
+          quantity?: number | null
+          shipment_id: string
+          variant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_ai_suggested?: boolean | null
+          is_customer_swap?: boolean | null
+          price_cents?: number | null
+          product_handle?: string
+          product_image_url?: string | null
+          product_title?: string
+          quantity?: number | null
+          shipment_id?: string
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wine_club_shipment_items_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wine_club_shipments: {
+        Row: {
+          created_at: string | null
+          customization_deadline: string | null
+          id: string
+          membership_id: string
+          notes: string | null
+          notification_sent_at: string | null
+          shipment_date: string | null
+          status: string
+          total_cents: number | null
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customization_deadline?: string | null
+          id?: string
+          membership_id: string
+          notes?: string | null
+          notification_sent_at?: string | null
+          shipment_date?: string | null
+          status?: string
+          total_cents?: number | null
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customization_deadline?: string | null
+          id?: string
+          membership_id?: string
+          notes?: string | null
+          notification_sent_at?: string | null
+          shipment_date?: string | null
+          status?: string
+          total_cents?: number | null
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wine_club_shipments_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wine_club_tiers: {
+        Row: {
+          bottle_count: number
+          created_at: string | null
+          description: string | null
+          features: string[] | null
+          frequency: string
+          id: string
+          is_active: boolean | null
+          name: string
+          price_cents: number
+          slug: string
+          sort_order: number | null
+          updated_at: string | null
+          wine_type: string
+        }
+        Insert: {
+          bottle_count: number
+          created_at?: string | null
+          description?: string | null
+          features?: string[] | null
+          frequency: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price_cents: number
+          slug: string
+          sort_order?: number | null
+          updated_at?: string | null
+          wine_type: string
+        }
+        Update: {
+          bottle_count?: number
+          created_at?: string | null
+          description?: string | null
+          features?: string[] | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price_cents?: number
+          slug?: string
+          sort_order?: number | null
+          updated_at?: string | null
+          wine_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

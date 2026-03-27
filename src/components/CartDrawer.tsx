@@ -7,6 +7,8 @@ import { useCartStore } from "@/stores/cartStore";
 import { FreeShippingBar } from "@/components/cart/FreeShippingBar";
 import { CartUpsellBanner } from "@/components/cart/CartUpsellBanner";
 import { CartRecommendations } from "@/components/cart/CartRecommendations";
+import { CartSubscribeToggle } from "@/components/cart/CartSubscribeToggle";
+import { CartWineClubUpsell } from "@/components/cart/CartWineClubUpsell";
 
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);

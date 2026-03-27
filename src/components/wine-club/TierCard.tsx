@@ -61,17 +61,20 @@ export function TierCard({ tier, onSelect, isSelected }: TierCardProps) {
         </li>
         <li className="flex items-center gap-2">
           <Check className="h-4 w-4 text-primary" />
-          20% off all wine purchases
+          20% off all à la carte wine purchases
         </li>
         <li className="flex items-center gap-2">
           <Check className="h-4 w-4 text-primary" />
-          Complimentary shipping included
+          Free shipping on club shipments
         </li>
         <li className="flex items-center gap-2">
           <Check className="h-4 w-4 text-primary" />
           Cancel anytime
         </li>
       </ul>
+      <p className="text-xs text-muted-foreground mb-4 italic">
+        Discount not stackable with other offers or Subscribe &amp; Save.
+      </p>
 
       <Button
         onClick={() => onSelect(tier)}

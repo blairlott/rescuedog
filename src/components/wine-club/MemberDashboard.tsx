@@ -60,7 +60,7 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
         <div className="border border-border p-6 text-center">
           <Percent className="h-8 w-8 text-primary mx-auto mb-3" />
           <p className="text-2xl font-bold text-foreground">20% Off</p>
-          <p className="text-sm text-muted-foreground">All wine purchases</p>
+          <p className="text-sm text-muted-foreground">À la carte purchases</p>
         </div>
       </div>
 

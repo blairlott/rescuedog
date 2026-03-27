@@ -201,6 +201,9 @@ const AccountPage = () => {
               <TabsTrigger value="referrals" className="gap-1.5">
                 <Gift className="h-3.5 w-3.5" /> Referrals
               </TabsTrigger>
+              <TabsTrigger value="my-rescue" className="gap-1.5">
+                <PawPrint className="h-3.5 w-3.5" /> My Rescue
+              </TabsTrigger>
             </TabsList>
 
             {/* For You Tab */}

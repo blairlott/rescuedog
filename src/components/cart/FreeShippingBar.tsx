@@ -26,7 +26,7 @@ export function FreeShippingBar({ totalBottles }: FreeShippingBarProps) {
           <>
             <Truck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <span className="text-foreground">
-              Add <strong>{remaining} more bottle{remaining !== 1 ? 's' : ''}</strong> for <strong>FREE shipping</strong>
+              Add <strong>{remaining} more bottle{remaining !== 1 ? 's' : ''}</strong> for <strong>shipping included</strong>
             </span>
           </>
         )}

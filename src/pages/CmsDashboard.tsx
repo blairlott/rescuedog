@@ -89,7 +89,7 @@ function CartSettingsPanel() {
   };
 
   const fields = [
-    { key: "free_shipping_bottles", label: "Free Shipping Bottle Count", description: "Customers must add at least this many bottles to qualify for free shipping" },
+    { key: "free_shipping_bottles", label: "Shipping Included Bottle Count", description: "Customers must add at least this many bottles to qualify for included shipping" },
     { key: "half_case_count", label: "Half-Case Bottle Count", description: "Number of bottles in a half-case (used for upsell messaging)" },
     { key: "full_case_count", label: "Full-Case Bottle Count", description: "Number of bottles in a full case" },
     { key: "full_case_discount", label: "Full-Case Discount (%)", description: "Percentage discount shown when customer reaches a full case" },

@@ -306,7 +306,7 @@ const SubscribePage = () => {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t border-border">
                     <Truck className="w-3.5 h-3.5" />
-                    <span>Free shipping included on every delivery</span>
+                    <span>Shipping included on every delivery</span>
                   </div>
                 </div>
               </div>

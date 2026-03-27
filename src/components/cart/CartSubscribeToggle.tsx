@@ -14,7 +14,7 @@ interface CartSubscribeToggleProps {
   quantity: number;
 }
 
-export function CartSubscribeToggle({ price, quantity, shippingIncluded = false }: CartSubscribeToggleProps) {
+export function CartSubscribeToggle({ price, quantity }: CartSubscribeToggleProps) {
   const [enabled, setEnabled] = useState(false);
   const [frequency, setFrequency] = useState("monthly");
 

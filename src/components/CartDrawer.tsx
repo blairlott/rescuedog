@@ -111,7 +111,8 @@ export const CartDrawer = () => {
               </div>
 
               {/* Footer with total and checkout */}
-              <div className="flex-shrink-0 space-y-4 pt-4 border-t">
+              <div className="flex-shrink-0 space-y-3 pt-4 border-t">
+                <CartWineClubUpsell />
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-display font-semibold">Total</span>
                   <span className="text-xl font-bold">${totalPrice.toFixed(2)}</span>

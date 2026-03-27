@@ -176,7 +176,7 @@ export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
             </div>
             <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-sm uppercase tracking-brand flex-shrink-0">
               <Percent className="h-3 w-3" />
-              20% Off
+              {matchedTier.discount_percent}% Off
             </span>
           </div>
 

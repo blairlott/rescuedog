@@ -236,12 +236,18 @@ export default function CrmAdminPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="approved">Approved Users ({approvedUsers.length})</TabsTrigger>
+            <TabsTrigger value="referrals" className="gap-1">
+              <Gift className="h-3.5 w-3.5" /> Referrals
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="pending" className="mt-4">
             {renderUserTable(pendingUsers, true)}
           </TabsContent>
           <TabsContent value="approved" className="mt-4">
             {renderUserTable(approvedUsers, false)}
+          </TabsContent>
+          <TabsContent value="referrals" className="mt-4">
+            <ReferralAdminTab />
           </TabsContent>
         </Tabs>
       )}

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Wine, Package, Calendar, Settings } from "lucide-react";
+import { Wine, Package, Calendar, Settings, Percent } from "lucide-react";
 import type { WineClubMembership, WineClubTier } from "@/hooks/useWineClub";
 
 const frequencyLabel: Record<string, string> = {

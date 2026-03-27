@@ -51,7 +51,10 @@ export function CartSubscribeToggle({ price, quantity }: CartSubscribeToggleProp
             Save ${savings.toFixed(2)} per delivery
           </p>
           <p className="flex items-center gap-1 text-primary font-medium">
-            <Truck className="w-3.5 h-3.5" /> Shipping included with future Ship & Save Shipments of 6 bottles or more
+            <Truck className="w-3.5 h-3.5" />
+            {quantity >= 6
+              ? "Shipping now included with future Ship & Save Shipments"
+              : "Shipping included with future Ship & Save Shipments of 6 bottles or more"}
           </p>
         </div>
       )}

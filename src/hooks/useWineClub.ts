@@ -11,6 +11,7 @@ export interface WineClubTier {
   bottle_count: number;
   wine_type: string;
   price_cents: number;
+  discount_percent: number;
   description: string | null;
   features: string[];
   is_active: boolean;

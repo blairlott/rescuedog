@@ -22,11 +22,19 @@ const CustomerSignupPage = () => {
     lastName: "",
     email: "",
     password: "",
+    referralCode: "",
   });
   const [ageConfirm, setAgeConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
+
+  // Pre-fill referral code from URL param (e.g. /signup?ref=abc123)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) setFormData(d => ({ ...d, referralCode: ref }));
+  }, []);
 
   useEffect(() => {
     if (user) navigate("/account");

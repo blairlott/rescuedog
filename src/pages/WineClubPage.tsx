@@ -17,11 +17,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const perks = [
   { icon: Wine, title: "Curated Selections", desc: "Hand-picked wines from our award-winning portfolio, delivered to your door." },
-  { icon: Gift, title: "Member-Only Pricing", desc: "Exclusive discounts on all wines — save on every bottle, every time." },
+  { icon: Gift, title: "20% Off Everything", desc: "Members enjoy 20% off all wine purchases — club shipments and à la carte orders alike." },
   { icon: Truck, title: "Shipping Included", desc: "Complimentary shipping on all club shipments, so you never pay extra." },
-  { icon: Star, title: "Early Access", desc: "Be the first to taste new releases and limited-edition wines before anyone else." },
+  { icon: Star, title: "Free to Join", desc: "No membership fee or upfront cost. Just sign up, pick your club, and start saving." },
   { icon: Heart, title: "Double the Impact", desc: "Your membership means even more support for rescue organizations." },
-  { icon: Users, title: "Exclusive Events", desc: "Invitations to member-only tastings, virtual events, and winery experiences." },
+  { icon: Users, title: "Cancel Anytime", desc: "No long-term commitments. Pause or cancel your membership whenever you like." },
 ];
 
 type EditSection = "hero" | "membership" | "faq" | null;
@@ -95,7 +95,7 @@ const WineClubPage = () => {
       title: "Wine Club Hero",
       fields: [
         { key: "title", label: "Title", type: "text", value: getVal("hero", "title", "Wine Club") },
-        { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("hero", "subtitle", "Join our wine club and enjoy exclusive wines, member pricing, and the satisfaction of supporting rescue dogs with every shipment.") },
+        { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("hero", "subtitle", "Join one of our free wine clubs and enjoy monthly, quarterly or yearly shipments of Rescue Dog Wines at 20% off with shipping included — delivered to your doorstep or gift a membership to friends and family!") },
         { key: "image", label: "Background Image URL", type: "url", value: getVal("hero", "image", "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1920") },
       ],
     },
@@ -103,7 +103,7 @@ const WineClubPage = () => {
       title: "Membership Section",
       fields: [
         { key: "heading", label: "Heading", type: "text", value: getVal("membership", "heading", "Choose Your Club") },
-        { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All selections are AI-curated and customizable before each shipment.") },
+        { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase and free shipping on shipments.") },
       ],
     },
   };
@@ -124,7 +124,7 @@ const WineClubPage = () => {
               {getVal("hero", "title", "Wine Club")}
             </h1>
             <p className="text-primary-foreground/80 text-lg max-w-2xl mx-auto">
-              {getVal("hero", "subtitle", "Join our wine club and enjoy exclusive wines, member pricing, and the satisfaction of supporting rescue dogs with every shipment.")}
+              {getVal("hero", "subtitle", "Join one of our free wine clubs and enjoy monthly, quarterly or yearly shipments of Rescue Dog Wines at 20% off with shipping included — delivered to your doorstep or gift a membership to friends and family!")}
             </p>
           </div>
         </section>
@@ -180,7 +180,7 @@ const WineClubPage = () => {
                         {getVal("membership", "heading", "Choose Your Club")}
                       </h3>
                       <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
-                        {getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All selections are AI-curated and customizable before each shipment.")}
+                        {getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase and free shipping on shipments.")}
                       </p>
 
                       {/* Frequency Filter */}

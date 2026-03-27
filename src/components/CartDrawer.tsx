@@ -16,6 +16,8 @@ export const CartDrawer = () => {
   const { items, isLoading, isSyncing, updateQuantity, removeItem, getCheckoutUrl, syncCart } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
+  const { freeShippingBottleCount } = useCartSettings();
+  const shippingIncluded = totalItems >= freeShippingBottleCount;
 
   useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
 

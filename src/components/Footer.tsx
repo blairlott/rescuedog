@@ -40,6 +40,7 @@ export function Footer() {
               <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
               <li><Link to="/crm/login" className="hover:text-primary transition-colors">Sales CRM</Link></li>
               <li><Link to="/cms/login" className="hover:text-primary transition-colors">Content Manager</Link></li>
+              <li><Link to="/club/login" className="hover:text-primary transition-colors">Wine Club Manager</Link></li>
             </ul>
           </div>
 

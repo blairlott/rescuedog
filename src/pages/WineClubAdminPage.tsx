@@ -1,15 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
-import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Wine, Users, Package, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Wine, Users, Package, Sparkles, UserPlus, LogOut, Shield } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface MemberRow {
   id: string;
@@ -22,6 +26,29 @@ interface MemberRow {
   next_shipment_date: string | null;
   wine_preferences: string[];
   tier: { name: string; frequency: string; bottle_count: number } | null;
+}
+
+function useWineClubAccess() {
+  const { user } = useCustomerAuth();
+  return useQuery({
+    queryKey: ["wine-club-access", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id);
+      const roleList = (roles || []).map((r: any) => r.role as string);
+      const isOwner = roleList.includes("owner");
+      const isAdmin = roleList.includes("admin");
+      const isWineClubManager = roleList.includes("wine_club_manager");
+      return {
+        hasAccess: isOwner || isAdmin || isWineClubManager,
+        canManageManagers: isOwner || isAdmin, // only owners/admins can add managers
+        isOwner,
+      };
+    },
+  });
 }
 
 function useAllMemberships() {
@@ -52,6 +79,39 @@ function useAllShipments() {
   });
 }
 
+function useWineClubManagers() {
+  return useQuery({
+    queryKey: ["wine-club-managers"],
+    queryFn: async () => {
+      // Get all users with wine_club_manager, admin, or owner roles
+      const { data: roleRows, error } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+      if (error) throw error;
+
+      const managerUserIds = (roleRows || [])
+        .filter((r: any) => ["owner", "admin", "wine_club_manager"].includes(r.role))
+        .reduce((acc: Record<string, string[]>, r: any) => {
+          if (!acc[r.user_id]) acc[r.user_id] = [];
+          acc[r.user_id].push(r.role);
+          return acc;
+        }, {} as Record<string, string[]>);
+
+      if (Object.keys(managerUserIds).length === 0) return [];
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, email, full_name")
+        .in("id", Object.keys(managerUserIds));
+
+      return (profiles || []).map((p: any) => ({
+        ...p,
+        roles: managerUserIds[p.id] || [],
+      }));
+    },
+  });
+}
+
 const statusColor: Record<string, string> = {
   active: "bg-green-100 text-green-800",
   paused: "bg-yellow-100 text-yellow-800",
@@ -59,14 +119,92 @@ const statusColor: Record<string, string> = {
   pending: "bg-blue-100 text-blue-800",
 };
 
+function InviteManagerDialog({ onSuccess }: { onSuccess: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase.functions.invoke("invite-user", {
+        body: { email, full_name: fullName, role: "wine_club_manager" },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(`Invited ${email} as a Wine Club Manager`);
+      setEmail("");
+      setFullName("");
+      setOpen(false);
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="uppercase tracking-brand text-sm font-bold">
+          <UserPlus className="h-4 w-4 mr-2" /> Invite Manager
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Invite Wine Club Manager</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleInvite} className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="invite-name">Full Name</Label>
+            <Input
+              id="invite-name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              placeholder="Jane Doe"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="invite-email">Email</Label>
+            <Input
+              id="invite-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="jane@rescuedogwines.com"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            They'll receive a temporary password and be prompted to reset it on first login.
+          </p>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Inviting..." : "Send Invitation"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 const WineClubAdminPage = () => {
-  const { user, loading: authLoading } = useCustomerAuth();
-  const { data: roleInfo, isLoading: roleLoading } = useUserRole();
-  const isAdminOrOwner = roleInfo?.isAdminOrOwner ?? false;
+  const { user, loading: authLoading, signOut } = useCustomerAuth();
+  const { data: access, isLoading: accessLoading } = useWineClubAccess();
   const { data: memberships, isLoading: membersLoading } = useAllMemberships();
   const { data: shipments, isLoading: shipmentsLoading } = useAllShipments();
+  const { data: managers, refetch: refetchManagers } = useWineClubManagers();
+  const qc = useQueryClient();
 
-  if (authLoading || roleLoading) {
+  if (authLoading || accessLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Wine className="h-8 w-8 animate-pulse text-primary" />
@@ -74,22 +212,36 @@ const WineClubAdminPage = () => {
     );
   }
 
-  if (!user || !isAdminOrOwner) {
-    return <Navigate to="/login" replace />;
+  if (!user || !access?.hasAccess) {
+    return <Navigate to="/club/login" replace />;
   }
 
   const activeCount = memberships?.filter((m) => m.status === "active").length || 0;
   const totalCount = memberships?.length || 0;
   const pendingShipments = shipments?.filter((s) => ["draft", "ai_suggested", "admin_approved"].includes(s.status)).length || 0;
 
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
-          <div className="flex items-center gap-3 mb-8">
-            <Wine className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold text-foreground">Wine Club Admin</h1>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <Wine className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Wine Club Manager</h1>
+                <p className="text-sm text-muted-foreground">
+                  {user.email} · {access.isOwner ? "Owner" : access.canManageManagers ? "Admin" : "Manager"}
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleSignOut} className="text-xs uppercase tracking-brand">
+              <LogOut className="h-4 w-4 mr-1" /> Sign Out
+            </Button>
           </div>
 
           {/* Stats */}
@@ -120,6 +272,11 @@ const WineClubAdminPage = () => {
             <TabsList>
               <TabsTrigger value="members">Members</TabsTrigger>
               <TabsTrigger value="shipments">Shipments</TabsTrigger>
+              {access.canManageManagers && (
+                <TabsTrigger value="managers">
+                  <Shield className="h-4 w-4 mr-1" /> Managers
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="members" className="mt-6">
@@ -234,6 +391,52 @@ const WineClubAdminPage = () => {
                 </div>
               )}
             </TabsContent>
+
+            {access.canManageManagers && (
+              <TabsContent value="managers" className="mt-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-foreground">Wine Club Managers</h3>
+                  <InviteManagerDialog onSuccess={() => refetchManagers()} />
+                </div>
+
+                {!managers?.length ? (
+                  <div className="border border-border p-12 text-center">
+                    <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-foreground mb-2">No Managers Yet</h3>
+                    <p className="text-sm text-muted-foreground">Invite team members to help manage the wine club.</p>
+                  </div>
+                ) : (
+                  <div className="border border-border overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Roles</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {managers.map((m: any) => (
+                          <TableRow key={m.id}>
+                            <TableCell className="font-medium">{m.full_name || "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{m.email}</TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {m.roles.map((r: string) => (
+                                  <Badge key={r} variant={r === "owner" ? "default" : "secondary"} className="text-xs uppercase">
+                                    {r.replace(/_/g, " ")}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </main>

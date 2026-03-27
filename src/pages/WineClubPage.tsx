@@ -8,7 +8,7 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 import { useWineClubTiers, useMyMembership, useJoinClub } from "@/hooks/useWineClub";
 import type { WineClubTier, JoinClubData } from "@/hooks/useWineClub";
-import { TierCard } from "@/components/wine-club/TierCard";
+import { ClubConfigurator } from "@/components/wine-club/ClubConfigurator";
 import { ClubSignupForm } from "@/components/wine-club/ClubSignupForm";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";

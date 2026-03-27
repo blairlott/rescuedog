@@ -6,17 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Heart, Search, ExternalLink, Check, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+const MAX_FAVORITES = 5;
+
 interface MyRescueTabProps {
   userId: string;
-  currentRescueId: string | null;
 }
 
-export const MyRescueTab = ({ userId, currentRescueId }: MyRescueTabProps) => {
+export const MyRescueTab = ({ userId }: MyRescueTabProps) => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState("");
 
-  const { data: rescueOrgs = [], isLoading } = useQuery({
+  const { data: rescueOrgs = [], isLoading: orgsLoading } = useQuery({
     queryKey: ["rescue-partners"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -28,7 +29,24 @@ export const MyRescueTab = ({ userId, currentRescueId }: MyRescueTabProps) => {
     },
   });
 
-  const selectedOrg = rescueOrgs.find((o) => o.id === currentRescueId);
+  const { data: favoriteIds = [], isLoading: favsLoading } = useQuery({
+    queryKey: ["customer-favorite-rescues", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customer_favorite_rescues")
+        .select("rescue_partner_id")
+        .eq("user_id", userId);
+      if (error) throw error;
+      return data.map((r) => r.rescue_partner_id);
+    },
+  });
+
+  const isLoading = orgsLoading || favsLoading;
+
+  const selectedOrgs = useMemo(
+    () => rescueOrgs.filter((o) => favoriteIds.includes(o.id)),
+    [rescueOrgs, favoriteIds]
+  );
 
   const states = useMemo(() => {
     const s = new Set(rescueOrgs.map((o) => o.state).filter(Boolean));
@@ -46,22 +64,42 @@ export const MyRescueTab = ({ userId, currentRescueId }: MyRescueTabProps) => {
     });
   }, [rescueOrgs, search, stateFilter]);
 
-  const saveMutation = useMutation({
-    mutationFn: async (rescueId: string | null) => {
+  const addMutation = useMutation({
+    mutationFn: async (rescueId: string) => {
       const { error } = await supabase
-        .from("customer_profiles")
-        .upsert(
-          { id: userId, favorite_rescue_id: rescueId },
-          { onConflict: "id" }
-        );
+        .from("customer_favorite_rescues")
+        .insert({ user_id: userId, rescue_partner_id: rescueId });
+      if (error) {
+        if (error.message?.includes("Maximum of 5"))
+          throw new Error("You can select up to 5 favorite rescues");
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customer-favorite-rescues"] });
+      toast.success("Rescue added to favorites!");
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to add"),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: async (rescueId: string) => {
+      const { error } = await supabase
+        .from("customer_favorite_rescues")
+        .delete()
+        .eq("user_id", userId)
+        .eq("rescue_partner_id", rescueId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customer-profile"] });
-      toast.success("Favorite rescue updated!");
+      queryClient.invalidateQueries({ queryKey: ["customer-favorite-rescues"] });
+      toast.success("Rescue removed from favorites");
     },
-    onError: (err: any) => toast.error(err.message || "Failed to save"),
+    onError: (err: any) => toast.error(err.message || "Failed to remove"),
   });
+
+  const isPending = addMutation.isPending || removeMutation.isPending;
+  const atLimit = favoriteIds.length >= MAX_FAVORITES;
 
   if (isLoading) {
     return (
@@ -73,46 +111,54 @@ export const MyRescueTab = ({ userId, currentRescueId }: MyRescueTabProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Current selection */}
-      {selectedOrg ? (
-        <div className="border border-primary/30 bg-primary/5 p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-medium text-primary uppercase tracking-wider mb-1">
-                Your Favorite Rescue
-              </p>
-              <h3 className="text-xl font-bold text-foreground">{selectedOrg.name}</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {[selectedOrg.city, selectedOrg.state].filter(Boolean).join(", ")}
-              </p>
-              {selectedOrg.url && (
-                <a
-                  href={selectedOrg.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
-                >
-                  Visit website <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-destructive shrink-0"
-              onClick={() => saveMutation.mutate(null)}
-              disabled={saveMutation.isPending}
-            >
-              <X className="w-4 h-4 mr-1" /> Remove
-            </Button>
+      {/* Current selections */}
+      {selectedOrgs.length > 0 ? (
+        <div className="border border-primary/30 bg-primary/5 p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-primary uppercase tracking-wider">
+              Your Favorite Rescues ({selectedOrgs.length}/{MAX_FAVORITES})
+            </p>
+          </div>
+          <div className="space-y-3">
+            {selectedOrgs.map((org) => (
+              <div key={org.id} className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-foreground truncate">{org.name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {[org.city, org.state].filter(Boolean).join(", ")}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {org.url && (
+                    <a
+                      href={org.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline text-xs inline-flex items-center gap-1"
+                    >
+                      Visit <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive h-7 text-xs"
+                    onClick={() => removeMutation.mutate(org.id)}
+                    disabled={isPending}
+                  >
+                    <X className="w-3.5 h-3.5 mr-1" /> Remove
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       ) : (
         <div className="border border-border p-6 text-center">
           <Heart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <h3 className="font-bold text-foreground mb-1">No rescue selected yet</h3>
+          <h3 className="font-bold text-foreground mb-1">No rescues selected yet</h3>
           <p className="text-sm text-muted-foreground">
-            Choose your favorite rescue organization from our partners below
+            Choose up to {MAX_FAVORITES} favorite rescue organizations from our partners below
           </p>
         </div>
       )}
@@ -148,7 +194,7 @@ export const MyRescueTab = ({ userId, currentRescueId }: MyRescueTabProps) => {
           </p>
         ) : (
           filtered.map((org) => {
-            const isSelected = org.id === currentRescueId;
+            const isSelected = favoriteIds.includes(org.id);
             return (
               <div
                 key={org.id}
@@ -184,8 +230,9 @@ export const MyRescueTab = ({ userId, currentRescueId }: MyRescueTabProps) => {
                       variant="outline"
                       size="sm"
                       className="h-7 text-xs"
-                      onClick={() => saveMutation.mutate(org.id)}
-                      disabled={saveMutation.isPending}
+                      onClick={() => addMutation.mutate(org.id)}
+                      disabled={isPending || atLimit}
+                      title={atLimit ? `Maximum of ${MAX_FAVORITES} rescues` : undefined}
                     >
                       <Heart className="w-3 h-3 mr-1" /> Select
                     </Button>
@@ -197,7 +244,7 @@ export const MyRescueTab = ({ userId, currentRescueId }: MyRescueTabProps) => {
         )}
       </div>
       <p className="text-xs text-muted-foreground text-center">
-        {rescueOrgs.length} rescue organizations supported
+        {rescueOrgs.length} rescue organizations supported · {favoriteIds.length}/{MAX_FAVORITES} selected
       </p>
     </div>
   );

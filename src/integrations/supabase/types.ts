@@ -254,6 +254,51 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_rewards: {
+        Row: {
+          admin_note: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          referred_email: string | null
+          referred_id: string
+          referred_name: string | null
+          referred_points: number
+          referrer_id: string
+          referrer_points: number
+          status: string
+        }
+        Insert: {
+          admin_note?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          referred_email?: string | null
+          referred_id: string
+          referred_name?: string | null
+          referred_points?: number
+          referrer_id: string
+          referrer_points?: number
+          status?: string
+        }
+        Update: {
+          admin_note?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          referred_email?: string | null
+          referred_id?: string
+          referred_name?: string | null
+          referred_points?: number
+          referrer_id?: string
+          referrer_points?: number
+          status?: string
+        }
+        Relationships: []
+      }
       rescue_partners: {
         Row: {
           city: string

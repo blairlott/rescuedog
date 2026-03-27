@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles } from "lucide-react";
+import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles, Trophy, Copy, Share2 } from "lucide-react";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -67,6 +67,31 @@ const AccountPage = () => {
     },
     enabled: !!user?.email,
   });
+
+  // Referral rewards
+  const { data: referralRewards = [] } = useQuery({
+    queryKey: ["referral-rewards", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("referral_rewards")
+        .select("*")
+        .or(`referrer_id.eq.${user!.id},referred_id.eq.${user!.id}`)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!user,
+  });
+
+  const totalPoints = referralRewards
+    .filter((r: any) => r.status === "approved")
+    .reduce((sum: number, r: any) => {
+      if (r.referrer_id === user?.id) return sum + (r.referrer_points || 0);
+      if (r.referred_id === user?.id) return sum + (r.referred_points || 0);
+      return sum;
+    }, 0);
+
+  const pendingReferrals = referralRewards.filter((r: any) => r.status === "pending").length;
 
   // Remove favorite
   const removeFav = useMutation({
@@ -271,29 +296,95 @@ const AccountPage = () => {
 
             {/* Referrals Tab */}
             <TabsContent value="referrals">
-              <div className="border border-border p-6 max-w-md">
-                <Gift className="w-10 h-10 text-primary mb-4" />
-                <h2 className="text-xl font-bold text-foreground mb-2">Refer a Friend</h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Share your unique referral code with friends. When they make their first purchase, you both save!
-                </p>
-                <div className="bg-muted p-4 rounded-md text-center mb-4">
-                  <p className="text-xs text-muted-foreground mb-1">Your Referral Code</p>
-                  <p className="text-2xl font-bold tracking-wider text-foreground">{profile?.referral_code || "Loading..."}</p>
+              <div className="space-y-6">
+                {/* Points Balance */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="border border-border p-5 text-center">
+                    <Trophy className="w-8 h-8 text-primary mx-auto mb-2" />
+                    <p className="text-3xl font-bold text-foreground">{totalPoints}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Total Points</p>
+                  </div>
+                  <div className="border border-border p-5 text-center">
+                    <Gift className="w-8 h-8 text-primary mx-auto mb-2" />
+                    <p className="text-3xl font-bold text-foreground">{referralRewards.filter((r: any) => r.status === "approved").length}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Successful Referrals</p>
+                  </div>
+                  <div className="border border-border p-5 text-center">
+                    <Loader2 className={`w-8 h-8 mx-auto mb-2 ${pendingReferrals > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+                    <p className="text-3xl font-bold text-foreground">{pendingReferrals}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Pending Review</p>
+                  </div>
                 </div>
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    navigator.clipboard.writeText(profile?.referral_code || "");
-                    toast.success("Referral code copied!");
-                  }}
-                  disabled={!profile?.referral_code}
-                >
-                  Copy Referral Code
-                </Button>
-                <p className="text-[10px] text-muted-foreground text-center mt-3">
-                  Share via text, email, or social media. Referral rewards applied automatically.
-                </p>
+
+                {/* Share Referral */}
+                <div className="border border-border p-6">
+                  <h3 className="font-bold text-foreground mb-1">Refer a Friend, Earn Points</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Share your referral code or link. When your friend signs up and their referral is approved, you both earn points!
+                  </p>
+                  <div className="bg-muted p-4 rounded-md text-center mb-4">
+                    <p className="text-xs text-muted-foreground mb-1">Your Referral Code</p>
+                    <p className="text-2xl font-bold tracking-wider text-foreground">{profile?.referral_code || "Loading..."}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => {
+                        navigator.clipboard.writeText(profile?.referral_code || "");
+                        toast.success("Referral code copied!");
+                      }}
+                      disabled={!profile?.referral_code}
+                    >
+                      <Copy className="w-4 h-4" />Copy Code
+                    </Button>
+                    <Button
+                      className="gap-2"
+                      onClick={() => {
+                        const url = `${window.location.origin}/signup?ref=${profile?.referral_code}`;
+                        navigator.clipboard.writeText(url);
+                        toast.success("Referral link copied!");
+                      }}
+                      disabled={!profile?.referral_code}
+                    >
+                      <Share2 className="w-4 h-4" />Copy Link
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Referral History */}
+                {referralRewards.length > 0 && (
+                  <div className="border border-border">
+                    <div className="px-4 py-3 border-b border-border">
+                      <h3 className="font-bold text-sm text-foreground">Referral History</h3>
+                    </div>
+                    <div className="divide-y divide-border">
+                      {referralRewards.map((r: any) => (
+                        <div key={r.id} className="px-4 py-3 flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">
+                              {r.referrer_id === user?.id
+                                ? `You referred ${r.referred_name || r.referred_email || "someone"}`
+                                : `Referred by a friend`}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</p>
+                          </div>
+                          <div className="text-right">
+                            {r.status === "approved" ? (
+                              <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                                +{r.referrer_id === user?.id ? r.referrer_points : r.referred_points} pts
+                              </span>
+                            ) : r.status === "pending" ? (
+                              <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 px-2 py-0.5 rounded">Pending</span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Rejected</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>

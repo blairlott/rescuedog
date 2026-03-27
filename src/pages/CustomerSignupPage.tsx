@@ -22,11 +22,19 @@ const CustomerSignupPage = () => {
     lastName: "",
     email: "",
     password: "",
+    referralCode: "",
   });
   const [ageConfirm, setAgeConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
+
+  // Pre-fill referral code from URL param (e.g. /signup?ref=abc123)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) setFormData(d => ({ ...d, referralCode: ref }));
+  }, []);
 
   useEffect(() => {
     if (user) navigate("/account");
@@ -40,17 +48,48 @@ const CustomerSignupPage = () => {
     }
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             full_name: `${formData.firstName} ${formData.lastName}`,
+            referred_by: formData.referralCode || undefined,
           },
           emailRedirectTo: window.location.origin,
         },
       });
       if (error) throw error;
+
+      // If a referral code was provided, create the referral tracking record
+      if (formData.referralCode && signUpData.user) {
+        // Look up the referrer by their referral_code
+        const { data: referrer } = await supabase
+          .from("customer_profiles")
+          .select("id")
+          .eq("referral_code", formData.referralCode)
+          .maybeSingle();
+
+        if (referrer) {
+          // Create customer profile with referred_by
+          await supabase.from("customer_profiles").upsert({
+            id: signUpData.user.id,
+            email: formData.email,
+            display_name: `${formData.firstName} ${formData.lastName}`,
+            referred_by: formData.referralCode,
+            updated_at: new Date().toISOString(),
+          } as any);
+
+          // Create pending referral reward
+          await supabase.from("referral_rewards").insert({
+            referrer_id: referrer.id,
+            referred_id: signUpData.user.id,
+            referred_email: formData.email,
+            referred_name: `${formData.firstName} ${formData.lastName}`,
+            status: "pending",
+          } as any);
+        }
+      }
       toast.success("Check your email to verify your account!");
       navigate("/login");
     } catch (err: any) {
@@ -157,6 +196,10 @@ const CustomerSignupPage = () => {
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" required minLength={6} value={formData.password} onChange={e => setFormData(d => ({ ...d, password: e.target.value }))} placeholder="Min. 6 characters" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="referralCode">Referral Code <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Input id="referralCode" value={formData.referralCode} onChange={e => setFormData(d => ({ ...d, referralCode: e.target.value.trim() }))} placeholder="e.g. a1b2c3d4" />
             </div>
             <Button type="submit" className="w-full h-12" disabled={isLoading || !ageConfirm}>
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-4 h-4 mr-2" />Create Account</>}

@@ -97,7 +97,6 @@ export const CartDrawer = () => {
                       <CartSubscribeToggle
                         price={parseFloat(item.price.amount)}
                         quantity={item.quantity}
-                        shippingIncluded={shippingIncluded}
                       />
                     </div>
                   ))}

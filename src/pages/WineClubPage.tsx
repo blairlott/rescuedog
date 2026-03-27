@@ -162,7 +162,7 @@ const WineClubPage = () => {
                 ) : (
                   <>
                     <div className="text-center mb-10">
-                      <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Build Your Club</h2>
+                      <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Design Your Own Wine Club</h2>
                       <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                         {getVal("membership", "heading", "Choose Your Club")}
                       </h3>

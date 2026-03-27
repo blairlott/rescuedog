@@ -162,39 +162,22 @@ const WineClubPage = () => {
                 ) : (
                   <>
                     <div className="text-center mb-10">
-                      <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Choose Your Club</h2>
+                      <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Build Your Club</h2>
                       <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                         {getVal("membership", "heading", "Choose Your Club")}
                       </h3>
-                      <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
+                      <p className="text-muted-foreground max-w-2xl mx-auto">
                         {getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase and free shipping on shipments.")}
                       </p>
-
-                      {/* Frequency Filter */}
-                      <Tabs value={frequencyFilter} onValueChange={setFrequencyFilter} className="mb-8">
-                        <TabsList>
-                          {frequencyFilters.map((f) => (
-                            <TabsTrigger key={f.value} value={f.value}>
-                              {f.label}
-                            </TabsTrigger>
-                          ))}
-                        </TabsList>
-                      </Tabs>
                     </div>
 
                     {tiersLoading ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="border border-border p-6 animate-pulse h-80 bg-muted/30" />
-                        ))}
+                      <div className="flex justify-center py-12">
+                        <div className="border border-border p-6 animate-pulse h-40 w-full max-w-2xl bg-muted/30" />
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredTiers?.map((tier) => (
-                          <TierCard key={tier.id} tier={tier} onSelect={handleSelectTier} />
-                        ))}
-                      </div>
-                    )}
+                    ) : tiers ? (
+                      <ClubConfigurator tiers={tiers} onSelect={handleSelectTier} />
+                    ) : null}
 
                     {!user && (
                       <p className="text-center text-sm text-muted-foreground mt-6">

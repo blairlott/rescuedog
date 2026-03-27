@@ -54,7 +54,7 @@ export function CartSubscribeToggle({ price, quantity }: CartSubscribeToggleProp
             <Truck className="w-3.5 h-3.5" />
             {quantity >= 6
               ? "Shipping now included with future Ship & Save Shipments"
-              : "Shipping included with future Ship & Save Shipments of 6 bottles or more"}
+              : "Shipping included with Ship & Save Shipments of 6 bottles or more"}
           </p>
         </div>
       )}

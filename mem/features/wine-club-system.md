@@ -1,6 +1,6 @@
 ---
 name: Wine Club System
-description: Custom wine club configurator + member portal that hands off to Vinoshipper for billing/compliance/shipping
+description: Custom wine club configurator + member portal handing off to Vinoshipper
 type: feature
 ---
 # Wine Club System
@@ -15,21 +15,19 @@ All wine club orders flow through Vinoshipper (see order-routing). Lovable app h
 
 Each tier maps to a Vinoshipper club product via `wine_club_tiers.vinoshipper_club_id`.
 
-## Member benefits
-- **Flat 20% off** all club shipments AND all à la carte orders, anytime (NOT tiered)
-- **Shipping included** on regular club shipments (use "shipping included" — never "free shipping")
-- **Free to join**, cancel/pause anytime (email info@rescuedogwines.com to pause/cancel)
-- All shipments fully customizable — members can add bottles, no max (subject to inventory)
+## Member benefits — automatic on identification
+Anyone identified as an active club member (by Vinoshipper customer ID match or membership lookup) automatically receives:
+- **Flat 20% off** on EVERY order (club shipments + à la carte), no coupon code entry required
+- **Shipping included on regular cadence club shipments ONLY** (monthly/quarterly/bi-annual/yearly scheduled shipments)
+- À la carte orders: 20% off applies, but **shipping is NOT included** — standard shipping rates apply
+- Free to join, cancel/pause anytime (email info@rescuedogwines.com)
+- Shipments fully customizable — members can add bottles, no max (subject to inventory)
 - Gift memberships supported
+
+## Discount enforcement
+Member status drives discount automatically. No promo codes shown to user. Implementation pushes the 20% as an order-level discount when creating Vinoshipper orders for identified members, and shipping=included flag only on scheduled club shipments.
 
 ## Shipment timing
 - Quarterly: timed around Valentine's Day, Mother's Day, end of summer, Thanksgiving
 - Yearly: ships around Thanksgiving through ~Dec 14 for holiday delivery
 - New holiday signups accepted through ~Dec 14
-
-## FAQ canonical answers (from legacy page)
-- Cost to join: free
-- Shipping cost: included on regular shipments
-- Cancel: anytime, email info@rescuedogwines.com
-- Card update: at checkout after login or at vinoshipper.com
-- Shipping rules vary by state (link to vinoshipper compliance article)

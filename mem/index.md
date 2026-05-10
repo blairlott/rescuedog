@@ -10,6 +10,8 @@
 - Dual brand: high-def Rescue Dog logo/merch-only on /merch; Black RDW logo on wine site.
 - Colors: Red #c30017, Black, Grey. Fonts: Nunito Sans, Avenir Next. Flat/sharp edges (border-radius: 0).
 - Age gate required for wine routes; bypassed for /merch, /crm, /cms.
+- TIED-HOUSE: any consumer comm naming retailers MUST list 3+ unaffiliated retailers, equal prominence, no exclusivity language. Block send if <3.
+- Email provider: Mailchimp (marketing). Locator/CRM is the brain; Mailchimp delivers.
 
 ## Memories
 - [Order Routing](mem://features/order-routing) — All orders flow through Vinoshipper including wine club
@@ -44,3 +46,5 @@
 - [Legacy UX Inheritance](mem://features/legacy-ux-inheritance) — UX patterns from rescuedogwines.com worth porting
 - [WordPress on Cloudways](mem://tech/wordpress) — Self-hosted WP REST API; replaces cms_content + holds wine copy by SKU
 - [Shopify Sunset Plan](mem://plans/shopify-sunset) — How/when Shopify exits; VS + drop-ship bridge takes over merch
+- [Tied-House Compliance](mem://features/tied-house-compliance) — Hard rule: 3+ retailers, equal prominence, no exclusivity, in any where-to-buy comm
+- [Mailchimp Integration](mem://tech/mailchimp-integration) — How signal engine pushes compliant retailer campaigns via Mailchimp

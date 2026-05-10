@@ -1,1 +1,4 @@
 project_id = "eskqaxmypgvwtsffcbsw"
+
+[functions.vinoshipper-webhook]
+verify_jwt = false

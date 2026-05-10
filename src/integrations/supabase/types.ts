@@ -609,6 +609,7 @@ export type Database = {
           gift_message: string | null
           id: string
           is_gift: boolean | null
+          is_legacy_member: boolean
           joined_at: string | null
           next_shipment_date: string | null
           payment_status: string
@@ -621,6 +622,8 @@ export type Database = {
           tier_id: string
           updated_at: string | null
           user_id: string
+          vinoshipper_customer_id: string | null
+          vinoshipper_membership_id: string | null
           wine_preferences: string[] | null
         }
         Insert: {
@@ -629,6 +632,7 @@ export type Database = {
           gift_message?: string | null
           id?: string
           is_gift?: boolean | null
+          is_legacy_member?: boolean
           joined_at?: string | null
           next_shipment_date?: string | null
           payment_status?: string
@@ -641,6 +645,8 @@ export type Database = {
           tier_id: string
           updated_at?: string | null
           user_id: string
+          vinoshipper_customer_id?: string | null
+          vinoshipper_membership_id?: string | null
           wine_preferences?: string[] | null
         }
         Update: {
@@ -649,6 +655,7 @@ export type Database = {
           gift_message?: string | null
           id?: string
           is_gift?: boolean | null
+          is_legacy_member?: boolean
           joined_at?: string | null
           next_shipment_date?: string | null
           payment_status?: string
@@ -661,6 +668,8 @@ export type Database = {
           tier_id?: string
           updated_at?: string | null
           user_id?: string
+          vinoshipper_customer_id?: string | null
+          vinoshipper_membership_id?: string | null
           wine_preferences?: string[] | null
         }
         Relationships: [
@@ -736,6 +745,8 @@ export type Database = {
           total_cents: number | null
           tracking_number: string | null
           updated_at: string | null
+          vinoshipper_coupon_code: string | null
+          vinoshipper_order_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -749,6 +760,8 @@ export type Database = {
           total_cents?: number | null
           tracking_number?: string | null
           updated_at?: string | null
+          vinoshipper_coupon_code?: string | null
+          vinoshipper_order_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -762,6 +775,8 @@ export type Database = {
           total_cents?: number | null
           tracking_number?: string | null
           updated_at?: string | null
+          vinoshipper_coupon_code?: string | null
+          vinoshipper_order_id?: string | null
         }
         Relationships: [
           {
@@ -788,6 +803,7 @@ export type Database = {
           slug: string
           sort_order: number | null
           updated_at: string | null
+          vinoshipper_club_id: string | null
           wine_type: string
         }
         Insert: {
@@ -804,6 +820,7 @@ export type Database = {
           slug: string
           sort_order?: number | null
           updated_at?: string | null
+          vinoshipper_club_id?: string | null
           wine_type: string
         }
         Update: {
@@ -820,6 +837,7 @@ export type Database = {
           slug?: string
           sort_order?: number | null
           updated_at?: string | null
+          vinoshipper_club_id?: string | null
           wine_type?: string
         }
         Relationships: []

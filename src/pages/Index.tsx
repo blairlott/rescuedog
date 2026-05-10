@@ -13,6 +13,8 @@ import heroRedBlend from "@/assets/hero-red-blend-v2.jpg";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
+import { ImpactCounter } from "@/components/ImpactCounter";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 const instagramPosts = [
   {

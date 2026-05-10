@@ -457,6 +457,8 @@ const Index = () => {
         </section>
       )}
 
+      {showImpact && <ImpactCounter />}
+
       {/* Wholesale CTA */}
       <section className="py-12 border-t border-border">
         <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">

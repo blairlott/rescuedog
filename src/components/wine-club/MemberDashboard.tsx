@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Wine, Package, Calendar, Settings, Percent } from "lucide-react";
+import { Wine, Package, Calendar, Settings, Percent, RotateCcw, Loader2 } from "lucide-react";
 import type { WineClubMembership, WineClubTier } from "@/hooks/useWineClub";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useCartStore } from "@/stores/cartStore";
+import { toast } from "sonner";
 
 const frequencyLabel: Record<string, string> = {
   monthly: "Monthly",
@@ -15,6 +19,51 @@ interface MemberDashboardProps {
 
 export function MemberDashboard({ membership }: MemberDashboardProps) {
   const tier = membership.tier;
+  const [lastItems, setLastItems] = useState<any[] | null>(null);
+  const [reordering, setReordering] = useState(false);
+  const addItem = useCartStore((s) => s.addItem);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("wine_club_shipments")
+        .select("id, shipment_date, items:wine_club_shipment_items(*)")
+        .eq("membership_id", membership.id)
+        .order("shipment_date", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      setLastItems((data as any)?.items ?? []);
+    })();
+  }, [membership.id]);
+
+  const reorderLast = async () => {
+    if (!lastItems || lastItems.length === 0) return;
+    setReordering(true);
+    try {
+      for (const it of lastItems) {
+        const fakeProduct: any = {
+          node: {
+            handle: it.product_handle,
+            title: it.product_title,
+            images: { edges: it.product_image_url ? [{ node: { url: it.product_image_url, altText: it.product_title } }] : [] },
+          },
+        };
+        await addItem({
+          product: fakeProduct,
+          variantId: it.variant_id || it.product_handle,
+          variantTitle: "Default",
+          price: { amount: ((it.price_cents || 0) / 100).toFixed(2), currencyCode: "USD" },
+          quantity: it.quantity || 1,
+          selectedOptions: [],
+        });
+      }
+      toast.success(`Added ${lastItems.length} bottle${lastItems.length !== 1 ? 's' : ''} to cart`, { position: "top-center" });
+    } catch (e: any) {
+      toast.error("Reorder failed", { description: e?.message });
+    } finally {
+      setReordering(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -63,6 +112,24 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
           <p className="text-sm text-muted-foreground">À la carte purchases</p>
         </div>
       </div>
+
+      {/* One-tap reorder */}
+      {lastItems && lastItems.length > 0 && (
+        <div className="border border-primary bg-primary/5 p-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <RotateCcw className="h-6 w-6 text-primary" />
+            <div>
+              <h3 className="font-bold text-foreground">Loved your last shipment?</h3>
+              <p className="text-sm text-muted-foreground">
+                Reorder all {lastItems.length} bottle{lastItems.length !== 1 ? 's' : ''} with one tap.
+              </p>
+            </div>
+          </div>
+          <Button onClick={reorderLast} disabled={reordering} className="uppercase tracking-brand text-xs font-bold">
+            {reordering ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reorder Last Shipment"}
+          </Button>
+        </div>
+      )}
 
       {/* Shipping Address */}
       <div className="border border-border p-6 mb-8">

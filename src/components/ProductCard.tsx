@@ -3,8 +3,9 @@ import { ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
 import { useCartSettings } from "@/hooks/useCartSettings";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useIsMember } from "@/hooks/useIsMember";
 import { Button } from "@/components/ui/button";
-import { Loader2, Award, ShoppingBag, Heart } from "lucide-react";
+import { Loader2, Award, ShoppingBag, Heart, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProductCardProps {
@@ -30,6 +31,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const isLoading = useCartStore(state => state.isLoading);
   const { freeShippingBottleCount } = useCartSettings();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { isMember, discountPercent } = useIsMember();
   const { node } = product;
   const image = node.images.edges[0]?.node;
   const price = node.priceRange.minVariantPrice;
@@ -37,14 +39,19 @@ export function ProductCard({ product }: ProductCardProps) {
   const award = getAwardBadge(node.tags || []);
   const titleLower = node.title.toLowerCase();
   const isSampler = titleLower.includes('sampler') || titleLower.includes('sample') || titleLower.includes('6 bottle') || titleLower.includes('6-bottle');
+  const tagSet = new Set((node.tags || []).map(t => t.toLowerCase()));
+  const isClubExclusive = tagSet.has('club-exclusive') || tagSet.has('club exclusive');
+  const locked = isClubExclusive && !isMember;
 
   const priceNum = parseFloat(price.amount);
   const dollars = Math.floor(priceNum);
   const cents = Math.round((priceNum - dollars) * 100).toString().padStart(2, '0');
+  const memberPrice = priceNum * (1 - (discountPercent || 20) / 100);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (locked) return;
     if (!firstVariant) return;
     await addItem({
       product,
@@ -103,6 +110,27 @@ export function ProductCard({ product }: ProductCardProps) {
           </span>
         )}
 
+        {/* Club exclusive badge */}
+        {isClubExclusive && (
+          <span className="absolute top-3 left-3 mt-8 inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase tracking-brand shadow-sm bg-primary text-primary-foreground">
+            <Lock className="w-3 h-3" /> Club Exclusive
+          </span>
+        )}
+
+        {/* Lock overlay for non-members */}
+        {locked && (
+          <Link
+            to="/club"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute inset-0 bg-background/70 backdrop-blur-[2px] flex flex-col items-center justify-center text-center p-4 z-20"
+          >
+            <Lock className="w-6 h-6 text-primary mb-2" />
+            <p className="text-xs font-bold uppercase tracking-brand text-foreground mb-1">Members only</p>
+            <p className="text-[11px] text-muted-foreground mb-3">Join the wine club to unlock</p>
+            <span className="inline-block bg-primary text-primary-foreground text-[11px] font-bold uppercase tracking-brand px-3 py-1.5">Join the club →</span>
+          </Link>
+        )}
+
         {/* Favorite heart button */}
         <button
           onClick={handleToggleFavorite}
@@ -138,20 +166,32 @@ export function ProductCard({ product }: ProductCardProps) {
         <h3 className="text-sm font-medium text-foreground tracking-brand leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-200">
           {node.title}
         </h3>
-        <p className="text-foreground">
-          <span className="text-[10px] align-top leading-none">$</span>
-          <span className="text-base font-semibold">{dollars}</span>
-          <span className="text-[10px] align-top leading-none">.{cents}</span>
-        </p>
+        {isMember && !isSampler ? (
+          <div>
+            <p className="text-foreground">
+              <span className="text-[10px] align-top leading-none">$</span>
+              <span className="text-base font-semibold">{Math.floor(memberPrice)}</span>
+              <span className="text-[10px] align-top leading-none">.{Math.round((memberPrice - Math.floor(memberPrice)) * 100).toString().padStart(2, '0')}</span>
+              <span className="text-[10px] text-muted-foreground line-through ml-2">${priceNum.toFixed(2)}</span>
+            </p>
+            <p className="text-[10px] uppercase tracking-brand text-primary font-bold">Your Member Price</p>
+          </div>
+        ) : (
+          <p className="text-foreground">
+            <span className="text-[10px] align-top leading-none">$</span>
+            <span className="text-base font-semibold">{dollars}</span>
+            <span className="text-[10px] align-top leading-none">.{cents}</span>
+          </p>
+        )}
         {isSampler ? (
           <p className="text-[10px] text-muted-foreground italic">Not valid with any other offer</p>
-        ) : (
+        ) : !isMember ? (
           <p className="text-[11px] text-muted-foreground">
             <Link to="/club" onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">
               Club Price: ${(priceNum * 0.8).toFixed(2)}
             </Link>
           </p>
-        )}
+        ) : null}
       </div>
     </Link>
   );

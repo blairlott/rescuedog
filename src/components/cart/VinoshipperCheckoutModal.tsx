@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Lock, Wine } from "lucide-react";
+import { Loader2, Lock, Wine, Apple, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
 import { useMyMembership } from "@/hooks/useWineClub";
@@ -35,6 +35,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
 
   const [ageOk, setAgeOk] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const abandonmentIdRef = useRef<string | null>(null);
   const [form, setForm] = useState({
     email: user?.email ?? "",
     name: "",
@@ -46,6 +47,19 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
     exp: "12/29",
     cvc: "123",
   });
+
+  // Autofill ship-to from membership address once available
+  useEffect(() => {
+    if (!membership) return;
+    setForm((p) => ({
+      ...p,
+      email: p.email || user?.email || "",
+      address: p.address || membership.shipping_address_line1 || "",
+      city: p.city || membership.shipping_city || "",
+      state: p.state || membership.shipping_state || "",
+      zip: p.zip || membership.shipping_zip || "",
+    }));
+  }, [membership, user]);
 
   const totalBottles = items.reduce((s, i) => s + i.quantity, 0);
   const subtotal = items.reduce(
@@ -64,6 +78,52 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
 
   const update = (k: keyof typeof form, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
+
+  // Capture abandonment: insert a row when the modal opens with items,
+  // mark converted on successful order, mark abandoned on close-with-items.
+  useEffect(() => {
+    if (!open || items.length === 0 || abandonmentIdRef.current) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("cart_abandonments")
+        .insert({
+          user_id: user?.id ?? null,
+          email: form.email || user?.email || null,
+          items: items.map((i) => ({
+            handle: i.product.node.handle,
+            title: i.product.node.title,
+            variant_id: i.variantId,
+            quantity: i.quantity,
+            unit_price: parseFloat(i.price.amount),
+            image: i.product.node.images?.edges?.[0]?.node?.url ?? null,
+          })),
+          subtotal_cents: Math.round(subtotal * 100),
+          total_bottles: totalBottles,
+          status: "opened",
+          source: "vs_checkout_sim",
+        })
+        .select("id")
+        .maybeSingle();
+      if (!error && data) abandonmentIdRef.current = data.id;
+    })();
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const markAbandonment = async (status: "abandoned" | "converted") => {
+    const id = abandonmentIdRef.current;
+    if (!id) return;
+    await supabase
+      .from("cart_abandonments")
+      .update({ status, resolved_at: new Date().toISOString() })
+      .eq("id", id);
+    abandonmentIdRef.current = null;
+  };
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next && items.length > 0 && abandonmentIdRef.current) {
+      void markAbandonment("abandoned");
+    }
+    onOpenChange(next);
+  };
 
   const placeOrder = async () => {
     if (!ageOk) {
@@ -108,6 +168,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
         notes: "Simulated checkout — Vinoshipper Injector not yet live",
       });
       if (error) throw error;
+      await markAbandonment("converted");
       toast.success("Order placed (simulated)", {
         description: `Order ${fakeOrderId} — total $${total.toFixed(2)}`,
       });
@@ -123,8 +184,9 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] p-0 flex flex-col">
+        <div className="overflow-y-auto p-6 pb-32 flex-1 space-y-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-display">
             <Wine className="h-5 w-5 text-primary" />
@@ -140,6 +202,30 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             payment. In simulation mode no card is charged.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Express wallet buttons (simulated) */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="bg-foreground text-background hover:bg-foreground/90"
+            onClick={placeOrder}
+            disabled={submitting || items.length === 0 || !ageOk}
+          >
+            <Apple className="h-4 w-4 mr-2" /> Apple Pay
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={placeOrder}
+            disabled={submitting || items.length === 0 || !ageOk}
+          >
+            <Smartphone className="h-4 w-4 mr-2" /> Google Pay
+          </Button>
+        </div>
+        <div className="text-center text-[10px] uppercase tracking-brand text-muted-foreground -my-1">
+          or pay with card
+        </div>
 
         {/* Summary */}
         <div className="border border-border p-3 text-sm space-y-1 bg-muted/30">
@@ -213,19 +299,23 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             for delivery.
           </span>
         </label>
+        </div>
 
-        <Button
-          onClick={placeOrder}
-          disabled={submitting || items.length === 0}
-          size="lg"
-          className="w-full"
-        >
-          {submitting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            `Place order — $${total.toFixed(2)}`
-          )}
-        </Button>
+        {/* Sticky bottom CTA — thumb reach on mobile */}
+        <div className="absolute bottom-0 inset-x-0 bg-background border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <Button
+            onClick={placeOrder}
+            disabled={submitting || items.length === 0 || !ageOk}
+            size="lg"
+            className="w-full"
+          >
+            {submitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              `Place order — $${total.toFixed(2)}`
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

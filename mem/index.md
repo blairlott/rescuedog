@@ -35,6 +35,7 @@
 - [CRM Staleness](mem://features/crm-staleness-tracking) — Activity tracking logic based on last order
 - [Referral Rewards](mem://features/referral-rewards-logic) — Points-based system requiring manual CRM approval
 - [Store Locator](mem://features/store-locator) — Grappos iframe integration for store locator
+- [Tracking & Ad Tags](mem://features/tracking-tags) — GTM, GA4, Meta Pixel/CAPI, Cookiebot, reCAPTCHA inherited from legacy site
 - [Wine Catalog Pricing](mem://pricing/wine-catalog) — Per-SKU retail and member prices ported from legacy site
 - [Promo & Shipping Rules](mem://features/promo-rules) — STOCKUP, signup discount, $9.99 shipping at 6+, stacking rules
 - [Legacy UX Inheritance](mem://features/legacy-ux-inheritance) — UX patterns from rescuedogwines.com worth porting

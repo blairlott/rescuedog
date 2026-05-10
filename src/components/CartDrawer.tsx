@@ -12,6 +12,8 @@ import { CartRecommendations } from "@/components/cart/CartRecommendations";
 import { CartSubscribeToggle } from "@/components/cart/CartSubscribeToggle";
 import { CartWineClubUpsell } from "@/components/cart/CartWineClubUpsell";
 import { VinoshipperCheckoutModal } from "@/components/cart/VinoshipperCheckoutModal";
+import { useIsMember } from "@/hooks/useIsMember";
+import { Percent } from "lucide-react";
 
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,6 +25,10 @@ export const CartDrawer = () => {
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
   const { freeShippingBottleCount } = useCartSettings();
   const shippingIncluded = totalItems >= freeShippingBottleCount;
+  const { isMember, discountPercent } = useIsMember();
+  const memberSavings = !isMerchRoute && isMember ? totalPrice * (discountPercent / 100) : 0;
+  const bottlesNeeded = freeShippingBottleCount - totalItems;
+  const showNudge = !isMerchRoute && !shippingIncluded && bottlesNeeded > 0 && bottlesNeeded <= 2 && totalItems > 0;
 
   useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
 
@@ -60,6 +66,11 @@ export const CartDrawer = () => {
           <SheetDescription>
             {totalItems === 0 ? "Your cart is empty" : `${totalItems} item${totalItems !== 1 ? 's' : ''} in your cart`}
           </SheetDescription>
+          {!isMerchRoute && isMember && totalItems > 0 && (
+            <div className="mt-2 inline-flex items-center gap-1.5 bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-brand px-2 py-1 rounded-sm w-fit">
+              <Percent className="h-3 w-3" /> Member price applied at checkout — save ${memberSavings.toFixed(2)}
+            </div>
+          )}
         </SheetHeader>
         <div className="flex flex-col flex-1 pt-4 min-h-0">
           {items.length === 0 ? (
@@ -129,9 +140,23 @@ export const CartDrawer = () => {
               {/* Footer with total and checkout */}
               <div className="flex-shrink-0 space-y-3 pt-4 border-t">
                 <CartWineClubUpsell />
+                {showNudge && (
+                  <div className="text-xs bg-brand-gold/10 border border-brand-gold/30 px-3 py-2 flex items-center justify-between">
+                    <span><strong>Add {bottlesNeeded} more bottle{bottlesNeeded !== 1 ? 's' : ''}</strong> — shipping included at {freeShippingBottleCount}+</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-display font-semibold">Total</span>
-                  <span className="text-xl font-bold">${totalPrice.toFixed(2)}</span>
+                  <span className="text-xl font-bold">
+                    {!isMerchRoute && isMember ? (
+                      <>
+                        <span className="text-sm text-muted-foreground line-through mr-2 font-normal">${totalPrice.toFixed(2)}</span>
+                        ${(totalPrice - memberSavings).toFixed(2)}
+                      </>
+                    ) : (
+                      <>${totalPrice.toFixed(2)}</>
+                    )}
+                  </span>
                 </div>
                 <Button onClick={handleCheckout} className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={items.length === 0 || isLoading || isSyncing}>
                   {isLoading || isSyncing ? (

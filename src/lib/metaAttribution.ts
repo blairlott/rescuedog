@@ -16,6 +16,7 @@
 
 const FBC_COOKIE = "_fbc";
 const COOKIE_MAX_AGE_DAYS = 90; // Meta's default attribution window
+const GCLAW_COOKIE = "gclaw"; // Google Ads click ID cookie (gclid wrapper)
 
 function setCookie(name: string, value: string, days: number) {
   if (typeof document === "undefined") return;
@@ -64,4 +65,44 @@ export function getFbc(): string | null {
 /** Read the `_fbp` value set by Meta Pixel (browser ID). */
 export function getFbp(): string | null {
   return getCookie("_fbp");
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Google Ads attribution (gclid → `gclaw` cookie)
+//
+// Mirrors the Meta bridge so Z3 / Google Ads offline conversion uploads have
+// a reliable click ID even when GTM Tag 92 (which appends `?gclid=` to VS
+// checkout links) misses or fires late. Format: `GCL.{seconds}.{gclid}`
+// (Google uses seconds, not ms, unlike Meta's `_fbc`).
+// ────────────────────────────────────────────────────────────────────────────
+
+export function captureGclid(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const gclid = params.get("gclid");
+    if (!gclid) return;
+
+    const existing = getCookie(GCLAW_COOKIE);
+    if (existing && existing.endsWith(`.${gclid}`)) return;
+
+    const value = `GCL.${Math.floor(Date.now() / 1000)}.${gclid}`;
+    setCookie(GCLAW_COOKIE, value, COOKIE_MAX_AGE_DAYS);
+  } catch (e) {
+    console.warn("[google-attribution] capture failed", e);
+  }
+}
+
+/** Read the raw `gclid` from the `gclaw` cookie (returns just the click id). */
+export function getGclid(): string | null {
+  const raw = getCookie(GCLAW_COOKIE);
+  if (!raw) return null;
+  // Format: GCL.{seconds}.{gclid}
+  const parts = raw.split(".");
+  return parts.length >= 3 ? parts.slice(2).join(".") : null;
+}
+
+/** Read the full `gclaw` cookie value (for passing through to backend). */
+export function getGclaw(): string | null {
+  return getCookie(GCLAW_COOKIE);
 }

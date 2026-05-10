@@ -46,7 +46,7 @@ function FlyTo({ center }: { center: [number, number] | null }) {
   return null;
 }
 
-export default function WhereToBuyPage() {
+export default function StoreLocatorPage() {
   const [zip, setZip] = useState("");
   const [premise, setPremise] = useState<"all" | "off" | "on">("all");
   const [center, setCenter] = useState<[number, number] | null>(null);

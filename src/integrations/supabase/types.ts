@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      cart_abandonments: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          items: Json
+          notes: string | null
+          opened_at: string
+          resolved_at: string | null
+          source: string
+          status: string
+          subtotal_cents: number
+          total_bottles: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          opened_at?: string
+          resolved_at?: string | null
+          source?: string
+          status?: string
+          subtotal_cents?: number
+          total_bottles?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          opened_at?: string
+          resolved_at?: string | null
+          source?: string
+          status?: string
+          subtotal_cents?: number
+          total_bottles?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cms_content: {
         Row: {
           content: Json

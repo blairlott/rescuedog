@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCartSync } from "@/hooks/useCartSync";
+import { useEffect } from "react";
+import { captureFbclid } from "@/lib/metaAttribution";
 import { AgeGate } from "@/components/AgeGate";
 import { CmsAuthProvider } from "@/hooks/useCmsAuth";
 import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
@@ -51,6 +53,9 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   useCartSync();
+  useEffect(() => {
+    captureFbclid();
+  }, []);
   return (
     <Routes>
       <Route path="/" element={<Index />} />

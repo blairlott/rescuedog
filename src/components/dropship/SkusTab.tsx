@@ -33,7 +33,7 @@ export function SkusTab() {
     queryKey: ["dropship_partners"],
     queryFn: async () => {
       const { data } = await supabase.from("dropship_partners" as any).select("id,name").order("name");
-      return (data || []) as { id: string; name: string }[];
+      return ((data || []) as unknown) as { id: string; name: string }[];
     },
   });
 

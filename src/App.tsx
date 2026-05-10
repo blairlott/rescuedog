@@ -66,7 +66,7 @@ function AppContent() {
       <Route path="/wines" element={<WinesPage />} />
       <Route path="/shop" element={<ShopPage />} />
       <Route path="/shop-wine" element={<ShopPage />} />
-      <Route path="/store-locator" element={<StoreLocatorPage />} />
+      <Route path="/store-locator" element={<Navigate to="/where-to-buy" replace />} />
       <Route path="/where-to-buy" element={<WhereToBuyPage />} />
       <Route path="/admin/flags" element={<AdminFlagsPage />} />
       <Route path="/wholesale" element={<WholesalePage />} />

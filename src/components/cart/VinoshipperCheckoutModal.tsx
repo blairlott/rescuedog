@@ -81,7 +81,9 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
           simulated: true,
           order_id: fakeOrderId,
           customer_email: form.email,
-          customer_id: membership?.vinoshipper_customer_id ?? null,
+          customer_id:
+            (membership as unknown as { vinoshipper_customer_id?: string | null })
+              ?.vinoshipper_customer_id ?? null,
           line_items: items.map((i) => ({
             title: i.product.node.title,
             variant_id: i.variantId,

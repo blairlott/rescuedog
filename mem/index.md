@@ -35,6 +35,7 @@
 - [CRM Staleness](mem://features/crm-staleness-tracking) — Activity tracking logic based on last order
 - [Referral Rewards](mem://features/referral-rewards-logic) — Points-based system requiring manual CRM approval
 - [Store Locator](mem://features/store-locator) — Grappos iframe integration for store locator
+- [Locator + Gaps (future build)](mem://features/locator-and-gaps) — Native locator replacing Grappos, with analytics, suggest-a-retailer, AI discovery, and depletion report parsing (post May-18, phased)
 - [Post-VS Go-Live Plan](mem://plans/post-vs-golive) — Sequenced May-18 plan: product sync, SEO, GEO, CAPI/Lindy, abandonment recovery
 - [Tracking & Ad Tags](mem://features/tracking-tags) — GTM, GA4, Meta Pixel/CAPI, Cookiebot, reCAPTCHA inherited from legacy site
 - [Vinoshipper Injector](mem://tech/vinoshipper-injector) — Drop-in JS for cart, checkout, and club signup; VS owns PCI + card-on-file

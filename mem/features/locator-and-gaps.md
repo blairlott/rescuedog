@@ -35,3 +35,14 @@ Replace Grappos iframe with native locator tied to CRM. Goal: own the data, surf
 ## Hard rules
 - DO NOT add any of this to the May 18 cutover. Phase 1 starts AFTER green publish-to-live.
 - Public map source of truth = CRM. Reps must maintain account accuracy.
+
+## Phase 4 — Retail data intake + ad signal loop (Q3/Q4)
+**Inputs**: Instacart Ads API or Brand Portal CSV; large-chain scan data (Nielsen/Circana, Total Wine Vendor Insights, Kroger 84.51°, Amazon Vendor Central, Target POL, Costco CRX). Each chain = its own ingest adapter; reuse Phase 3 AI normalizer.
+**New tables**: `retail_sales_facts` (date, account_id, zip, sku, units, dollars, source, period_grain), `retail_sales_sources`, `ad_signal_dispatches`.
+**Signal engine** (edge fn `compute-ad-signals`, nightly): scores velocity surge, decline, distribution-without-demand, demand-without-distribution (feeds gaps view), halo zips.
+**Outbound**: Meta Custom Audiences/CAPI, Google Customer Match + geo bid adj, Klaviyo segment triggers, OOH later. All dispatches logged for ROI loop.
+**Customer signaling**: "RDW selling fast at [Store] near you" emails to locator-search users + wine club members in surge zips.
+**Cost flags**: Nielsen/Circana ~$30k+/yr — only after Phase 2/3 prove model. Most retailer portals = manual/CSV first, automate later. Instacart Ads API needs brand acct + spend min. Legal review needed on scan data usage rights for ad targeting.
+
+## Phase 5 (year 2)
+Full multi-chain automation, Nielsen if ROI, fully automated ad-platform push with budget guardrails.

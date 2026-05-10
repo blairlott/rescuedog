@@ -10,6 +10,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { useMyMembership } from "@/hooks/useWineClub";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { getFbc, getFbp, getGclaw, getGclid } from "@/lib/metaAttribution";
 import {
   VS_FLAT_SHIPPING_USD,
   VS_MEMBER_DISCOUNT_PERCENT,
@@ -133,6 +134,13 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
     setSubmitting(true);
     try {
       const fakeOrderId = `SIM-${Date.now()}`;
+      const attribution = {
+        fbc: getFbc(),
+        fbp: getFbp(),
+        gclid: getGclid(),
+        gclaw: getGclaw(),
+        landing_url: typeof window !== "undefined" ? window.location.href : null,
+      };
       const { error } = await supabase.from("vinoshipper_webhook_logs").insert({
         event: "order.created",
         subject: "order",
@@ -164,6 +172,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             state: form.state,
             zip: form.zip,
           },
+          attribution,
         },
         notes: "Simulated checkout — Vinoshipper Injector not yet live",
       });

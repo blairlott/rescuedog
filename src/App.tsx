@@ -41,6 +41,8 @@ import CmsDashboard from "./pages/CmsDashboard";
 import WineClubAdminPage from "./pages/WineClubAdminPage";
 import WineClubLoginPage from "./pages/WineClubLoginPage";
 import WineClubResetPasswordPage from "./pages/WineClubResetPasswordPage";
+import BlogPage from "./pages/BlogPage";
+import BlogPostPage from "./pages/BlogPostPage";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +65,8 @@ function AppContent() {
       <Route path="/events" element={<EventsPage />} />
       <Route path="/vineyard" element={<VineyardPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/blog" element={<BlogPage />} />
+      <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/club" element={<WineClubPage />} />
       <Route path="/club/admin" element={<WineClubAdminPage />} />
       <Route path="/club/login" element={<WineClubLoginPage />} />

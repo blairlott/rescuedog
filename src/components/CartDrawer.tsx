@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -10,9 +11,13 @@ import { CartUpsellBanner } from "@/components/cart/CartUpsellBanner";
 import { CartRecommendations } from "@/components/cart/CartRecommendations";
 import { CartSubscribeToggle } from "@/components/cart/CartSubscribeToggle";
 import { CartWineClubUpsell } from "@/components/cart/CartWineClubUpsell";
+import { VinoshipperCheckoutModal } from "@/components/cart/VinoshipperCheckoutModal";
 
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [vsCheckoutOpen, setVsCheckoutOpen] = useState(false);
+  const location = useLocation();
+  const isMerchRoute = location.pathname.startsWith("/merch");
   const { items, isLoading, isSyncing, updateQuantity, removeItem, getCheckoutUrl, syncCart } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
@@ -22,6 +27,13 @@ export const CartDrawer = () => {
   useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
 
   const handleCheckout = () => {
+    // Wine routes → simulated Vinoshipper hosted checkout (compliance + card vault)
+    if (!isMerchRoute) {
+      setIsOpen(false);
+      setVsCheckoutOpen(true);
+      return;
+    }
+    // Merch routes → Shopify checkout
     const checkoutUrl = getCheckoutUrl();
     if (checkoutUrl) {
       window.open(checkoutUrl, '_blank');
@@ -30,6 +42,7 @@ export const CartDrawer = () => {
   };
 
   return (
+    <>
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button variant="outline" size="icon" className="relative">
@@ -121,7 +134,14 @@ export const CartDrawer = () => {
                   <span className="text-xl font-bold">${totalPrice.toFixed(2)}</span>
                 </div>
                 <Button onClick={handleCheckout} className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={items.length === 0 || isLoading || isSyncing}>
-                  {isLoading || isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ExternalLink className="w-4 h-4 mr-2" />Checkout</>}
+                  {isLoading || isSyncing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      {isMerchRoute ? "Checkout" : "Checkout via Vinoshipper"}
+                    </>
+                  )}
                 </Button>
               </div>
             </>
@@ -129,5 +149,7 @@ export const CartDrawer = () => {
         </div>
       </SheetContent>
     </Sheet>
+    <VinoshipperCheckoutModal open={vsCheckoutOpen} onOpenChange={setVsCheckoutOpen} />
+    </>
   );
 };

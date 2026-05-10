@@ -1,7 +1,7 @@
 # Project Memory
 
 ## Core
-- Stack: Shopify for products/ecommerce, Supabase for backend/DB/CMS.
+- Stack (transitioning): Vinoshipper = checkout + payments (wine + eventually merch). WordPress on Cloudways = CMS (pages, blog, wine product copy joined by SKU). Supabase = auth/CRM/wine-club/CMS-fallback. Shopify is being sunset — kept only for /merch behind MERCH_BACKEND flag until VS drop-ship bridge ships.
 - ALL orders (à la carte + wine club) flow through Vinoshipper. No Stripe for wine.
 - Wine club: 14 tiers, FREE to join, FLAT 20% off all orders (not tiered), cancel anytime.
 - NEVER say "free shipping" — ALWAYS use "shipping included".
@@ -41,3 +41,5 @@
 - [Wine Catalog Pricing](mem://pricing/wine-catalog) — Per-SKU retail and member prices ported from legacy site
 - [Promo & Shipping Rules](mem://features/promo-rules) — STOCKUP, signup discount, $9.99 shipping at 6+, stacking rules
 - [Legacy UX Inheritance](mem://features/legacy-ux-inheritance) — UX patterns from rescuedogwines.com worth porting
+- [WordPress on Cloudways](mem://tech/wordpress) — Self-hosted WP REST API; replaces cms_content + holds wine copy by SKU
+- [Shopify Sunset Plan](mem://plans/shopify-sunset) — How/when Shopify exits; VS + drop-ship bridge takes over merch

@@ -1,7 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { WP_SIMULATION, wpUrl } from "@/lib/wordpressConfig";
+import { MOCK_PAGES } from "@/lib/wpMockData";
 
+/**
+ * Hybrid CMS read: WordPress is the source of truth (Cloudways).
+ * 1. Try WP page (slug = page name) ACF fields. 2. Fall back to legacy cms_content.
+ * Writes still target cms_content; retarget to WP via edge function once editors trained.
+ */
 export const useCmsContent = (page: string) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -9,6 +16,22 @@ export const useCmsContent = (page: string) => {
   const query = useQuery({
     queryKey: ["cms-content", page],
     queryFn: async () => {
+      try {
+        let wpAcf: Record<string, any> | undefined;
+        if (WP_SIMULATION) {
+          wpAcf = MOCK_PAGES.find((p) => p.slug === page)?.acf as any;
+        } else {
+          const res = await fetch(wpUrl(`/wp/v2/pages?slug=${encodeURIComponent(page)}`));
+          if (res.ok) {
+            const arr = await res.json();
+            wpAcf = arr?.[0]?.acf;
+          }
+        }
+        if (wpAcf && Object.keys(wpAcf).length > 0) return wpAcf;
+      } catch (e) {
+        console.warn("WP fetch failed, falling back to cms_content:", e);
+      }
+
       const { data, error } = await supabase
         .from("cms_content")
         .select("*")

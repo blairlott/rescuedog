@@ -16,8 +16,8 @@ All wine club orders flow through Vinoshipper (see order-routing). Lovable app h
 Each tier maps to a Vinoshipper club product via `wine_club_tiers.vinoshipper_club_id`.
 
 ## Member benefits — automatic on identification
-Anyone identified as an active club member (by Vinoshipper customer ID match or membership lookup) automatically receives:
-- **Flat 20% off** on EVERY order (club shipments + à la carte), no coupon code entry required
+**Vinoshipper is the source of truth for club membership.** Anyone Vinoshipper identifies as an active club member automatically receives:
+- **Flat 20% off** on EVERY order (club shipments + à la carte) — applied automatically by Vinoshipper, no coupon code UX in our app
 - **Shipping included on regular cadence club shipments ONLY** (monthly/quarterly/bi-annual/yearly scheduled shipments)
 - À la carte orders: 20% off applies, but **shipping is NOT included** — standard shipping rates apply
 - Free to join, cancel/pause anytime (email info@rescuedogwines.com)
@@ -25,7 +25,7 @@ Anyone identified as an active club member (by Vinoshipper customer ID match or 
 - Gift memberships supported
 
 ## Discount enforcement
-Member status drives discount automatically. No promo codes shown to user. Implementation pushes the 20% as an order-level discount when creating Vinoshipper orders for identified members, and shipping=included flag only on scheduled club shipments.
+Vinoshipper owns membership lookup and discount application. Our app passes the customer's Vinoshipper customer ID with every order; Vinoshipper resolves member status and applies the 20% automatically. Our app only sets the shipping-included flag for scheduled cadence shipments — never for à la carte.
 
 ## Shipment timing
 - Quarterly: timed around Valentine's Day, Mother's Day, end of summer, Thanksgiving

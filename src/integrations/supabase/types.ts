@@ -312,6 +312,332 @@ export type Database = {
         }
         Relationships: []
       }
+      dropship_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_type: string
+          id: string
+          message: string | null
+          order_id: string | null
+          partner_id: string | null
+          payload: Json | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_type: string
+          id?: string
+          message?: string | null
+          order_id?: string | null
+          partner_id?: string | null
+          payload?: Json | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_type?: string
+          id?: string
+          message?: string | null
+          order_id?: string | null
+          partner_id?: string | null
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dropship_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dropship_events_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dropship_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          partner_sku: string | null
+          product_title: string
+          quantity: number
+          sku: string
+          unit_cost_cents: number
+          unit_retail_cents: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          partner_sku?: string | null
+          product_title: string
+          quantity?: number
+          sku: string
+          unit_cost_cents?: number
+          unit_retail_cents?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          partner_sku?: string | null
+          product_title?: string
+          quantity?: number
+          sku?: string
+          unit_cost_cents?: number
+          unit_retail_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dropship_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dropship_orders: {
+        Row: {
+          carrier: string | null
+          cost_cents: number
+          created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          delivered_at: string | null
+          id: string
+          notes: string | null
+          partner_id: string
+          partner_order_id: string | null
+          shipped_at: string | null
+          shipping_address: Json | null
+          status: string
+          submitted_at: string | null
+          subtotal_cents: number
+          tracking_number: string | null
+          tracking_url: string | null
+          updated_at: string
+          vinoshipper_order_id: string | null
+        }
+        Insert: {
+          carrier?: string | null
+          cost_cents?: number
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          delivered_at?: string | null
+          id?: string
+          notes?: string | null
+          partner_id: string
+          partner_order_id?: string | null
+          shipped_at?: string | null
+          shipping_address?: Json | null
+          status?: string
+          submitted_at?: string | null
+          subtotal_cents?: number
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          vinoshipper_order_id?: string | null
+        }
+        Update: {
+          carrier?: string | null
+          cost_cents?: number
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          delivered_at?: string | null
+          id?: string
+          notes?: string | null
+          partner_id?: string
+          partner_order_id?: string | null
+          shipped_at?: string | null
+          shipping_address?: Json | null
+          status?: string
+          submitted_at?: string | null
+          subtotal_cents?: number
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          vinoshipper_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dropship_orders_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dropship_partners: {
+        Row: {
+          api_base_url: string | null
+          api_key_secret_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          notify_on_new_order: boolean
+          payout_terms: string | null
+          slug: string
+          status: string
+          updated_at: string
+          webhook_secret: string | null
+        }
+        Insert: {
+          api_base_url?: string | null
+          api_key_secret_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          notify_on_new_order?: boolean
+          payout_terms?: string | null
+          slug: string
+          status?: string
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Update: {
+          api_base_url?: string | null
+          api_key_secret_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          notify_on_new_order?: boolean
+          payout_terms?: string | null
+          slug?: string
+          status?: string
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
+      dropship_payouts: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          order_count: number
+          paid_at: string | null
+          partner_id: string
+          period_end: string
+          period_start: string
+          receipt_url: string | null
+          status: string
+          total_cost_cents: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_count?: number
+          paid_at?: string | null
+          partner_id: string
+          period_end: string
+          period_start: string
+          receipt_url?: string | null
+          status?: string
+          total_cost_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_count?: number
+          paid_at?: string | null
+          partner_id?: string
+          period_end?: string
+          period_start?: string
+          receipt_url?: string | null
+          status?: string
+          total_cost_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dropship_payouts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dropship_skus: {
+        Row: {
+          cost_cents: number
+          created_at: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          partner_id: string
+          partner_sku: string | null
+          product_image_url: string | null
+          product_title: string
+          retail_cents: number
+          sku: string
+          updated_at: string
+          vinoshipper_product_id: string | null
+        }
+        Insert: {
+          cost_cents?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          partner_id: string
+          partner_sku?: string | null
+          product_image_url?: string | null
+          product_title: string
+          retail_cents?: number
+          sku: string
+          updated_at?: string
+          vinoshipper_product_id?: string | null
+        }
+        Update: {
+          cost_cents?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          partner_id?: string
+          partner_sku?: string | null
+          product_image_url?: string | null
+          product_title?: string
+          retail_cents?: number
+          sku?: string
+          updated_at?: string
+          vinoshipper_product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dropship_skus_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           approved: boolean
@@ -946,6 +1272,7 @@ export type Database = {
       }
       is_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
       is_cms_editor: { Args: { _user_id: string }; Returns: boolean }
+      is_dropship_manager: { Args: { _user_id: string }; Returns: boolean }
       is_wine_club_manager: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
@@ -958,6 +1285,7 @@ export type Database = {
         | "state_manager"
         | "brand_ambassador"
         | "wine_club_manager"
+        | "dropship_manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1094,6 +1422,7 @@ export const Constants = {
         "state_manager",
         "brand_ambassador",
         "wine_club_manager",
+        "dropship_manager",
       ],
     },
   },

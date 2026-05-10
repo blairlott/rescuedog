@@ -4,13 +4,15 @@ import { useCartStore } from "@/stores/cartStore";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Loader2, ArrowLeft, Minus, Plus, Heart } from "lucide-react";
+import { ShoppingCart, Loader2, ArrowLeft, Minus, Plus, Heart, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { SubscribeAndSave, DISCOUNT_PERCENT } from "@/components/SubscribeAndSave";
 import { supabase } from "@/integrations/supabase/client";
 import { useCartSettings } from "@/hooks/useCartSettings";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useIsMember } from "@/hooks/useIsMember";
+import { Link as RouterLink } from "react-router-dom";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -24,6 +26,7 @@ const ProductDetail = () => {
   const [subscribeMode, setSubscribeMode] = useState(false);
   const [subFrequency, setSubFrequency] = useState("monthly");
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { isMember, discountPercent } = useIsMember();
 
   if (isLoading) {
     return (
@@ -53,6 +56,13 @@ const ProductDetail = () => {
   const images = product.images.edges;
   const variants = product.variants.edges;
   const selectedVariant = variants[selectedVariantIdx]?.node;
+  const tags = ((product as any).tags || []) as string[];
+  const isClubExclusive = tags.map(t => t.toLowerCase()).some(t => t === 'club-exclusive' || t === 'club exclusive');
+  const locked = isClubExclusive && !isMember;
+  const variantPrice = parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount);
+  const memberUnitPrice = variantPrice * (1 - (discountPercent || 20) / 100);
+  const lineTotal = variantPrice * quantity;
+  const memberLineTotal = memberUnitPrice * quantity;
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
@@ -109,9 +119,21 @@ const ProductDetail = () => {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h1 className="font-display text-3xl font-bold text-foreground mb-2">{product.title}</h1>
-                  <p className="text-2xl font-bold text-primary">
-                    ${parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount).toFixed(2)}
-                  </p>
+                  {isMember ? (
+                    <div>
+                      <p className="text-2xl font-bold text-primary">
+                        ${memberUnitPrice.toFixed(2)}
+                        <span className="text-sm text-muted-foreground line-through ml-2 font-normal">
+                          ${variantPrice.toFixed(2)}
+                        </span>
+                      </p>
+                      <p className="text-[11px] uppercase tracking-brand text-primary font-bold mt-1">
+                        Your Member Price ({discountPercent}% off)
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-2xl font-bold text-primary">${variantPrice.toFixed(2)}</p>
+                  )}
                 </div>
                 <button
                   onClick={() =>
@@ -184,16 +206,31 @@ const ProductDetail = () => {
                 </div>
               )}
 
+              {isClubExclusive && (
+                <div className={`border p-3 text-sm flex items-center gap-2 ${locked ? 'border-primary bg-primary/5' : 'border-brand-gold/40 bg-brand-gold/5'}`}>
+                  <Lock className="h-4 w-4 text-primary flex-shrink-0" />
+                  {locked ? (
+                    <span>
+                      <strong className="text-foreground">Club Exclusive.</strong> <RouterLink to="/club" className="text-primary underline">Join the wine club</RouterLink> to purchase this bottle.
+                    </span>
+                  ) : (
+                    <span><strong className="text-foreground">Club Exclusive</strong> — thanks for being a member.</span>
+                  )}
+                </div>
+              )}
+
               <Button
                 onClick={handleAddToCart}
-                disabled={cartLoading || !selectedVariant?.availableForSale}
+                disabled={cartLoading || !selectedVariant?.availableForSale || locked}
                 size="lg"
-                className="w-full bg-primary hover:bg-primary/90"
+                className="w-full bg-primary hover:bg-primary/90 hidden md:flex"
               >
                 {cartLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : !selectedVariant?.availableForSale ? (
                   "Sold Out"
+                ) : locked ? (
+                  <><Lock className="w-4 h-4 mr-2" /> Members only</>
                 ) : subscribeMode ? (
                   <>
                     <ShoppingCart className="w-4 h-4 mr-2" />
@@ -202,7 +239,7 @@ const ProductDetail = () => {
                 ) : (
                   <>
                     <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Cart — ${(parseFloat(selectedVariant.price.amount) * quantity).toFixed(2)}
+                    Add to Cart — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}
                   </>
                 )}
               </Button>
@@ -210,6 +247,22 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
+      {/* Mobile sticky add-to-cart bar */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t border-border p-3 pb-[env(safe-area-inset-bottom)]">
+        <Button
+          onClick={handleAddToCart}
+          disabled={cartLoading || !selectedVariant?.availableForSale || locked}
+          size="lg"
+          className="w-full bg-primary hover:bg-primary/90"
+        >
+          {cartLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : !selectedVariant?.availableForSale ? "Sold Out"
+          : locked ? <><Lock className="w-4 h-4 mr-2" /> Members only</>
+          : subscribeMode ? `Subscribe — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
+          : <><ShoppingCart className="w-4 h-4 mr-2" /> Add — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}</>}
+        </Button>
+      </div>
       <Footer />
     </div>
   );

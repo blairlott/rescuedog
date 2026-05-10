@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCartSync } from "@/hooks/useCartSync";
 import { useEffect } from "react";
-import { captureFbclid } from "@/lib/metaAttribution";
+import { captureFbclid, captureGclid } from "@/lib/metaAttribution";
 import { AgeGate } from "@/components/AgeGate";
 import { CmsAuthProvider } from "@/hooks/useCmsAuth";
 import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
@@ -55,6 +55,7 @@ function AppContent() {
   useCartSync();
   useEffect(() => {
     captureFbclid();
+    captureGclid();
   }, []);
   return (
     <Routes>

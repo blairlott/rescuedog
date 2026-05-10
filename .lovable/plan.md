@@ -1,67 +1,84 @@
+## Goal
+Remove Shopify completely from the codebase and replace it with:
+1. A native product/content layer powered by WordPress (Cloudways) for wine + marketing copy
+2. Vinoshipper for all wine commerce (cart, checkout, payments, fulfillment)
+3. A new in-app **Drop Shipper Admin Dashboard** to manage merch fulfillment partners, SKUs, orders, and payouts — replacing what Shopify previously did for `/merch`
 
+Drop-ship credit card processing will route through Vinoshipper as non-wine SKUs (per prior decision), with the dashboard tracking which partner fulfills which SKU.
 
-## Cart Marketing Features Plan
+---
 
-Wine industry e-commerce sites (like Winc, Naked Wines, WTSO) use smart cart nudges to increase AOV. Here's what we'll build:
+## Phase 1 — Rip Shopify out
 
-### Features
+**Code removals**
+- Delete `src/lib/shopify*`, `src/stores/cartStore.ts` (Shopify cart), `src/hooks/useShopify*`, any `STOREFRONT_QUERY` / `cartCreate` logic
+- Strip Shopify imports from `ProductCard`, `ProductDetail`, `CartDrawer`, `Shop` page, `/merch`
+- Remove Shopify env constants, storefront token usage, and `shopify-cart` localStorage key
+- Remove Shopify mentions from CMS/admin UIs
+- Disconnect Shopify store via `shopify--disconnect_store` (last step, after code is clean)
 
-**1. Free Shipping Progress Bar**
-A visual progress bar in the CartDrawer showing how close the customer is to free shipping. Configurable threshold (e.g., $150 or 6 bottles). Shows messages like "Add 2 more bottles for FREE shipping!" with a filled progress indicator.
+**Data layer swap**
+- Wine catalog → Vinoshipper API (already in progress) joined with WP custom post type `wines` by SKU for rich copy
+- Merch catalog → new Supabase tables (below), checkout via Vinoshipper as non-wine SKUs
+- Marketing pages/blog → WP REST (`wp-json/wp/v2`) with simulation adapter until Cloudways creds are wired
 
-**2. Bottle Count Upsell Banner**
-Contextual nudge when the customer is 1-2 bottles away from a case (12 bottles) or half-case (6 bottles) discount tier. Example: "You're 2 bottles away from a full case -- save 10%!"
+**Cart**
+- Single unified cart, Vinoshipper-backed (wine + merch SKUs in one order)
+- Drop-ship items flagged in cart metadata so the dashboard can route fulfillment
 
-**3. Wine Club Savings Callout**
-A persistent banner in the cart showing how much the customer *would* save as a Wine Club member (20% off). Links to the Wine Club signup page. Only shown to non-club members.
+---
 
-**4. "Complete Your Collection" Product Suggestion**
-Below cart items, show 1-2 recommended products from the same category the customer is already buying (e.g., if they have reds, suggest another red). Uses existing Shopify product data.
+## Phase 2 — Drop Shipper Admin Dashboard
 
-**5. Add-to-Cart Toast Enhancement**
-After adding an item, the success toast includes a brief nudge like "Add 1 more for free shipping" instead of just "Added to cart."
+New route: `/crm/dropship` (admin/owner + new `dropship_manager` role)
 
-### Technical Approach
+**Pages**
+1. **Partners** — list/create/edit drop-ship partners (Printful, Printify, custom, etc.): name, contact, API base URL, webhook secret, payout terms, status
+2. **SKUs** — map merch SKU → partner + partner_sku + cost + retail + margin; bulk import CSV; sync button
+3. **Orders** — every Vinoshipper order containing a drop-ship SKU, with status (new → submitted → in_production → shipped → delivered → exception), tracking, partner order ID, customer address (read-only)
+4. **Payouts** — monthly partner reconciliation: orders fulfilled, cost owed, payout status, mark paid + attach receipt
+5. **Activity log** — webhook events, manual notes, exceptions
 
-All changes are frontend-only, no new database tables or edge functions needed.
+**Backend**
+- New tables: `dropship_partners`, `dropship_skus`, `dropship_orders`, `dropship_order_items`, `dropship_payouts`, `dropship_events`
+- RLS: only `dropship_manager`, `admin`, `owner` can read/write
+- Add `dropship_manager` to `app_role` enum + `is_dropship_manager(_user_id)` security-definer fn
+- Edge functions:
+  - `vs-order-webhook` → on Vinoshipper order, create `dropship_orders` rows for any drop-ship SKU
+  - `dropship-submit` → push order to partner API (stub adapters for Printful/Printify/manual)
+  - `dropship-status-sync` → cron pull tracking + status from partners
+- Resend email to partner on new order (configurable per partner)
 
-**Files to create:**
-- `src/components/cart/FreeShippingBar.tsx` -- progress bar component with configurable threshold
-- `src/components/cart/CartUpsellBanner.tsx` -- contextual nudge messages (case discount, club savings)
-- `src/components/cart/CartRecommendations.tsx` -- suggested products from existing Shopify data
+**UX features**
+- Inline status updates with optimistic UI
+- CSV export of orders + payouts
+- Filters: partner, status, date range
+- Real-time order list via Supabase realtime
+- Bulk actions: mark shipped, retry submission, void
 
-**Files to modify:**
-- `src/components/CartDrawer.tsx` -- integrate the new components above the item list and between total/checkout
-- `src/components/ProductCard.tsx` -- enhance the add-to-cart toast with shipping nudge
-- `src/pages/ProductDetail.tsx` -- same toast enhancement
+---
 
-**Configuration:**
-- Free shipping threshold: $150 (or 6+ bottles), defined as constants
-- Case discount messaging at 6 and 12 bottle thresholds
-- Wine Club savings calculated at 20% off current cart total
+## Phase 3 — Cleanup & verify
+- Remove Shopify rows from `mem://` and `mem/plans/post-vs-golive.md`
+- Update brand/feature memory: merch path = Vinoshipper SKUs + drop-ship dashboard
+- Remove Shopify connector
+- Smoke test: wine PDP, merch PDP, unified cart → VS checkout, admin dashboard CRUD, webhook simulation
 
-### Cart Drawer Layout (top to bottom)
+---
 
-```text
-+----------------------------------+
-| Shopping Cart (header)           |
-+----------------------------------+
-| [=====>-------] $42 to free ship |  <-- FreeShippingBar
-+----------------------------------+
-| 🍷 Wine A        $25  qty: 2    |
-| 🍷 Wine B        $30  qty: 1    |
-+----------------------------------+
-| "Add 1 more bottle for a        |  <-- CartUpsellBanner
-|  half-case & save on shipping!"  |
-+----------------------------------+
-| 💡 Wine Club members save $16   |  <-- Club savings callout
-|    on this order. Join now →     |
-+----------------------------------+
-| You might also like:             |  <-- CartRecommendations
-| [Wine C thumbnail] Add $22      |
-+----------------------------------+
-| Subtotal              $80.00    |
-| [Checkout Button]               |
-+----------------------------------+
-```
+## Build order (recommended)
+1. Migration: roles + dropship tables + RLS  ← needs your approval
+2. Dashboard UI scaffold with simulated data (so you can click through today)
+3. Rip Shopify from frontend (cart, product pages, /merch)
+4. Wire WP simulation adapter for marketing/blog/wine copy
+5. Edge functions + webhook + Resend
+6. Disconnect Shopify store, remove deps
 
+---
+
+## Open decisions before I start
+- Which drop-ship partners to wire first (Printful most common, Printify second)?
+- Should the dashboard live under `/crm/dropship` or a new top-level `/admin/dropship`?
+- For merch checkout via Vinoshipper: confirm you want a single unified cart vs. a separate merch-only checkout
+
+I'll ask these via questions tool once you approve the plan, then start with the migration.

@@ -43,6 +43,7 @@ import WineClubLoginPage from "./pages/WineClubLoginPage";
 import WineClubResetPasswordPage from "./pages/WineClubResetPasswordPage";
 import BlogPage from "./pages/BlogPage";
 import BlogPostPage from "./pages/BlogPostPage";
+import DropshipDashboard from "./pages/DropshipDashboard";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +91,7 @@ function AppContent() {
         <Route path="map" element={<CrmMapPage />} />
         <Route path="routes" element={<CrmRoutePlanner />} />
         <Route path="admin" element={<CrmAdminPage />} />
+        <Route path="dropship" element={<DropshipDashboard />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

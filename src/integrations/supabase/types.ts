@@ -569,6 +569,48 @@ export type Database = {
         }
         Relationships: []
       }
+      vinoshipper_webhook_logs: {
+        Row: {
+          created_at: string
+          error: string | null
+          event: string
+          headers: Json | null
+          id: string
+          identifier: string
+          notes: string | null
+          payload: Json
+          processed: boolean
+          received_at: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          event: string
+          headers?: Json | null
+          id?: string
+          identifier: string
+          notes?: string | null
+          payload: Json
+          processed?: boolean
+          received_at?: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          event?: string
+          headers?: Json | null
+          id?: string
+          identifier?: string
+          notes?: string | null
+          payload?: Json
+          processed?: boolean
+          received_at?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       wholesale_inquiries: {
         Row: {
           business: string

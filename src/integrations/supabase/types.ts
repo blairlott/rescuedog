@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_user_id: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       cart_abandonments: {
         Row: {
           created_at: string
@@ -86,6 +128,60 @@ export type Database = {
           section_key?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      content_index: {
+        Row: {
+          author: string | null
+          body_html: string | null
+          cover_image_url: string | null
+          excerpt: string | null
+          external_id: string | null
+          id: string
+          is_public: boolean
+          published_at: string | null
+          raw: Json | null
+          slug: string
+          source: string
+          synced_at: string
+          tags: string[] | null
+          title: string
+          type: string
+        }
+        Insert: {
+          author?: string | null
+          body_html?: string | null
+          cover_image_url?: string | null
+          excerpt?: string | null
+          external_id?: string | null
+          id?: string
+          is_public?: boolean
+          published_at?: string | null
+          raw?: Json | null
+          slug: string
+          source?: string
+          synced_at?: string
+          tags?: string[] | null
+          title: string
+          type?: string
+        }
+        Update: {
+          author?: string | null
+          body_html?: string | null
+          cover_image_url?: string | null
+          excerpt?: string | null
+          external_id?: string | null
+          id?: string
+          is_public?: boolean
+          published_at?: string | null
+          raw?: Json | null
+          slug?: string
+          source?: string
+          synced_at?: string
+          tags?: string[] | null
+          title?: string
+          type?: string
         }
         Relationships: []
       }
@@ -638,6 +734,137 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          audience: string
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          audience?: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          audience?: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      impact_events: {
+        Row: {
+          bottles: number
+          created_at: string
+          customer_email: string | null
+          donation_cents: number
+          id: string
+          metadata: Json | null
+          occurred_at: string
+          rescue_partner_id: string | null
+          source: string
+          user_id: string | null
+          vinoshipper_order_id: string | null
+        }
+        Insert: {
+          bottles?: number
+          created_at?: string
+          customer_email?: string | null
+          donation_cents?: number
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          rescue_partner_id?: string | null
+          source?: string
+          user_id?: string | null
+          vinoshipper_order_id?: string | null
+        }
+        Update: {
+          bottles?: number
+          created_at?: string
+          customer_email?: string | null
+          donation_cents?: number
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          rescue_partner_id?: string | null
+          source?: string
+          user_id?: string | null
+          vinoshipper_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impact_events_rescue_partner_id_fkey"
+            columns: ["rescue_partner_id"]
+            isOneToOne: false
+            referencedRelation: "rescue_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locator_searches: {
+        Row: {
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          premise_filter: string | null
+          product_filter: string | null
+          radius_miles: number | null
+          referrer: string | null
+          results_count: number | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+          zip: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          premise_filter?: string | null
+          product_filter?: string | null
+          radius_miles?: number | null
+          referrer?: string | null
+          results_count?: number | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          zip?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          premise_filter?: string | null
+          product_filter?: string | null
+          radius_miles?: number | null
+          referrer?: string | null
+          results_count?: number | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           approved: boolean
@@ -740,6 +967,69 @@ export type Database = {
         }
         Relationships: []
       }
+      retailer_suggestions: {
+        Row: {
+          city: string | null
+          contact_email: string | null
+          contact_name: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          phone: string | null
+          premise_type: string | null
+          promoted_account_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          state: string | null
+          status: string
+          store_name: string
+          street_address: string | null
+          submitter_email: string | null
+          submitter_user_id: string | null
+          zip: string | null
+        }
+        Insert: {
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          premise_type?: string | null
+          promoted_account_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          state?: string | null
+          status?: string
+          store_name: string
+          street_address?: string | null
+          submitter_email?: string | null
+          submitter_user_id?: string | null
+          zip?: string | null
+        }
+        Update: {
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          premise_type?: string | null
+          promoted_account_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          state?: string | null
+          status?: string
+          store_name?: string
+          street_address?: string | null
+          submitter_email?: string | null
+          submitter_user_id?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       sales_accounts: {
         Row: {
           account_name: string
@@ -752,9 +1042,12 @@ export type Database = {
           distributor_rep: string | null
           distributor_rep_email: string | null
           distributor_rep_phone: string | null
+          dma: string | null
           email: string | null
           id: string
+          is_public: boolean
           last_order_date: string | null
+          last_verified_at: string | null
           latitude: number | null
           longitude: number | null
           notes: string | null
@@ -766,6 +1059,7 @@ export type Database = {
           state: string | null
           status: string | null
           street_address: string | null
+          tags: string[] | null
           updated_at: string | null
           website: string | null
           zip: string | null
@@ -781,9 +1075,12 @@ export type Database = {
           distributor_rep?: string | null
           distributor_rep_email?: string | null
           distributor_rep_phone?: string | null
+          dma?: string | null
           email?: string | null
           id?: string
+          is_public?: boolean
           last_order_date?: string | null
+          last_verified_at?: string | null
           latitude?: number | null
           longitude?: number | null
           notes?: string | null
@@ -795,6 +1092,7 @@ export type Database = {
           state?: string | null
           status?: string | null
           street_address?: string | null
+          tags?: string[] | null
           updated_at?: string | null
           website?: string | null
           zip?: string | null
@@ -810,9 +1108,12 @@ export type Database = {
           distributor_rep?: string | null
           distributor_rep_email?: string | null
           distributor_rep_phone?: string | null
+          dma?: string | null
           email?: string | null
           id?: string
+          is_public?: boolean
           last_order_date?: string | null
+          last_verified_at?: string | null
           latitude?: number | null
           longitude?: number | null
           notes?: string | null
@@ -824,6 +1125,7 @@ export type Database = {
           state?: string | null
           status?: string | null
           street_address?: string | null
+          tags?: string[] | null
           updated_at?: string | null
           website?: string | null
           zip?: string | null
@@ -1263,6 +1565,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      compliant_retailer_set: {
+        Args: {
+          _latitude: number
+          _longitude: number
+          _min_count?: number
+          _premise_filter?: string
+        }
+        Returns: {
+          account_name: string
+          city: string
+          distance_miles: number
+          id: string
+          latitude: number
+          longitude: number
+          phone: string
+          premise_type: string
+          state: string
+          street_address: string
+          website: string
+          zip: string
+        }[]
+      }
+      get_public_impact_totals: {
+        Args: never
+        Returns: {
+          total_bottles: number
+          total_customers: number
+          total_donation_cents: number
+          total_rescues: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

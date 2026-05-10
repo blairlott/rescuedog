@@ -57,6 +57,7 @@ const Index = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { content, upsert } = useCmsContent("homepage");
   const [editSection, setEditSection] = useState<EditSection>(null);
+  const showImpact = useFeatureFlag("impact_counter", false);
 
   const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
 

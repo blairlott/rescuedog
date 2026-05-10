@@ -13,6 +13,8 @@ import heroRedBlend from "@/assets/hero-red-blend-v2.jpg";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
+import { ImpactCounter } from "@/components/ImpactCounter";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 const instagramPosts = [
   {
@@ -55,6 +57,7 @@ const Index = () => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { content, upsert } = useCmsContent("homepage");
   const [editSection, setEditSection] = useState<EditSection>(null);
+  const showImpact = useFeatureFlag("impact_counter", false);
 
   const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
 
@@ -453,6 +456,8 @@ const Index = () => {
           </div>
         </section>
       )}
+
+      {showImpact && <ImpactCounter />}
 
       {/* Wholesale CTA */}
       <section className="py-12 border-t border-border">

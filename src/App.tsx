@@ -44,6 +44,8 @@ import WineClubResetPasswordPage from "./pages/WineClubResetPasswordPage";
 import BlogPage from "./pages/BlogPage";
 import BlogPostPage from "./pages/BlogPostPage";
 import DropshipDashboard from "./pages/DropshipDashboard";
+import WhereToBuyPage from "./pages/WhereToBuyPage";
+import AdminFlagsPage from "./pages/AdminFlagsPage";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,8 @@ function AppContent() {
       <Route path="/shop" element={<ShopPage />} />
       <Route path="/shop-wine" element={<ShopPage />} />
       <Route path="/store-locator" element={<StoreLocatorPage />} />
+      <Route path="/where-to-buy" element={<WhereToBuyPage />} />
+      <Route path="/admin/flags" element={<AdminFlagsPage />} />
       <Route path="/wholesale" element={<WholesalePage />} />
       <Route path="/trade-and-media" element={<WholesalePage />} />
       <Route path="/about" element={<AboutPage />} />

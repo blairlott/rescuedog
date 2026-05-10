@@ -34,6 +34,8 @@ export interface WineClubMembership {
   wine_preferences: string[];
   next_shipment_date: string | null;
   joined_at: string;
+  vinoshipper_customer_id?: string | null;
+  vinoshipper_membership_id?: string | null;
   tier?: WineClubTier;
 }
 

@@ -3,6 +3,7 @@
 ## Core
 - Stack: Shopify for products/ecommerce, Supabase for backend/DB/CMS.
 - ALL orders (à la carte + wine club) flow through Vinoshipper. No Stripe for wine.
+- Wine club: 14 tiers, FREE to join, FLAT 20% off all orders (not tiered), cancel anytime.
 - NEVER say "free shipping" — ALWAYS use "shipping included".
 - Dual brand: high-def Rescue Dog logo/merch-only on /merch; Black RDW logo on wine site.
 - Colors: Red #c30017, Black, Grey. Fonts: Nunito Sans, Avenir Next. Flat/sharp edges (border-radius: 0).
@@ -23,7 +24,7 @@
 - [Pricing Display](mem://features/pricing-display) — Wine Club Price and sampler disclaimer
 - [Cart Marketing](mem://features/cart-marketing) — Shipping terminology and upsell rules
 - [Subscriptions](mem://features/subscriptions) — Subscribe & Save and curated box tiers
-- [Wine Club System](mem://features/wine-club-system) — Custom wine club replacing Vinoshipper
+- [Wine Club System](mem://features/wine-club-system) — 14 tiers, flat 20% off, signup UX + portal handing off to Vinoshipper
 - [B2B Wholesale](mem://features/b2b-wholesale) — Region-based routing for wholesale inquiries
 - [Donation Form](mem://features/donation-form) — 501(c) strict form with Resend email logic
 - [CRM Core](mem://features/crm) — Sales CRM dashboard structure and features

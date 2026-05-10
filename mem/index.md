@@ -5,6 +5,7 @@
 - ALL orders (à la carte + wine club) flow through Vinoshipper. No Stripe for wine.
 - Wine club: 14 tiers, FREE to join, FLAT 20% off all orders (not tiered), cancel anytime.
 - NEVER say "free shipping" — ALWAYS use "shipping included".
+- Wine club: 14 tiers, free to join. Members auto-get 20% off ALL orders. Shipping included on scheduled club shipments only — NOT on à la carte.
 - Dual brand: high-def Rescue Dog logo/merch-only on /merch; Black RDW logo on wine site.
 - Colors: Red #c30017, Black, Grey. Fonts: Nunito Sans, Avenir Next. Flat/sharp edges (border-radius: 0).
 - Age gate required for wine routes; bypassed for /merch, /crm, /cms.

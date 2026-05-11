@@ -508,18 +508,21 @@ export type Database = {
           customer_email: string | null
           customer_name: string | null
           delivered_at: string | null
+          fulfillment_status_detail: string
           id: string
           notes: string | null
           partner_id: string
           partner_order_id: string | null
           shipped_at: string | null
           shipping_address: Json | null
+          simulated: boolean
           status: string
           submitted_at: string | null
           subtotal_cents: number
           tracking_number: string | null
           tracking_url: string | null
           updated_at: string
+          vendor_order_id: string | null
           vinoshipper_order_id: string | null
         }
         Insert: {
@@ -529,18 +532,21 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           delivered_at?: string | null
+          fulfillment_status_detail?: string
           id?: string
           notes?: string | null
           partner_id: string
           partner_order_id?: string | null
           shipped_at?: string | null
           shipping_address?: Json | null
+          simulated?: boolean
           status?: string
           submitted_at?: string | null
           subtotal_cents?: number
           tracking_number?: string | null
           tracking_url?: string | null
           updated_at?: string
+          vendor_order_id?: string | null
           vinoshipper_order_id?: string | null
         }
         Update: {
@@ -550,18 +556,21 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           delivered_at?: string | null
+          fulfillment_status_detail?: string
           id?: string
           notes?: string | null
           partner_id?: string
           partner_order_id?: string | null
           shipped_at?: string | null
           shipping_address?: Json | null
+          simulated?: boolean
           status?: string
           submitted_at?: string | null
           subtotal_cents?: number
           tracking_number?: string | null
           tracking_url?: string | null
           updated_at?: string
+          vendor_order_id?: string | null
           vinoshipper_order_id?: string | null
         }
         Relationships: [
@@ -586,9 +595,12 @@ export type Database = {
           notes: string | null
           notify_on_new_order: boolean
           payout_terms: string | null
+          simulation_mode: boolean
           slug: string
           status: string
           updated_at: string
+          vendor_credentials: Json
+          vendor_type: string
           webhook_secret: string | null
         }
         Insert: {
@@ -602,9 +614,12 @@ export type Database = {
           notes?: string | null
           notify_on_new_order?: boolean
           payout_terms?: string | null
+          simulation_mode?: boolean
           slug: string
           status?: string
           updated_at?: string
+          vendor_credentials?: Json
+          vendor_type?: string
           webhook_secret?: string | null
         }
         Update: {
@@ -618,9 +633,12 @@ export type Database = {
           notes?: string | null
           notify_on_new_order?: boolean
           payout_terms?: string | null
+          simulation_mode?: boolean
           slug?: string
           status?: string
           updated_at?: string
+          vendor_credentials?: Json
+          vendor_type?: string
           webhook_secret?: string | null
         }
         Relationships: []
@@ -682,8 +700,10 @@ export type Database = {
         Row: {
           cost_cents: number
           created_at: string
+          fulfillment_mode: string
           id: string
           is_active: boolean
+          last_synced_at: string | null
           notes: string | null
           partner_id: string
           partner_sku: string | null
@@ -692,13 +712,17 @@ export type Database = {
           retail_cents: number
           sku: string
           updated_at: string
+          vendor_product_id: string | null
+          vendor_variant_id: string | null
           vinoshipper_product_id: string | null
         }
         Insert: {
           cost_cents?: number
           created_at?: string
+          fulfillment_mode?: string
           id?: string
           is_active?: boolean
+          last_synced_at?: string | null
           notes?: string | null
           partner_id: string
           partner_sku?: string | null
@@ -707,13 +731,17 @@ export type Database = {
           retail_cents?: number
           sku: string
           updated_at?: string
+          vendor_product_id?: string | null
+          vendor_variant_id?: string | null
           vinoshipper_product_id?: string | null
         }
         Update: {
           cost_cents?: number
           created_at?: string
+          fulfillment_mode?: string
           id?: string
           is_active?: boolean
+          last_synced_at?: string | null
           notes?: string | null
           partner_id?: string
           partner_sku?: string | null
@@ -722,6 +750,8 @@ export type Database = {
           retail_cents?: number
           sku?: string
           updated_at?: string
+          vendor_product_id?: string | null
+          vendor_variant_id?: string | null
           vinoshipper_product_id?: string | null
         }
         Relationships: [

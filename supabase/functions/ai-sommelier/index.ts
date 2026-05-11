@@ -187,10 +187,10 @@ function catalogSafeFallback(catalogStr: string, messages: { role: string; conte
       c: "easy-drinking red",
       d: "bold & full red",
     };
-    return `Great — for ${labels[choice]}, I'd pick **${pick}** from our current catalog. It should fit that style best, and every bottle helps support rescue partners. Want me to tailor the pairing for (a) dinner, (b) gifting, (c) a party, or (d) sipping on its own?`;
+    return `Great — for ${labels[choice]}, I'd pick **${pick}** from our current catalog.\nWhy: it fits that style best and the grapes are Lodi Rules certified sustainable, so it's a feel-good pour that also helps rescue partners.\n\nFollow-ups: Pair it with dinner | Make it a gift | Tell me tasting notes`;
   }
-  if (pick) return `I'd pick **${pick}** from our current catalog. It is the closest match based on what you shared, and every bottle helps support rescue partners.`;
-  return `I want to keep this to wines we actually carry. Quick question — which sounds most like you tonight: (a) crisp & light white, (b) rich & buttery white, (c) easy-drinking red, or (d) bold & full red?`;
+  if (pick) return `I'd pick **${pick}** from our current catalog — closest match to what you shared, and every bottle helps rescue partners.\n\nFollow-ups: What pairs with it? | Show me a gift idea | Try a wine cocktail`;
+  return `I want to keep this to wines we actually carry. Quick question — which sounds most like you tonight: (a) crisp & light white, (b) rich & buttery white, (c) easy-drinking red, or (d) bold & full red?\n\nFollow-ups: a | b | c`;
 }
 
 function isDirectQuizAnswer(messages: { role: string; content: string }[]): boolean {

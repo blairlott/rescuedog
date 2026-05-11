@@ -13,6 +13,7 @@ import { useCartSettings } from "@/hooks/useCartSettings";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Link as RouterLink } from "react-router-dom";
+import { ShipsToStateCheck, useShipState } from "@/components/ShipsToStateCheck";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -27,6 +28,8 @@ const ProductDetail = () => {
   const [subFrequency, setSubFrequency] = useState("monthly");
   const { isFavorite, toggleFavorite } = useFavorites();
   const { isMember, discountPercent } = useIsMember();
+  const { canShip, state: shipState } = useShipState();
+  const blockedByState = !!shipState && !canShip;
 
   if (isLoading) {
     return (
@@ -66,6 +69,10 @@ const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
+    if (blockedByState) {
+      toast.error("We can't ship wine to your state yet. Use the store locator to find us nearby.", { position: "top-center" });
+      return;
+    }
     const wrappedProduct = { node: product };
     await addItem({
       product: wrappedProduct,
@@ -155,6 +162,9 @@ const ProductDetail = () => {
                 <p className="text-muted-foreground leading-relaxed">{product.description}</p>
               )}
 
+              {/* Ships-to-your-state compliance check */}
+              <ShipsToStateCheck />
+
               {/* Variant Selection */}
               {variants.length > 1 && (
                 <div className="space-y-2">
@@ -221,7 +231,7 @@ const ProductDetail = () => {
 
               <Button
                 onClick={handleAddToCart}
-                disabled={cartLoading || !selectedVariant?.availableForSale || locked}
+                disabled={cartLoading || !selectedVariant?.availableForSale || locked || blockedByState}
                 size="lg"
                 className="w-full bg-primary hover:bg-primary/90 hidden md:flex"
               >
@@ -231,6 +241,8 @@ const ProductDetail = () => {
                   "Sold Out"
                 ) : locked ? (
                   <><Lock className="w-4 h-4 mr-2" /> Members only</>
+                ) : blockedByState ? (
+                  "Not available in your state"
                 ) : subscribeMode ? (
                   <>
                     <ShoppingCart className="w-4 h-4 mr-2" />
@@ -251,7 +263,7 @@ const ProductDetail = () => {
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t border-border p-3 pb-[env(safe-area-inset-bottom)]">
         <Button
           onClick={handleAddToCart}
-          disabled={cartLoading || !selectedVariant?.availableForSale || locked}
+          disabled={cartLoading || !selectedVariant?.availableForSale || locked || blockedByState}
           size="lg"
           className="w-full bg-primary hover:bg-primary/90"
         >
@@ -259,6 +271,7 @@ const ProductDetail = () => {
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : !selectedVariant?.availableForSale ? "Sold Out"
           : locked ? <><Lock className="w-4 h-4 mr-2" /> Members only</>
+          : blockedByState ? "Not available in your state"
           : subscribeMode ? `Subscribe — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
           : <><ShoppingCart className="w-4 h-4 mr-2" /> Add — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}</>}
         </Button>

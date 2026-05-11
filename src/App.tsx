@@ -48,6 +48,8 @@ import BlogPostPage from "./pages/BlogPostPage";
 import DropshipDashboard from "./pages/DropshipDashboard";
 import AdminFlagsPage from "./pages/AdminFlagsPage";
 import SellOnSitePage from "./pages/SellOnSitePage";
+import { SommelierChat } from "./components/SommelierChat";
+import { useLocation } from "react-router-dom";
 
 const queryClient = new QueryClient();
 
@@ -57,7 +59,11 @@ function AppContent() {
     captureFbclid();
     captureGclid();
   }, []);
+  const location = useLocation();
+  const path = location.pathname.toLowerCase();
+  const showSommelier = !["/merch", "/crm", "/cms", "/sell", "/donation", "/login", "/signup"].some(p => path === p || path.startsWith(p + "/"));
   return (
+    <>
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/merch" element={<MerchHomePage />} />
@@ -107,6 +113,8 @@ function AppContent() {
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
+    {showSommelier && <SommelierChat />}
+    </>
   );
 }
 

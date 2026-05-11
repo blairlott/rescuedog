@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, ShieldCheck, UserCog, CheckCircle, XCircle, Clock, UserPlus, Globe, MapPin, Map, Gift } from "lucide-react";
+import { Shield, ShieldCheck, UserCog, CheckCircle, XCircle, Clock, UserPlus, Globe, MapPin, Map, Gift, Heart, Wine, Truck, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { ReferralAdminTab } from "@/components/crm/ReferralAdminTab";
 
@@ -29,6 +29,10 @@ const ALL_ROLES: { value: AppRole; label: string; icon: typeof Shield }[] = [
   { value: "regional_manager", label: "Regional Manager", icon: Map },
   { value: "state_manager", label: "State Manager", icon: MapPin },
   { value: "brand_ambassador", label: "Brand Ambassador / Sales Rep", icon: UserCog },
+  { value: "ambassador_manager", label: "Ambassador Manager", icon: Heart },
+  { value: "wine_club_manager", label: "Wine Club Manager", icon: Wine },
+  { value: "dropship_manager", label: "Drop-Ship Manager", icon: Truck },
+  { value: "cms_editor", label: "CMS Editor", icon: FileText },
 ];
 
 const roleBadgeColors: Record<string, string> = {
@@ -38,6 +42,10 @@ const roleBadgeColors: Record<string, string> = {
   regional_manager: "bg-indigo-100 text-indigo-800",
   state_manager: "bg-purple-100 text-purple-800",
   brand_ambassador: "bg-amber-100 text-amber-800",
+  ambassador_manager: "bg-rose-100 text-rose-800",
+  wine_club_manager: "bg-teal-100 text-teal-800",
+  dropship_manager: "bg-orange-100 text-orange-800",
+  cms_editor: "bg-slate-100 text-slate-800",
 };
 
 export default function CrmAdminPage() {

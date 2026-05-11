@@ -698,57 +698,90 @@ export type Database = {
       }
       dropship_skus: {
         Row: {
+          ai_curated_at: string | null
+          badges: string[] | null
+          category: string | null
+          collection: string | null
           cost_cents: number
           created_at: string
           fulfillment_mode: string
+          gallery_urls: string[] | null
           id: string
           is_active: boolean
+          is_featured: boolean
           last_synced_at: string | null
+          long_description: string | null
+          mock_review_count: number
+          mock_star_rating: number | null
           notes: string | null
           partner_id: string
           partner_sku: string | null
           product_image_url: string | null
           product_title: string
           retail_cents: number
+          short_description: string | null
           sku: string
+          storefront_sort: number
           updated_at: string
           vendor_product_id: string | null
           vendor_variant_id: string | null
           vinoshipper_product_id: string | null
         }
         Insert: {
+          ai_curated_at?: string | null
+          badges?: string[] | null
+          category?: string | null
+          collection?: string | null
           cost_cents?: number
           created_at?: string
           fulfillment_mode?: string
+          gallery_urls?: string[] | null
           id?: string
           is_active?: boolean
+          is_featured?: boolean
           last_synced_at?: string | null
+          long_description?: string | null
+          mock_review_count?: number
+          mock_star_rating?: number | null
           notes?: string | null
           partner_id: string
           partner_sku?: string | null
           product_image_url?: string | null
           product_title: string
           retail_cents?: number
+          short_description?: string | null
           sku: string
+          storefront_sort?: number
           updated_at?: string
           vendor_product_id?: string | null
           vendor_variant_id?: string | null
           vinoshipper_product_id?: string | null
         }
         Update: {
+          ai_curated_at?: string | null
+          badges?: string[] | null
+          category?: string | null
+          collection?: string | null
           cost_cents?: number
           created_at?: string
           fulfillment_mode?: string
+          gallery_urls?: string[] | null
           id?: string
           is_active?: boolean
+          is_featured?: boolean
           last_synced_at?: string | null
+          long_description?: string | null
+          mock_review_count?: number
+          mock_star_rating?: number | null
           notes?: string | null
           partner_id?: string
           partner_sku?: string | null
           product_image_url?: string | null
           product_title?: string
           retail_cents?: number
+          short_description?: string | null
           sku?: string
+          storefront_sort?: number
           updated_at?: string
           vendor_product_id?: string | null
           vendor_variant_id?: string | null
@@ -1592,7 +1625,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      merch_storefront: {
+        Row: {
+          badges: string[] | null
+          category: string | null
+          collection: string | null
+          fulfillment_mode: string | null
+          gallery_urls: string[] | null
+          id: string | null
+          is_featured: boolean | null
+          long_description: string | null
+          mock_review_count: number | null
+          mock_star_rating: number | null
+          product_image_url: string | null
+          product_title: string | null
+          retail_cents: number | null
+          short_description: string | null
+          sku: string | null
+          storefront_sort: number | null
+          vendor_name: string | null
+          vendor_type: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       compliant_retailer_set: {

@@ -1,6 +1,6 @@
 ---
 name: Dropship Architecture
-description: Unified Vinoshipper cart with vendor-routed fulfillment (Printify, partner-direct, VS warehouse)
+description: Unified Vinoshipper cart with vendor-routed fulfillment (Printify, partner-direct, VS warehouse). Simulation mode until real API keys land.
 type: feature
 ---
 # Dropship Architecture
@@ -10,19 +10,29 @@ ALL checkout (wine + merch + POD) goes through Vinoshipper. No separate Stripe/s
 
 ## Fulfillment routing
 `dropship_skus.fulfillment_mode` decides who ships after Vinoshipper captures payment:
-- `vinoshipper_warehouse` — licensed warehouse picks & ships (wine + co-warehoused merch). VS handles natively.
-- `printify` (and other POD: `printful`, `gooten`) — `dispatch-fulfillment` edge function POSTs order to vendor API, vendor ships direct to customer, tracking webhook updates `dropship_orders`.
-- `partner_direct` — Resend email PO to partner.contact_email, manual tracking entry.
+- `vinoshipper_warehouse` — licensed warehouse picks & ships natively
+- `printify` / `printful` / `gooten` — POD vendor receives auto-dispatched order, ships direct to customer
+- `partner_direct` — Resend email PO to partner.contact_email, manual tracking entry
 
-## Catalog sync
-Each non-VS vendor needs a "Import to Vinoshipper" flow in `/dropship` SkusTab:
-1. Pull vendor catalog (e.g., Printify `/v1/shops/{id}/products.json`)
-2. Admin selects SKUs + sets retail price
-3. Dual-write: create as non-wine product in Vinoshipper + insert `dropship_skus` row linking `vinoshipper_product_id` ↔ `partner_id` ↔ vendor SKU
-4. Inventory: POD = infinite, partner_direct = manual or webhook-synced
+## Simulation mode (pre-May 18)
+- `dropship_partners.simulation_mode` (default true) — when on, vendor API calls are mocked
+- Edge functions check `simulation_mode` AND env var presence (e.g. `PRINTIFY_API_KEY`) — if either is sim, returns realistic mock data
+- `dropship_orders.simulated` flag tracks whether an order was dispatched via mock or live
+- `dropship_skus.vinoshipper_product_id` prefixed with `vs_sim_` indicates simulated sync
+- Switch to live: add API key secrets, toggle `simulation_mode=false` on partner row
 
-## Reconciliation
-Vinoshipper collects payment + remits. Cost tracked per-SKU in `dropship_skus.cost_cents`. Payouts to vendors (Printify auto-charges card on file; partner_direct via `dropship_payouts`).
+## Edge functions
+- `printify-import-products` — lists vendor catalog (mock 4-product catalog when simulating)
+- `sync-to-vinoshipper` — pushes SKU to VS as non-wine product, stores `vinoshipper_product_id`
+- `dispatch-fulfillment` — routes by `vendor_type`, idempotent (skips if already dispatched), logs to `dropship_events`
 
-## Vendor types on partners table
-`dropship_partners.vendor_type`: `vinoshipper_warehouse | printify | printful | gooten | partner_direct`. Unlocks vendor-specific credential fields in PartnersTab.
+## Vendor credentials
+Stored in `dropship_partners.vendor_credentials` jsonb. Per vendor type:
+- printify/printful/gooten: `{ shop_id, api_key_note }` (actual key as Lovable secret)
+- vinoshipper_warehouse: `{ warehouse_code }`
+- partner_direct: `{ po_format }`
+
+## Admin UI in /dropship
+- PartnersTab: vendor_type selector, dynamic credential fields, simulation toggle
+- SkusTab: "Import from Vendor" modal, fulfillment_mode badge, "Sync to VS" button per row
+- OrdersTab: "Dispatch" button when status=queued, shows fulfillment_status_detail badge with sim flag

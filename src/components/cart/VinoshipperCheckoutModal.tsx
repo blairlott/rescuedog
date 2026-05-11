@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Lock, Wine, Apple, Smartphone, Home, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { useCartStore } from "@/stores/cartStore";
 import { useMyMembership } from "@/hooks/useWineClub";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
@@ -37,11 +40,11 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
   const [ageOk, setAgeOk] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [shipMethod, setShipMethod] = useState<"home" | "ups_ap">("home");
-  const [accessPoint, setAccessPoint] = useState<{
-    name: string;
-    address: string;
-    distance: string;
-  } | null>(null);
+  const [accessPoint, setAccessPoint] = useState<AccessPoint | null>(null);
+  const [accessPoints, setAccessPoints] = useState<AccessPoint[]>([]);
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const [showMap, setShowMap] = useState(false);
+  const [loadingAPs, setLoadingAPs] = useState(false);
   const abandonmentIdRef = useRef<string | null>(null);
   const [form, setForm] = useState({
     email: user?.email ?? "",
@@ -90,21 +93,54 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
     setForm((p) => ({ ...p, [k]: v }));
 
   // Simulated UPS Access Point lookup based on ZIP
-  const findAccessPoint = () => {
+  const findAccessPoint = async () => {
     if (!form.zip || form.zip.length < 5) {
       toast.error("Enter a ZIP first to find a nearby UPS Access Point");
       return;
     }
-    // Sim: deterministic fake based on ZIP
-    const samples = [
-      { name: "The UPS Store #4821", address: `1820 Main St, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "0.6 mi" },
-      { name: "CVS — UPS Access Point", address: `455 Oak Ave, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "1.2 mi" },
-      { name: "Michaels — UPS Access Point", address: `2200 Market Pl, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "2.8 mi" },
-    ];
-    const pick = samples[parseInt(form.zip.slice(-1), 10) % samples.length];
-    setAccessPoint(pick);
-    setShipMethod("ups_ap");
-    toast.success("UPS Access Point selected", { description: pick.name });
+    setLoadingAPs(true);
+    try {
+      // Geocode the ZIP via our edge function
+      const { data, error } = await supabase.functions.invoke("geocode-zip", {
+        method: "GET",
+        // @ts-expect-error - query is supported via fetch
+      });
+      // Fallback: hit the function URL directly with ?zip=
+      let center: [number, number] | null = null;
+      let cityState = { city: form.city, state: form.state };
+      try {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geocode-zip?zip=${form.zip}`;
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        });
+        if (res.ok) {
+          const j = await res.json();
+          center = [j.lat, j.lng];
+          cityState = { city: j.city || form.city, state: j.state || form.state };
+        }
+      } catch {}
+      if (!center) {
+        // Last-resort fallback center (continental US-ish)
+        center = [39.8283, -98.5795];
+      }
+      const [lat, lng] = center;
+      // Sim points offset around center (~0.5–3 mi)
+      const aps: AccessPoint[] = [
+        { name: "The UPS Store #4821", address: `1820 Main St, ${cityState.city || "Nearby"}, ${cityState.state || ""} ${form.zip}`, distance: "0.6 mi", lat: lat + 0.008, lng: lng + 0.006 },
+        { name: "CVS — UPS Access Point", address: `455 Oak Ave, ${cityState.city || "Nearby"}, ${cityState.state || ""} ${form.zip}`, distance: "1.2 mi", lat: lat - 0.012, lng: lng + 0.014 },
+        { name: "Michaels — UPS Access Point", address: `2200 Market Pl, ${cityState.city || "Nearby"}, ${cityState.state || ""} ${form.zip}`, distance: "2.8 mi", lat: lat + 0.022, lng: lng - 0.018 },
+      ];
+      setMapCenter(center);
+      setAccessPoints(aps);
+      setAccessPoint((prev) => prev ?? aps[0]);
+      setShipMethod("ups_ap");
+      setShowMap(true);
+      toast.success("Pick your UPS Access Point on the map");
+    } catch (e: any) {
+      toast.error("Could not load access points", { description: e?.message });
+    } finally {
+      setLoadingAPs(false);
+    }
   };
 
   // Capture abandonment: insert a row when the modal opens with items,

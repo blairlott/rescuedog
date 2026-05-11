@@ -45,6 +45,8 @@ import WineClubLoginPage from "./pages/WineClubLoginPage";
 import WineClubResetPasswordPage from "./pages/WineClubResetPasswordPage";
 import BlogPage from "./pages/BlogPage";
 import BlogPostPage from "./pages/BlogPostPage";
+import Pairings from "./pages/Pairings";
+import PairingDetail from "./pages/PairingDetail";
 import DropshipDashboard from "./pages/DropshipDashboard";
 import AdminFlagsPage from "./pages/AdminFlagsPage";
 import SellOnSitePage from "./pages/SellOnSitePage";
@@ -84,6 +86,8 @@ function AppContent() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/blog" element={<BlogPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
+      <Route path="/pairings" element={<Pairings />} />
+      <Route path="/pairings/:slug" element={<PairingDetail />} />
       <Route path="/club" element={<WineClubPage />} />
       <Route path="/club/admin" element={<WineClubAdminPage />} />
       <Route path="/club/login" element={<WineClubLoginPage />} />

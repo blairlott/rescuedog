@@ -38,6 +38,7 @@
 - [Referral Rewards](mem://features/referral-rewards-logic) — Points-based system requiring manual CRM approval
 - [Store Locator](mem://features/store-locator) — Grappos iframe integration for store locator
 - [Dropship Architecture](mem://features/dropship-architecture) — One Vinoshipper cart; vendor-routed fulfillment (Printify, partner-direct, VS warehouse)
+- [Merch Self-Curation](mem://features/merch-self-curation) — AI scans SKUs for stock/margin/freshness; admin approves actions
 - [AI Architecture](mem://tech/ai-architecture) — Bake AI in via Lovable Gateway; Lindy read-only for HITL only
 - [Locator + Gaps (future build)](mem://features/locator-and-gaps) — Native locator replacing Grappos, with analytics, suggest-a-retailer, AI discovery, and depletion report parsing (post May-18, phased)
 - [Post-VS Go-Live Plan](mem://plans/post-vs-golive) — Sequenced May-18 plan: product sync, SEO, GEO, CAPI/Lindy, abandonment recovery

@@ -564,3 +564,29 @@ function Field({
     </div>
   );
 }
+
+function RecenterMap({ center }: { center: [number, number] }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, map.getZoom());
+  }, [center, map]);
+  return null;
+}
+
+function makeIcon(selected: boolean) {
+  const color = selected ? "hsl(354 100% 38%)" : "hsl(0 0% 15%)";
+  const html = `
+    <div style="position:relative;width:28px;height:36px;">
+      <svg viewBox="0 0 28 36" width="28" height="36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.27 21.73 0 14 0z" fill="${color}"/>
+        <circle cx="14" cy="14" r="6" fill="white"/>
+      </svg>
+    </div>`;
+  return L.divIcon({
+    html,
+    className: "",
+    iconSize: [28, 36],
+    iconAnchor: [14, 36],
+    popupAnchor: [0, -32],
+  });
+}

@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Lock, Wine, Apple, Smartphone, Home, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { useCartStore } from "@/stores/cartStore";
 import { useMyMembership } from "@/hooks/useWineClub";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
@@ -23,6 +26,14 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
+interface AccessPoint {
+  name: string;
+  address: string;
+  distance: string;
+  lat: number;
+  lng: number;
+}
+
 /**
  * Simulated Vinoshipper-hosted checkout overlay.
  * Mimics the real VS cart screen so we can demo the full flow on iPhone
@@ -37,11 +48,11 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
   const [ageOk, setAgeOk] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [shipMethod, setShipMethod] = useState<"home" | "ups_ap">("home");
-  const [accessPoint, setAccessPoint] = useState<{
-    name: string;
-    address: string;
-    distance: string;
-  } | null>(null);
+  const [accessPoint, setAccessPoint] = useState<AccessPoint | null>(null);
+  const [accessPoints, setAccessPoints] = useState<AccessPoint[]>([]);
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const [showMap, setShowMap] = useState(false);
+  const [loadingAPs, setLoadingAPs] = useState(false);
   const abandonmentIdRef = useRef<string | null>(null);
   const [form, setForm] = useState({
     email: user?.email ?? "",
@@ -90,21 +101,48 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
     setForm((p) => ({ ...p, [k]: v }));
 
   // Simulated UPS Access Point lookup based on ZIP
-  const findAccessPoint = () => {
+  const findAccessPoint = async () => {
     if (!form.zip || form.zip.length < 5) {
       toast.error("Enter a ZIP first to find a nearby UPS Access Point");
       return;
     }
-    // Sim: deterministic fake based on ZIP
-    const samples = [
-      { name: "The UPS Store #4821", address: `1820 Main St, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "0.6 mi" },
-      { name: "CVS — UPS Access Point", address: `455 Oak Ave, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "1.2 mi" },
-      { name: "Michaels — UPS Access Point", address: `2200 Market Pl, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "2.8 mi" },
-    ];
-    const pick = samples[parseInt(form.zip.slice(-1), 10) % samples.length];
-    setAccessPoint(pick);
-    setShipMethod("ups_ap");
-    toast.success("UPS Access Point selected", { description: pick.name });
+    setLoadingAPs(true);
+    try {
+      let center: [number, number] | null = null;
+      let cityState = { city: form.city, state: form.state };
+      try {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geocode-zip?zip=${form.zip}`;
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        });
+        if (res.ok) {
+          const j = await res.json();
+          center = [j.lat, j.lng];
+          cityState = { city: j.city || form.city, state: j.state || form.state };
+        }
+      } catch {}
+      if (!center) {
+        // Last-resort fallback center (continental US-ish)
+        center = [39.8283, -98.5795];
+      }
+      const [lat, lng] = center;
+      // Sim points offset around center (~0.5–3 mi)
+      const aps: AccessPoint[] = [
+        { name: "The UPS Store #4821", address: `1820 Main St, ${cityState.city || "Nearby"}, ${cityState.state || ""} ${form.zip}`, distance: "0.6 mi", lat: lat + 0.008, lng: lng + 0.006 },
+        { name: "CVS — UPS Access Point", address: `455 Oak Ave, ${cityState.city || "Nearby"}, ${cityState.state || ""} ${form.zip}`, distance: "1.2 mi", lat: lat - 0.012, lng: lng + 0.014 },
+        { name: "Michaels — UPS Access Point", address: `2200 Market Pl, ${cityState.city || "Nearby"}, ${cityState.state || ""} ${form.zip}`, distance: "2.8 mi", lat: lat + 0.022, lng: lng - 0.018 },
+      ];
+      setMapCenter(center);
+      setAccessPoints(aps);
+      setAccessPoint((prev) => prev ?? aps[0]);
+      setShipMethod("ups_ap");
+      setShowMap(true);
+      toast.success("Pick your UPS Access Point on the map");
+    } catch (e: any) {
+      toast.error("Could not load access points", { description: e?.message });
+    } finally {
+      setLoadingAPs(false);
+    }
   };
 
   // Capture abandonment: insert a row when the modal opens with items,
@@ -200,9 +238,11 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             zip: form.zip,
           },
           shipping_method: shipMethod === "ups_ap" ? "UPS_ACCESS_POINT" : "HOME_DELIVERY",
-          ups_access_point: shipMethod === "ups_ap" ? accessPoint : null,
+          ups_access_point: shipMethod === "ups_ap" && accessPoint
+            ? { ...accessPoint }
+            : null,
           attribution,
-        },
+        } as any,
         notes: "Simulated checkout — Vinoshipper Injector not yet live",
       });
       if (error) throw error;
@@ -357,29 +397,83 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             </button>
           </div>
           {shipMethod === "ups_ap" && (
-            <div className="border border-border bg-muted/30 p-3 text-xs space-y-1">
-              {accessPoint ? (
-                <>
-                  <div className="font-semibold flex items-center justify-between">
-                    <span>{accessPoint.name}</span>
-                    <span className="text-muted-foreground">{accessPoint.distance}</span>
-                  </div>
-                  <div className="text-muted-foreground">{accessPoint.address}</div>
+            <div className="border border-border bg-muted/30 p-3 text-xs space-y-2">
+              {accessPoints.length > 0 && mapCenter && (
+                <div className="h-44 w-full overflow-hidden border border-border">
+                  <MapContainer
+                    center={mapCenter}
+                    zoom={13}
+                    scrollWheelZoom={false}
+                    style={{ height: "100%", width: "100%" }}
+                  >
+                    <TileLayer
+                      attribution="&copy; OpenStreetMap"
+                      url="https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png"
+                    />
+                    <RecenterMap center={mapCenter} />
+                    {accessPoints.map((ap, idx) => {
+                      const selected = accessPoint?.name === ap.name;
+                      return (
+                        <Marker
+                          key={idx}
+                          position={[ap.lat, ap.lng]}
+                          icon={makeIcon(selected)}
+                          eventHandlers={{ click: () => setAccessPoint(ap) }}
+                        >
+                          <Popup>
+                            <div className="text-xs">
+                              <div className="font-semibold">{ap.name}</div>
+                              <div>{ap.address}</div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      );
+                    })}
+                  </MapContainer>
+                </div>
+              )}
+              {accessPoints.length > 0 ? (
+                <div className="space-y-1">
+                  {accessPoints.map((ap, idx) => {
+                    const selected = accessPoint?.name === ap.name;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setAccessPoint(ap)}
+                        className={`w-full text-left border p-2 text-xs transition ${
+                          selected
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-foreground/30"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-semibold">
+                          <span>{ap.name}</span>
+                          <span className="text-muted-foreground">{ap.distance}</span>
+                        </div>
+                        <div className="text-muted-foreground">{ap.address}</div>
+                      </button>
+                    );
+                  })}
                   <button
                     type="button"
                     onClick={findAccessPoint}
-                    className="text-primary underline underline-offset-2 mt-1"
+                    disabled={loadingAPs}
+                    className="text-primary underline underline-offset-2 text-[11px]"
                   >
-                    Choose a different location
+                    {loadingAPs ? "Refreshing…" : "Refresh nearby locations"}
                   </button>
-                </>
+                </div>
               ) : (
                 <button
                   type="button"
                   onClick={findAccessPoint}
+                  disabled={loadingAPs}
                   className="text-primary underline underline-offset-2"
                 >
-                  Find a UPS Access Point near {form.zip || "me"}
+                  {loadingAPs
+                    ? "Searching nearby Access Points…"
+                    : `Find UPS Access Points near ${form.zip || "me"}`}
                 </button>
               )}
               <div className="text-[10px] text-muted-foreground pt-1">
@@ -469,4 +563,30 @@ function Field({
       <Input value={value} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
+}
+
+function RecenterMap({ center }: { center: [number, number] }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, map.getZoom());
+  }, [center, map]);
+  return null;
+}
+
+function makeIcon(selected: boolean) {
+  const color = selected ? "hsl(354 100% 38%)" : "hsl(0 0% 15%)";
+  const html = `
+    <div style="position:relative;width:28px;height:36px;">
+      <svg viewBox="0 0 28 36" width="28" height="36" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.27 21.73 0 14 0z" fill="${color}"/>
+        <circle cx="14" cy="14" r="6" fill="white"/>
+      </svg>
+    </div>`;
+  return L.divIcon({
+    html,
+    className: "",
+    iconSize: [28, 36],
+    iconAnchor: [14, 36],
+    popupAnchor: [0, -32],
+  });
 }

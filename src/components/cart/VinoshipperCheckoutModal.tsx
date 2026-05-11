@@ -238,9 +238,11 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             zip: form.zip,
           },
           shipping_method: shipMethod === "ups_ap" ? "UPS_ACCESS_POINT" : "HOME_DELIVERY",
-          ups_access_point: shipMethod === "ups_ap" ? accessPoint : null,
+          ups_access_point: shipMethod === "ups_ap" && accessPoint
+            ? { ...accessPoint }
+            : null,
           attribution,
-        },
+        } as any,
         notes: "Simulated checkout — Vinoshipper Injector not yet live",
       });
       if (error) throw error;

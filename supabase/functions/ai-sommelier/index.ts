@@ -95,10 +95,90 @@ async function fetchLiveCatalog(): Promise<{ value: string; titles: string[] }> 
   }
 }
 
-function extractMentionedTitles(text: string): string[] {
-  // Pull anything bolded as **...** — that's how the model names wines.
-  const matches = text.match(/\*\*([^*]+)\*\*/g) || [];
-  return matches.map(m => m.replace(/\*\*/g, "").trim());
+function normalizeTitle(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function titleMatchesCatalog(value: string, catalogTitles: string[]): boolean {
+  const candidate = normalizeTitle(value);
+  if (!candidate) return false;
+  return catalogTitles
+    .map(normalizeTitle)
+    .some(title => title.includes(candidate) || candidate.includes(title));
+}
+
+function extractMentionedTitles(text: string, catalogTitles: string[]): string[] {
+  // Pull bolded phrases that are likely wine names. Cocktail replies intentionally
+  // bold recipe names and section headers, so those must not trip the catalog guard.
+  const raw = text.match(/\*\*([^*]+)\*\*/g) || [];
+  const labels = new Set(["ingredients", "method", "instructions", "directions", "garnish glass", "garnish and glass", "why this wine"]);
+  const isCocktailReply = /\bingredients\b/i.test(text) && /\bmethod\b/i.test(text);
+  const recipeTitle = isCocktailReply ? raw[0]?.replace(/\*\*/g, "").trim() : "";
+
+  const boldMentions = raw
+    .map(m => m.replace(/\*\*/g, "").trim())
+    .filter(Boolean)
+    .filter(m => !labels.has(normalizeTitle(m)))
+    .filter(m => !(isCocktailReply && m === recipeTitle));
+
+  const measuredWineIngredients = text
+    .split("\n")
+    .map(line => line.replace(/^\s*[-•*\d.]+\s*/, "").trim())
+    .map(line => line.match(/^(?:[\d.]+\s+)?(?:oz|ml|bottle)\s+—\s+(.+)$/i)?.[1]?.trim() || "")
+    .filter(ingredient => /\b(wine|red|white|ros[eé]|chardonnay|cabernet|zinfandel|zin|merlot|pinot|rescue|dog|lodi)\b/i.test(ingredient));
+
+  return [...boldMentions, ...measuredWineIngredients]
+    .filter(m => !titleMatchesCatalog(m, catalogTitles));
+}
+
+function latestUserChoice(messages: { role: string; content: string }[]): string | null {
+  const latest = [...messages].reverse().find(m => m.role === "user")?.content || "";
+  const firstToken = latest.trim().toLowerCase().match(/^[\(\[]?([abcd])[\)\].,!\s]?/)?.[1];
+  return firstToken || null;
+}
+
+function pickCatalogTitle(catalogStr: string, choice: string | null): string | null {
+  const items = catalogStr.split("\n").map(line => {
+    const title = line.match(/^[•\-*]\s*([^—\[]+?)(?:\s*[—\[]|$)/)?.[1]?.trim();
+    return title ? { title, haystack: line.toLowerCase() } : null;
+  }).filter(Boolean) as { title: string; haystack: string }[];
+  if (items.length === 0) return null;
+
+  const keywordMap: Record<string, string[]> = {
+    a: ["white", "crisp", "light", "sauvignon", "pinot grigio"],
+    b: ["chardonnay", "buttery", "rich", "white", "oak"],
+    c: ["red", "smooth", "easy", "blend", "merlot", "pinot"],
+    d: ["bold", "full", "red", "zinfandel", "zin", "cabernet"],
+  };
+  const keywords = choice ? keywordMap[choice] || [] : [];
+  const scored = items.map(item => ({
+    ...item,
+    score: keywords.reduce((sum, keyword) => sum + (item.haystack.includes(keyword) ? 1 : 0), 0),
+  }));
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0]?.title || items[0].title;
+}
+
+function catalogSafeFallback(catalogStr: string, messages: { role: string; content: string }[]): string {
+  const choice = latestUserChoice(messages);
+  const pick = pickCatalogTitle(catalogStr, choice);
+  if (pick && choice) {
+    const labels: Record<string, string> = {
+      a: "crisp & light white",
+      b: "rich & buttery white",
+      c: "easy-drinking red",
+      d: "bold & full red",
+    };
+    return `Great — for ${labels[choice]}, I'd pick **${pick}** from our current catalog. It should fit that style best, and every bottle helps support rescue partners. Want me to tailor the pairing for (a) dinner, (b) gifting, (c) a party, or (d) sipping on its own?`;
+  }
+  if (pick) return `I'd pick **${pick}** from our current catalog. It is the closest match based on what you shared, and every bottle helps support rescue partners.`;
+  return `I want to keep this to wines we actually carry. Quick question — which sounds most like you tonight: (a) crisp & light white, (b) rich & buttery white, (c) easy-drinking red, or (d) bold & full red?`;
+}
+
+function isDirectQuizAnswer(messages: { role: string; content: string }[]): boolean {
+  const latest = [...messages].reverse().find(m => m.role === "user")?.content || "";
+  const previousAssistant = [...messages].reverse().find(m => m.role === "assistant")?.content || "";
+  return /^[\s\(\[]?[abcd][\)\].,!\s]*$/i.test(latest) && /\bquick question\b|\([a-d]\)/i.test(previousAssistant);
 }
 
 Deno.serve(async (req: Request) => {
@@ -142,6 +222,10 @@ Deno.serve(async (req: Request) => {
     ? `\n\n=== Current catalog (the ONLY wines you may recommend) ===\n${catalogStr.slice(0, 6000)}\n=== End of catalog ===`
     : `\n\nNOTE: No catalog could be loaded. Do NOT name any specific wines. Speak in general terms only and invite the guest to browse our shop.`;
 
+  if (catalogStr && isDirectQuizAnswer(cleaned)) {
+    return new Response(JSON.stringify({ reply: catalogSafeFallback(catalogStr, cleaned) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
   try {
     const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -165,16 +249,10 @@ Deno.serve(async (req: Request) => {
     // SAFETY NET: if the model named a wine that isn't in the catalog, replace the reply
     // with a safe fallback. This prevents fabricated SKUs from ever reaching the user.
     if (catalogTitles.length > 0) {
-      const mentioned = extractMentionedTitles(reply);
-      const lowerTitles = catalogTitles.map(t => t.toLowerCase());
-      const offending = mentioned.filter(m => {
-        const ml = m.toLowerCase();
-        // Allow if it matches (or is contained in / contains) a real catalog title
-        return !lowerTitles.some(t => t.includes(ml) || ml.includes(t));
-      });
+      const offending = extractMentionedTitles(reply, catalogTitles);
       if (offending.length > 0) {
         console.warn('Sommelier named off-catalog wine(s), suppressing:', offending);
-        reply = `Let me make sure I pick from wines we actually carry. Quick question — which sounds most like you tonight: (a) crisp & light white, (b) rich & buttery white, (c) easy-drinking red, or (d) bold & full red? Tell me your pick and I'll match you to one of ours.`;
+        reply = catalogSafeFallback(catalogStr, cleaned);
       }
     }
 

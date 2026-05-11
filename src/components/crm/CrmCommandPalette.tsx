@@ -36,7 +36,7 @@ export function CrmCommandPalette() {
       ]);
       if (cancel) return;
       const out: Result[] = [];
-      (accounts || []).forEach(a => out.push({ id: `acc-${a.id}`, label: a.account_name, sub: [a.city, a.state].filter(Boolean).join(", ") || "Account", to: `/crm/accounts/${a.id}`, icon: Building2 }));
+      (accounts || []).forEach(a => out.push({ id: `acc-${a.id}`, label: a.account_name, sub: [a.city, a.state].filter(Boolean).join(", ") || "Account", to: `/crm/account/${a.id}`, icon: Building2 }));
       (ambassadors || []).forEach(a => out.push({ id: `amb-${a.id}`, label: a.display_name, sub: `Ambassador · ${a.status}`, to: `/crm/ambassadors`, icon: Heart }));
       setResults(out);
     })();

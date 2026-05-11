@@ -50,6 +50,15 @@ import PairingDetail from "./pages/PairingDetail";
 import DropshipDashboard from "./pages/DropshipDashboard";
 import AdminFlagsPage from "./pages/AdminFlagsPage";
 import SellOnSitePage from "./pages/SellOnSitePage";
+import AmbassadorsLandingPage from "./pages/AmbassadorsLandingPage";
+import AmbassadorSignupPage from "./pages/AmbassadorSignupPage";
+import AmbassadorDashboardPage from "./pages/AmbassadorDashboardPage";
+import AmbassadorEventEditorPage from "./pages/AmbassadorEventEditorPage";
+import AmbassadorPublicProfilePage from "./pages/AmbassadorPublicProfilePage";
+import AmbassadorEventPublicPage from "./pages/AmbassadorEventPublicPage";
+import AmbassadorDirectoryPage from "./pages/AmbassadorDirectoryPage";
+import AmbassadorDisclosurePage from "./pages/AmbassadorDisclosurePage";
+import CrmAmbassadorsPage from "./pages/CrmAmbassadorsPage";
 import { SommelierChat } from "./components/SommelierChat";
 import { useLocation } from "react-router-dom";
 
@@ -63,7 +72,7 @@ function AppContent() {
   }, []);
   const location = useLocation();
   const path = location.pathname.toLowerCase();
-  const showSommelier = !["/merch", "/crm", "/cms", "/sell", "/donation", "/login", "/signup"].some(p => path === p || path.startsWith(p + "/"));
+  const showSommelier = !["/merch", "/crm", "/cms", "/sell", "/donation", "/login", "/signup", "/ambassador"].some(p => path === p || path.startsWith(p + "/"));
   return (
     <>
     <Routes>
@@ -95,6 +104,15 @@ function AppContent() {
       <Route path="/donation" element={<DonationPage />} />
       <Route path="/sell" element={<SellOnSitePage />} />
       <Route path="/marketplace/apply" element={<Navigate to="/sell" replace />} />
+      <Route path="/ambassadors" element={<AmbassadorsLandingPage />} />
+      <Route path="/ambassadors/find" element={<AmbassadorDirectoryPage />} />
+      <Route path="/ambassadors/disclosure" element={<AmbassadorDisclosurePage />} />
+      <Route path="/ambassador/signup" element={<AmbassadorSignupPage />} />
+      <Route path="/ambassador/dashboard" element={<AmbassadorDashboardPage />} />
+      <Route path="/ambassador/events/new" element={<AmbassadorEventEditorPage />} />
+      <Route path="/ambassador/events/:id/edit" element={<AmbassadorEventEditorPage />} />
+      <Route path="/a/:handle" element={<AmbassadorPublicProfilePage />} />
+      <Route path="/e/:slug" element={<AmbassadorEventPublicPage />} />
       <Route path="/subscribe" element={<SubscribePage />} />
       <Route path="/login" element={<CustomerLoginPage />} />
       <Route path="/signup" element={<CustomerSignupPage />} />
@@ -114,6 +132,7 @@ function AppContent() {
         <Route path="routes" element={<CrmRoutePlanner />} />
         <Route path="admin" element={<CrmAdminPage />} />
         <Route path="dropship" element={<DropshipDashboard />} />
+        <Route path="ambassadors" element={<CrmAmbassadorsPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

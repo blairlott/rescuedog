@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
+import { ShippingIncludedBanner } from "@/components/ShippingIncludedBanner";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -86,11 +87,14 @@ const MerchHomePage = () => {
           ) : merch.length === 0 ? (
             <p className="text-center text-muted-foreground py-12">No products found.</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {merch.map((product: ShopifyProduct) => (
-                <ProductCard key={product.node.id} product={product} />
-              ))}
-            </div>
+            <>
+              <ShippingIncludedBanner mode="merch" />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {merch.map((product: ShopifyProduct) => (
+                  <ProductCard key={product.node.id} product={product} />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </section>

@@ -61,6 +61,22 @@ export const CartDrawer = () => {
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-lg flex flex-col h-full">
+        {/* Diagonal corner ribbon — wine routes only, communicates shipping threshold */}
+        {!isMerchRoute && totalItems > 0 && (
+          <div className="pointer-events-none absolute top-0 right-0 h-24 w-24 overflow-hidden z-20">
+            <div
+              className={`absolute top-[22px] right-[-42px] w-[150px] rotate-45 text-center py-1 text-[9px] font-bold uppercase tracking-brand shadow-md ${
+                shippingIncluded
+                  ? "bg-green-600 text-white"
+                  : "bg-primary text-primary-foreground"
+              }`}
+            >
+              {shippingIncluded
+                ? "Shipping Included ✓"
+                : `${bottlesNeeded} to ship free`}
+            </div>
+          </div>
+        )}
         <SheetHeader className="flex-shrink-0">
           <SheetTitle className="font-display">Shopping Cart</SheetTitle>
           <SheetDescription>

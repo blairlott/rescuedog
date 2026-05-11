@@ -13,10 +13,12 @@ import { template as ambassadorWelcome } from './ambassador-welcome.tsx'
 import { template as donationCustomerConfirmation } from './donation-customer-confirmation.tsx'
 import { template as donationAdminNotification } from './donation-admin-notification.tsx'
 import { template as wholesaleCustomerConfirmation } from './wholesale-customer-confirmation.tsx'
+import { template as wholesaleAdminNotification } from './wholesale-admin-notification.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'ambassador-welcome': ambassadorWelcome,
   'donation-customer-confirmation': donationCustomerConfirmation,
   'donation-admin-notification': donationAdminNotification,
   'wholesale-customer-confirmation': wholesaleCustomerConfirmation,
+  'wholesale-admin-notification': wholesaleAdminNotification,
 }

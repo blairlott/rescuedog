@@ -22,6 +22,23 @@ function parseIngredients(text: string): string[] | null {
   return items.length >= 2 ? items : null;
 }
 
+// Split "1.5 oz — Chardonnay" into { amount: "1.5 oz", name: "Chardonnay" }.
+// Falls back to putting the whole line in `name` if no measurement is detected.
+const UNIT_RE = /\b(oz|ml|dash(?:es)?|tsp|tbsp|cup|bottle|splash|sprig|slices?|wedges?|leaf|leaves|cubes?|pieces?)\b/i;
+function splitMeasurement(line: string): { amount: string; name: string } {
+  // Strip leading bold/italic markdown
+  const clean = line.replace(/\*\*/g, "").replace(/__/g, "").trim();
+  // Preferred format: "<amount> <unit> — <name>"
+  const em = clean.split(/\s+—\s+|\s+-\s+/);
+  if (em.length >= 2 && UNIT_RE.test(em[0])) {
+    return { amount: em[0].trim(), name: em.slice(1).join(" — ").trim() };
+  }
+  // Fallback: regex match leading "<num><opt frac> <unit>"
+  const m = clean.match(/^([\d.\/]+\s*(?:oz|ml|dash(?:es)?|tsp|tbsp|cup|bottle|splash|sprig|slices?|wedges?|leaf|leaves|cubes?|pieces?))\b[\s,:\-—]*(.+)$/i);
+  if (m) return { amount: m[1].trim(), name: m[2].trim() };
+  return { amount: "", name: clean };
+}
+
 function IngredientsChecklist({ items }: { items: string[] }) {
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   return (
@@ -30,21 +47,30 @@ function IngredientsChecklist({ items }: { items: string[] }) {
         Ingredients checklist
       </p>
       <ul className="space-y-1">
-        {items.map((item, i) => (
-          <li key={i}>
-            <label className="flex items-start gap-2 cursor-pointer text-xs leading-snug">
-              <input
-                type="checkbox"
-                checked={!!checked[i]}
-                onChange={(e) => setChecked(c => ({ ...c, [i]: e.target.checked }))}
-                className="mt-0.5 h-3.5 w-3.5 accent-primary shrink-0"
-              />
-              <span className={checked[i] ? "line-through text-muted-foreground" : ""}>
-                {item}
-              </span>
-            </label>
-          </li>
-        ))}
+        {items.map((item, i) => {
+          const { amount, name } = splitMeasurement(item);
+          const done = !!checked[i];
+          return (
+            <li key={i}>
+              <label className="flex items-start gap-2 cursor-pointer text-xs leading-snug">
+                <input
+                  type="checkbox"
+                  checked={done}
+                  onChange={(e) => setChecked(c => ({ ...c, [i]: e.target.checked }))}
+                  className="mt-0.5 h-3.5 w-3.5 accent-primary shrink-0"
+                />
+                <span className={`flex-1 ${done ? "line-through text-muted-foreground" : ""}`}>
+                  {amount && (
+                    <span className="inline-block min-w-[3.5rem] font-mono font-bold text-foreground mr-1.5">
+                      {amount}
+                    </span>
+                  )}
+                  <span>{name}</span>
+                </span>
+              </label>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

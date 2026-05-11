@@ -14,6 +14,169 @@ export type Database = {
   }
   public: {
     Tables: {
+      ambassador_event_rsvps: {
+        Row: {
+          attended: boolean
+          created_at: string
+          email: string
+          event_id: string
+          id: string
+          name: string
+          notes: string | null
+          party_size: number
+          phone: string | null
+        }
+        Insert: {
+          attended?: boolean
+          created_at?: string
+          email: string
+          event_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          party_size?: number
+          phone?: string | null
+        }
+        Update: {
+          attended?: boolean
+          created_at?: string
+          email?: string
+          event_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          party_size?: number
+          phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambassador_events: {
+        Row: {
+          city: string | null
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          ends_at: string | null
+          host_user_id: string
+          id: string
+          max_attendees: number | null
+          slug: string
+          starts_at: string
+          state: string | null
+          status: string
+          street_address: string | null
+          title: string
+          updated_at: string
+          venue_name: string | null
+          zip: string | null
+        }
+        Insert: {
+          city?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          ends_at?: string | null
+          host_user_id: string
+          id?: string
+          max_attendees?: number | null
+          slug: string
+          starts_at: string
+          state?: string | null
+          status?: string
+          street_address?: string | null
+          title: string
+          updated_at?: string
+          venue_name?: string | null
+          zip?: string | null
+        }
+        Update: {
+          city?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          ends_at?: string | null
+          host_user_id?: string
+          id?: string
+          max_attendees?: number | null
+          slug?: string
+          starts_at?: string
+          state?: string | null
+          status?: string
+          street_address?: string | null
+          title?: string
+          updated_at?: string
+          venue_name?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
+      ambassador_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_name: string
+          handle: string
+          id: string
+          impact_tracking_url: string | null
+          instagram: string | null
+          photo_url: string | null
+          rescue_partner_id: string | null
+          status: string
+          tiktok: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_name: string
+          handle: string
+          id?: string
+          impact_tracking_url?: string | null
+          instagram?: string | null
+          photo_url?: string | null
+          rescue_partner_id?: string | null
+          status?: string
+          tiktok?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          handle?: string
+          id?: string
+          impact_tracking_url?: string | null
+          instagram?: string | null
+          photo_url?: string | null
+          rescue_partner_id?: string | null
+          status?: string
+          tiktok?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_profiles_rescue_partner_id_fkey"
+            columns: ["rescue_partner_id"]
+            isOneToOne: false
+            referencedRelation: "rescue_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -2259,6 +2422,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_brand_ambassador: { Args: { _user_id: string }; Returns: boolean }
       is_cms_editor: { Args: { _user_id: string }; Returns: boolean }
       is_dropship_manager: { Args: { _user_id: string }; Returns: boolean }
       is_wine_club_manager: { Args: { _user_id: string }; Returns: boolean }

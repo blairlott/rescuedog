@@ -20,8 +20,6 @@ const NotFound = () => {
         .maybeSingle();
       if (cancelled) return;
       if (data?.to_path) {
-        // Fire-and-forget hit counter
-        supabase.rpc as any; // no-op typing guard
         window.location.replace(data.to_path);
         return;
       }

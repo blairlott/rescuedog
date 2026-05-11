@@ -139,11 +139,11 @@ export async function fetchMerchProducts(): Promise<ShopifyProduct[]> {
   return (data ?? []).map(merchRowToProduct);
 }
 
-export async function fetchProductByHandle(handle: string): Promise<ShopifyProduct | null> {
+export async function fetchProductByHandle(handle: string): Promise<ShopifyProduct["node"] | null> {
   const { data: wine } = await supabase.from("wine_products").select("*").eq("handle", handle).maybeSingle();
-  if (wine) return wineRowToProduct(wine);
+  if (wine) return wineRowToProduct(wine).node;
   const { data: merch } = await supabase.from("merch_products").select("*").eq("handle", handle).maybeSingle();
-  if (merch) return merchRowToProduct(merch);
+  if (merch) return merchRowToProduct(merch).node;
   return null;
 }
 

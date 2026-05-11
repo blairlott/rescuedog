@@ -102,32 +102,40 @@ Deno.serve(async (req) => {
       case "partner_direct":
       default: {
         dispatched_via = "partner_direct_email";
-        const resendKey = Deno.env.get("RESEND_API_KEY");
-        if (resendKey && partner.contact_email) {
-          const itemList = (items || []).map((it: any) => `• ${it.quantity}× ${it.product_title} (${it.partner_sku || it.sku})`).join("\n");
+        if (partner.contact_email) {
           const addr = order.shipping_address as any;
-          const body = `New drop-ship order #${order.id.slice(0, 8)}\n\nItems:\n${itemList}\n\nShip to:\n${order.customer_name}\n${addr?.street || ""}\n${addr?.city || ""}, ${addr?.state || ""} ${addr?.zip || ""}\n\nReply with tracking when shipped.`;
-          const r = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              from: "orders@rescuedogwines.com",
-              to: partner.contact_email,
-              subject: `[RDW] New drop-ship PO #${order.id.slice(0, 8)}`,
-              text: body,
-            }),
+          const orderShortId = order.id.slice(0, 8);
+          const { error: emailErr } = await admin.functions.invoke('send-transactional-email', {
+            body: {
+              templateName: 'dropship-partner-po',
+              recipientEmail: partner.contact_email,
+              idempotencyKey: `dropship-po-${order.id}`,
+              templateData: {
+                orderShortId,
+                customerName: order.customer_name,
+                street: addr?.street || '',
+                city: addr?.city || '',
+                state: addr?.state || '',
+                zip: addr?.zip || '',
+                items: (items || []).map((it: any) => ({
+                  quantity: it.quantity,
+                  product_title: it.product_title,
+                  partner_sku: it.partner_sku,
+                  sku: it.sku,
+                })),
+              },
+            },
           });
-          if (!r.ok) {
+          if (emailErr) {
             simulated = true;
-            notes = `Resend send failed (${r.status}); recorded as queued.`;
+            notes = `PO email send failed; recorded as queued.`;
           } else {
-            const j = await r.json();
-            vendor_order_id = j.id || null;
-            notes = "PO emailed to partner via Resend.";
+            vendor_order_id = `po_${orderShortId}`;
+            notes = "PO emailed to partner.";
           }
         } else {
           simulated = true;
-          notes = "Simulated partner-direct dispatch (no Resend key or partner email).";
+          notes = "Simulated partner-direct dispatch (no partner email).";
         }
         break;
       }

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Lock, Wine, Apple, Smartphone } from "lucide-react";
+import { Loader2, Lock, Wine, Apple, Smartphone, Home, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
 import { useMyMembership } from "@/hooks/useWineClub";
@@ -36,6 +36,12 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
 
   const [ageOk, setAgeOk] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [shipMethod, setShipMethod] = useState<"home" | "ups_ap">("home");
+  const [accessPoint, setAccessPoint] = useState<{
+    name: string;
+    address: string;
+    distance: string;
+  } | null>(null);
   const abandonmentIdRef = useRef<string | null>(null);
   const [form, setForm] = useState({
     email: user?.email ?? "",
@@ -72,13 +78,34 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
     () => (isMember ? subtotal * (VS_MEMBER_DISCOUNT_PERCENT / 100) : 0),
     [isMember, subtotal],
   );
-  const shipping =
+  const baseShipping =
     totalBottles >= VS_SHIPPING_THRESHOLD_BOTTLES ? 0 : VS_FLAT_SHIPPING_USD;
+  // UPS Access Point: $5 off home delivery, min $0
+  const shipping =
+    shipMethod === "ups_ap" ? Math.max(0, baseShipping - 5) : baseShipping;
   const tax = (subtotal - memberDiscount) * 0.07; // sim flat 7%
   const total = subtotal - memberDiscount + shipping + tax;
 
   const update = (k: keyof typeof form, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
+
+  // Simulated UPS Access Point lookup based on ZIP
+  const findAccessPoint = () => {
+    if (!form.zip || form.zip.length < 5) {
+      toast.error("Enter a ZIP first to find a nearby UPS Access Point");
+      return;
+    }
+    // Sim: deterministic fake based on ZIP
+    const samples = [
+      { name: "The UPS Store #4821", address: `1820 Main St, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "0.6 mi" },
+      { name: "CVS — UPS Access Point", address: `455 Oak Ave, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "1.2 mi" },
+      { name: "Michaels — UPS Access Point", address: `2200 Market Pl, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "2.8 mi" },
+    ];
+    const pick = samples[parseInt(form.zip.slice(-1), 10) % samples.length];
+    setAccessPoint(pick);
+    setShipMethod("ups_ap");
+    toast.success("UPS Access Point selected", { description: pick.name });
+  };
 
   // Capture abandonment: insert a row when the modal opens with items,
   // mark converted on successful order, mark abandoned on close-with-items.
@@ -172,6 +199,8 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             state: form.state,
             zip: form.zip,
           },
+          shipping_method: shipMethod === "ups_ap" ? "UPS_ACCESS_POINT" : "HOME_DELIVERY",
+          ups_access_point: shipMethod === "ups_ap" ? accessPoint : null,
           attribution,
         },
         notes: "Simulated checkout — Vinoshipper Injector not yet live",
@@ -260,8 +289,10 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
           <Row
             label={
               shipping === 0
-                ? "Shipping (included, 6+ bottles)"
-                : "Shipping"
+                ? `Shipping (${shipMethod === "ups_ap" ? "UPS Access Point" : "included, 6+ bottles"})`
+                : shipMethod === "ups_ap"
+                  ? "Shipping (UPS Access Point — save $5)"
+                  : "Shipping (Home delivery, adult signature)"
             }
             value={shipping}
           />
@@ -284,6 +315,78 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             <Field label="State" value={form.state} onChange={(v) => update("state", v)} />
             <Field label="ZIP" value={form.zip} onChange={(v) => update("zip", v)} />
           </div>
+        </div>
+
+        {/* Shipping method */}
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-brand text-muted-foreground">
+            Delivery method
+          </Label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setShipMethod("home")}
+              className={`border p-3 text-left text-xs space-y-1 transition ${
+                shipMethod === "home"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-foreground/30"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 font-semibold">
+                <Home className="h-3.5 w-3.5" /> Home delivery
+              </div>
+              <div className="text-muted-foreground">
+                Adult (21+) signature required at door
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => (accessPoint ? setShipMethod("ups_ap") : findAccessPoint())}
+              className={`border p-3 text-left text-xs space-y-1 transition ${
+                shipMethod === "ups_ap"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-foreground/30"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 font-semibold">
+                <MapPin className="h-3.5 w-3.5" /> UPS Access Point
+              </div>
+              <div className="text-muted-foreground">
+                Pick up nearby with ID — save $5
+              </div>
+            </button>
+          </div>
+          {shipMethod === "ups_ap" && (
+            <div className="border border-border bg-muted/30 p-3 text-xs space-y-1">
+              {accessPoint ? (
+                <>
+                  <div className="font-semibold flex items-center justify-between">
+                    <span>{accessPoint.name}</span>
+                    <span className="text-muted-foreground">{accessPoint.distance}</span>
+                  </div>
+                  <div className="text-muted-foreground">{accessPoint.address}</div>
+                  <button
+                    type="button"
+                    onClick={findAccessPoint}
+                    className="text-primary underline underline-offset-2 mt-1"
+                  >
+                    Choose a different location
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={findAccessPoint}
+                  className="text-primary underline underline-offset-2"
+                >
+                  Find a UPS Access Point near {form.zip || "me"}
+                </button>
+              )}
+              <div className="text-[10px] text-muted-foreground pt-1">
+                Government-issued ID (21+) required at pickup. Held up to 7 days.
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Payment (fake) */}

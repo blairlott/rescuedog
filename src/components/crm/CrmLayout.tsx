@@ -47,7 +47,7 @@ export default function CrmLayout() {
 
   // Block unapproved users (except admins/owners who are always approved)
   const isApproved = roleInfo?.profile && (roleInfo.profile as any).approved;
-  if (!isApproved && !roleInfo?.isAdminOrOwner) {
+  if (!isApproved && !roleInfo?.isAdminOrOwner && !roleInfo?.isAmbassadorManager) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-md">

@@ -68,7 +68,16 @@ export default function CrmAmbassadorsPage() {
               </div>
               <div className="flex gap-2 flex-wrap">
                 {r.status === "active" && <Button asChild size="sm" variant="outline"><Link to={`/a/${r.handle}`} target="_blank">View <ExternalLink className="w-3 h-3 ml-1" /></Link></Button>}
-                {r.status !== "active" && <Button size="sm" onClick={() => setStatus(r.id, "active")}>Approve</Button>}
+                {r.status !== "active" && (
+                  <Button
+                    size="sm"
+                    disabled={!r.impact_tracking_url}
+                    title={!r.impact_tracking_url ? "Ambassador must add their impact.com tracking URL or code before going live" : undefined}
+                    onClick={() => setStatus(r.id, "active")}
+                  >
+                    Approve & publish
+                  </Button>
+                )}
                 {r.status !== "paused" && r.status !== "pending" && <Button size="sm" variant="outline" onClick={() => setStatus(r.id, "paused")}>Pause</Button>}
                 {r.status !== "pending" && <Button size="sm" variant="outline" onClick={() => setStatus(r.id, "pending")}>Hold</Button>}
                 <Button size="sm" variant="destructive" onClick={() => { if (confirm("Terminate ambassador?")) setStatus(r.id, "terminated"); }}>Terminate</Button>

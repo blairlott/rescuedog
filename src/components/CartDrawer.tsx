@@ -43,12 +43,14 @@ export const CartDrawer = () => {
       setVsCheckoutOpen(true);
       return;
     }
-    // Merch routes → Shopify checkout
-    const checkoutUrl = getCheckoutUrl();
-    if (checkoutUrl) {
-      window.open(checkoutUrl, '_blank');
-      setIsOpen(false);
-    }
+    // Merch routes → checkout not yet wired (no payment provider connected).
+    // Open a mailto so customers can place an order while we finalize the
+    // merch payment flow.
+    const subject = encodeURIComponent("Merch order from rescuedogwines.com");
+    const lines = items.map(i => `- ${i.product.node.title} × ${i.quantity}`).join("%0A");
+    window.location.href =
+      `mailto:hello@rescuedogwines.com?subject=${subject}&body=I'd like to order:%0A${lines}`;
+    setIsOpen(false);
   };
 
   return (
@@ -195,7 +197,7 @@ export const CartDrawer = () => {
                   ) : (
                     <>
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      {isMerchRoute ? "Checkout" : "Checkout via Vinoshipper"}
+                      {isMerchRoute ? "Email us to order" : "Checkout via Vinoshipper"}
                     </>
                   )}
                 </Button>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Lock, Wine, Apple, Smartphone } from "lucide-react";
+import { Loader2, Lock, Wine, Apple, Smartphone, Home, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
 import { useMyMembership } from "@/hooks/useWineClub";
@@ -36,6 +36,12 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
 
   const [ageOk, setAgeOk] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [shipMethod, setShipMethod] = useState<"home" | "ups_ap">("home");
+  const [accessPoint, setAccessPoint] = useState<{
+    name: string;
+    address: string;
+    distance: string;
+  } | null>(null);
   const abandonmentIdRef = useRef<string | null>(null);
   const [form, setForm] = useState({
     email: user?.email ?? "",
@@ -72,13 +78,34 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
     () => (isMember ? subtotal * (VS_MEMBER_DISCOUNT_PERCENT / 100) : 0),
     [isMember, subtotal],
   );
-  const shipping =
+  const baseShipping =
     totalBottles >= VS_SHIPPING_THRESHOLD_BOTTLES ? 0 : VS_FLAT_SHIPPING_USD;
+  // UPS Access Point: $5 off home delivery, min $0
+  const shipping =
+    shipMethod === "ups_ap" ? Math.max(0, baseShipping - 5) : baseShipping;
   const tax = (subtotal - memberDiscount) * 0.07; // sim flat 7%
   const total = subtotal - memberDiscount + shipping + tax;
 
   const update = (k: keyof typeof form, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
+
+  // Simulated UPS Access Point lookup based on ZIP
+  const findAccessPoint = () => {
+    if (!form.zip || form.zip.length < 5) {
+      toast.error("Enter a ZIP first to find a nearby UPS Access Point");
+      return;
+    }
+    // Sim: deterministic fake based on ZIP
+    const samples = [
+      { name: "The UPS Store #4821", address: `1820 Main St, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "0.6 mi" },
+      { name: "CVS — UPS Access Point", address: `455 Oak Ave, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "1.2 mi" },
+      { name: "Michaels — UPS Access Point", address: `2200 Market Pl, ${form.city || "Nearby"}, ${form.state || ""} ${form.zip}`, distance: "2.8 mi" },
+    ];
+    const pick = samples[parseInt(form.zip.slice(-1), 10) % samples.length];
+    setAccessPoint(pick);
+    setShipMethod("ups_ap");
+    toast.success("UPS Access Point selected", { description: pick.name });
+  };
 
   // Capture abandonment: insert a row when the modal opens with items,
   // mark converted on successful order, mark abandoned on close-with-items.
@@ -172,6 +199,8 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             state: form.state,
             zip: form.zip,
           },
+          shipping_method: shipMethod === "ups_ap" ? "UPS_ACCESS_POINT" : "HOME_DELIVERY",
+          ups_access_point: shipMethod === "ups_ap" ? accessPoint : null,
           attribution,
         },
         notes: "Simulated checkout — Vinoshipper Injector not yet live",

@@ -26,6 +26,14 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
+interface AccessPoint {
+  name: string;
+  address: string;
+  distance: string;
+  lat: number;
+  lng: number;
+}
+
 /**
  * Simulated Vinoshipper-hosted checkout overlay.
  * Mimics the real VS cart screen so we can demo the full flow on iPhone
@@ -100,12 +108,6 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
     }
     setLoadingAPs(true);
     try {
-      // Geocode the ZIP via our edge function
-      const { data, error } = await supabase.functions.invoke("geocode-zip", {
-        method: "GET",
-        // @ts-expect-error - query is supported via fetch
-      });
-      // Fallback: hit the function URL directly with ?zip=
       let center: [number, number] | null = null;
       let cityState = { city: form.city, state: form.state };
       try {

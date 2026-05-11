@@ -142,12 +142,13 @@ export function ProductCard({ product }: ProductCardProps) {
 
         {/* Shipping-included corner ribbon — pre-selection messaging */}
         {!isSampler && (
-          <div className="pointer-events-none absolute bottom-0 left-0 h-20 w-20 overflow-hidden z-10">
-            <div className="absolute bottom-[14px] left-[-34px] w-[120px] -rotate-45 text-center py-[3px] text-[8px] font-bold uppercase tracking-brand bg-primary text-primary-foreground shadow-md">
-              6+ Ships Included
+          <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-32 overflow-hidden z-10">
+            <div className="absolute bottom-[26px] left-[-52px] w-[180px] -rotate-45 text-center py-1 text-[10px] font-bold uppercase tracking-brand bg-primary text-primary-foreground shadow-md">
+              Shipping Incl. 6+
             </div>
           </div>
         )}
+
 
         {/* Hover overlay with add-to-cart button */}
         <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out p-3">

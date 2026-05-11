@@ -94,6 +94,9 @@ export function SommelierChat() {
     { role: "assistant", content: "Hi! I'm your Rescue Dog Wines sommelier. Ask me about pairings, recommendations, or what to gift. 🐶🍷" },
   ]);
   const [loading, setLoading] = useState(false);
+  // Guest preference chips — sent as soft context with each user message
+  const [sweetness, setSweetness] = useState<"dry" | "off-dry" | "sweet" | null>(null);
+  const [strength, setStrength] = useState<"light" | "medium" | "full" | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { data: products } = useProducts(50);
 
@@ -131,7 +134,13 @@ export function SommelierChat() {
     const content = (text ?? input).trim();
     if (!content || loading) return;
     setInput("");
-    const next = [...messages, { role: "user" as const, content }];
+    const prefBits: string[] = [];
+    if (sweetness) prefBits.push(`sweetness: ${sweetness}`);
+    if (strength) prefBits.push(`body/alcohol: ${strength}`);
+    const decorated = prefBits.length
+      ? `${content}\n\n(My preferences — ${prefBits.join("; ")}.)`
+      : content;
+    const next = [...messages, { role: "user" as const, content: decorated }];
     setMessages(next);
     setLoading(true);
     try {
@@ -210,8 +219,38 @@ export function SommelierChat() {
             )}
           </div>
 
+          {/* Preference chips */}
+          <div className="px-3 pt-2 pb-1 border-t border-border space-y-1.5 bg-background">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mr-1">Sweetness</span>
+              {(["dry", "off-dry", "sweet"] as const).map(opt => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setSweetness(s => s === opt ? null : opt)}
+                  className={`text-[11px] px-2 py-0.5 border transition-colors ${sweetness === opt ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-secondary"}`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mr-1">Strength</span>
+              {(["light", "medium", "full"] as const).map(opt => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setStrength(s => s === opt ? null : opt)}
+                  className={`text-[11px] px-2 py-0.5 border transition-colors ${strength === opt ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:bg-secondary"}`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Input */}
-          <form onSubmit={(e) => { e.preventDefault(); send(); }} className="p-3 border-t border-border flex gap-2">
+          <form onSubmit={(e) => { e.preventDefault(); send(); }} className="p-3 pt-2 flex gap-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}

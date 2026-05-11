@@ -92,27 +92,30 @@ Deno.serve(async (req) => {
     }
 
     const sendResults: Record<string, any> = {}
+    const sendUrl = `${url}/functions/v1/send-transactional-email`
+    const sendHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${serviceKey}`,
+      'apikey': serviceKey,
+    }
 
-    const { data: r1, error: e1 } = await admin.functions.invoke('send-transactional-email', {
-      body: {
-        templateName: 'reviewer-invite',
-        recipientEmail: reviewerEmail,
-        idempotencyKey: `reviewer-invite-${userId}-${Date.now()}`,
-        templateData: { ...baseData, ccCopy: false },
-      },
-    })
-    sendResults.reviewer = { data: r1, error: e1?.message }
+    const sendOne = async (to: string, ccCopy: boolean, key: string) => {
+      const res = await fetch(sendUrl, {
+        method: 'POST',
+        headers: sendHeaders,
+        body: JSON.stringify({
+          templateName: 'reviewer-invite',
+          recipientEmail: to,
+          idempotencyKey: key,
+          templateData: { ...baseData, ccCopy },
+        }),
+      })
+      const text = await res.text()
+      return { status: res.status, body: text.slice(0, 500) }
+    }
 
-    // 5. Send CC copy to Blair (separate send — registry doesn't support CC)
-    const { data: r2, error: e2 } = await admin.functions.invoke('send-transactional-email', {
-      body: {
-        templateName: 'reviewer-invite',
-        recipientEmail: ccEmail,
-        idempotencyKey: `reviewer-invite-cc-${userId}-${Date.now()}`,
-        templateData: { ...baseData, ccCopy: true },
-      },
-    })
-    sendResults.cc = { data: r2, error: e2?.message }
+    sendResults.reviewer = await sendOne(reviewerEmail, false, `reviewer-invite-${userId}-${Date.now()}`)
+    sendResults.cc = await sendOne(ccEmail, true, `reviewer-invite-cc-${userId}-${Date.now()}`)
 
     return new Response(
       JSON.stringify({

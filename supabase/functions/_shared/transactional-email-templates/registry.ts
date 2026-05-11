@@ -17,6 +17,7 @@ import { template as wholesaleAdminNotification } from './wholesale-admin-notifi
 import { template as staleAccountsRepAlert } from './stale-accounts-rep-alert.tsx'
 import { template as staleAccountsSummary } from './stale-accounts-summary.tsx'
 import { template as dropshipPartnerPo } from './dropship-partner-po.tsx'
+import { template as reviewerInvite } from './reviewer-invite.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'ambassador-welcome': ambassadorWelcome,
@@ -27,4 +28,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'stale-accounts-rep-alert': staleAccountsRepAlert,
   'stale-accounts-summary': staleAccountsSummary,
   'dropship-partner-po': dropshipPartnerPo,
+  'reviewer-invite': reviewerInvite,
 }

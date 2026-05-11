@@ -16,6 +16,7 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 import { ImpactCounter } from "@/components/ImpactCounter";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { PairingFinder } from "@/components/PairingFinder";
 
 const instagramPosts = [
   {

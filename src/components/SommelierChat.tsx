@@ -7,6 +7,49 @@ import { useProducts } from "@/hooks/useProducts";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
+// Parse an "Ingredients" list out of an assistant cocktail reply.
+// Returns the ingredient lines (with measurements) or null if none found.
+function parseIngredients(text: string): string[] | null {
+  if (!text) return null;
+  // Find "Ingredients" header (case-insensitive), optionally followed by ":" and newline
+  const match = text.match(/ingredients\s*:?\s*\n([\s\S]+?)(?:\n\s*\n|\n\s*(?:steps?|method|instructions|directions|garnish|why this wine)\b)/i);
+  if (!match) return null;
+  const block = match[1];
+  const items = block
+    .split("\n")
+    .map(l => l.replace(/^\s*[-•*\d.]+\s*/, "").trim())
+    .filter(l => l.length > 0 && l.length < 140);
+  return items.length >= 2 ? items : null;
+}
+
+function IngredientsChecklist({ items }: { items: string[] }) {
+  const [checked, setChecked] = useState<Record<number, boolean>>({});
+  return (
+    <div className="mt-2 border border-border bg-secondary/40 p-2">
+      <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1.5">
+        Ingredients checklist
+      </p>
+      <ul className="space-y-1">
+        {items.map((item, i) => (
+          <li key={i}>
+            <label className="flex items-start gap-2 cursor-pointer text-xs leading-snug">
+              <input
+                type="checkbox"
+                checked={!!checked[i]}
+                onChange={(e) => setChecked(c => ({ ...c, [i]: e.target.checked }))}
+                className="mt-0.5 h-3.5 w-3.5 accent-primary shrink-0"
+              />
+              <span className={checked[i] ? "line-through text-muted-foreground" : ""}>
+                {item}
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const STARTER_PROMPTS = [
   "What pairs with grilled steak?",
   "Pick a wine for a dinner party of 6",
@@ -109,13 +152,17 @@ export function SommelierChat() {
 
           {/* Messages */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3 bg-secondary/30">
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] px-3 py-2 text-sm whitespace-pre-wrap ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-background border border-border"}`}>
-                  {m.content}
+            {messages.map((m, i) => {
+              const ingredients = m.role === "assistant" ? parseIngredients(m.content) : null;
+              return (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] px-3 py-2 text-sm whitespace-pre-wrap ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-background border border-border"}`}>
+                    {m.content}
+                    {ingredients && <IngredientsChecklist items={ingredients} />}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-background border border-border px-3 py-2">

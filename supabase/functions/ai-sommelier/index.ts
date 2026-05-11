@@ -175,6 +175,12 @@ function catalogSafeFallback(catalogStr: string, messages: { role: string; conte
   return `I want to keep this to wines we actually carry. Quick question — which sounds most like you tonight: (a) crisp & light white, (b) rich & buttery white, (c) easy-drinking red, or (d) bold & full red?`;
 }
 
+function isDirectQuizAnswer(messages: { role: string; content: string }[]): boolean {
+  const latest = [...messages].reverse().find(m => m.role === "user")?.content || "";
+  const previousAssistant = [...messages].reverse().find(m => m.role === "assistant")?.content || "";
+  return /^[\s\(\[]?[abcd][\)\].,!\s]*$/i.test(latest) && /\bquick question\b|\([a-d]\)/i.test(previousAssistant);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: corsHeaders });
@@ -215,6 +221,10 @@ Deno.serve(async (req: Request) => {
   const catalogContext = catalogStr
     ? `\n\n=== Current catalog (the ONLY wines you may recommend) ===\n${catalogStr.slice(0, 6000)}\n=== End of catalog ===`
     : `\n\nNOTE: No catalog could be loaded. Do NOT name any specific wines. Speak in general terms only and invite the guest to browse our shop.`;
+
+  if (catalogStr && isDirectQuizAnswer(cleaned)) {
+    return new Response(JSON.stringify({ reply: catalogSafeFallback(catalogStr, cleaned) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
 
   try {
     const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

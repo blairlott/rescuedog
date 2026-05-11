@@ -56,6 +56,9 @@ const STARTER_PROMPTS = [
   "Best gift bottle under $30",
   "I like big, bold reds — recommend?",
   "Invent a wine cocktail with one of your wines 🍹",
+  "Make me a wine spritz ✨",
+  "Invent a sangria with one of your reds 🍇",
+  "Shake me a wine cocktail 🍸",
 ];
 
 export function SommelierChat() {

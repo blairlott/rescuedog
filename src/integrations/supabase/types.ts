@@ -1091,6 +1091,53 @@ export type Database = {
           },
         ]
       }
+      impact_health_checks: {
+        Row: {
+          ambassador_profile_id: string | null
+          check_type: string
+          checked_at: string
+          details: Json | null
+          http_status: number | null
+          id: string
+          latency_ms: number | null
+          message: string | null
+          status: string
+          target: string | null
+        }
+        Insert: {
+          ambassador_profile_id?: string | null
+          check_type: string
+          checked_at?: string
+          details?: Json | null
+          http_status?: number | null
+          id?: string
+          latency_ms?: number | null
+          message?: string | null
+          status: string
+          target?: string | null
+        }
+        Update: {
+          ambassador_profile_id?: string | null
+          check_type?: string
+          checked_at?: string
+          details?: Json | null
+          http_status?: number | null
+          id?: string
+          latency_ms?: number | null
+          message?: string | null
+          status?: string
+          target?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impact_health_checks_ambassador_profile_id_fkey"
+            columns: ["ambassador_profile_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locator_searches: {
         Row: {
           created_at: string

@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
   { label: "MISSION", to: "/mission" },
   { label: "DONATION", to: "/donation" },
   { label: "EVENTS", to: "/events" },
+  { label: "AMBASSADORS", to: "/ambassadors" },
 ];
 
 export function Header() {

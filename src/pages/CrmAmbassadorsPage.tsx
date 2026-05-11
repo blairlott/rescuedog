@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ImpactHealthCard } from "@/components/admin/ImpactHealthCard";
 
 export default function CrmAmbassadorsPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -30,6 +31,7 @@ export default function CrmAmbassadorsPage() {
 
   return (
     <div className="p-6 max-w-6xl">
+      <ImpactHealthCard />
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold uppercase">Ambassadors</h1>

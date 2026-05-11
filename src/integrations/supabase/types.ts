@@ -943,6 +943,211 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_partner_applications: {
+        Row: {
+          admin_note: string | null
+          agreed_to_terms: boolean
+          approved_partner_id: string | null
+          brand_story: string | null
+          business_name: string
+          business_type: string | null
+          contact_email: string
+          contact_name: string
+          contact_phone: string | null
+          created_at: string
+          ein_or_tax_id: string | null
+          est_monthly_units: number | null
+          fulfillment_model: string | null
+          id: string
+          ip_address: string | null
+          product_categories: string[] | null
+          product_description: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sample_product_urls: string[] | null
+          shipping_regions: string[] | null
+          social_links: Json | null
+          status: string
+          updated_at: string
+          website: string | null
+          why_partner: string | null
+          years_in_business: number | null
+        }
+        Insert: {
+          admin_note?: string | null
+          agreed_to_terms?: boolean
+          approved_partner_id?: string | null
+          brand_story?: string | null
+          business_name: string
+          business_type?: string | null
+          contact_email: string
+          contact_name: string
+          contact_phone?: string | null
+          created_at?: string
+          ein_or_tax_id?: string | null
+          est_monthly_units?: number | null
+          fulfillment_model?: string | null
+          id?: string
+          ip_address?: string | null
+          product_categories?: string[] | null
+          product_description: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sample_product_urls?: string[] | null
+          shipping_regions?: string[] | null
+          social_links?: Json | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+          why_partner?: string | null
+          years_in_business?: number | null
+        }
+        Update: {
+          admin_note?: string | null
+          agreed_to_terms?: boolean
+          approved_partner_id?: string | null
+          brand_story?: string | null
+          business_name?: string
+          business_type?: string | null
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string | null
+          created_at?: string
+          ein_or_tax_id?: string | null
+          est_monthly_units?: number | null
+          fulfillment_model?: string | null
+          id?: string
+          ip_address?: string | null
+          product_categories?: string[] | null
+          product_description?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sample_product_urls?: string[] | null
+          shipping_regions?: string[] | null
+          social_links?: Json | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+          why_partner?: string | null
+          years_in_business?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_partner_applications_approved_partner_id_fkey"
+            columns: ["approved_partner_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_partner_products: {
+        Row: {
+          admin_note: string | null
+          application_id: string | null
+          category: string | null
+          created_at: string
+          fulfillment_mode: string
+          gallery_urls: string[] | null
+          id: string
+          inventory_qty: number | null
+          partner_cost_cents: number
+          partner_id: string | null
+          product_description: string | null
+          product_image_url: string | null
+          product_title: string
+          promoted_sku_id: string | null
+          proposed_retail_cents: number
+          proposed_sku: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          shipping_lead_time_days: number | null
+          status: string
+          submitted_by_email: string | null
+          updated_at: string
+          variants: Json | null
+        }
+        Insert: {
+          admin_note?: string | null
+          application_id?: string | null
+          category?: string | null
+          created_at?: string
+          fulfillment_mode?: string
+          gallery_urls?: string[] | null
+          id?: string
+          inventory_qty?: number | null
+          partner_cost_cents?: number
+          partner_id?: string | null
+          product_description?: string | null
+          product_image_url?: string | null
+          product_title: string
+          promoted_sku_id?: string | null
+          proposed_retail_cents?: number
+          proposed_sku?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          shipping_lead_time_days?: number | null
+          status?: string
+          submitted_by_email?: string | null
+          updated_at?: string
+          variants?: Json | null
+        }
+        Update: {
+          admin_note?: string | null
+          application_id?: string | null
+          category?: string | null
+          created_at?: string
+          fulfillment_mode?: string
+          gallery_urls?: string[] | null
+          id?: string
+          inventory_qty?: number | null
+          partner_cost_cents?: number
+          partner_id?: string | null
+          product_description?: string | null
+          product_image_url?: string | null
+          product_title?: string
+          promoted_sku_id?: string | null
+          proposed_retail_cents?: number
+          proposed_sku?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          shipping_lead_time_days?: number | null
+          status?: string
+          submitted_by_email?: string | null
+          updated_at?: string
+          variants?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_partner_products_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_partner_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_partner_products_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_partner_products_promoted_sku_id_fkey"
+            columns: ["promoted_sku_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_skus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_partner_products_promoted_sku_id_fkey"
+            columns: ["promoted_sku_id"]
+            isOneToOne: false
+            referencedRelation: "merch_storefront"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merch_curation_actions: {
         Row: {
           action_type: string

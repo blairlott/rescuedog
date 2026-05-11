@@ -116,7 +116,7 @@ export default function AmbassadorDashboardPage() {
               Sign up (3 minutes), then paste your tracking link below to publish your page.
             </p>
             <Button asChild>
-              <a href="https://app.impact.com/campaign-promo-signup/Rescue-Dog-Wines.brand" target="_blank" rel="noopener">
+              <a href="https://app.impact.com/signup/none/create-new-mediapartner-account-flow.ihtml?execution=e1s1#/?viewkey=signUpPreStart" target="_blank" rel="noopener">
                 Open impact.com signup <ExternalLink className="w-3 h-3 ml-2" />
               </a>
             </Button>
@@ -128,8 +128,8 @@ export default function AmbassadorDashboardPage() {
           <div className="border border-border p-5 space-y-3">
             <p className="text-sm text-muted-foreground">
               Don't have one yet?{" "}
-              <a href="https://app.impact.com/secure/login.user" target="_blank" rel="noopener" className="underline">
-                Sign up at impact.com
+              <a href="https://app.impact.com/signup/none/create-new-mediapartner-account-flow.ihtml?execution=e1s1#/?viewkey=signUpPreStart" target="_blank" rel="noopener" className="underline">
+                Apply through our impact.com portal
               </a>{" "}
               and request to join the Rescue Dog Wines program. Once approved, paste your tracking URL here.
             </p>

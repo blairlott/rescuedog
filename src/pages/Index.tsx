@@ -16,6 +16,7 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 import { ImpactCounter } from "@/components/ImpactCounter";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { PairingFinder } from "@/components/PairingFinder";
 
 const instagramPosts = [
   {
@@ -298,6 +299,9 @@ const Index = () => {
           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </button>
       </section>
+
+      {/* AI Pairing Finder */}
+      <PairingFinder />
 
       {/* About Us Section */}
       <section className="py-16 md:py-24 relative">

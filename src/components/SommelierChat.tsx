@@ -24,6 +24,21 @@ export function SommelierChat() {
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [messages, loading]);
 
+  // Allow other components (PDP, homepage) to open the sommelier with a pre-filled prompt
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ prompt?: string }>).detail || {};
+      setOpen(true);
+      if (detail.prompt) {
+        // Defer to allow open animation
+        setTimeout(() => send(detail.prompt!), 50);
+      }
+    };
+    window.addEventListener("rdw:sommelier-open", handler as EventListener);
+    return () => window.removeEventListener("rdw:sommelier-open", handler as EventListener);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, loading]);
+
   const send = async (text?: string) => {
     const content = (text ?? input).trim();
     if (!content || loading) return;

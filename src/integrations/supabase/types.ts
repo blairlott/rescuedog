@@ -1300,6 +1300,48 @@ export type Database = {
         }
         Relationships: []
       }
+      recipes: {
+        Row: {
+          body_html: string | null
+          cover_image: string | null
+          created_at: string
+          excerpt: string | null
+          id: string
+          pairing_notes: string | null
+          published: boolean
+          recommended_product_handle: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body_html?: string | null
+          cover_image?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          pairing_notes?: string | null
+          published?: boolean
+          recommended_product_handle?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string | null
+          cover_image?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          pairing_notes?: string | null
+          published?: boolean
+          recommended_product_handle?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referral_rewards: {
         Row: {
           admin_note: string | null

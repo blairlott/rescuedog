@@ -14,6 +14,7 @@ import { CartWineClubUpsell } from "@/components/cart/CartWineClubUpsell";
 import { VinoshipperCheckoutModal } from "@/components/cart/VinoshipperCheckoutModal";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Percent } from "lucide-react";
+import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
 
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,13 +24,18 @@ export const CartDrawer = () => {
   const { items, isLoading, isSyncing, updateQuantity, removeItem, getCheckoutUrl, syncCart } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
+  // Bundles (Mother's Day 6 Pack / 6-Bottle Sampler) count as 6 bottles for
+  // the shipping-included threshold and are excluded from member discounts —
+  // matches Vinoshipper's "Excluded from Discounts" rule.
+  const totalBottlesEffective = isMerchRoute ? totalItems : effectiveBottleCount(items as any);
   const { freeShippingBottleCount, merchFreeShippingThreshold } = useCartSettings();
   const shippingIncluded = isMerchRoute
     ? totalPrice >= merchFreeShippingThreshold
-    : totalItems >= freeShippingBottleCount;
+    : totalBottlesEffective >= freeShippingBottleCount;
   const { isMember, discountPercent } = useIsMember();
-  const memberSavings = !isMerchRoute && isMember ? totalPrice * (discountPercent / 100) : 0;
-  const bottlesNeeded = freeShippingBottleCount - totalItems;
+  const discountableSubtotal = !isMerchRoute ? discountEligibleSubtotal(items as any) : totalPrice;
+  const memberSavings = !isMerchRoute && isMember ? discountableSubtotal * (discountPercent / 100) : 0;
+  const bottlesNeeded = freeShippingBottleCount - totalBottlesEffective;
   const dollarsNeeded = Math.max(0, merchFreeShippingThreshold - totalPrice);
   const showNudge = !isMerchRoute && !shippingIncluded && bottlesNeeded > 0 && bottlesNeeded <= 2 && totalItems > 0;
   const showMerchNudge = isMerchRoute && !shippingIncluded && dollarsNeeded > 0 && dollarsNeeded <= 25 && totalItems > 0;

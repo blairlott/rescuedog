@@ -20,6 +20,7 @@ import {
   VS_SHIPPING_THRESHOLD_BOTTLES,
   VS_SIMULATION,
 } from "@/lib/vinoshipperConfig";
+import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
 
 interface Props {
   open: boolean;
@@ -79,15 +80,18 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
     }));
   }, [membership, user]);
 
-  const totalBottles = items.reduce((s, i) => s + i.quantity, 0);
+  // Bundles count as 6 bottles toward the shipping-included threshold.
+  const totalBottles = effectiveBottleCount(items as any);
   const subtotal = items.reduce(
     (s, i) => s + parseFloat(i.price.amount) * i.quantity,
     0,
   );
   const isMember = !!membership && membership.status !== "cancelled";
+  // Bundles are excluded from member discount (matches Vinoshipper rule).
+  const discountable = useMemo(() => discountEligibleSubtotal(items as any), [items]);
   const memberDiscount = useMemo(
-    () => (isMember ? subtotal * (VS_MEMBER_DISCOUNT_PERCENT / 100) : 0),
-    [isMember, subtotal],
+    () => (isMember ? discountable * (VS_MEMBER_DISCOUNT_PERCENT / 100) : 0),
+    [isMember, discountable],
   );
   const baseShipping =
     totalBottles >= VS_SHIPPING_THRESHOLD_BOTTLES ? 0 : VS_FLAT_SHIPPING_USD;

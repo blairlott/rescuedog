@@ -699,6 +699,7 @@ export type Database = {
       dropship_skus: {
         Row: {
           ai_curated_at: string | null
+          auto_curate: boolean
           badges: string[] | null
           category: string | null
           collection: string | null
@@ -709,8 +710,10 @@ export type Database = {
           id: string
           is_active: boolean
           is_featured: boolean
+          last_availability_check: string | null
           last_synced_at: string | null
           long_description: string | null
+          min_margin_percent: number | null
           mock_review_count: number
           mock_star_rating: number | null
           notes: string | null
@@ -722,13 +725,16 @@ export type Database = {
           short_description: string | null
           sku: string
           storefront_sort: number
+          target_margin_percent: number | null
           updated_at: string
+          vendor_availability: string
           vendor_product_id: string | null
           vendor_variant_id: string | null
           vinoshipper_product_id: string | null
         }
         Insert: {
           ai_curated_at?: string | null
+          auto_curate?: boolean
           badges?: string[] | null
           category?: string | null
           collection?: string | null
@@ -739,8 +745,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_featured?: boolean
+          last_availability_check?: string | null
           last_synced_at?: string | null
           long_description?: string | null
+          min_margin_percent?: number | null
           mock_review_count?: number
           mock_star_rating?: number | null
           notes?: string | null
@@ -752,13 +760,16 @@ export type Database = {
           short_description?: string | null
           sku: string
           storefront_sort?: number
+          target_margin_percent?: number | null
           updated_at?: string
+          vendor_availability?: string
           vendor_product_id?: string | null
           vendor_variant_id?: string | null
           vinoshipper_product_id?: string | null
         }
         Update: {
           ai_curated_at?: string | null
+          auto_curate?: boolean
           badges?: string[] | null
           category?: string | null
           collection?: string | null
@@ -769,8 +780,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_featured?: boolean
+          last_availability_check?: string | null
           last_synced_at?: string | null
           long_description?: string | null
+          min_margin_percent?: number | null
           mock_review_count?: number
           mock_star_rating?: number | null
           notes?: string | null
@@ -782,7 +795,9 @@ export type Database = {
           short_description?: string | null
           sku?: string
           storefront_sort?: number
+          target_margin_percent?: number | null
           updated_at?: string
+          vendor_availability?: string
           vendor_product_id?: string | null
           vendor_variant_id?: string | null
           vinoshipper_product_id?: string | null
@@ -927,6 +942,95 @@ export type Database = {
           zip?: string | null
         }
         Relationships: []
+      }
+      merch_curation_actions: {
+        Row: {
+          action_type: string
+          ai_confidence: number | null
+          applied_at: string | null
+          created_at: string
+          current_snapshot: Json | null
+          id: string
+          proposed_change: Json | null
+          proposed_replacement: Json | null
+          reason: string | null
+          replacement_sku_id: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sku_id: string | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          ai_confidence?: number | null
+          applied_at?: string | null
+          created_at?: string
+          current_snapshot?: Json | null
+          id?: string
+          proposed_change?: Json | null
+          proposed_replacement?: Json | null
+          reason?: string | null
+          replacement_sku_id?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sku_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          ai_confidence?: number | null
+          applied_at?: string | null
+          created_at?: string
+          current_snapshot?: Json | null
+          id?: string
+          proposed_change?: Json | null
+          proposed_replacement?: Json | null
+          reason?: string | null
+          replacement_sku_id?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sku_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merch_curation_actions_replacement_sku_id_fkey"
+            columns: ["replacement_sku_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_skus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merch_curation_actions_replacement_sku_id_fkey"
+            columns: ["replacement_sku_id"]
+            isOneToOne: false
+            referencedRelation: "merch_storefront"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merch_curation_actions_sku_id_fkey"
+            columns: ["sku_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_skus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merch_curation_actions_sku_id_fkey"
+            columns: ["sku_id"]
+            isOneToOne: false
+            referencedRelation: "merch_storefront"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

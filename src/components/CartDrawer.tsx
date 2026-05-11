@@ -73,7 +73,7 @@ export const CartDrawer = () => {
             >
               {shippingIncluded
                 ? "Shipping Included ✓"
-                : `${bottlesNeeded} to ship free`}
+                : `${bottlesNeeded} to unlock`}
             </div>
           </div>
         )}

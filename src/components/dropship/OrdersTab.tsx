@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { Send } from "lucide-react";
 
 type Order = {
   id: string;
@@ -22,6 +23,9 @@ type Order = {
   cost_cents: number;
   subtotal_cents: number;
   created_at: string;
+  vendor_order_id: string | null;
+  fulfillment_status_detail: string;
+  simulated: boolean;
 };
 
 const STATUSES = ["new", "submitted", "in_production", "shipped", "delivered", "exception"];
@@ -57,6 +61,19 @@ export function OrdersTab() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const dispatch = useMutation({
+    mutationFn: async (order_id: string) => {
+      const { data, error } = await supabase.functions.invoke("dispatch-fulfillment", { body: { order_id } });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (d: any) => {
+      qc.invalidateQueries({ queryKey: ["dropship_orders"] });
+      toast.success(d?.simulated ? `Dispatched (simulated): ${d.notes}` : `Dispatched via ${d?.dispatched_via}`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -77,7 +94,7 @@ export function OrdersTab() {
         <Table>
           <TableHeader><TableRow>
             <TableHead>Date</TableHead><TableHead>VS Order</TableHead><TableHead>Customer</TableHead>
-            <TableHead>Status</TableHead><TableHead>Tracking</TableHead><TableHead>Cost</TableHead><TableHead /></TableRow></TableHeader>
+            <TableHead>Status</TableHead><TableHead>Dispatch</TableHead><TableHead>Tracking</TableHead><TableHead>Cost</TableHead><TableHead /></TableRow></TableHeader>
           <TableBody>
             {orders.map((o) => (
               <TableRow key={o.id}>
@@ -89,6 +106,17 @@ export function OrdersTab() {
                     <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                     <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
                   </Select>
+                </TableCell>
+                <TableCell>
+                  {o.fulfillment_status_detail === "queued" ? (
+                    <Button size="sm" variant="outline" onClick={() => dispatch.mutate(o.id)} disabled={dispatch.isPending}>
+                      <Send className="h-3 w-3 mr-1" /> Dispatch
+                    </Button>
+                  ) : (
+                    <Badge variant={o.simulated ? "secondary" : "default"} className="text-xs">
+                      {o.fulfillment_status_detail}{o.simulated ? " (sim)" : ""}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-sm">{o.tracking_number || "—"}</TableCell>
                 <TableCell>{dollars(o.cost_cents)}</TableCell>

@@ -35,9 +35,11 @@ import {
   ArrowLeft,
   Settings,
   Loader2,
+  Download,
 } from "lucide-react";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CART_DEFAULTS } from "@/hooks/useCartSettings";
+import { WordpressImportPanel } from "@/components/cms/WordpressImportPanel";
 
 // ─── Types ───────────────────────────────────────────────────
 type CmsUser = {
@@ -368,6 +370,9 @@ const CmsDashboard = () => {
             <TabsTrigger value="settings" className="gap-1.5">
               <Settings className="h-3.5 w-3.5" /> Settings
             </TabsTrigger>
+            <TabsTrigger value="import" className="gap-1.5">
+              <Download className="h-3.5 w-3.5" /> Import
+            </TabsTrigger>
           </TabsList>
 
           {/* ── Content Tab ───────────────────────────────── */}
@@ -544,6 +549,11 @@ const CmsDashboard = () => {
           {/* ── Settings Tab ──────────────────────────────── */}
           <TabsContent value="settings">
             <CartSettingsPanel />
+          </TabsContent>
+
+          {/* ── Import Tab ────────────────────────────────── */}
+          <TabsContent value="import">
+            <WordpressImportPanel />
           </TabsContent>
         </Tabs>
       </main>

@@ -357,6 +357,25 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Ambassador Program callout */}
+      <section className="py-14 bg-foreground text-background">
+        <div className="container mx-auto px-4 max-w-4xl text-center">
+          <p className="text-xs tracking-brand uppercase opacity-70 mb-2">Affiliate Program · Powered by impact.com</p>
+          <h2 className="text-2xl md:text-3xl font-bold uppercase mb-4">Turn Your Love for Rescue Dogs into Commission</h2>
+          <p className="opacity-90 max-w-2xl mx-auto mb-6 text-sm md:text-base">
+            Nonprofits, enthusiasts, and influencers earn percentage-based commission on every bottle sold through their personal link — automatic tracking, automatic payments, no contractor paperwork on your end.
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Button asChild size="lg" variant="secondary" className="uppercase tracking-brand">
+              <Link to="/ambassadors">Become an Ambassador</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="bg-transparent border-background text-background hover:bg-background hover:text-foreground uppercase tracking-brand">
+              <Link to="/ambassadors/find">Find an Ambassador</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Events Preview */}
       <section className="py-16">
         <div className="container mx-auto px-4">

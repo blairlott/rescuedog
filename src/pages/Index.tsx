@@ -259,11 +259,14 @@ const Index = () => {
           ) : wines.length === 0 ? (
             <p className="text-center text-muted-foreground py-12">No wines found.</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              {wines.slice(0, 10).map((product: ShopifyProduct) => (
-                <ProductCard key={product.node.id} product={product} />
-              ))}
-            </div>
+            <>
+              <ShippingIncludedBanner />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                {wines.slice(0, 10).map((product: ShopifyProduct) => (
+                  <ProductCard key={product.node.id} product={product} />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </section>

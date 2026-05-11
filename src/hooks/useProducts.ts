@@ -1,26 +1,27 @@
-import { useQuery } from '@tanstack/react-query';
-import { storefrontApiRequest, STOREFRONT_PRODUCTS_QUERY, STOREFRONT_PRODUCT_BY_HANDLE_QUERY, ShopifyProduct } from '@/lib/shopify';
-import { applyPriceOverrides, applyPriceOverrideToNode } from '@/lib/priceOverrides';
+import { useQuery } from "@tanstack/react-query";
+import { fetchAllProducts, fetchProductByHandle, fetchWineProducts, fetchMerchProducts, ShopifyProduct } from "@/lib/shopify";
 
-export function useProducts(first = 50, queryFilter?: string) {
+/**
+ * Lovable-native catalog hook (formerly backed by Shopify).
+ * `queryFilter` supports two values for backward compat:
+ *   - "tag:wine" / undefined → all products (or wines only when caller filters)
+ *   - any other → ignored (catalog is small enough to filter client-side)
+ */
+export function useProducts(_first = 50, queryFilter?: string) {
   return useQuery({
-    queryKey: ['shopify-products', first, queryFilter],
+    queryKey: ["catalog-products", queryFilter],
     queryFn: async () => {
-      const data = await storefrontApiRequest(STOREFRONT_PRODUCTS_QUERY, { first, query: queryFilter });
-      const edges = (data?.data?.products?.edges || []) as ShopifyProduct[];
-      return applyPriceOverrides(edges);
+      if (queryFilter?.toLowerCase().includes("wine")) return fetchWineProducts();
+      if (queryFilter?.toLowerCase().includes("merch")) return fetchMerchProducts();
+      return fetchAllProducts();
     },
   });
 }
 
 export function useProductByHandle(handle: string) {
-  return useQuery({
-    queryKey: ['shopify-product', handle],
-    queryFn: async () => {
-      const data = await storefrontApiRequest(STOREFRONT_PRODUCT_BY_HANDLE_QUERY, { handle });
-      const node = data?.data?.productByHandle || null;
-      return node ? applyPriceOverrideToNode(node) : null;
-    },
+  return useQuery<ShopifyProduct | null>({
+    queryKey: ["catalog-product", handle],
+    queryFn: () => fetchProductByHandle(handle),
     enabled: !!handle,
   });
 }

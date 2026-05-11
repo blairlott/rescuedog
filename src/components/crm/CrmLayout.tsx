@@ -5,6 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Truck, Heart } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
+import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
 import { Link, useLocation } from "react-router-dom";
 
 export default function CrmLayout() {
@@ -99,8 +100,13 @@ export default function CrmLayout() {
           </Button>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto">
-        <Outlet />
+      <main className="flex-1 overflow-auto flex flex-col">
+        <header className="h-12 border-b border-border bg-card flex items-center px-4 gap-3 shrink-0">
+          <CrmCommandPalette />
+        </header>
+        <div className="flex-1 overflow-auto">
+          <Outlet />
+        </div>
       </main>
       <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </div>

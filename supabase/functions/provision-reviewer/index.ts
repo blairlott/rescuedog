@@ -92,26 +92,21 @@ Deno.serve(async (req) => {
     }
 
     const sendResults: Record<string, any> = {}
-    const sendUrl = `${url}/functions/v1/send-transactional-email`
-    const sendHeaders = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${serviceKey}`,
-      'apikey': serviceKey,
-    }
-
     const sendOne = async (to: string, ccCopy: boolean, key: string) => {
-      const res = await fetch(sendUrl, {
-        method: 'POST',
-        headers: sendHeaders,
-        body: JSON.stringify({
+      const { data, error } = await admin.functions.invoke('send-transactional-email', {
+        body: {
           templateName: 'reviewer-invite',
           recipientEmail: to,
           idempotencyKey: key,
           templateData: { ...baseData, ccCopy },
-        }),
+        },
       })
-      const text = await res.text()
-      return { status: res.status, body: text.slice(0, 500) }
+      // When the function returns non-2xx, supabase-js sets error but also exposes the response context
+      let bodyText: string | undefined
+      if (error && (error as any).context?.text) {
+        try { bodyText = await (error as any).context.text() } catch { /* ignore */ }
+      }
+      return { data, error: error?.message, body: bodyText }
     }
 
     sendResults.reviewer = await sendOne(reviewerEmail, false, `reviewer-invite-${userId}-${Date.now()}`)

@@ -179,8 +179,8 @@ export function SommelierChat() {
             <div className="flex items-center gap-2">
               <Wine className="h-4 w-4" />
               <div>
-                <p className="text-sm font-bold">RDW Sommelier</p>
-                <p className="text-[10px] opacity-80">AI-powered · Always learning</p>
+                <p className="text-sm font-bold">Pip · RDW Sommelier</p>
+                <p className="text-[10px] opacity-80">Lodi Rules certified · Rescue-funding pours</p>
               </div>
             </div>
             <button onClick={() => setOpen(false)} aria-label="Close" className="p-1 hover:bg-white/10">

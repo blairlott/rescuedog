@@ -96,7 +96,12 @@ export default function AmbassadorDashboardPage() {
         {profile.status === "pending" && (
           <div className="border border-border bg-muted p-4 mb-8">
             <p className="text-sm font-semibold">Your application is under review.</p>
-            <p className="text-sm text-muted-foreground mt-1">We'll email you within 2 business days. You can edit your profile while you wait.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              We'll email you within 2 business days. You can edit your profile while you wait.
+              {!profile.impact_tracking_url && (
+                <> <strong className="text-foreground">Heads up:</strong> your public page will not be published until you add an impact.com tracking URL or code below.</>
+              )}
+            </p>
           </div>
         )}
 

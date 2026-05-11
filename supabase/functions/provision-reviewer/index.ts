@@ -1,4 +1,11 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import * as React from 'npm:react@18.3.1'
+import { renderAsync } from 'npm:@react-email/components@0.0.22'
+import { createClient } from 'npm:@supabase/supabase-js@2'
+import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+
+const SITE_NAME = 'shopify-buddy-b2b'
+const SENDER_DOMAIN = 'notify.partner.rescuedog.com'
+const FROM_DOMAIN = 'partner.rescuedog.com'
 
 // One-off provisioning function: creates a reviewer account, grants admin,
 // and emails the credentials to the reviewer + a CC copy to Blair.
@@ -15,6 +22,80 @@ function generatePassword(): string {
   crypto.getRandomValues(bytes)
   return btoa(String.fromCharCode(...bytes))
     .replace(/\+/g, 'A').replace(/\//g, 'B').replace(/=/g, '')
+}
+
+function genToken(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function enqueueReviewerEmail(
+  admin: ReturnType<typeof createClient>,
+  to: string,
+  templateData: Record<string, any>,
+  idempotencyKey: string,
+) {
+  const tpl = TEMPLATES['reviewer-invite']
+  if (!tpl) throw new Error('reviewer-invite template missing from registry')
+
+  const messageId = crypto.randomUUID()
+  const normalized = to.toLowerCase()
+
+  // Make sure not suppressed
+  await admin.from('suppressed_emails').delete().eq('email', normalized)
+
+  // Ensure unsubscribe token
+  let token = genToken()
+  const { data: existing } = await admin.from('email_unsubscribe_tokens')
+    .select('token, used_at').eq('email', normalized).maybeSingle()
+  if (existing && !existing.used_at) {
+    token = existing.token as string
+  } else {
+    await admin.from('email_unsubscribe_tokens').upsert(
+      { token, email: normalized },
+      { onConflict: 'email', ignoreDuplicates: true }
+    )
+    const { data: stored } = await admin.from('email_unsubscribe_tokens')
+      .select('token').eq('email', normalized).maybeSingle()
+    if (stored?.token) token = stored.token as string
+  }
+
+  const html = await renderAsync(React.createElement(tpl.component, templateData))
+  const text = await renderAsync(React.createElement(tpl.component, templateData), { plainText: true })
+  const subject = typeof tpl.subject === 'function' ? tpl.subject(templateData) : tpl.subject
+
+  await admin.from('email_send_log').insert({
+    message_id: messageId, template_name: 'reviewer-invite',
+    recipient_email: to, status: 'pending',
+  })
+
+  const { error } = await admin.rpc('enqueue_email', {
+    queue_name: 'transactional_emails',
+    payload: {
+      message_id: messageId,
+      to,
+      from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+      sender_domain: SENDER_DOMAIN,
+      subject,
+      html,
+      text,
+      purpose: 'transactional',
+      label: 'reviewer-invite',
+      idempotency_key: idempotencyKey,
+      unsubscribe_token: token,
+      queued_at: new Date().toISOString(),
+    },
+  })
+
+  if (error) {
+    await admin.from('email_send_log').insert({
+      message_id: messageId, template_name: 'reviewer-invite',
+      recipient_email: to, status: 'failed', error_message: error.message,
+    })
+    throw error
+  }
+  return { messageId }
 }
 
 Deno.serve(async (req) => {
@@ -92,25 +173,20 @@ Deno.serve(async (req) => {
     }
 
     const sendResults: Record<string, any> = {}
-    const sendOne = async (to: string, ccCopy: boolean, key: string) => {
-      const { data, error } = await admin.functions.invoke('send-transactional-email', {
-        body: {
-          templateName: 'reviewer-invite',
-          recipientEmail: to,
-          idempotencyKey: key,
-          templateData: { ...baseData, ccCopy },
-        },
-      })
-      // When the function returns non-2xx, supabase-js sets error but also exposes the response context
-      let bodyText: string | undefined
-      if (error && (error as any).context?.text) {
-        try { bodyText = await (error as any).context.text() } catch { /* ignore */ }
-      }
-      return { data, error: error?.message, body: bodyText }
-    }
-
-    sendResults.reviewer = await sendOne(reviewerEmail, false, `reviewer-invite-${userId}-${Date.now()}`)
-    sendResults.cc = await sendOne(ccEmail, true, `reviewer-invite-cc-${userId}-${Date.now()}`)
+    try {
+      sendResults.reviewer = await enqueueReviewerEmail(
+        admin, reviewerEmail,
+        { ...baseData, ccCopy: false },
+        `reviewer-invite-${userId}-${Date.now()}`
+      )
+    } catch (e: any) { sendResults.reviewer = { error: e.message } }
+    try {
+      sendResults.cc = await enqueueReviewerEmail(
+        admin, ccEmail,
+        { ...baseData, ccCopy: true },
+        `reviewer-invite-cc-${userId}-${Date.now()}`
+      )
+    } catch (e: any) { sendResults.cc = { error: e.message } }
 
     return new Response(
       JSON.stringify({

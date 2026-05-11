@@ -289,8 +289,10 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
           <Row
             label={
               shipping === 0
-                ? "Shipping (included, 6+ bottles)"
-                : "Shipping"
+                ? `Shipping (${shipMethod === "ups_ap" ? "UPS Access Point" : "included, 6+ bottles"})`
+                : shipMethod === "ups_ap"
+                  ? "Shipping (UPS Access Point — save $5)"
+                  : "Shipping (Home delivery, adult signature)"
             }
             value={shipping}
           />
@@ -313,6 +315,78 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             <Field label="State" value={form.state} onChange={(v) => update("state", v)} />
             <Field label="ZIP" value={form.zip} onChange={(v) => update("zip", v)} />
           </div>
+        </div>
+
+        {/* Shipping method */}
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-brand text-muted-foreground">
+            Delivery method
+          </Label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setShipMethod("home")}
+              className={`border p-3 text-left text-xs space-y-1 transition ${
+                shipMethod === "home"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-foreground/30"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 font-semibold">
+                <Home className="h-3.5 w-3.5" /> Home delivery
+              </div>
+              <div className="text-muted-foreground">
+                Adult (21+) signature required at door
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => (accessPoint ? setShipMethod("ups_ap") : findAccessPoint())}
+              className={`border p-3 text-left text-xs space-y-1 transition ${
+                shipMethod === "ups_ap"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-foreground/30"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 font-semibold">
+                <MapPin className="h-3.5 w-3.5" /> UPS Access Point
+              </div>
+              <div className="text-muted-foreground">
+                Pick up nearby with ID — save $5
+              </div>
+            </button>
+          </div>
+          {shipMethod === "ups_ap" && (
+            <div className="border border-border bg-muted/30 p-3 text-xs space-y-1">
+              {accessPoint ? (
+                <>
+                  <div className="font-semibold flex items-center justify-between">
+                    <span>{accessPoint.name}</span>
+                    <span className="text-muted-foreground">{accessPoint.distance}</span>
+                  </div>
+                  <div className="text-muted-foreground">{accessPoint.address}</div>
+                  <button
+                    type="button"
+                    onClick={findAccessPoint}
+                    className="text-primary underline underline-offset-2 mt-1"
+                  >
+                    Choose a different location
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={findAccessPoint}
+                  className="text-primary underline underline-offset-2"
+                >
+                  Find a UPS Access Point near {form.zip || "me"}
+                </button>
+              )}
+              <div className="text-[10px] text-muted-foreground pt-1">
+                Government-issued ID (21+) required at pickup. Held up to 7 days.
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Payment (fake) */}

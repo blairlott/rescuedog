@@ -32,6 +32,51 @@ What you DON'T do:
 
 If asked something outside wine/pairing/rescue topics, politely redirect.`;
 
+const SHOPIFY_STOREFRONT_URL = "https://rescuedogwines.myshopify.com/api/2025-07/graphql.json";
+const SHOPIFY_STOREFRONT_TOKEN = "ede00c15914c4e913d8acd7753197680";
+const PRODUCTS_QUERY = `query { products(first: 50) { edges { node { title tags description priceRange { minVariantPrice { amount } } } } } }`;
+
+let cachedCatalog: { value: string; titles: string[]; ts: number } | null = null;
+const CATALOG_TTL_MS = 5 * 60 * 1000;
+
+async function fetchLiveCatalog(): Promise<{ value: string; titles: string[] }> {
+  if (cachedCatalog && Date.now() - cachedCatalog.ts < CATALOG_TTL_MS) {
+    return { value: cachedCatalog.value, titles: cachedCatalog.titles };
+  }
+  try {
+    const res = await fetch(SHOPIFY_STOREFRONT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Shopify-Storefront-Access-Token": SHOPIFY_STOREFRONT_TOKEN },
+      body: JSON.stringify({ query: PRODUCTS_QUERY }),
+    });
+    const json = await res.json();
+    const edges = json?.data?.products?.edges ?? [];
+    const lines: string[] = [];
+    const titles: string[] = [];
+    for (const e of edges) {
+      const n = e?.node;
+      if (!n?.title) continue;
+      titles.push(n.title);
+      const price = n?.priceRange?.minVariantPrice?.amount;
+      const tags = Array.isArray(n.tags) ? n.tags.slice(0, 6).join(", ") : "";
+      const desc = (n.description || "").replace(/\s+/g, " ").slice(0, 140);
+      lines.push(`• ${n.title}${price ? ` — $${Number(price).toFixed(2)}` : ""}${tags ? ` [${tags}]` : ""}${desc ? ` — ${desc}` : ""}`);
+    }
+    const value = lines.join("\n");
+    cachedCatalog = { value, titles, ts: Date.now() };
+    return { value, titles };
+  } catch (e) {
+    console.error("catalog fetch failed", (e as Error)?.message);
+    return { value: "", titles: [] };
+  }
+}
+
+function extractMentionedTitles(text: string): string[] {
+  // Pull anything bolded as **...** — that's how the model names wines.
+  const matches = text.match(/\*\*([^*]+)\*\*/g) || [];
+  return matches.map(m => m.replace(/\*\*/g, "").trim());
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: corsHeaders });
@@ -53,9 +98,25 @@ Deno.serve(async (req: Request) => {
     .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
   if (cleaned.length === 0) return new Response(JSON.stringify({ error: 'no valid messages' }), { status: 400, headers: corsHeaders });
 
-  const catalogContext = typeof body?.catalog === 'string' && body.catalog.trim()
-    ? `\n\n=== Current catalog (the ONLY wines you may recommend) ===\n${body.catalog.slice(0, 6000)}\n=== End of catalog ===`
-    : `\n\nNOTE: No catalog was provided this turn. Do NOT name specific wines. Speak in general terms and invite the guest to browse our shop.`;
+  // Source-of-truth catalog: prefer the client's snapshot, but always fall back to a live fetch
+  // so the model NEVER reasons without one.
+  let catalogStr = typeof body?.catalog === 'string' && body.catalog.trim() ? body.catalog : '';
+  let catalogTitles: string[] = [];
+  if (!catalogStr) {
+    const live = await fetchLiveCatalog();
+    catalogStr = live.value;
+    catalogTitles = live.titles;
+  } else {
+    // Best-effort title extraction from the client snapshot lines starting with "• "
+    catalogTitles = catalogStr.split("\n").map(l => {
+      const m = l.match(/^[•\-\*]\s*([^—\[]+?)(?:\s*[—\[]|$)/);
+      return m ? m[1].trim() : "";
+    }).filter(Boolean);
+  }
+
+  const catalogContext = catalogStr
+    ? `\n\n=== Current catalog (the ONLY wines you may recommend) ===\n${catalogStr.slice(0, 6000)}\n=== End of catalog ===`
+    : `\n\nNOTE: No catalog could be loaded. Do NOT name any specific wines. Speak in general terms only and invite the guest to browse our shop.`;
 
   try {
     const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -75,7 +136,24 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: 'AI request failed' }), { status: 500, headers: corsHeaders });
     }
     const data = await aiRes.json();
-    const reply = data?.choices?.[0]?.message?.content ?? '';
+    let reply: string = data?.choices?.[0]?.message?.content ?? '';
+
+    // SAFETY NET: if the model named a wine that isn't in the catalog, replace the reply
+    // with a safe fallback. This prevents fabricated SKUs from ever reaching the user.
+    if (catalogTitles.length > 0) {
+      const mentioned = extractMentionedTitles(reply);
+      const lowerTitles = catalogTitles.map(t => t.toLowerCase());
+      const offending = mentioned.filter(m => {
+        const ml = m.toLowerCase();
+        // Allow if it matches (or is contained in / contains) a real catalog title
+        return !lowerTitles.some(t => t.includes(ml) || ml.includes(t));
+      });
+      if (offending.length > 0) {
+        console.warn('Sommelier named off-catalog wine(s), suppressing:', offending);
+        reply = `I want to make sure I only recommend wines we actually carry. Browse our current selection at /wines and tell me a bit about what you like (style, occasion, food) and I'll pick from our list for you.`;
+      }
+    }
+
     return new Response(JSON.stringify({ reply }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('Sommelier exception', e?.message);

@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, Phone, Globe, Loader2, Search } from "lucide-react";
+import { MapPin, Phone, Globe, Loader2, Search, Truck, ExternalLink } from "lucide-react";
 import { SuggestRetailerDialog } from "@/components/locator/SuggestRetailerDialog";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -194,6 +194,35 @@ export default function StoreLocatorPage() {
                   <p className="text-sm text-muted-foreground mb-2">
                     {results.length} location{results.length === 1 ? "" : "s"} near {zip}
                   </p>
+                  {/* Same-day delivery deep links — search Rescue Dog Wines on partner marketplaces.
+                      Availability depends on which retailers in this region list our SKUs on each platform. */}
+                  <div className="border border-border bg-secondary/40 p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Truck className="h-4 w-4 text-primary" />
+                      <p className="text-sm font-bold">Want it today? Try delivery</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Search Rescue Dog Wines on a partner marketplace. Availability depends on
+                      which retailers near {zip} carry us on each platform.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: "Instacart", url: `https://www.instacart.com/store/search_v3/Rescue%20Dog%20Wines` },
+                        { label: "DoorDash", url: `https://www.doordash.com/search/store/Rescue%20Dog%20Wines/` },
+                        { label: "Uber Eats", url: `https://www.ubereats.com/search?q=Rescue%20Dog%20Wines` },
+                      ].map(p => (
+                        <a
+                          key={p.label}
+                          href={p.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 border border-border bg-background hover:bg-primary hover:text-primary-foreground transition-colors"
+                        >
+                          {p.label} <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
                   {results.map((r) => (
                     <div key={r.id} className="border border-border p-4 bg-card">
                       <div className="flex justify-between items-start gap-2">

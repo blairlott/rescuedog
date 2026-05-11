@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
+import { ShippingIncludedBanner } from "@/components/ShippingIncludedBanner";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";

@@ -6,6 +6,7 @@ import { OrdersTab } from "@/components/dropship/OrdersTab";
 import { PayoutsTab } from "@/components/dropship/PayoutsTab";
 import { EventsTab } from "@/components/dropship/EventsTab";
 import { CurationTab } from "@/components/dropship/CurationTab";
+import { MarketplaceTab } from "@/components/dropship/MarketplaceTab";
 import { Truck } from "lucide-react";
 
 export default function DropshipDashboard() {
@@ -36,6 +37,7 @@ export default function DropshipDashboard() {
           <TabsTrigger value="partners">Partners</TabsTrigger>
           <TabsTrigger value="skus">SKUs</TabsTrigger>
           <TabsTrigger value="curation">AI Curation</TabsTrigger>
+          <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
           <TabsTrigger value="payouts">Payouts</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
@@ -43,6 +45,7 @@ export default function DropshipDashboard() {
         <TabsContent value="partners" className="mt-6"><PartnersTab /></TabsContent>
         <TabsContent value="skus" className="mt-6"><SkusTab /></TabsContent>
         <TabsContent value="curation" className="mt-6"><CurationTab /></TabsContent>
+        <TabsContent value="marketplace" className="mt-6"><MarketplaceTab /></TabsContent>
         <TabsContent value="payouts" className="mt-6"><PayoutsTab /></TabsContent>
         <TabsContent value="activity" className="mt-6"><EventsTab /></TabsContent>
       </Tabs>

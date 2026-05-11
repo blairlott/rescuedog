@@ -12,6 +12,7 @@ const STARTER_PROMPTS = [
   "Pick a wine for a dinner party of 6",
   "Best gift bottle under $30",
   "I like big, bold reds — recommend?",
+  "Invent a wine cocktail with one of your wines 🍹",
 ];
 
 export function SommelierChat() {

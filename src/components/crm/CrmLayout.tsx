@@ -22,7 +22,7 @@ export default function CrmLayout() {
     ...(roleInfo?.isAdminOrOwner || (roleInfo?.roles as string[] | undefined)?.includes("dropship_manager")
       ? [{ to: "/crm/dropship", label: "Drop-Ship", icon: Truck }]
       : []),
-    ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/ambassadors", label: "Ambassadors", icon: Heart }] : []),
+    ...(roleInfo?.isAmbassadorManager ? [{ to: "/crm/ambassadors", label: "Ambassadors", icon: Heart }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin", label: "Users", icon: Users }] : []),
   ];
 

@@ -21,6 +21,7 @@ export default function AmbassadorDashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [rsvpCounts, setRsvpCounts] = useState<Record<string, number>>({});
+  const [linkHealth, setLinkHealth] = useState<{ status: string; message: string | null; checked_at: string } | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -40,6 +41,13 @@ export default function AmbassadorDashboardPage() {
         (rsvps || []).forEach((r: any) => { counts[r.event_id] = (counts[r.event_id] || 0) + 1; });
         setRsvpCounts(counts);
       }
+      const { data: hc } = await supabase
+        .from("impact_health_checks")
+        .select("status,message,checked_at")
+        .eq("ambassador_profile_id", p.id)
+        .order("checked_at", { ascending: false })
+        .limit(1);
+      if (hc && hc[0]) setLinkHealth(hc[0] as any);
       setLoadingData(false);
     })();
   }, [user, loading, navigate]);
@@ -109,6 +117,13 @@ export default function AmbassadorDashboardPage() {
                 placeholder="https://rdwine.pxf.io/..." className="mt-1" />
               <p className="text-xs text-muted-foreground mt-1">Until you add this, "Shop" buttons on your page will fall back to our standard wine shop.</p>
             </div>
+            {linkHealth && profile.impact_tracking_url && (
+              <div className={`text-xs p-3 border ${linkHealth.status === "ok" ? "border-green-600 text-green-700" : linkHealth.status === "warning" ? "border-yellow-600 text-yellow-700" : "border-destructive text-destructive"}`}>
+                <span className="font-bold uppercase">Link health: {linkHealth.status}</span>
+                {linkHealth.message && <> · {linkHealth.message}</>}
+                <span className="text-muted-foreground"> · checked {new Date(linkHealth.checked_at).toLocaleString()}</span>
+              </div>
+            )}
           </div>
         </section>
 

@@ -23,12 +23,16 @@ export const CartDrawer = () => {
   const { items, isLoading, isSyncing, updateQuantity, removeItem, getCheckoutUrl, syncCart } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
-  const { freeShippingBottleCount } = useCartSettings();
-  const shippingIncluded = totalItems >= freeShippingBottleCount;
+  const { freeShippingBottleCount, merchFreeShippingThreshold } = useCartSettings();
+  const shippingIncluded = isMerchRoute
+    ? totalPrice >= merchFreeShippingThreshold
+    : totalItems >= freeShippingBottleCount;
   const { isMember, discountPercent } = useIsMember();
   const memberSavings = !isMerchRoute && isMember ? totalPrice * (discountPercent / 100) : 0;
   const bottlesNeeded = freeShippingBottleCount - totalItems;
+  const dollarsNeeded = Math.max(0, merchFreeShippingThreshold - totalPrice);
   const showNudge = !isMerchRoute && !shippingIncluded && bottlesNeeded > 0 && bottlesNeeded <= 2 && totalItems > 0;
+  const showMerchNudge = isMerchRoute && !shippingIncluded && dollarsNeeded > 0 && dollarsNeeded <= 25 && totalItems > 0;
 
   useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
 
@@ -61,8 +65,8 @@ export const CartDrawer = () => {
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-lg flex flex-col h-full">
-        {/* Diagonal corner ribbon — wine routes only, communicates shipping threshold */}
-        {!isMerchRoute && totalItems > 0 && (
+        {/* Diagonal corner ribbon — communicates shipping threshold for both wine & merch */}
+        {totalItems > 0 && (
           <div className="pointer-events-none absolute top-0 right-0 h-24 w-24 overflow-hidden z-20">
             <div
               className={`absolute top-[22px] right-[-42px] w-[150px] rotate-45 text-center py-1 text-[9px] font-bold uppercase tracking-brand shadow-md ${
@@ -73,7 +77,9 @@ export const CartDrawer = () => {
             >
               {shippingIncluded
                 ? "Shipping Included ✓"
-                : `${bottlesNeeded} to unlock`}
+                : isMerchRoute
+                  ? `$${dollarsNeeded.toFixed(0)} to unlock`
+                  : `${bottlesNeeded} to unlock`}
             </div>
           </div>
         )}
@@ -100,7 +106,11 @@ export const CartDrawer = () => {
             <>
               {/* Free shipping progress bar */}
               <div className="flex-shrink-0 mb-3">
-                <FreeShippingBar totalBottles={totalItems} />
+                <FreeShippingBar
+                  totalBottles={totalItems}
+                  cartTotal={totalPrice}
+                  mode={isMerchRoute ? "merch" : "wine"}
+                />
               </div>
 
               {/* Cart items */}
@@ -159,6 +169,11 @@ export const CartDrawer = () => {
                 {showNudge && (
                   <div className="text-xs bg-brand-gold/10 border border-brand-gold/30 px-3 py-2 flex items-center justify-between">
                     <span><strong>Add {bottlesNeeded} more bottle{bottlesNeeded !== 1 ? 's' : ''}</strong> — shipping included at {freeShippingBottleCount}+</span>
+                  </div>
+                )}
+                {showMerchNudge && (
+                  <div className="text-xs bg-brand-gold/10 border border-brand-gold/30 px-3 py-2 flex items-center justify-between">
+                    <span><strong>${dollarsNeeded.toFixed(2)} to go</strong> — shipping included at ${merchFreeShippingThreshold}+</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">

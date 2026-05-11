@@ -5,6 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Truck, Heart } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
+import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
 import { Link, useLocation } from "react-router-dom";
 
 export default function CrmLayout() {
@@ -22,7 +23,7 @@ export default function CrmLayout() {
     ...(roleInfo?.isAdminOrOwner || (roleInfo?.roles as string[] | undefined)?.includes("dropship_manager")
       ? [{ to: "/crm/dropship", label: "Drop-Ship", icon: Truck }]
       : []),
-    ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/ambassadors", label: "Ambassadors", icon: Heart }] : []),
+    ...(roleInfo?.isAmbassadorManager ? [{ to: "/crm/ambassadors", label: "Ambassadors", icon: Heart }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin", label: "Users", icon: Users }] : []),
   ];
 
@@ -47,7 +48,7 @@ export default function CrmLayout() {
 
   // Block unapproved users (except admins/owners who are always approved)
   const isApproved = roleInfo?.profile && (roleInfo.profile as any).approved;
-  if (!isApproved && !roleInfo?.isAdminOrOwner) {
+  if (!isApproved && !roleInfo?.isAdminOrOwner && !roleInfo?.isAmbassadorManager) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-md">
@@ -99,8 +100,13 @@ export default function CrmLayout() {
           </Button>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto">
-        <Outlet />
+      <main className="flex-1 overflow-auto flex flex-col">
+        <header className="h-12 border-b border-border bg-card flex items-center px-4 gap-3 shrink-0">
+          <CrmCommandPalette />
+        </header>
+        <div className="flex-1 overflow-auto">
+          <Outlet />
+        </div>
       </main>
       <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </div>

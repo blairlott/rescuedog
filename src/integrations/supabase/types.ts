@@ -2588,6 +2588,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_ambassador_manager: { Args: { _user_id: string }; Returns: boolean }
       is_brand_ambassador: { Args: { _user_id: string }; Returns: boolean }
       is_cms_editor: { Args: { _user_id: string }; Returns: boolean }
       is_dropship_manager: { Args: { _user_id: string }; Returns: boolean }
@@ -2621,6 +2622,7 @@ export type Database = {
         | "brand_ambassador"
         | "wine_club_manager"
         | "dropship_manager"
+        | "ambassador_manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2758,6 +2760,7 @@ export const Constants = {
         "brand_ambassador",
         "wine_club_manager",
         "dropship_manager",
+        "ambassador_manager",
       ],
     },
   },

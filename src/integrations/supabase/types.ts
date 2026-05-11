@@ -1270,6 +1270,75 @@ export type Database = {
           },
         ]
       }
+      merch_products: {
+        Row: {
+          category: string | null
+          collection: string | null
+          created_at: string
+          description: string | null
+          description_html: string | null
+          gallery_urls: string[] | null
+          handle: string
+          id: string
+          image_url: string | null
+          inventory_qty: number | null
+          is_active: boolean
+          is_featured: boolean
+          legacy_shopify_id: string | null
+          options: Json
+          price_cents: number
+          sort_order: number
+          tags: string[] | null
+          title: string
+          updated_at: string
+          variants: Json
+        }
+        Insert: {
+          category?: string | null
+          collection?: string | null
+          created_at?: string
+          description?: string | null
+          description_html?: string | null
+          gallery_urls?: string[] | null
+          handle: string
+          id?: string
+          image_url?: string | null
+          inventory_qty?: number | null
+          is_active?: boolean
+          is_featured?: boolean
+          legacy_shopify_id?: string | null
+          options?: Json
+          price_cents?: number
+          sort_order?: number
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          variants?: Json
+        }
+        Update: {
+          category?: string | null
+          collection?: string | null
+          created_at?: string
+          description?: string | null
+          description_html?: string | null
+          gallery_urls?: string[] | null
+          handle?: string
+          id?: string
+          image_url?: string | null
+          inventory_qty?: number | null
+          is_active?: boolean
+          is_featured?: boolean
+          legacy_shopify_id?: string | null
+          options?: Json
+          price_cents?: number
+          sort_order?: number
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          variants?: Json
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           approved: boolean
@@ -2004,6 +2073,81 @@ export type Database = {
           updated_at?: string | null
           vinoshipper_club_id?: string | null
           wine_type?: string
+        }
+        Relationships: []
+      }
+      wine_products: {
+        Row: {
+          badges: string[] | null
+          club_price_cents: number | null
+          created_at: string
+          description: string | null
+          gallery_urls: string[] | null
+          handle: string
+          id: string
+          image_url: string | null
+          in_stock: boolean
+          is_active: boolean
+          last_synced_at: string | null
+          price_cents: number
+          sort_order: number
+          tags: string[] | null
+          tasting_notes: string | null
+          title: string
+          updated_at: string
+          varietal: string | null
+          vinoshipper_cart_url: string | null
+          vinoshipper_product_id: string | null
+          vinoshipper_sku: string | null
+          vintage: number | null
+        }
+        Insert: {
+          badges?: string[] | null
+          club_price_cents?: number | null
+          created_at?: string
+          description?: string | null
+          gallery_urls?: string[] | null
+          handle: string
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean
+          is_active?: boolean
+          last_synced_at?: string | null
+          price_cents?: number
+          sort_order?: number
+          tags?: string[] | null
+          tasting_notes?: string | null
+          title: string
+          updated_at?: string
+          varietal?: string | null
+          vinoshipper_cart_url?: string | null
+          vinoshipper_product_id?: string | null
+          vinoshipper_sku?: string | null
+          vintage?: number | null
+        }
+        Update: {
+          badges?: string[] | null
+          club_price_cents?: number | null
+          created_at?: string
+          description?: string | null
+          gallery_urls?: string[] | null
+          handle?: string
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean
+          is_active?: boolean
+          last_synced_at?: string | null
+          price_cents?: number
+          sort_order?: number
+          tags?: string[] | null
+          tasting_notes?: string | null
+          title?: string
+          updated_at?: string
+          varietal?: string | null
+          vinoshipper_cart_url?: string | null
+          vinoshipper_product_id?: string | null
+          vinoshipper_sku?: string | null
+          vintage?: number | null
         }
         Relationships: []
       }

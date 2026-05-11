@@ -19,7 +19,7 @@ export function useProducts(_first = 50, queryFilter?: string) {
 }
 
 export function useProductByHandle(handle: string) {
-  return useQuery<ShopifyProduct | null>({
+  return useQuery<ShopifyProduct["node"] | null>({
     queryKey: ["catalog-product", handle],
     queryFn: () => fetchProductByHandle(handle),
     enabled: !!handle,

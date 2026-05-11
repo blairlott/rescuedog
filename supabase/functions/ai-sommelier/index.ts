@@ -171,7 +171,10 @@ function pickCatalogTitle(catalogStr: string, choice: string | null): string | n
   const keywords = choice ? keywordMap[choice] || [] : [];
   const scored = items.map(item => ({
     ...item,
-    score: keywords.reduce((sum, keyword) => sum + (item.haystack.includes(keyword) ? 1 : 0), 0),
+    score:
+      keywords.reduce((sum, keyword) => sum + (item.haystack.includes(keyword) ? 1 : 0), 0)
+      // Strongly prefer single bottles over bundles/packs/cases/clubs in deterministic picks.
+      - (/(pack|bundle|case|club|gift\s*set|collection|6\s*pack|12\s*pack)/i.test(item.haystack) ? 5 : 0),
   }));
   scored.sort((a, b) => b.score - a.score);
   return scored[0]?.title || items[0].title;

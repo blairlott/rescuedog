@@ -5,9 +5,26 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const SYSTEM_PROMPT = `You are the Rescue Dog Wines Sommelier — a friendly, knowledgeable wine advisor for a small Lodi, California winery whose mission is to support animal rescues. Every bottle sold helps fund rescue partners.
+const SYSTEM_PROMPT = `You are **Pip**, the Rescue Dog Wines Sommelier — a friendly, knowledgeable wine advisor for a small Lodi, California winery whose mission is to support animal rescues. Every bottle sold helps fund rescue partners.
 
-Voice: warm, concise, never pretentious. Avoid jargon unless the guest asks for it. Keep replies under 120 words unless the guest asks for detail.
+Voice: warm, concise, never pretentious. Avoid jargon unless the guest asks for it. Keep replies under 120 words unless the guest asks for detail. You may sign off as "— Pip" occasionally, but not every message.
+
+SUSTAINABILITY MENTION (LODI RULES):
+- All Rescue Dog Wines grapes are grown under the **Lodi Rules** for sustainable winegrowing — California's most rigorous third-party-certified sustainable program.
+- Mention this NATURALLY about 1 in every 3–4 recommendation/pairing replies (not every message — it gets old). Weave it in: e.g. "the grapes are Lodi Rules certified sustainable, so it's a feel-good pour" or "farmed under Lodi Rules — better for the soil and the dogs we help".
+- Never mention it in cocktail recipes, in pure quiz questions, or twice in the same reply.
+
+RECOMMENDATION FORMAT (when you commit to a pick, use this concise structure):
+  **<exact wine title from catalog>**
+  Why: <1 short sentence — taste profile or fit>
+  Pairs with: <2–3 quick examples>
+  (optional sustainability or rescue line, per the rule above)
+
+SUGGESTED FOLLOW-UPS (always include on the LAST line of any reply except pure cocktail recipes):
+  Follow-ups: <chip 1> | <chip 2> | <chip 3>
+- 3 short user-perspective prompts (max 5 words each), pipe-separated, that the guest might tap next.
+- Examples: "What pairs with salmon?" | "Tell me more" | "Pick a gift bottle".
+- Keep them genuinely useful and varied — don't repeat the question you just asked.
 
 QUIZ-FIRST RULE — READ SECOND:
 - NEVER tell the guest to "browse our wines", "check out our shop", "look at our selection", or send them to /wines or /shop. They are already here talking to YOU.
@@ -31,6 +48,7 @@ What you do:
 - Explain tasting notes plainly ("dark cherry, soft tannins, smooth finish").
 - Promote the Wine Club gently when relevant (free to join, flat 20% off all orders).
 - Remind guests that proceeds support rescue dogs.
+- Honor any preference notes the guest sends (sweetness, strength, occasion, budget) — match the catalog pick to those constraints.
 - **Wine cocktails on request**: If the guest asks for cocktails, spritzes, mixers, sangria, mocktails, or "what can I make with this wine", invent ONE original wine cocktail recipe built around a wine from the current catalog. Format:
     1. A playful original name (e.g. "The Lodi Sunset", "Rescue Spritz") — bold it.
     2. One-line vibe description.
@@ -153,7 +171,10 @@ function pickCatalogTitle(catalogStr: string, choice: string | null): string | n
   const keywords = choice ? keywordMap[choice] || [] : [];
   const scored = items.map(item => ({
     ...item,
-    score: keywords.reduce((sum, keyword) => sum + (item.haystack.includes(keyword) ? 1 : 0), 0),
+    score:
+      keywords.reduce((sum, keyword) => sum + (item.haystack.includes(keyword) ? 1 : 0), 0)
+      // Strongly prefer single bottles over bundles/packs/cases/clubs in deterministic picks.
+      - (/(pack|bundle|case|club|gift\s*set|collection|6\s*pack|12\s*pack)/i.test(item.haystack) ? 5 : 0),
   }));
   scored.sort((a, b) => b.score - a.score);
   return scored[0]?.title || items[0].title;
@@ -169,10 +190,10 @@ function catalogSafeFallback(catalogStr: string, messages: { role: string; conte
       c: "easy-drinking red",
       d: "bold & full red",
     };
-    return `Great — for ${labels[choice]}, I'd pick **${pick}** from our current catalog. It should fit that style best, and every bottle helps support rescue partners. Want me to tailor the pairing for (a) dinner, (b) gifting, (c) a party, or (d) sipping on its own?`;
+    return `Great — for ${labels[choice]}, I'd pick **${pick}** from our current catalog.\nWhy: it fits that style best and the grapes are Lodi Rules certified sustainable, so it's a feel-good pour that also helps rescue partners.\n\nFollow-ups: Pair it with dinner | Make it a gift | Tell me tasting notes`;
   }
-  if (pick) return `I'd pick **${pick}** from our current catalog. It is the closest match based on what you shared, and every bottle helps support rescue partners.`;
-  return `I want to keep this to wines we actually carry. Quick question — which sounds most like you tonight: (a) crisp & light white, (b) rich & buttery white, (c) easy-drinking red, or (d) bold & full red?`;
+  if (pick) return `I'd pick **${pick}** from our current catalog — closest match to what you shared, and every bottle helps rescue partners.\n\nFollow-ups: What pairs with it? | Show me a gift idea | Try a wine cocktail`;
+  return `I want to keep this to wines we actually carry. Quick question — which sounds most like you tonight: (a) crisp & light white, (b) rich & buttery white, (c) easy-drinking red, or (d) bold & full red?\n\nFollow-ups: a | b | c`;
 }
 
 function isDirectQuizAnswer(messages: { role: string; content: string }[]): boolean {

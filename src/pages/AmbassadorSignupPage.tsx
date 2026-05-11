@@ -65,7 +65,9 @@ export default function AmbassadorSignupPage() {
     const handleClean = form.handle.toLowerCase().replace(/[^a-z0-9-]/g, "");
     if (handleClean.length < 3) { toast.error("Handle must be at least 3 characters (letters, numbers, hyphens)"); return; }
     setSubmitting(true);
+    const profileId = crypto.randomUUID();
     const { error } = await supabase.from("ambassador_profiles").insert({
+      id: profileId,
       user_id: user.id,
       handle: handleClean,
       display_name: form.display_name,
@@ -81,8 +83,21 @@ export default function AmbassadorSignupPage() {
       toast.error(error.message.includes("duplicate") ? "That handle is taken — try another" : error.message);
       return;
     }
-    toast.success("Application submitted! We'll review and email you shortly.");
-    navigate("/ambassador/dashboard");
+    // Fire-and-forget welcome email with impact.com next-step CTA
+    supabase.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "ambassador-welcome",
+        recipientEmail: user.email,
+        idempotencyKey: `ambassador-welcome-${profileId}`,
+        templateData: {
+          name: form.display_name,
+          handle: handleClean,
+          dashboardUrl: `${window.location.origin}/ambassador/dashboard`,
+        },
+      },
+    }).catch((err) => console.warn("welcome email failed", err));
+    toast.success("Application submitted! Check your email for next steps.");
+    navigate("/ambassador/dashboard?welcome=1");
   };
 
   if (hasProfile) return null;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ type Event = any;
 export default function AmbassadorDashboardPage() {
   const { user, loading } = useCustomerAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const justSignedUp = searchParams.get("welcome") === "1";
   const [profile, setProfile] = useState<Profile | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [rsvpCounts, setRsvpCounts] = useState<Record<string, number>>({});
@@ -102,6 +104,22 @@ export default function AmbassadorDashboardPage() {
                 <> <strong className="text-foreground">Heads up:</strong> your public page will not be published until you add an impact.com tracking URL or code below.</>
               )}
             </p>
+          </div>
+        )}
+
+        {justSignedUp && !profile.impact_tracking_url && (
+          <div className="border-2 border-primary p-5 mb-8">
+            <p className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Final step</p>
+            <h2 className="text-xl font-bold uppercase mb-2">Join the impact.com program</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              We've also emailed this to you. impact.com handles all commission tracking and 1099s.
+              Sign up (3 minutes), then paste your tracking link below to publish your page.
+            </p>
+            <Button asChild>
+              <a href="https://app.impact.com/campaign-promo-signup/Rescue-Dog-Wines.brand" target="_blank" rel="noopener">
+                Open impact.com signup <ExternalLink className="w-3 h-3 ml-2" />
+              </a>
+            </Button>
           </div>
         )}
 

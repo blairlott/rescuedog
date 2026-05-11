@@ -53,6 +53,7 @@ import SellOnSitePage from "./pages/SellOnSitePage";
 import AmbassadorsLandingPage from "./pages/AmbassadorsLandingPage";
 import AmbassadorSignupPage from "./pages/AmbassadorSignupPage";
 import AmbassadorDashboardPage from "./pages/AmbassadorDashboardPage";
+import UnsubscribePage from "./pages/UnsubscribePage";
 import AmbassadorEventEditorPage from "./pages/AmbassadorEventEditorPage";
 import AmbassadorPublicProfilePage from "./pages/AmbassadorPublicProfilePage";
 import AmbassadorEventPublicPage from "./pages/AmbassadorEventPublicPage";
@@ -109,6 +110,7 @@ function AppContent() {
       <Route path="/ambassadors/disclosure" element={<AmbassadorDisclosurePage />} />
       <Route path="/ambassador/signup" element={<AmbassadorSignupPage />} />
       <Route path="/ambassador/dashboard" element={<AmbassadorDashboardPage />} />
+      <Route path="/unsubscribe" element={<UnsubscribePage />} />
       <Route path="/ambassador/events/new" element={<AmbassadorEventEditorPage />} />
       <Route path="/ambassador/events/:id/edit" element={<AmbassadorEventEditorPage />} />
       <Route path="/a/:handle" element={<AmbassadorPublicProfilePage />} />

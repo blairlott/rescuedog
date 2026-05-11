@@ -53,21 +53,18 @@ export const CmsEditDialog = ({ open, onOpenChange, title, fields, onSave, isSav
 
     setUploading((u) => ({ ...u, [fieldKey]: true }));
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke('upload-to-shopify', {
-        body: formData,
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `cms/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('blog-media').upload(path, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type,
       });
-
-      if (res.error) throw new Error(res.error.message);
-      const data = res.data as { url?: string; error?: string };
-      if (data.error) throw new Error(data.error);
-      if (!data.url) throw new Error('No URL returned from upload');
-
-      setValues((v) => ({ ...v, [fieldKey]: data.url }));
-      toast({ title: "Image uploaded", description: "Image uploaded to Shopify successfully." });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from('blog-media').getPublicUrl(path);
+      if (!pub?.publicUrl) throw new Error('No public URL returned from upload');
+      setValues((v) => ({ ...v, [fieldKey]: pub.publicUrl }));
+      toast({ title: "Image uploaded", description: "Image uploaded successfully." });
     } catch (err: any) {
       console.error('Upload error:', err);
       toast({ title: "Upload failed", description: err.message || "Could not upload image.", variant: "destructive" });

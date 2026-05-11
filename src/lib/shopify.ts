@@ -1,9 +1,17 @@
-import { toast } from "sonner";
-
-const SHOPIFY_API_VERSION = '2025-07';
-const SHOPIFY_STORE_PERMANENT_DOMAIN = 'rescuedogwines.myshopify.com';
-const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
-const SHOPIFY_STOREFRONT_TOKEN = 'ede00c15914c4e913d8acd7753197680';
+/**
+ * Shopify-shaped catalog adapter (Lovable-native).
+ *
+ * NOTE: Despite the file name, this module no longer talks to Shopify.
+ * Wine catalog → public.wine_products (Vinoshipper is source of truth)
+ * Merch catalog → public.merch_products (Lovable Cloud is source of truth)
+ *
+ * The legacy `ShopifyProduct` shape is preserved as the in-memory wire format
+ * so existing components keep working without a sweeping rename.
+ *
+ * Cart is local-only. Wine checkout → Vinoshipper deep link (per item).
+ * Merch checkout → placeholder (no payment provider wired yet).
+ */
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ShopifyProduct {
   node: {
@@ -12,232 +20,25 @@ export interface ShopifyProduct {
     description: string;
     handle: string;
     tags: string[];
-    priceRange: {
-      minVariantPrice: {
-        amount: string;
-        currencyCode: string;
-      };
-    };
-    images: {
-      edges: Array<{
-        node: {
-          url: string;
-          altText: string | null;
-        };
-      }>;
-    };
+    priceRange: { minVariantPrice: { amount: string; currencyCode: string } };
+    images: { edges: Array<{ node: { url: string; altText: string | null } }> };
     variants: {
       edges: Array<{
         node: {
           id: string;
           title: string;
-          price: {
-            amount: string;
-            currencyCode: string;
-          };
+          price: { amount: string; currencyCode: string };
           availableForSale: boolean;
-          selectedOptions: Array<{
-            name: string;
-            value: string;
-          }>;
+          selectedOptions: Array<{ name: string; value: string }>;
         };
       }>;
     };
-    options: Array<{
-      name: string;
-      values: string[];
-    }>;
+    options: Array<{ name: string; values: string[] }>;
+    /** Lovable extension: Vinoshipper deep-link cart URL for wine items. */
+    vinoshipperCartUrl?: string | null;
+    /** Lovable extension: 'wine' | 'merch' classification. */
+    productKind?: "wine" | "merch";
   };
-}
-
-export async function storefrontApiRequest(query: string, variables: Record<string, unknown> = {}) {
-  const response = await fetch(SHOPIFY_STOREFRONT_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_TOKEN,
-    },
-    body: JSON.stringify({ query, variables }),
-  });
-
-  if (response.status === 402) {
-    toast.error("Shopify: Payment required", {
-      description: "Your store needs an active Shopify billing plan to access the API.",
-    });
-    return;
-  }
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  const data = await response.json();
-  if (data.errors) {
-    throw new Error(`Error calling Shopify: ${data.errors.map((e: { message: string }) => e.message).join(', ')}`);
-  }
-  return data;
-}
-
-export const STOREFRONT_PRODUCTS_QUERY = `
-  query GetProducts($first: Int!, $query: String) {
-    products(first: $first, query: $query) {
-      edges {
-        node {
-          id
-          title
-          description
-          handle
-          tags
-          priceRange {
-            minVariantPrice {
-              amount
-              currencyCode
-            }
-          }
-          images(first: 5) {
-            edges {
-              node {
-                url
-                altText
-              }
-            }
-          }
-          variants(first: 10) {
-            edges {
-              node {
-                id
-                title
-                price {
-                  amount
-                  currencyCode
-                }
-                availableForSale
-                selectedOptions {
-                  name
-                  value
-                }
-              }
-            }
-          }
-          options {
-            name
-            values
-          }
-        }
-      }
-    }
-  }
-`;
-
-export const STOREFRONT_PRODUCT_BY_HANDLE_QUERY = `
-  query GetProductByHandle($handle: String!) {
-    productByHandle(handle: $handle) {
-      id
-      title
-      description
-      handle
-      tags
-      priceRange {
-        minVariantPrice {
-          amount
-          currencyCode
-        }
-      }
-      images(first: 10) {
-        edges {
-          node {
-            url
-            altText
-          }
-        }
-      }
-      variants(first: 30) {
-        edges {
-          node {
-            id
-            title
-            price {
-              amount
-              currencyCode
-            }
-            availableForSale
-            selectedOptions {
-              name
-              value
-            }
-          }
-        }
-      }
-      options {
-        name
-        values
-      }
-    }
-  }
-`;
-
-// Cart mutations
-export const CART_QUERY = `
-  query cart($id: ID!) {
-    cart(id: $id) { id totalQuantity }
-  }
-`;
-
-export const CART_CREATE_MUTATION = `
-  mutation cartCreate($input: CartInput!) {
-    cartCreate(input: $input) {
-      cart {
-        id
-        checkoutUrl
-        lines(first: 100) { edges { node { id merchandise { ... on ProductVariant { id } } } } }
-      }
-      userErrors { field message }
-    }
-  }
-`;
-
-export const CART_LINES_ADD_MUTATION = `
-  mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
-    cartLinesAdd(cartId: $cartId, lines: $lines) {
-      cart {
-        id
-        lines(first: 100) { edges { node { id merchandise { ... on ProductVariant { id } } } } }
-      }
-      userErrors { field message }
-    }
-  }
-`;
-
-export const CART_LINES_UPDATE_MUTATION = `
-  mutation cartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
-    cartLinesUpdate(cartId: $cartId, lines: $lines) {
-      cart { id }
-      userErrors { field message }
-    }
-  }
-`;
-
-export const CART_LINES_REMOVE_MUTATION = `
-  mutation cartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
-    cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
-      cart { id }
-      userErrors { field message }
-    }
-  }
-`;
-
-function formatCheckoutUrl(checkoutUrl: string): string {
-  try {
-    const url = new URL(checkoutUrl);
-    url.searchParams.set('channel', 'online_store');
-    return url.toString();
-  } catch {
-    return checkoutUrl;
-  }
-}
-
-function isCartNotFoundError(userErrors: Array<{ field: string[] | null; message: string }>): boolean {
-  return userErrors.some(e => e.message.toLowerCase().includes('cart not found') || e.message.toLowerCase().includes('does not exist'));
 }
 
 export interface CartItem {
@@ -250,43 +51,134 @@ export interface CartItem {
   selectedOptions: Array<{ name: string; value: string }>;
 }
 
-export async function createShopifyCart(item: CartItem): Promise<{ cartId: string; checkoutUrl: string; lineId: string } | null> {
-  const data = await storefrontApiRequest(CART_CREATE_MUTATION, {
-    input: { lines: [{ quantity: item.quantity, merchandiseId: item.variantId }] },
-  });
-  if (data?.data?.cartCreate?.userErrors?.length > 0) return null;
-  const cart = data?.data?.cartCreate?.cart;
-  if (!cart?.checkoutUrl) return null;
-  const lineId = cart.lines.edges[0]?.node?.id;
-  if (!lineId) return null;
-  return { cartId: cart.id, checkoutUrl: formatCheckoutUrl(cart.checkoutUrl), lineId };
+const cents = (n: number | null | undefined) => ((n ?? 0) / 100).toFixed(2);
+
+function wineRowToProduct(row: any): ShopifyProduct {
+  const id = `wine:${row.handle}`;
+  const variantId = `wine-variant:${row.handle}`;
+  const price = { amount: cents(row.price_cents), currencyCode: "USD" };
+  const images = (row.gallery_urls?.length ? row.gallery_urls : (row.image_url ? [row.image_url] : []))
+    .map((url: string) => ({ node: { url, altText: row.title } }));
+  return {
+    node: {
+      id,
+      title: row.title,
+      description: row.description ?? "",
+      handle: row.handle,
+      tags: row.tags ?? [],
+      priceRange: { minVariantPrice: price },
+      images: { edges: images },
+      variants: {
+        edges: [{
+          node: {
+            id: variantId,
+            title: "Default",
+            price,
+            availableForSale: !!row.in_stock,
+            selectedOptions: [],
+          },
+        }],
+      },
+      options: [],
+      vinoshipperCartUrl: row.vinoshipper_cart_url ?? null,
+      productKind: "wine",
+    },
+  };
 }
 
-export async function addLineToShopifyCart(cartId: string, item: CartItem): Promise<{ success: boolean; lineId?: string; cartNotFound?: boolean }> {
-  const data = await storefrontApiRequest(CART_LINES_ADD_MUTATION, {
-    cartId,
-    lines: [{ quantity: item.quantity, merchandiseId: item.variantId }],
-  });
-  const userErrors = data?.data?.cartLinesAdd?.userErrors || [];
-  if (isCartNotFoundError(userErrors)) return { success: false, cartNotFound: true };
-  if (userErrors.length > 0) return { success: false };
-  const lines = data?.data?.cartLinesAdd?.cart?.lines?.edges || [];
-  const newLine = lines.find((l: { node: { id: string; merchandise: { id: string } } }) => l.node.merchandise.id === item.variantId);
-  return { success: true, lineId: newLine?.node?.id };
+function merchRowToProduct(row: any): ShopifyProduct {
+  const id = `merch:${row.handle}`;
+  const dbVariants: any[] = Array.isArray(row.variants) && row.variants.length ? row.variants : [{
+    sku: row.handle, title: "Default", price_cents: row.price_cents, available: true, options: [],
+  }];
+  const variants = dbVariants.map((v, idx) => ({
+    node: {
+      id: `merch-variant:${row.handle}:${v.sku || idx}`,
+      title: v.title || "Default",
+      price: { amount: cents(v.price_cents ?? row.price_cents), currencyCode: "USD" },
+      availableForSale: v.available !== false,
+      selectedOptions: v.options ?? [],
+    },
+  }));
+  const images = (row.gallery_urls?.length ? row.gallery_urls : (row.image_url ? [row.image_url] : []))
+    .map((url: string) => ({ node: { url, altText: row.title } }));
+  return {
+    node: {
+      id,
+      title: row.title,
+      description: row.description ?? "",
+      handle: row.handle,
+      tags: row.tags ?? [],
+      priceRange: { minVariantPrice: { amount: cents(row.price_cents), currencyCode: "USD" } },
+      images: { edges: images },
+      variants: { edges: variants },
+      options: row.options ?? [],
+      productKind: "merch",
+    },
+  };
 }
 
-export async function updateShopifyCartLine(cartId: string, lineId: string, quantity: number): Promise<{ success: boolean; cartNotFound?: boolean }> {
-  const data = await storefrontApiRequest(CART_LINES_UPDATE_MUTATION, { cartId, lines: [{ id: lineId, quantity }] });
-  const userErrors = data?.data?.cartLinesUpdate?.userErrors || [];
-  if (isCartNotFoundError(userErrors)) return { success: false, cartNotFound: true };
-  if (userErrors.length > 0) return { success: false };
+export async function fetchAllProducts(): Promise<ShopifyProduct[]> {
+  const [{ data: wines }, { data: merch }] = await Promise.all([
+    supabase.from("wine_products").select("*").eq("is_active", true).order("sort_order"),
+    supabase.from("merch_products").select("*").eq("is_active", true).order("sort_order"),
+  ]);
+  return [
+    ...(wines ?? []).map(wineRowToProduct),
+    ...(merch ?? []).map(merchRowToProduct),
+  ];
+}
+
+export async function fetchWineProducts(): Promise<ShopifyProduct[]> {
+  const { data } = await supabase.from("wine_products").select("*").eq("is_active", true).order("sort_order");
+  return (data ?? []).map(wineRowToProduct);
+}
+
+export async function fetchMerchProducts(): Promise<ShopifyProduct[]> {
+  const { data } = await supabase.from("merch_products").select("*").eq("is_active", true).order("sort_order");
+  return (data ?? []).map(merchRowToProduct);
+}
+
+export async function fetchProductByHandle(handle: string): Promise<ShopifyProduct["node"] | null> {
+  const { data: wine } = await supabase.from("wine_products").select("*").eq("handle", handle).maybeSingle();
+  if (wine) return wineRowToProduct(wine).node;
+  const { data: merch } = await supabase.from("merch_products").select("*").eq("handle", handle).maybeSingle();
+  if (merch) return merchRowToProduct(merch).node;
+  return null;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Local cart helpers — no remote calls. Kept under the same export names */
+/* the rest of the codebase used to consume from Shopify.                 */
+/* ---------------------------------------------------------------------- */
+
+export async function createShopifyCart(_item: CartItem) {
+  return { cartId: `local:${crypto.randomUUID()}`, checkoutUrl: "", lineId: _item.variantId };
+}
+export async function addLineToShopifyCart(_cartId: string, item: CartItem) {
+  return { success: true, lineId: item.variantId };
+}
+export async function updateShopifyCartLine(_cartId: string, _lineId: string, _quantity: number) {
   return { success: true };
 }
-
-export async function removeLineFromShopifyCart(cartId: string, lineId: string): Promise<{ success: boolean; cartNotFound?: boolean }> {
-  const data = await storefrontApiRequest(CART_LINES_REMOVE_MUTATION, { cartId, lineIds: [lineId] });
-  const userErrors = data?.data?.cartLinesRemove?.userErrors || [];
-  if (isCartNotFoundError(userErrors)) return { success: false, cartNotFound: true };
-  if (userErrors.length > 0) return { success: false };
+export async function removeLineFromShopifyCart(_cartId: string, _lineId: string) {
   return { success: true };
+}
+export async function storefrontApiRequest(_q: string, _v: Record<string, unknown> = {}) {
+  return { data: null };
+}
+export const STOREFRONT_PRODUCTS_QUERY = "";
+export const STOREFRONT_PRODUCT_BY_HANDLE_QUERY = "";
+export const CART_QUERY = "";
+
+/**
+ * Build a single Vinoshipper cart deep link from wine items in the cart.
+ * Falls back to the producer storefront if no per-item URL is available.
+ */
+export function buildVinoshipperCheckoutUrl(items: CartItem[]): string | null {
+  const wineItems = items.filter(i => i.product.node.productKind === "wine");
+  if (wineItems.length === 0) return null;
+  const first = wineItems[0].product.node.vinoshipperCartUrl;
+  if (first) return first;
+  return "https://vinoshipper.com/shop/rescue_dog_wines";
 }

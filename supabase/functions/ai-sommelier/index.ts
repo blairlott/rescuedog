@@ -32,9 +32,8 @@ What you DON'T do:
 
 If asked something outside wine/pairing/rescue topics, politely redirect.`;
 
-const SHOPIFY_STOREFRONT_URL = "https://rescuedogwines.myshopify.com/api/2025-07/graphql.json";
-const SHOPIFY_STOREFRONT_TOKEN = "ede00c15914c4e913d8acd7753197680";
-const PRODUCTS_QUERY = `query { products(first: 50) { edges { node { title tags description priceRange { minVariantPrice { amount } } } } } }`;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
 let cachedCatalog: { value: string; titles: string[]; ts: number } | null = null;
 const CATALOG_TTL_MS = 5 * 60 * 1000;
@@ -44,23 +43,20 @@ async function fetchLiveCatalog(): Promise<{ value: string; titles: string[] }> 
     return { value: cachedCatalog.value, titles: cachedCatalog.titles };
   }
   try {
-    const res = await fetch(SHOPIFY_STOREFRONT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Shopify-Storefront-Access-Token": SHOPIFY_STOREFRONT_TOKEN },
-      body: JSON.stringify({ query: PRODUCTS_QUERY }),
-    });
-    const json = await res.json();
-    const edges = json?.data?.products?.edges ?? [];
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/wine_products?select=title,tags,description,price_cents,varietal,vintage&is_active=eq.true&order=sort_order`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
+    );
+    const rows: any[] = await res.json();
     const lines: string[] = [];
     const titles: string[] = [];
-    for (const e of edges) {
-      const n = e?.node;
-      if (!n?.title) continue;
-      titles.push(n.title);
-      const price = n?.priceRange?.minVariantPrice?.amount;
-      const tags = Array.isArray(n.tags) ? n.tags.slice(0, 6).join(", ") : "";
-      const desc = (n.description || "").replace(/\s+/g, " ").slice(0, 140);
-      lines.push(`• ${n.title}${price ? ` — $${Number(price).toFixed(2)}` : ""}${tags ? ` [${tags}]` : ""}${desc ? ` — ${desc}` : ""}`);
+    for (const r of rows) {
+      if (!r?.title) continue;
+      titles.push(r.title);
+      const price = r.price_cents != null ? (r.price_cents / 100).toFixed(2) : null;
+      const tags = Array.isArray(r.tags) ? r.tags.slice(0, 6).join(", ") : "";
+      const desc = (r.description || "").replace(/\s+/g, " ").slice(0, 140);
+      lines.push(`• ${r.title}${price ? ` — $${price}` : ""}${tags ? ` [${tags}]` : ""}${desc ? ` — ${desc}` : ""}`);
     }
     const value = lines.join("\n");
     cachedCatalog = { value, titles, ts: Date.now() };

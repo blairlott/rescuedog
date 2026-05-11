@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send, Loader2, Wine } from "lucide-react";
+import { useProducts } from "@/hooks/useProducts";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -21,6 +22,20 @@ export function SommelierChat() {
   ]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { data: products } = useProducts(50);
+
+  // Build a compact catalog snapshot the model can reason over without bloating tokens.
+  const catalog = (products || [])
+    .map((edge: any) => {
+      const n = edge?.node ?? edge;
+      if (!n?.title) return null;
+      const price = n?.priceRange?.minVariantPrice?.amount;
+      const tags = Array.isArray(n?.tags) ? n.tags.slice(0, 6).join(", ") : "";
+      const desc = (n?.description || "").replace(/\s+/g, " ").slice(0, 140);
+      return `• ${n.title}${price ? ` — $${Number(price).toFixed(2)}` : ""}${tags ? ` [${tags}]` : ""}${desc ? ` — ${desc}` : ""}`;
+    })
+    .filter(Boolean)
+    .join("\n");
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [messages, loading]);
 
@@ -48,7 +63,10 @@ export function SommelierChat() {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-sommelier", {
-        body: { messages: next.filter(m => m.role !== "assistant" || messages.indexOf(m) > 0) },
+        body: {
+          messages: next.filter(m => m.role !== "assistant" || messages.indexOf(m) > 0),
+          catalog,
+        },
       });
       if (error) throw error;
       const reply = (data as any)?.reply || "Sorry, I didn't catch that — could you rephrase?";

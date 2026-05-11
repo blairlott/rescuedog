@@ -140,16 +140,6 @@ export function ProductCard({ product }: ProductCardProps) {
           <Heart className={`w-4 h-4 transition-colors ${faved ? 'fill-destructive text-destructive' : 'text-muted-foreground hover:text-destructive'}`} />
         </button>
 
-        {/* Shipping-included corner ribbon — pre-selection messaging */}
-        {!isSampler && (
-          <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-32 overflow-hidden z-10">
-            <div className="absolute bottom-[26px] left-[-52px] w-[180px] -rotate-45 text-center py-1 text-[10px] font-bold uppercase tracking-brand bg-primary text-primary-foreground shadow-md">
-              Shipping Incl. 6+
-            </div>
-          </div>
-        )}
-
-
         {/* Hover overlay with add-to-cart button */}
         <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out p-3">
           <Button

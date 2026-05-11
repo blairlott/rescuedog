@@ -42,6 +42,7 @@ import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CART_DEFAULTS } from "@/hooks/useCartSettings";
 import { WordpressImportPanel } from "@/components/cms/WordpressImportPanel";
 import { ContentLibraryPanel } from "@/components/cms/ContentLibraryPanel";
+import { PairingsPanel } from "@/components/cms/PairingsPanel";
 
 // ─── Types ───────────────────────────────────────────────────
 type CmsUser = {
@@ -369,6 +370,9 @@ const CmsDashboard = () => {
             <TabsTrigger value="library" className="gap-1.5">
               <FileText className="h-3.5 w-3.5" /> Blog & Events
             </TabsTrigger>
+            <TabsTrigger value="pairings" className="gap-1.5">
+              <ChefHat className="h-3.5 w-3.5" /> Pairings
+            </TabsTrigger>
             <TabsTrigger value="users" className="gap-1.5">
               <Users className="h-3.5 w-3.5" /> Users
             </TabsTrigger>
@@ -564,6 +568,11 @@ const CmsDashboard = () => {
           {/* ── Import Tab ────────────────────────────────── */}
           <TabsContent value="import">
             <WordpressImportPanel />
+          </TabsContent>
+
+          {/* ── Pairings Tab ──────────────────────────────── */}
+          <TabsContent value="pairings">
+            <PairingsPanel />
           </TabsContent>
         </Tabs>
       </main>

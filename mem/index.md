@@ -37,6 +37,7 @@
 - [CRM Staleness](mem://features/crm-staleness-tracking) — Activity tracking logic based on last order
 - [Referral Rewards](mem://features/referral-rewards-logic) — Points-based system requiring manual CRM approval
 - [Store Locator](mem://features/store-locator) — Grappos iframe integration for store locator
+- [Pairings & Sommelier](mem://features/pairings) — PDP chips, reverse pairing widget, and recipe pairing pages
 - [Sommelier & Ship Check](mem://features/sommelier-and-ship-check) — AI sommelier widget on wine routes; per-state shipping eligibility gate on PDP
 - [Marketplace Partners](mem://features/marketplace-partners) — Apply-to-sell flow + admin per-product approvals
 - [WordPress Import](mem://tech/wordpress-import) — Migrate Cloudways posts/pages/events into Lovable with image rehost + 301s

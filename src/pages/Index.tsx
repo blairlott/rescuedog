@@ -300,6 +300,9 @@ const Index = () => {
         </button>
       </section>
 
+      {/* AI Pairing Finder */}
+      <PairingFinder />
+
       {/* About Us Section */}
       <section className="py-16 md:py-24 relative">
         <CmsEditButton onClick={() => setEditSection("about_us")} />

@@ -185,6 +185,39 @@ export type Database = {
         }
         Relationships: []
       }
+      content_redirects: {
+        Row: {
+          created_at: string
+          from_path: string
+          hits: number
+          id: string
+          last_hit_at: string | null
+          source: string
+          status_code: number
+          to_path: string
+        }
+        Insert: {
+          created_at?: string
+          from_path: string
+          hits?: number
+          id?: string
+          last_hit_at?: string | null
+          source?: string
+          status_code?: number
+          to_path: string
+        }
+        Update: {
+          created_at?: string
+          from_path?: string
+          hits?: number
+          id?: string
+          last_hit_at?: string | null
+          source?: string
+          status_code?: number
+          to_path?: string
+        }
+        Relationships: []
+      }
       customer_favorite_rescues: {
         Row: {
           created_at: string
@@ -1929,6 +1962,48 @@ export type Database = {
           updated_at?: string | null
           vinoshipper_club_id?: string | null
           wine_type?: string
+        }
+        Relationships: []
+      }
+      wp_import_runs: {
+        Row: {
+          completed_at: string | null
+          error_log: string | null
+          failed_count: number
+          id: string
+          imported_count: number
+          post_type: string
+          skipped_count: number
+          source_url: string
+          started_at: string
+          started_by: string | null
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          error_log?: string | null
+          failed_count?: number
+          id?: string
+          imported_count?: number
+          post_type: string
+          skipped_count?: number
+          source_url: string
+          started_at?: string
+          started_by?: string | null
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          error_log?: string | null
+          failed_count?: number
+          id?: string
+          imported_count?: number
+          post_type?: string
+          skipped_count?: number
+          source_url?: string
+          started_at?: string
+          started_by?: string | null
+          status?: string
         }
         Relationships: []
       }

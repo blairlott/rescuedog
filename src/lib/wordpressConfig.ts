@@ -23,9 +23,9 @@ export const WP_BASE_URL = "";
 /** Custom post type slug for wine product copy joined by SKU. */
 export const WP_WINE_CPT = "wines";
 
-/** Front-end "merch backend" toggle: 'shopify' (today) | 'vinoshipper' | 'woo'. */
-export type MerchBackend = "shopify" | "vinoshipper" | "woo";
-export const MERCH_BACKEND: MerchBackend = "shopify";
+/** Front-end "merch backend" toggle: 'native' (Supabase merch_products) | 'vinoshipper' | 'woo'. */
+export type MerchBackend = "native" | "vinoshipper" | "woo";
+export const MERCH_BACKEND: MerchBackend = "native";
 
 export const wpUrl = (path: string) =>
   `${WP_BASE_URL.replace(/\/$/, "")}/wp-json${path.startsWith("/") ? "" : "/"}${path}`;

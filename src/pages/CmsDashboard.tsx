@@ -36,6 +36,7 @@ import {
   Settings,
   Loader2,
   Download,
+  ChefHat,
 } from "lucide-react";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CART_DEFAULTS } from "@/hooks/useCartSettings";

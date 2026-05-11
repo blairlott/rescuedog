@@ -47,6 +47,7 @@ import BlogPage from "./pages/BlogPage";
 import BlogPostPage from "./pages/BlogPostPage";
 import DropshipDashboard from "./pages/DropshipDashboard";
 import AdminFlagsPage from "./pages/AdminFlagsPage";
+import SellOnSitePage from "./pages/SellOnSitePage";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,8 @@ function AppContent() {
       <Route path="/club/login" element={<WineClubLoginPage />} />
       <Route path="/club/reset-password" element={<WineClubResetPasswordPage />} />
       <Route path="/donation" element={<DonationPage />} />
+      <Route path="/sell" element={<SellOnSitePage />} />
+      <Route path="/marketplace/apply" element={<Navigate to="/sell" replace />} />
       <Route path="/subscribe" element={<SubscribePage />} />
       <Route path="/login" element={<CustomerLoginPage />} />
       <Route path="/signup" element={<CustomerSignupPage />} />

@@ -34,6 +34,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-foreground">
               <li><Link to="/wholesale" className="hover:text-primary transition-colors">Wholesale / B2B</Link></li>
               <li><Link to="/donation" className="hover:text-primary transition-colors">Donation Request</Link></li>
+              <li><Link to="/sell" className="hover:text-primary transition-colors">Sell on Rescue Dog</Link></li>
               <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Refund Policy</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Shipping Policy</a></li>

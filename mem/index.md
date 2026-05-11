@@ -37,6 +37,7 @@
 - [CRM Staleness](mem://features/crm-staleness-tracking) — Activity tracking logic based on last order
 - [Referral Rewards](mem://features/referral-rewards-logic) — Points-based system requiring manual CRM approval
 - [Store Locator](mem://features/store-locator) — Grappos iframe integration for store locator
+- [Marketplace Partners](mem://features/marketplace-partners) — Apply-to-sell flow + admin per-product approvals
 - [Dropship Architecture](mem://features/dropship-architecture) — One Vinoshipper cart; vendor-routed fulfillment (Printify, partner-direct, VS warehouse)
 - [Merch Self-Curation](mem://features/merch-self-curation) — AI scans SKUs for stock/margin/freshness; admin approves actions
 - [AI Architecture](mem://tech/ai-architecture) — Bake AI in via Lovable Gateway; Lindy read-only for HITL only

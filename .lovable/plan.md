@@ -1,126 +1,111 @@
-# Shopify Rip-Out → Lovable Native (Vinoshipper for wine, Supabase for merch)
+# Rescue Ambassadors Program — Phase 1 + Tasting Events
 
-## Decisions locked in
-- **Storefront UI**: Lovable-native (React + Supabase), no Shopify SDK calls anywhere
-- **Wine catalog source of truth**: Vinoshipper (fetched/cached server-side)
-- **Merch catalog source of truth**: Supabase (`dropship_skus` already exists; extended for non-dropship merch)
-- **Cart**: Lovable-native cart UI, persisted client-side + optional Supabase abandonment logging (already exists)
-- **Checkout for wine**: deep link to Vinoshipper hosted cart with items pre-populated
-- **Checkout for merch**: TBD in next phase (NOT covered here — placeholder "contact us"/coming-soon; no Stripe yet)
-- **Compliance**: Vinoshipper handles age/state/tax/shipping/payment for wine
-- **Existing Shopify products**: export to JSON archive AND seed `merch_products` Supabase table for the apparel/merch items
+A single-tier ambassador program (no MLM downline yet) that lets approved supporters share Rescue Dog Wines via a personal storefront and earn commission on attributed orders. Adds a tasting-event host mechanic borrowed from Traveling Vineyard.
 
-## Phase 1 — Export & archive (do first, while Shopify is still connected)
-1. Run a one-shot export script that pulls all Shopify products (title, handle, description, images, variants, price, tags, vendor, product_type) via the existing Shopify connection and writes:
-   - `/mnt/documents/shopify-export-2026-05-11.json` — full archive
-   - `/mnt/documents/shopify-export-merch.json` — filtered to merch/apparel only (for Supabase seed)
-2. Deliver both files as `<lov-artifact>` so the user has them before anything is removed.
+## Scope
 
-## Phase 2 — New schema for Lovable-native catalog
+**In:** ambassador signup/approval, vanity storefront pages, order attribution, ambassador dashboard, tasting-event host pages, public "Find an Ambassador" directory, FTC income disclosure page, admin management in CRM.
 
-```sql
--- Wine catalog cache (pulled from Vinoshipper, refreshed periodically)
-CREATE TABLE public.wine_products (
-  id uuid PK,
-  vinoshipper_product_id text UNIQUE,
-  handle text UNIQUE,        -- slug for URLs
-  title text,
-  varietal text,
-  vintage int,
-  description text,
-  tasting_notes text,
-  image_url text,
-  gallery_urls text[],
-  price_cents int,
-  club_price_cents int,
-  badges text[],             -- award badges (auto-styled)
-  tags text[],
-  in_stock bool,
-  sort_order int,            -- enforces wine sort order memory
-  vinoshipper_cart_url text, -- deep link target
-  is_active bool,
-  last_synced_at timestamptz,
-  created_at, updated_at
-);
+**Out (deferred to later phases):** multi-level downline, automated payouts (Stripe Connect), 1099 generation, marketing asset library, mobile back-office app.
 
--- Merch catalog (replaces Shopify for non-wine)
-CREATE TABLE public.merch_products (
-  id uuid PK,
-  handle text UNIQUE,
-  title text,
-  description text,
-  image_url text,
-  gallery_urls text[],
-  price_cents int,
-  category text,             -- apparel, accessories, etc.
-  collection text,
-  tags text[],
-  variants jsonb,            -- size/color options
-  inventory_qty int,
-  is_active bool,
-  is_featured bool,
-  sort_order int,
-  created_at, updated_at
-);
+## User-facing experience
+
+### For prospective ambassadors
+- New page `/ambassadors` explains the program: rescue mission, commission %, how it works, FAQ, FTC disclosure link.
+- "Apply to be a Rescue Ambassador" form → submits to admin queue.
+
+### For approved ambassadors
+- `/a/{handle}` — public vanity storefront with photo, bio, chosen rescue partner, social links, full wine catalog, embedded "Shop with [Name]" CTA. Visiting this URL drops a 30-day attribution cookie.
+- `/ambassador/dashboard` — private: total sales attributed, customer count, commission accrued (display-only, manual payout for now), copy-share link button, edit profile.
+- `/ambassador/events/new` — create a tasting-event page.
+- `/e/{event-slug}` — public host event page: event name, host bio, date/time, address, RSVP form, "Shop the Tasting" CTA. Orders during the event window are double-attributed (event + ambassador).
+
+### For customers
+- Header chip on any `/a/{handle}` or `/e/{slug}` visit: "Shopping with [Ambassador Name] — supports [Rescue Partner]" with dismiss link.
+- Optional "Got a referral code?" field at checkout (Vinoshipper handoff already supports order metadata).
+
+### For admins (in CRM)
+- New `/crm/ambassadors` tab: pending applications (approve/deny), active ambassadors (sales, last activity), event list, commission ledger export.
+
+## Database schema (new tables)
+
+| Table | Purpose |
+|---|---|
+| `ambassadors` | profile per ambassador: user_id, handle, display_name, bio, avatar_url, chosen_rescue_id, social_links jsonb, status (pending/active/paused/terminated), commission_rate, joined_at |
+| `ambassador_applications` | signup form rows: name, email, why, social, status, reviewed_by, reviewed_at |
+| `ambassador_attributions` | log when a vanity link / event link is visited: ambassador_id, event_id, visitor_id (cookie), ip, user_agent, occurred_at |
+| `ambassador_orders` | attributed orders: ambassador_id, event_id, customer_email, vinoshipper_order_id, subtotal_cents, commission_cents, status (pending/confirmed/paid/voided), occurred_at |
+| `ambassador_events` | tasting events: ambassador_id, slug, title, description, host_bio, address, starts_at, ends_at, rsvp_count, status |
+| `ambassador_event_rsvps` | RSVP captures: event_id, name, email, party_size, notes |
+
+All tables get RLS:
+- Ambassadors can read/write only their own rows.
+- Public can read approved ambassador profiles and active events.
+- Admins (existing `is_admin_or_owner`) full access.
+
+A new `app_role` enum value `ambassador` is added; `has_role(user_id, 'ambassador')` gates the dashboard.
+
+## Attribution flow (technical detail)
+
+```text
+Visit /a/jane → set cookie rdw_amb=jane (30d) + insert ambassador_attributions row
+Visit /e/spring-tasting → cookie rdw_amb=jane, rdw_evt=spring-tasting (event TTL)
+Click "Buy" → Vinoshipper deep-link with ?ref=jane&evt=spring-tasting in metadata params
+Vinoshipper webhook fires → existing webhook handler reads ref/evt → inserts ambassador_orders row
+Commission = subtotal * ambassadors.commission_rate (default 15%, owner can override per-ambassador)
 ```
-- Both tables: public read, admin write (RLS via `is_admin_or_owner`).
-- Seed `merch_products` from Phase 1 export.
 
-## Phase 3 — Vinoshipper integration (edge function)
-- New edge function `vinoshipper-sync` — pulls wine catalog from Vinoshipper API into `wine_products` on a schedule + manual trigger button in CMS.
-- Need user to confirm: **Vinoshipper API credentials** (we'll request `VINOSHIPPER_API_KEY` + producer ID via `add_secret` when ready).
-- Each wine row stores its `vinoshipper_cart_url` (deep link with SKU + qty params per VS docs).
+The Vinoshipper webhook handler already exists (`vinoshipper_webhook_logs`); we extend it to parse the `ref` parameter from the order's referrer URL or notes field.
 
-## Phase 4 — Frontend rip-out
-Replace every `shopifyClient` / Storefront API usage:
-- `src/lib/shopify*.ts` → delete
-- `src/hooks/useShopify*.ts` → delete  
-- `src/contexts/CartContext.tsx` → rewrite to operate on `wine_products` + `merch_products` rows; checkout button for wine items builds a Vinoshipper deep link
-- `src/pages/Shop.tsx`, `ProductDetail.tsx`, `WineDetail.tsx`, `Merch.tsx` → query Supabase instead of Shopify
-- `SommelierChat` + `ai-sommelier` edge function → swap Shopify catalog fetch for `wine_products` Supabase query
-- Remove all `SHOPIFY_*` env references in edge functions
-- `src/integrations/shopify/*` → delete
+## Edge functions
 
-## Phase 5 — Cart & checkout UI
-- Lovable-native cart drawer (already exists in design) — **no functional change to UI**, just data source
-- "Checkout" button on wine cart: builds a single Vinoshipper deep link containing all wine SKUs + quantities, opens in new tab
-- Mixed cart (wine + merch): show two checkout buttons with explanation ("Wine ships from our winery; merch ships separately")
-- Merch checkout: temporary "Coming soon — contact us" until next phase
+- `ambassador-apply` — public POST, inserts into `ambassador_applications`, emails admin via Resend.
+- `ambassador-approve` — admin-only POST, creates auth user + `ambassadors` row + sends welcome email with login link.
+- `ambassador-attribute` — public POST called from `/a/:handle` and `/e/:slug` page loads, logs attribution row.
+- `vinoshipper-webhook` (existing) — extended to parse `ref` and create `ambassador_orders`.
+- `event-rsvp` — public POST, captures RSVP, emails host + attendee confirmation.
 
-## Phase 6 — Cleanup
-- Remove Shopify-related secrets from edge functions (keep secrets in Lovable Cloud for now — user can delete later)
-- Update memory: replace Shopify references with Vinoshipper/Supabase
-- Update README/docs sections referencing Shopify
+## Routes added
 
-## Technical details
+| Route | Auth | Purpose |
+|---|---|---|
+| `/ambassadors` | public | program landing + apply |
+| `/ambassadors/disclosure` | public | FTC income disclosure |
+| `/ambassadors/find` | public | searchable directory |
+| `/a/:handle` | public | ambassador storefront |
+| `/e/:slug` | public | event host page |
+| `/ambassador/dashboard` | ambassador | sales, link, profile |
+| `/ambassador/events/new` | ambassador | create event |
+| `/ambassador/events/:id/edit` | ambassador | edit event |
+| `/crm/ambassadors` | admin | manage program |
 
-**Files to delete (estimated):**
-- `src/lib/shopify.ts`, `src/lib/shopifyClient.ts`, `src/lib/shopify-*.ts`
-- `src/integrations/shopify/`
-- `src/hooks/useShopify*.ts`, `useShopifyProducts.ts`, etc.
-- Any `supabase/functions/shopify-*` edge functions
+## Brand & UX
 
-**Files to rewrite:**
-- `CartContext`, `Shop`, `ProductDetail`, `WineDetail`, `Merch`, `SommelierChat`
-- `ai-sommelier/index.ts` (already partially refactored — swap Shopify fetch → Supabase)
+- Sharp edges, red `#c30017`/black/grey, Nunito Sans headings, Avenir Next body — same as the rest of the site.
+- Storefront cards lean editorial: hero photo + bio quote + "Why I support [Rescue]" + product grid.
+- "Shopping with Jane" persistent banner uses the existing CartMarketing pattern.
 
-**New files:**
-- `src/lib/vinoshipperCart.ts` — builds deep link URLs
-- `src/hooks/useWineProducts.ts`, `useMerchProducts.ts`
-- `supabase/functions/vinoshipper-sync/index.ts`
-- CMS admin page: `/cms/catalog` for managing merch + triggering wine sync
+## Build order (execution sequence)
 
-## Order of execution
-1. **Export Shopify data** (Phase 1) — non-destructive, deliver files first
-2. **Create schema migration** (Phase 2) — request approval
-3. **Seed merch_products** from export
-4. **Ask user for Vinoshipper API credentials** (Phase 3 prerequisite)
-5. **Build Vinoshipper sync** + run initial sync
-6. **Rewrite frontend data layer** (Phase 4) — biggest chunk
-7. **Update cart/checkout** (Phase 5)
-8. **Delete Shopify code & update memory** (Phase 6)
+1. Migration: enum value `ambassador`, all 6 tables, RLS policies, helper function `is_ambassador(uuid)`.
+2. Public `/ambassadors` landing + application form + edge function `ambassador-apply`.
+3. Admin `/crm/ambassadors` queue: approve/deny, view roster.
+4. `/a/:handle` storefront + attribution cookie + edge function `ambassador-attribute`.
+5. Ambassador `/ambassador/dashboard` (sales, link, profile edit).
+6. Tasting events: `/ambassador/events/new`, `/e/:slug`, RSVP + `event-rsvp` function.
+7. Extend Vinoshipper webhook to parse `ref`/`evt` and write `ambassador_orders`.
+8. FTC disclosure page + "Find an Ambassador" directory.
+9. Memory updates and QA pass.
 
-## Open questions to confirm before starting
-1. **Vinoshipper deep-link format**: Do you have an example URL format from Vinoshipper for pre-populating a cart? (e.g. `https://vinoshipper.com/shop/<producer>/cart?add=SKU1:2,SKU2:1`). If not, I'll need to look it up against your account.
-2. **Merch checkout in this phase**: confirm "Coming soon / contact us" placeholder is OK (no Stripe), or do you want Stripe enabled now just for merch?
-3. **Wine sync cadence**: hourly? daily? on-demand only?
+## Compliance notes
+
+- FTC disclosure page is mandatory and linked from every ambassador-facing page.
+- No income claims anywhere except the disclosure (which shows real data once we have it; until then, "data not yet available — program newly launched").
+- "Drink responsibly, 21+" + state shipping caveats already handled by Vinoshipper.
+- Commission payouts handled manually for now (CSV export from CRM); Stripe Connect deferred.
+
+## Risks / open questions
+
+- **Vinoshipper attribution:** confirm we can pass a `ref` parameter through the deep-link and read it back from the webhook. If not, fall back to coupon-code-per-ambassador (less elegant but works).
+- **Email approval:** uses existing Resend integration; admin email recipient configured via existing pattern.
+- **Ambassador login:** approved ambassadors get a regular Supabase auth account; the `ambassador` role gates dashboard access (same pattern as CRM).

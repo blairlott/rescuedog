@@ -1,84 +1,126 @@
-## Goal
-Remove Shopify completely from the codebase and replace it with:
-1. A native product/content layer powered by WordPress (Cloudways) for wine + marketing copy
-2. Vinoshipper for all wine commerce (cart, checkout, payments, fulfillment)
-3. A new in-app **Drop Shipper Admin Dashboard** to manage merch fulfillment partners, SKUs, orders, and payouts — replacing what Shopify previously did for `/merch`
+# Shopify Rip-Out → Lovable Native (Vinoshipper for wine, Supabase for merch)
 
-Drop-ship credit card processing will route through Vinoshipper as non-wine SKUs (per prior decision), with the dashboard tracking which partner fulfills which SKU.
+## Decisions locked in
+- **Storefront UI**: Lovable-native (React + Supabase), no Shopify SDK calls anywhere
+- **Wine catalog source of truth**: Vinoshipper (fetched/cached server-side)
+- **Merch catalog source of truth**: Supabase (`dropship_skus` already exists; extended for non-dropship merch)
+- **Cart**: Lovable-native cart UI, persisted client-side + optional Supabase abandonment logging (already exists)
+- **Checkout for wine**: deep link to Vinoshipper hosted cart with items pre-populated
+- **Checkout for merch**: TBD in next phase (NOT covered here — placeholder "contact us"/coming-soon; no Stripe yet)
+- **Compliance**: Vinoshipper handles age/state/tax/shipping/payment for wine
+- **Existing Shopify products**: export to JSON archive AND seed `merch_products` Supabase table for the apparel/merch items
 
----
+## Phase 1 — Export & archive (do first, while Shopify is still connected)
+1. Run a one-shot export script that pulls all Shopify products (title, handle, description, images, variants, price, tags, vendor, product_type) via the existing Shopify connection and writes:
+   - `/mnt/documents/shopify-export-2026-05-11.json` — full archive
+   - `/mnt/documents/shopify-export-merch.json` — filtered to merch/apparel only (for Supabase seed)
+2. Deliver both files as `<lov-artifact>` so the user has them before anything is removed.
 
-## Phase 1 — Rip Shopify out
+## Phase 2 — New schema for Lovable-native catalog
 
-**Code removals**
-- Delete `src/lib/shopify*`, `src/stores/cartStore.ts` (Shopify cart), `src/hooks/useShopify*`, any `STOREFRONT_QUERY` / `cartCreate` logic
-- Strip Shopify imports from `ProductCard`, `ProductDetail`, `CartDrawer`, `Shop` page, `/merch`
-- Remove Shopify env constants, storefront token usage, and `shopify-cart` localStorage key
-- Remove Shopify mentions from CMS/admin UIs
-- Disconnect Shopify store via `shopify--disconnect_store` (last step, after code is clean)
+```sql
+-- Wine catalog cache (pulled from Vinoshipper, refreshed periodically)
+CREATE TABLE public.wine_products (
+  id uuid PK,
+  vinoshipper_product_id text UNIQUE,
+  handle text UNIQUE,        -- slug for URLs
+  title text,
+  varietal text,
+  vintage int,
+  description text,
+  tasting_notes text,
+  image_url text,
+  gallery_urls text[],
+  price_cents int,
+  club_price_cents int,
+  badges text[],             -- award badges (auto-styled)
+  tags text[],
+  in_stock bool,
+  sort_order int,            -- enforces wine sort order memory
+  vinoshipper_cart_url text, -- deep link target
+  is_active bool,
+  last_synced_at timestamptz,
+  created_at, updated_at
+);
 
-**Data layer swap**
-- Wine catalog → Vinoshipper API (already in progress) joined with WP custom post type `wines` by SKU for rich copy
-- Merch catalog → new Supabase tables (below), checkout via Vinoshipper as non-wine SKUs
-- Marketing pages/blog → WP REST (`wp-json/wp/v2`) with simulation adapter until Cloudways creds are wired
+-- Merch catalog (replaces Shopify for non-wine)
+CREATE TABLE public.merch_products (
+  id uuid PK,
+  handle text UNIQUE,
+  title text,
+  description text,
+  image_url text,
+  gallery_urls text[],
+  price_cents int,
+  category text,             -- apparel, accessories, etc.
+  collection text,
+  tags text[],
+  variants jsonb,            -- size/color options
+  inventory_qty int,
+  is_active bool,
+  is_featured bool,
+  sort_order int,
+  created_at, updated_at
+);
+```
+- Both tables: public read, admin write (RLS via `is_admin_or_owner`).
+- Seed `merch_products` from Phase 1 export.
 
-**Cart**
-- Single unified cart, Vinoshipper-backed (wine + merch SKUs in one order)
-- Drop-ship items flagged in cart metadata so the dashboard can route fulfillment
+## Phase 3 — Vinoshipper integration (edge function)
+- New edge function `vinoshipper-sync` — pulls wine catalog from Vinoshipper API into `wine_products` on a schedule + manual trigger button in CMS.
+- Need user to confirm: **Vinoshipper API credentials** (we'll request `VINOSHIPPER_API_KEY` + producer ID via `add_secret` when ready).
+- Each wine row stores its `vinoshipper_cart_url` (deep link with SKU + qty params per VS docs).
 
----
+## Phase 4 — Frontend rip-out
+Replace every `shopifyClient` / Storefront API usage:
+- `src/lib/shopify*.ts` → delete
+- `src/hooks/useShopify*.ts` → delete  
+- `src/contexts/CartContext.tsx` → rewrite to operate on `wine_products` + `merch_products` rows; checkout button for wine items builds a Vinoshipper deep link
+- `src/pages/Shop.tsx`, `ProductDetail.tsx`, `WineDetail.tsx`, `Merch.tsx` → query Supabase instead of Shopify
+- `SommelierChat` + `ai-sommelier` edge function → swap Shopify catalog fetch for `wine_products` Supabase query
+- Remove all `SHOPIFY_*` env references in edge functions
+- `src/integrations/shopify/*` → delete
 
-## Phase 2 — Drop Shipper Admin Dashboard
+## Phase 5 — Cart & checkout UI
+- Lovable-native cart drawer (already exists in design) — **no functional change to UI**, just data source
+- "Checkout" button on wine cart: builds a single Vinoshipper deep link containing all wine SKUs + quantities, opens in new tab
+- Mixed cart (wine + merch): show two checkout buttons with explanation ("Wine ships from our winery; merch ships separately")
+- Merch checkout: temporary "Coming soon — contact us" until next phase
 
-New route: `/crm/dropship` (admin/owner + new `dropship_manager` role)
+## Phase 6 — Cleanup
+- Remove Shopify-related secrets from edge functions (keep secrets in Lovable Cloud for now — user can delete later)
+- Update memory: replace Shopify references with Vinoshipper/Supabase
+- Update README/docs sections referencing Shopify
 
-**Pages**
-1. **Partners** — list/create/edit drop-ship partners (Printful, Printify, custom, etc.): name, contact, API base URL, webhook secret, payout terms, status
-2. **SKUs** — map merch SKU → partner + partner_sku + cost + retail + margin; bulk import CSV; sync button
-3. **Orders** — every Vinoshipper order containing a drop-ship SKU, with status (new → submitted → in_production → shipped → delivered → exception), tracking, partner order ID, customer address (read-only)
-4. **Payouts** — monthly partner reconciliation: orders fulfilled, cost owed, payout status, mark paid + attach receipt
-5. **Activity log** — webhook events, manual notes, exceptions
+## Technical details
 
-**Backend**
-- New tables: `dropship_partners`, `dropship_skus`, `dropship_orders`, `dropship_order_items`, `dropship_payouts`, `dropship_events`
-- RLS: only `dropship_manager`, `admin`, `owner` can read/write
-- Add `dropship_manager` to `app_role` enum + `is_dropship_manager(_user_id)` security-definer fn
-- Edge functions:
-  - `vs-order-webhook` → on Vinoshipper order, create `dropship_orders` rows for any drop-ship SKU
-  - `dropship-submit` → push order to partner API (stub adapters for Printful/Printify/manual)
-  - `dropship-status-sync` → cron pull tracking + status from partners
-- Resend email to partner on new order (configurable per partner)
+**Files to delete (estimated):**
+- `src/lib/shopify.ts`, `src/lib/shopifyClient.ts`, `src/lib/shopify-*.ts`
+- `src/integrations/shopify/`
+- `src/hooks/useShopify*.ts`, `useShopifyProducts.ts`, etc.
+- Any `supabase/functions/shopify-*` edge functions
 
-**UX features**
-- Inline status updates with optimistic UI
-- CSV export of orders + payouts
-- Filters: partner, status, date range
-- Real-time order list via Supabase realtime
-- Bulk actions: mark shipped, retry submission, void
+**Files to rewrite:**
+- `CartContext`, `Shop`, `ProductDetail`, `WineDetail`, `Merch`, `SommelierChat`
+- `ai-sommelier/index.ts` (already partially refactored — swap Shopify fetch → Supabase)
 
----
+**New files:**
+- `src/lib/vinoshipperCart.ts` — builds deep link URLs
+- `src/hooks/useWineProducts.ts`, `useMerchProducts.ts`
+- `supabase/functions/vinoshipper-sync/index.ts`
+- CMS admin page: `/cms/catalog` for managing merch + triggering wine sync
 
-## Phase 3 — Cleanup & verify
-- Remove Shopify rows from `mem://` and `mem/plans/post-vs-golive.md`
-- Update brand/feature memory: merch path = Vinoshipper SKUs + drop-ship dashboard
-- Remove Shopify connector
-- Smoke test: wine PDP, merch PDP, unified cart → VS checkout, admin dashboard CRUD, webhook simulation
+## Order of execution
+1. **Export Shopify data** (Phase 1) — non-destructive, deliver files first
+2. **Create schema migration** (Phase 2) — request approval
+3. **Seed merch_products** from export
+4. **Ask user for Vinoshipper API credentials** (Phase 3 prerequisite)
+5. **Build Vinoshipper sync** + run initial sync
+6. **Rewrite frontend data layer** (Phase 4) — biggest chunk
+7. **Update cart/checkout** (Phase 5)
+8. **Delete Shopify code & update memory** (Phase 6)
 
----
-
-## Build order (recommended)
-1. Migration: roles + dropship tables + RLS  ← needs your approval
-2. Dashboard UI scaffold with simulated data (so you can click through today)
-3. Rip Shopify from frontend (cart, product pages, /merch)
-4. Wire WP simulation adapter for marketing/blog/wine copy
-5. Edge functions + webhook + Resend
-6. Disconnect Shopify store, remove deps
-
----
-
-## Open decisions before I start
-- Which drop-ship partners to wire first (Printful most common, Printify second)?
-- Should the dashboard live under `/crm/dropship` or a new top-level `/admin/dropship`?
-- For merch checkout via Vinoshipper: confirm you want a single unified cart vs. a separate merch-only checkout
-
-I'll ask these via questions tool once you approve the plan, then start with the migration.
+## Open questions to confirm before starting
+1. **Vinoshipper deep-link format**: Do you have an example URL format from Vinoshipper for pre-populating a cart? (e.g. `https://vinoshipper.com/shop/<producer>/cart?add=SKU1:2,SKU2:1`). If not, I'll need to look it up against your account.
+2. **Merch checkout in this phase**: confirm "Coming soon / contact us" placeholder is OK (no Stripe), or do you want Stripe enabled now just for merch?
+3. **Wine sync cadence**: hourly? daily? on-demand only?

@@ -397,29 +397,83 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             </button>
           </div>
           {shipMethod === "ups_ap" && (
-            <div className="border border-border bg-muted/30 p-3 text-xs space-y-1">
-              {accessPoint ? (
-                <>
-                  <div className="font-semibold flex items-center justify-between">
-                    <span>{accessPoint.name}</span>
-                    <span className="text-muted-foreground">{accessPoint.distance}</span>
-                  </div>
-                  <div className="text-muted-foreground">{accessPoint.address}</div>
+            <div className="border border-border bg-muted/30 p-3 text-xs space-y-2">
+              {accessPoints.length > 0 && mapCenter && (
+                <div className="h-44 w-full overflow-hidden border border-border">
+                  <MapContainer
+                    center={mapCenter}
+                    zoom={13}
+                    scrollWheelZoom={false}
+                    style={{ height: "100%", width: "100%" }}
+                  >
+                    <TileLayer
+                      attribution="&copy; OpenStreetMap"
+                      url="https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png"
+                    />
+                    <RecenterMap center={mapCenter} />
+                    {accessPoints.map((ap, idx) => {
+                      const selected = accessPoint?.name === ap.name;
+                      return (
+                        <Marker
+                          key={idx}
+                          position={[ap.lat, ap.lng]}
+                          icon={makeIcon(selected)}
+                          eventHandlers={{ click: () => setAccessPoint(ap) }}
+                        >
+                          <Popup>
+                            <div className="text-xs">
+                              <div className="font-semibold">{ap.name}</div>
+                              <div>{ap.address}</div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      );
+                    })}
+                  </MapContainer>
+                </div>
+              )}
+              {accessPoints.length > 0 ? (
+                <div className="space-y-1">
+                  {accessPoints.map((ap, idx) => {
+                    const selected = accessPoint?.name === ap.name;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setAccessPoint(ap)}
+                        className={`w-full text-left border p-2 text-xs transition ${
+                          selected
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-foreground/30"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-semibold">
+                          <span>{ap.name}</span>
+                          <span className="text-muted-foreground">{ap.distance}</span>
+                        </div>
+                        <div className="text-muted-foreground">{ap.address}</div>
+                      </button>
+                    );
+                  })}
                   <button
                     type="button"
                     onClick={findAccessPoint}
-                    className="text-primary underline underline-offset-2 mt-1"
+                    disabled={loadingAPs}
+                    className="text-primary underline underline-offset-2 text-[11px]"
                   >
-                    Choose a different location
+                    {loadingAPs ? "Refreshing…" : "Refresh nearby locations"}
                   </button>
-                </>
+                </div>
               ) : (
                 <button
                   type="button"
                   onClick={findAccessPoint}
+                  disabled={loadingAPs}
                   className="text-primary underline underline-offset-2"
                 >
-                  Find a UPS Access Point near {form.zip || "me"}
+                  {loadingAPs
+                    ? "Searching nearby Access Points…"
+                    : `Find UPS Access Points near ${form.zip || "me"}`}
                 </button>
               )}
               <div className="text-[10px] text-muted-foreground pt-1">

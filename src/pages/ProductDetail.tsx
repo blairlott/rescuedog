@@ -13,6 +13,7 @@ import { useCartSettings } from "@/hooks/useCartSettings";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Link as RouterLink } from "react-router-dom";
+import { ShipsToStateCheck, useShipState } from "@/components/ShipsToStateCheck";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -27,6 +28,8 @@ const ProductDetail = () => {
   const [subFrequency, setSubFrequency] = useState("monthly");
   const { isFavorite, toggleFavorite } = useFavorites();
   const { isMember, discountPercent } = useIsMember();
+  const { canShip, state: shipState } = useShipState();
+  const blockedByState = !!shipState && !canShip;
 
   if (isLoading) {
     return (
@@ -66,6 +69,10 @@ const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
+    if (blockedByState) {
+      toast.error("We can't ship wine to your state yet. Use the store locator to find us nearby.", { position: "top-center" });
+      return;
+    }
     const wrappedProduct = { node: product };
     await addItem({
       product: wrappedProduct,
@@ -154,6 +161,9 @@ const ProductDetail = () => {
               {product.description && (
                 <p className="text-muted-foreground leading-relaxed">{product.description}</p>
               )}
+
+              {/* Ships-to-your-state compliance check */}
+              <ShipsToStateCheck />
 
               {/* Variant Selection */}
               {variants.length > 1 && (

@@ -14,6 +14,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Link as RouterLink } from "react-router-dom";
 import { ShipsToStateCheck, useShipState } from "@/components/ShipsToStateCheck";
+import { PairingChips } from "@/components/PairingChips";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -164,6 +165,9 @@ const ProductDetail = () => {
 
               {/* Ships-to-your-state compliance check */}
               <ShipsToStateCheck />
+
+              {/* Food pairing chips → opens AI Sommelier */}
+              <PairingChips tags={tags} productTitle={product.title} />
 
               {/* Variant Selection */}
               {variants.length > 1 && (

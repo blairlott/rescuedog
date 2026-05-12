@@ -264,7 +264,22 @@ const ProductDetail = () => {
         </div>
       </main>
       {/* Mobile sticky add-to-cart bar */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t border-border p-3 pb-[env(safe-area-inset-bottom)]">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t border-border p-3 pb-[env(safe-area-inset-bottom)] space-y-1.5">
+        {/* Status line: ship-to-state + member savings */}
+        <div className="flex items-center justify-between text-[11px] leading-tight">
+          {shipState ? (
+            <span className={canShip ? "text-foreground" : "text-destructive font-semibold"}>
+              {canShip ? `✓ Ships to ${shipState}` : `✕ Not shipped to ${shipState}`}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">Check your state for shipping</span>
+          )}
+          {isMember && !locked && selectedVariant?.availableForSale && (
+            <span className="text-primary font-bold uppercase tracking-brand text-[10px]">
+              Save ${(lineTotal - memberLineTotal).toFixed(2)} ({discountPercent}% off)
+            </span>
+          )}
+        </div>
         <Button
           onClick={handleAddToCart}
           disabled={cartLoading || !selectedVariant?.availableForSale || locked || blockedByState}
@@ -276,8 +291,8 @@ const ProductDetail = () => {
           ) : !selectedVariant?.availableForSale ? "Sold Out"
           : locked ? <><Lock className="w-4 h-4 mr-2" /> Members only</>
           : blockedByState ? "Not available in your state"
-          : subscribeMode ? `Subscribe — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
-          : <><ShoppingCart className="w-4 h-4 mr-2" /> Add — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}</>}
+          : subscribeMode ? `Subscribe ${quantity} btl — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
+          : <><ShoppingCart className="w-4 h-4 mr-2" /> Add {quantity} btl — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}</>}
         </Button>
       </div>
       <Footer />

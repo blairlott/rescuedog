@@ -16,6 +16,7 @@ import { Link as RouterLink } from "react-router-dom";
 import { ShipsToStateCheck, useShipState } from "@/components/ShipsToStateCheck";
 import { PairingChips } from "@/components/PairingChips";
 import { Seo } from "@/components/Seo";
+import { PairItPicker } from "@/components/merch/PairItPicker";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -62,6 +63,11 @@ const ProductDetail = () => {
   const variants = product.variants.edges;
   const selectedVariant = variants[selectedVariantIdx]?.node;
   const tags = ((product as any).tags || []) as string[];
+  const productKind = (product as any).productKind as "wine" | "merch" | undefined;
+  const isMerch = productKind === "merch";
+  const merchCategory = tags
+    .map((t) => t.toLowerCase())
+    .find((t) => ["apparel", "drinkware", "pet", "home", "gift"].includes(t));
   const isClubExclusive = tags.map(t => t.toLowerCase()).some(t => t === 'club-exclusive' || t === 'club exclusive');
   const locked = isClubExclusive && !isMember;
   const variantPrice = parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount);
@@ -71,7 +77,7 @@ const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
-    if (blockedByState) {
+    if (blockedByState && !isMerch) {
       toast.error("We can't ship wine to your state yet. Use the store locator to find us nearby.", { position: "top-center" });
       return;
     }
@@ -186,11 +192,19 @@ const ProductDetail = () => {
                 <p className="text-muted-foreground leading-relaxed">{product.description}</p>
               )}
 
-              {/* Ships-to-your-state compliance check */}
-              <ShipsToStateCheck />
+              {/* Ships-to-your-state compliance check (wine only) */}
+              {!isMerch && <ShipsToStateCheck />}
 
-              {/* Food pairing chips → opens AI Sommelier */}
-              <PairingChips tags={tags} productTitle={product.title} />
+              {/* Food pairing chips for wine; Pair-It cross-sell for merch */}
+              {isMerch ? (
+                <PairItPicker
+                  productHandle={product.handle}
+                  productTitle={product.title}
+                  productCategory={merchCategory}
+                />
+              ) : (
+                <PairingChips tags={tags} productTitle={product.title} />
+              )}
 
               {/* Variant Selection */}
               {variants.length > 1 && (
@@ -258,7 +272,7 @@ const ProductDetail = () => {
 
               <Button
                 onClick={handleAddToCart}
-                disabled={cartLoading || !selectedVariant?.availableForSale || locked || blockedByState}
+                disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
                 size="lg"
                 className="w-full bg-primary hover:bg-primary/90 hidden md:flex"
               >
@@ -290,12 +304,14 @@ const ProductDetail = () => {
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t border-border p-3 pb-[env(safe-area-inset-bottom)] space-y-1.5">
         {/* Status line: ship-to-state + member savings */}
         <div className="flex items-center justify-between text-[11px] leading-tight">
-          {shipState ? (
+          {!isMerch && shipState ? (
             <span className={canShip ? "text-foreground" : "text-destructive font-semibold"}>
               {canShip ? `✓ Ships to ${shipState}` : `✕ Not shipped to ${shipState}`}
             </span>
-          ) : (
+          ) : !isMerch ? (
             <span className="text-muted-foreground">Check your state for shipping</span>
+          ) : (
+            <span className="text-muted-foreground">Ships from US partners · 3–7 days</span>
           )}
           {isMember && !locked && selectedVariant?.availableForSale && (
             <span className="text-primary font-bold uppercase tracking-brand text-[10px]">
@@ -305,7 +321,7 @@ const ProductDetail = () => {
         </div>
         <Button
           onClick={handleAddToCart}
-          disabled={cartLoading || !selectedVariant?.availableForSale || locked || blockedByState}
+          disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
           size="lg"
           className="w-full bg-primary hover:bg-primary/90"
         >
@@ -313,7 +329,7 @@ const ProductDetail = () => {
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : !selectedVariant?.availableForSale ? "Sold Out"
           : locked ? <><Lock className="w-4 h-4 mr-2" /> Members only</>
-          : blockedByState ? "Not available in your state"
+          : blockedByState && !isMerch ? "Not available in your state"
           : subscribeMode ? `Subscribe ${quantity} btl — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
           : <><ShoppingCart className="w-4 h-4 mr-2" /> Add {quantity} btl — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}</>}
         </Button>

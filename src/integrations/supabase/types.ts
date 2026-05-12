@@ -1562,6 +1562,57 @@ export type Database = {
           },
         ]
       }
+      merch_bundles: {
+        Row: {
+          badge_label: string | null
+          bundle_price_cents: number
+          compare_at_cents: number | null
+          created_at: string
+          description: string | null
+          handle: string
+          hero_image_url: string | null
+          id: string
+          is_active: boolean
+          sku_handles: string[]
+          sort_order: number
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          badge_label?: string | null
+          bundle_price_cents?: number
+          compare_at_cents?: number | null
+          created_at?: string
+          description?: string | null
+          handle: string
+          hero_image_url?: string | null
+          id?: string
+          is_active?: boolean
+          sku_handles?: string[]
+          sort_order?: number
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          badge_label?: string | null
+          bundle_price_cents?: number
+          compare_at_cents?: number | null
+          created_at?: string
+          description?: string | null
+          handle?: string
+          hero_image_url?: string | null
+          id?: string
+          is_active?: boolean
+          sku_handles?: string[]
+          sort_order?: number
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       merch_curation_actions: {
         Row: {
           action_type: string

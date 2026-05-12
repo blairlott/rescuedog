@@ -12,6 +12,7 @@ import { isWineProduct } from "@/lib/productUtils";
 import { cn } from "@/lib/utils";
 import heroImg from "@/assets/merch-hero.jpg";
 import missionImg from "@/assets/merch-mission.jpg";
+import { BundleStrip } from "@/components/merch/BundleStrip";
 
 const CATEGORIES = [
   { id: "all", label: "All" },
@@ -161,6 +162,7 @@ const MerchHomePage = () => {
               {selected === "all" ? "All Products" : CATEGORIES.find((c) => c.id === selected)?.label}
             </h2>
           </div>
+          <BundleStrip />
 
           {/* Category chips */}
           <div className="flex flex-wrap justify-center gap-2 mb-8">

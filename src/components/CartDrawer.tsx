@@ -17,6 +17,7 @@ import { CartTrustBlock } from "@/components/cart/CartTrustBlock";
 import { CartGiftToggle } from "@/components/cart/CartGiftToggle";
 import { CartSaveForLater } from "@/components/cart/CartSaveForLater";
 import { CartLineExtras } from "@/components/cart/CartLineExtras";
+import { CartGiftMode, GIFT_WRAP_FEE_CENTS, readGiftMode } from "@/components/cart/CartGiftMode";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Percent } from "lucide-react";
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
@@ -31,6 +32,15 @@ export const CartDrawer = () => {
   const { items, isLoading, isSyncing, updateQuantity, removeItem, getCheckoutUrl, syncCart, addItem } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
+  // Split cart into wine + merch groups so each can check out via the right
+  // path (Vinoshipper compliance for wine, our merch flow for everything else).
+  const wineItems = items.filter(i => i.product.node.productKind === "wine");
+  const merchItems = items.filter(i => i.product.node.productKind !== "wine");
+  const wineTotal = wineItems.reduce((s, i) => s + parseFloat(i.price.amount) * i.quantity, 0);
+  const merchSubtotal = merchItems.reduce((s, i) => s + parseFloat(i.price.amount) * i.quantity, 0);
+  const giftMode = readGiftMode();
+  const wrapFee = giftMode.enabled && giftMode.wrap ? GIFT_WRAP_FEE_CENTS / 100 : 0;
+  const merchTotal = merchSubtotal + wrapFee;
   // Bundles (Mother's Day 6 Pack / 6-Bottle Sampler) count as 6 bottles for
   // the shipping-included threshold and are excluded from member discounts —
   // matches Vinoshipper's "Excluded from Discounts" rule.
@@ -77,22 +87,22 @@ export const CartDrawer = () => {
     await updateQuantity(target.variantId, target.quantity + bottlesToCase);
   };
 
-  const handleCheckout = () => {
+  const handleCheckoutWines = () => {
     // Snapshot for "re-order last shipment"
     try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items, savedAt: new Date().toISOString() })); } catch {}
-    // Wine routes → simulated Vinoshipper hosted checkout (compliance + card vault)
-    if (!isMerchRoute) {
-      setIsOpen(false);
-      setVsCheckoutOpen(true);
-      return;
-    }
-    // Merch routes → checkout not yet wired (no payment provider connected).
-    // Open a mailto so customers can place an order while we finalize the
-    // merch payment flow.
+    setIsOpen(false);
+    setVsCheckoutOpen(true);
+  };
+
+  const handleCheckoutMerch = () => {
+    // Merch checkout placeholder — payment provider not yet connected.
     const subject = encodeURIComponent("Merch order from rescuedogwines.com");
-    const lines = items.map(i => `- ${i.product.node.title} × ${i.quantity}`).join("%0A");
+    const lines = merchItems.map(i => `- ${i.product.node.title} × ${i.quantity}`).join("%0A");
+    const giftSection = giftMode.enabled
+      ? `%0A%0AGIFT ORDER%0AWrap: ${giftMode.wrap ? "yes" : "no"}%0ARecipient: ${encodeURIComponent(giftMode.recipientEmail || "(none)")}%0AMessage: ${encodeURIComponent(giftMode.message || "(none)")}`
+      : "";
     window.location.href =
-      `mailto:hello@rescuedogwines.com?subject=${subject}&body=I'd like to order:%0A${lines}`;
+      `mailto:hello@rescuedogwines.com?subject=${subject}&body=I'd like to order:%0A${lines}${giftSection}`;
     setIsOpen(false);
   };
 
@@ -257,29 +267,42 @@ export const CartDrawer = () => {
                     <span><strong>${dollarsNeeded.toFixed(2)} to go</strong> — shipping included at ${merchFreeShippingThreshold}+</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-display font-semibold">Total</span>
-                  <span className="text-xl font-bold">
-                    {!isMerchRoute && isMember ? (
-                      <>
-                        <span className="text-sm text-muted-foreground line-through mr-2 font-normal">${totalPrice.toFixed(2)}</span>
-                        ${(totalPrice - memberSavings).toFixed(2)}
-                      </>
-                    ) : (
-                      <>${totalPrice.toFixed(2)}</>
-                    )}
-                  </span>
-                </div>
-                <Button onClick={handleCheckout} className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={items.length === 0 || isLoading || isSyncing}>
-                  {isLoading || isSyncing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      {isMerchRoute ? "Email us to order" : "Checkout via Vinoshipper"}
-                    </>
+                {merchItems.length > 0 && (
+                  <CartGiftMode />
+                )}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-display font-semibold">Subtotal</span>
+                    <span className="font-bold">${(totalPrice + wrapFee).toFixed(2)}</span>
+                  </div>
+                  {isMember && wineTotal > 0 && (
+                    <p className="text-[11px] text-primary font-bold uppercase tracking-brand text-right">
+                      Member savings: -${memberSavings.toFixed(2)}
+                    </p>
                   )}
-                </Button>
+                  {wrapFee > 0 && (
+                    <p className="text-[11px] text-muted-foreground text-right">
+                      Includes ${wrapFee.toFixed(2)} gift wrap
+                    </p>
+                  )}
+                </div>
+                {wineItems.length > 0 && (
+                  <Button onClick={handleCheckoutWines} className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={isLoading || isSyncing}>
+                    {isLoading || isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                      <><ExternalLink className="w-4 h-4 mr-2" /> Checkout {wineItems.length} wine{wineItems.length !== 1 ? "s" : ""} · ${wineTotal.toFixed(2)}</>
+                    )}
+                  </Button>
+                )}
+                {merchItems.length > 0 && (
+                  <Button onClick={handleCheckoutMerch} variant={wineItems.length > 0 ? "outline" : "default"} className={`w-full ${wineItems.length === 0 ? "bg-primary hover:bg-primary/90" : ""}`} size="lg" disabled={isLoading || isSyncing}>
+                    <ExternalLink className="w-4 h-4 mr-2" /> Checkout {merchItems.length} merch · ${merchTotal.toFixed(2)}
+                  </Button>
+                )}
+                {wineItems.length > 0 && merchItems.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground text-center leading-tight">
+                    Wine ships via our compliance partner Vinoshipper; merch ships from our US fulfillment partners. Two checkouts, one cart.
+                  </p>
+                )}
               </div>
             </>
           )}

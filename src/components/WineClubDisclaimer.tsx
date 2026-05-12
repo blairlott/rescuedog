@@ -20,6 +20,7 @@ export function WineClubDisclaimer({ variant = "club", className = "" }: WineClu
 
   const clubLines = [
     "Wine club membership enrolls you in recurring shipments billed automatically through Vinoshipper to your saved payment method, plus applicable taxes and shipping.",
+    "You can fully customize each shipment in your account up to the cutoff date — swap, add, or remove bottles — as long as you stay at or above your tier's minimum bottle count.",
     "You can switch tiers, pause, or cancel anytime in your Account at least 3 days before your next ship date.",
     "All wine deliveries require an adult signature (21+) with valid government-issued ID. We do not ship to PO boxes or to states where direct-to-consumer wine shipments are prohibited.",
     "By joining you confirm you are at least 21 years of age and agree to the Wine Club Terms.",

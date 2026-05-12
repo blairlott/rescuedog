@@ -5,7 +5,7 @@ import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
 import rdwLogo from "@/assets/rdw-logo.png";
-import rescueDogLogo from "@/assets/rescue-dog-logo-safe.svg";
+import rescueDogLogo from "@/assets/rescue-dog-logo-hd.png";
 import { isRescueDogDomain } from "@/lib/productUtils";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "./cms/CmsEditButton";
@@ -95,11 +95,11 @@ export function Header() {
           <div className="relative flex justify-center px-1 md:px-2 min-w-0">
             <CmsEditButton onClick={() => setEditSection("logos")} label="Edit Logo" />
             <Link to={isMerch ? "/merch" : "/"} className="flex justify-center min-w-0">
-              <span className={`relative inline-flex items-center overflow-visible leading-none ${isMerch ? "pb-1" : "pb-1"}`}>
+              <span className={`relative inline-flex items-center overflow-visible leading-none ${isMerch ? "pb-3 md:pb-4" : "pb-1"}`}>
                 <img
                   src={logo}
                   alt={logoAlt}
-                  className={`block w-full h-auto object-contain ${isMerch ? "max-w-[210px] md:max-w-[340px]" : "max-w-[320px] md:max-w-[500px]"}`}
+                  className={`block w-full h-auto object-contain ${isMerch ? "max-w-[180px] md:max-w-[280px]" : "max-w-[320px] md:max-w-[500px]"}`}
                 />
                 {isMerch && (
                   <span className="absolute top-[18%] -right-3 md:-right-4 text-[0.5rem] md:text-[0.6rem] font-semibold text-muted-foreground leading-none">TM</span>

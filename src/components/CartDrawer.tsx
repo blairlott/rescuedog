@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2 } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2, History } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { FreeShippingBar } from "@/components/cart/FreeShippingBar";
 import { useCartSettings } from "@/hooks/useCartSettings";
@@ -12,23 +12,29 @@ import { CartRecommendations } from "@/components/cart/CartRecommendations";
 import { CartSubscribeToggle } from "@/components/cart/CartSubscribeToggle";
 import { CartWineClubUpsell } from "@/components/cart/CartWineClubUpsell";
 import { VinoshipperCheckoutModal } from "@/components/cart/VinoshipperCheckoutModal";
+import { CartTrustBlock } from "@/components/cart/CartTrustBlock";
+import { CartGiftToggle } from "@/components/cart/CartGiftToggle";
+import { CartSaveForLater } from "@/components/cart/CartSaveForLater";
+import { CartLineExtras } from "@/components/cart/CartLineExtras";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Percent } from "lucide-react";
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
+
+const LAST_ORDER_KEY = "rdw_last_order";
 
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [vsCheckoutOpen, setVsCheckoutOpen] = useState(false);
   const location = useLocation();
   const isMerchRoute = location.pathname.startsWith("/merch");
-  const { items, isLoading, isSyncing, updateQuantity, removeItem, getCheckoutUrl, syncCart } = useCartStore();
+  const { items, isLoading, isSyncing, updateQuantity, removeItem, getCheckoutUrl, syncCart, addItem } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
   // Bundles (Mother's Day 6 Pack / 6-Bottle Sampler) count as 6 bottles for
   // the shipping-included threshold and are excluded from member discounts —
   // matches Vinoshipper's "Excluded from Discounts" rule.
   const totalBottlesEffective = isMerchRoute ? totalItems : effectiveBottleCount(items as any);
-  const { freeShippingBottleCount, merchFreeShippingThreshold } = useCartSettings();
+  const { freeShippingBottleCount, merchFreeShippingThreshold, fullCaseCount } = useCartSettings();
   const shippingIncluded = isMerchRoute
     ? totalPrice >= merchFreeShippingThreshold
     : totalBottlesEffective >= freeShippingBottleCount;
@@ -39,10 +45,40 @@ export const CartDrawer = () => {
   const dollarsNeeded = Math.max(0, merchFreeShippingThreshold - totalPrice);
   const showNudge = !isMerchRoute && !shippingIncluded && bottlesNeeded > 0 && bottlesNeeded <= 2 && totalItems > 0;
   const showMerchNudge = isMerchRoute && !shippingIncluded && dollarsNeeded > 0 && dollarsNeeded <= 25 && totalItems > 0;
+  const bottlesToCase = !isMerchRoute && totalBottlesEffective > 0 && totalBottlesEffective < fullCaseCount
+    ? fullCaseCount - totalBottlesEffective
+    : 0;
+
+  const lastOrder: { items: any[] } | null = (() => {
+    try { const raw = localStorage.getItem(LAST_ORDER_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
+  })();
 
   useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
 
+  const reorderLast = async () => {
+    if (!lastOrder?.items?.length) return;
+    for (const it of lastOrder.items) {
+      await addItem({
+        product: it.product,
+        variantId: it.variantId,
+        variantTitle: it.variantTitle,
+        price: it.price,
+        quantity: it.quantity,
+        selectedOptions: it.selectedOptions ?? [],
+      });
+    }
+  };
+
+  const addCaseTopUp = async () => {
+    // Bump the largest current line by the bottles needed to reach a case
+    if (bottlesToCase <= 0 || items.length === 0) return;
+    const target = [...items].sort((a, b) => b.quantity - a.quantity)[0];
+    await updateQuantity(target.variantId, target.quantity + bottlesToCase);
+  };
+
   const handleCheckout = () => {
+    // Snapshot for "re-order last shipment"
+    try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items, savedAt: new Date().toISOString() })); } catch {}
     // Wine routes → simulated Vinoshipper hosted checkout (compliance + card vault)
     if (!isMerchRoute) {
       setIsOpen(false);
@@ -108,6 +144,12 @@ export const CartDrawer = () => {
               <div className="text-center">
                 <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">Your cart is empty</p>
+                {lastOrder?.items?.length > 0 && (
+                  <Button onClick={reorderLast} variant="outline" size="sm" className="mt-4 text-xs">
+                    <History className="w-3.5 h-3.5 mr-1.5" />
+                    Re-order your last shipment
+                  </Button>
+                )}
               </div>
             </div>
           ) : (
@@ -136,6 +178,7 @@ export const CartDrawer = () => {
                           <h4 className="font-medium text-sm truncate">{item.product.node.title}</h4>
                           <p className="text-xs text-muted-foreground">{item.selectedOptions.map(o => o.value).join(' • ')}</p>
                           <p className="font-semibold text-sm mt-1">${parseFloat(item.price.amount).toFixed(2)}</p>
+                          <CartLineExtras item={item} />
                         </div>
                         <div className="flex flex-col items-end gap-2 flex-shrink-0">
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeItem(item.variantId)}>
@@ -169,10 +212,37 @@ export const CartDrawer = () => {
                 <div className="mt-4">
                   <CartRecommendations cartItems={items} cartTotal={totalPrice} />
                 </div>
+
+                {/* Trust + brand block */}
+                {!isMerchRoute && (
+                  <div className="mt-4">
+                    <CartTrustBlock totalBottles={totalBottlesEffective} />
+                  </div>
+                )}
+
+                {/* Gift this order */}
+                <div className="mt-4">
+                  <CartGiftToggle />
+                </div>
+
+                {/* Save / email me this cart */}
+                <div className="mt-3">
+                  <CartSaveForLater />
+                </div>
               </div>
 
               {/* Footer with total and checkout */}
               <div className="flex-shrink-0 space-y-3 pt-4 border-t">
+                {bottlesToCase > 0 && bottlesToCase <= 4 && (
+                  <div className="text-xs bg-primary/10 border border-primary/30 px-3 py-2 flex items-center justify-between gap-2">
+                    <span>
+                      <strong>Add {bottlesToCase} more</strong> to unlock the case discount
+                    </span>
+                    <Button size="sm" variant="outline" onClick={addCaseTopUp} className="h-6 text-[11px] px-2">
+                      +{bottlesToCase}
+                    </Button>
+                  </div>
+                )}
                 <CartWineClubUpsell />
                 {showNudge && (
                   <div className="text-xs bg-brand-gold/10 border border-brand-gold/30 px-3 py-2 flex items-center justify-between">

@@ -20,7 +20,8 @@ Audited from rescuedogwines.com on 2026-05-10.
 
 ## Stacking rules
 - Member 20% applies to every a la carte order automatically (Vinoshipper resolves member status; no code needed).
-- **Member full-case bump: +5% at 12+ bottles (25% total ceiling for members).** Aligns with Dry Creek Vineyard model; conservative vs Raymond's 30%.
+- **Yearly (case) club tier: 25% off scheduled shipments, 20% off à la carte.** Other tiers stay flat at their `discount_percent`. Stored on `wine_club_tiers.shipment_discount_percent` (falls back to `discount_percent` when null).
+- The previous "+5% full-case bump on à la carte" model is RETIRED — yearly members get the 25% via their scheduled shipments instead, not by hitting a 12-bottle threshold in the cart.
 - **Stackable promos:** seasonal/site-wide codes flagged `stacks_with_member_discount = true` may stack with member 20% — but **NEVER** with the case bump or with each other. Cart applies the better of (member+case) vs (member+code).
 - **Non-stackable always:** Subscribe & Save (VS limitation), bundle pricing (already discounted), STOCKUP-style stockup codes, signup code.
 - **Hard ceiling:** total stacked discount may not exceed 30% — cart logic clamps.

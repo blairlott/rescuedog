@@ -9,7 +9,7 @@ interface CartUpsellBannerProps {
 }
 
 export function CartUpsellBanner({ totalBottles, cartTotal }: CartUpsellBannerProps) {
-  const { halfCaseCount, fullCaseCount, fullCaseDiscount, clubDiscount } = useCartSettings();
+  const { halfCaseCount, fullCaseCount, fullCaseDiscount, clubDiscount, caseDiscountCode } = useCartSettings();
   const { isMember, discountPercent } = useIsMember();
   // Members earn the higher club discount on full cases; guests get the
   // public case discount.

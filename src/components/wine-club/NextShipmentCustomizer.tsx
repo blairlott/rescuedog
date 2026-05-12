@@ -39,7 +39,7 @@ interface UpsAccessPoint {
 const LOCKED_STATUSES = new Set(["locked", "shipped", "cancelled"]);
 
 export function NextShipmentCustomizer({ membership }: Props) {
-  const [shipment, setShipment] = useState<{ id: string; status: string; shipment_date: string | null; customization_deadline: string | null } | null>(null);
+  const [shipment, setShipment] = useState<{ id: string; status: string; shipment_date: string | null; cutoff_at: string | null } | null>(null);
   const [items, setItems] = useState<ShipmentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,14 +61,14 @@ export function NextShipmentCustomizer({ membership }: Props) {
     (async () => {
       const { data } = await supabase
         .from("wine_club_shipments")
-        .select("id, status, shipment_date, customization_deadline, items:wine_club_shipment_items(*)")
+        .select("id, status, shipment_date, cutoff_at, delivery_destination_type, delivery_ups_access_point, items:wine_club_shipment_items(*)")
         .eq("membership_id", membership.id)
         .not("status", "in", "(shipped,cancelled)")
         .order("shipment_date", { ascending: true, nullsFirst: false })
         .limit(1)
         .maybeSingle();
       if (data) {
-        setShipment({ id: data.id, status: data.status, shipment_date: data.shipment_date, customization_deadline: data.customization_deadline });
+        setShipment({ id: data.id, status: data.status, shipment_date: data.shipment_date, cutoff_at: (data as any).cutoff_at });
         setItems(((data as any).items ?? []).map((i: any) => ({
           id: i.id,
           product_handle: i.product_handle,
@@ -214,7 +214,7 @@ export function NextShipmentCustomizer({ membership }: Props) {
           <h3 className="font-bold text-foreground flex items-center gap-2"><ShoppingBag className="h-5 w-5" /> Next Shipment</h3>
           <p className="text-xs text-muted-foreground mt-1">
             Ships {shipment.shipment_date ? new Date(shipment.shipment_date).toLocaleDateString() : "TBD"}
-            {shipment.customization_deadline && ` · Locks ${new Date(shipment.customization_deadline).toLocaleDateString()}`}
+            {shipment.cutoff_at && ` · Locks ${new Date(shipment.cutoff_at).toLocaleDateString()}`}
           </p>
         </div>
         <span className="text-[11px] uppercase tracking-brand font-bold px-2 py-1 bg-muted">{shipment.status.replace(/_/g, " ")}</span>

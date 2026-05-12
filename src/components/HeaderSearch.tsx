@@ -42,7 +42,7 @@ export function HeaderSearch({ className }: Props) {
   const go = (handle: string) => {
     setOpen(false);
     setQ("");
-    navigate(`/products/${handle}`);
+    navigate(`/product/${handle}`);
   };
 
   return (

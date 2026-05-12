@@ -1134,6 +1134,69 @@ export type Database = {
         }
         Relationships: []
       }
+      gift_certificates: {
+        Row: {
+          code: string
+          created_at: string
+          deliver_on: string | null
+          id: string
+          personal_note: string | null
+          purchaser_email: string | null
+          purchaser_user_id: string
+          recipient_email: string
+          recipient_name: string
+          redeemed_at: string | null
+          redeemed_by_email: string | null
+          sent_at: string | null
+          shipments_count: number
+          status: string
+          tier: string
+          total_cents: number
+          updated_at: string
+          vinoshipper_gift_id: string | null
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          deliver_on?: string | null
+          id?: string
+          personal_note?: string | null
+          purchaser_email?: string | null
+          purchaser_user_id: string
+          recipient_email: string
+          recipient_name: string
+          redeemed_at?: string | null
+          redeemed_by_email?: string | null
+          sent_at?: string | null
+          shipments_count?: number
+          status?: string
+          tier: string
+          total_cents?: number
+          updated_at?: string
+          vinoshipper_gift_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          deliver_on?: string | null
+          id?: string
+          personal_note?: string | null
+          purchaser_email?: string | null
+          purchaser_user_id?: string
+          recipient_email?: string
+          recipient_name?: string
+          redeemed_at?: string | null
+          redeemed_by_email?: string | null
+          sent_at?: string | null
+          shipments_count?: number
+          status?: string
+          tier?: string
+          total_cents?: number
+          updated_at?: string
+          vinoshipper_gift_id?: string | null
+        }
+        Relationships: []
+      }
       impact_events: {
         Row: {
           bottles: number
@@ -2163,6 +2226,39 @@ export type Database = {
         }
         Relationships: []
       }
+      wine_club_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          from_tier: string | null
+          id: string
+          metadata: Json | null
+          to_tier: string | null
+          user_id: string
+          vinoshipper_membership_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          from_tier?: string | null
+          id?: string
+          metadata?: Json | null
+          to_tier?: string | null
+          user_id: string
+          vinoshipper_membership_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          from_tier?: string | null
+          id?: string
+          metadata?: Json | null
+          to_tier?: string | null
+          user_id?: string
+          vinoshipper_membership_id?: string | null
+        }
+        Relationships: []
+      }
       wine_club_memberships: {
         Row: {
           cancelled_at: string | null
@@ -2475,6 +2571,60 @@ export type Database = {
           vinoshipper_product_id?: string | null
           vinoshipper_sku?: string | null
           vintage?: number | null
+        }
+        Relationships: []
+      }
+      wine_subscriptions: {
+        Row: {
+          cadence: string
+          created_at: string
+          discount_percent: number
+          id: string
+          next_ship_date: string | null
+          product_handle: string | null
+          product_image_url: string | null
+          product_title: string
+          quantity: number
+          sku: string
+          status: string
+          unit_price_cents: number
+          updated_at: string
+          user_id: string
+          vinoshipper_subscription_id: string | null
+        }
+        Insert: {
+          cadence?: string
+          created_at?: string
+          discount_percent?: number
+          id?: string
+          next_ship_date?: string | null
+          product_handle?: string | null
+          product_image_url?: string | null
+          product_title: string
+          quantity?: number
+          sku: string
+          status?: string
+          unit_price_cents?: number
+          updated_at?: string
+          user_id: string
+          vinoshipper_subscription_id?: string | null
+        }
+        Update: {
+          cadence?: string
+          created_at?: string
+          discount_percent?: number
+          id?: string
+          next_ship_date?: string | null
+          product_handle?: string | null
+          product_image_url?: string | null
+          product_title?: string
+          quantity?: number
+          sku?: string
+          status?: string
+          unit_price_cents?: number
+          updated_at?: string
+          user_id?: string
+          vinoshipper_subscription_id?: string | null
         }
         Relationships: []
       }

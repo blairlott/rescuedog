@@ -180,16 +180,26 @@ const WineClubPage = () => {
                     ) : null}
 
                     {!user && (
-                      <p className="text-center text-sm text-muted-foreground mt-6">
-                        <Button variant="link" className="p-0 text-primary" onClick={() => navigate("/login?redirect=/club")}>
-                          Sign in
-                        </Button>{" "}
-                        or{" "}
-                        <Button variant="link" className="p-0 text-primary" onClick={() => navigate("/signup?redirect=/club")}>
-                          create an account
-                        </Button>{" "}
-                        to join a club.
-                      </p>
+                      <div className="mt-8 max-w-md mx-auto border border-border bg-background p-6 text-center">
+                        <p className="text-sm text-muted-foreground mb-4">
+                          You'll need an account to join a wine club.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <Button
+                            onClick={() => navigate("/login?redirect=/club")}
+                            className="flex-1 uppercase tracking-brand text-sm font-bold"
+                          >
+                            Sign In
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => navigate("/signup?redirect=/club")}
+                            className="flex-1 uppercase tracking-brand text-sm font-bold"
+                          >
+                            Create Account
+                          </Button>
+                        </div>
+                      </div>
                     )}
                   </>
                 )}

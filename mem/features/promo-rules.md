@@ -20,5 +20,7 @@ Audited from rescuedogwines.com on 2026-05-10.
 
 ## Stacking rules
 - Member 20% applies to every a la carte order automatically (Vinoshipper resolves member status; no code needed).
-- STOCKUP and bundle pricing do NOT stack with member discount or each other - apply the better of the two for the customer.
-- 10% signup code stacks with neither member discount nor STOCKUP nor bundles.
+- **Stacks WITH member 20%:** full-case discount, and any seasonal/site-wide promo code flagged `stacks_with_member_discount = true` in the admin.
+- **Does NOT stack with member 20%:** Subscribe & Save (VS limitation), bundle pricing (already discounted), and any promo without the stackable flag — apply the better of the two.
+- 10% signup code: not stackable by default; admin can flip the flag per campaign.
+- When the promo-code system is built, every promo row needs a `stacks_with_member_discount` boolean (default false) editable in the CMS/admin. Cart logic checks this flag before combining with member pricing.

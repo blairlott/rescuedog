@@ -5,6 +5,10 @@ import { create } from "zustand";
  * Wine Club join (20%) and Subscribe & Save (up to 15%) cannot stack —
  * Vinoshipper applies club pricing automatically and recurring SKU
  * discounts can't be combined with member pricing.
+ *
+ * Stackable WITH member 20%: full-case discount, and any seasonal promo
+ * code flagged `stacks_with_member_discount = true` in the admin.
+ * See mem://features/member-stacking-rules.
  */
 export type CheckoutDiscountIntent = "none" | "club" | "subscribe";
 

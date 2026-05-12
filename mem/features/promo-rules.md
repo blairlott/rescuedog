@@ -20,7 +20,8 @@ Audited from rescuedogwines.com on 2026-05-10.
 
 ## Stacking rules
 - Member 20% applies to every a la carte order automatically (Vinoshipper resolves member status; no code needed).
-- **Stacks WITH member 20%:** full-case discount, and any seasonal/site-wide promo code flagged `stacks_with_member_discount = true` in the admin.
-- **Does NOT stack with member 20%:** Subscribe & Save (VS limitation), bundle pricing (already discounted), and any promo without the stackable flag — apply the better of the two.
-- 10% signup code: not stackable by default; admin can flip the flag per campaign.
-- When the promo-code system is built, every promo row needs a `stacks_with_member_discount` boolean (default false) editable in the CMS/admin. Cart logic checks this flag before combining with member pricing.
+- **Member full-case bump: +5% at 12+ bottles (25% total ceiling for members).** Aligns with Dry Creek Vineyard model; conservative vs Raymond's 30%.
+- **Stackable promos:** seasonal/site-wide codes flagged `stacks_with_member_discount = true` may stack with member 20% — but **NEVER** with the case bump or with each other. Cart applies the better of (member+case) vs (member+code).
+- **Non-stackable always:** Subscribe & Save (VS limitation), bundle pricing (already discounted), STOCKUP-style stockup codes, signup code.
+- **Hard ceiling:** total stacked discount may not exceed 30% — cart logic clamps.
+- When the promo-code system is built, every promo row needs `stacks_with_member_discount` boolean (default OFF) and `max_stacked_percent` (default 30) editable in admin.

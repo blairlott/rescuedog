@@ -10,12 +10,16 @@ export type CheckoutDiscountIntent = "none" | "club" | "subscribe";
 
 interface CheckoutIntentStore {
   intent: CheckoutDiscountIntent;
+  clubTierId: string | null;
   setIntent: (next: CheckoutDiscountIntent) => void;
+  setClubTierId: (id: string | null) => void;
   reset: () => void;
 }
 
 export const useCheckoutIntentStore = create<CheckoutIntentStore>((set) => ({
   intent: "none",
+  clubTierId: null,
   setIntent: (next) => set({ intent: next }),
-  reset: () => set({ intent: "none" }),
+  setClubTierId: (id) => set({ clubTierId: id }),
+  reset: () => set({ intent: "none", clubTierId: null }),
 }));

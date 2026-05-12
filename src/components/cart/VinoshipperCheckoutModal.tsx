@@ -48,6 +48,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
   const { items, clearCart } = useCartStore();
   const checkoutIntent = useCheckoutIntentStore((s) => s.intent);
   const resetCheckoutIntent = useCheckoutIntentStore((s) => s.reset);
+  const clubTierId = useCheckoutIntentStore((s) => s.clubTierId);
 
   const [ageOk, setAgeOk] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -234,7 +235,10 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             unit_price: parseFloat(i.price.amount),
           })),
           wine_club_signup: joiningClub
-            ? { tier: "to_be_selected", discount_applied_percent: VS_MEMBER_DISCOUNT_PERCENT }
+            ? {
+                tier_id: clubTierId,
+                discount_applied_percent: VS_MEMBER_DISCOUNT_PERCENT,
+              }
             : null,
           totals: {
             subtotal: subtotal.toFixed(2),

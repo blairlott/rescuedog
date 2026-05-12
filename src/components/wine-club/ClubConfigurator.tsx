@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Wine, ArrowRight, Check, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WineClubDisclaimer } from "@/components/WineClubDisclaimer";
 import type { WineClubTier } from "@/hooks/useWineClub";
 
 const frequencyOptions = [
@@ -198,6 +199,8 @@ export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
           <p className="text-xs text-muted-foreground italic mb-4">
             Discount not stackable with other offers or Subscribe &amp; Save.
           </p>
+
+          <WineClubDisclaimer variant="club" className="mb-4" />
 
           <div className="flex gap-3">
             <Button

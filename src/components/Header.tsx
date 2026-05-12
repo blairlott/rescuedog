@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
-import { Search, Menu, X, User, LogIn } from "lucide-react";
+import { Menu, X, User, LogIn } from "lucide-react";
+import { HeaderSearch } from "./HeaderSearch";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
@@ -87,9 +88,7 @@ export function Header() {
             <button className="md:hidden p-1 text-foreground" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <button className="hidden md:block p-1 text-foreground hover:text-primary transition-colors">
-              <Search className="h-5 w-5" />
-            </button>
+            <HeaderSearch className="hidden md:block p-1 text-foreground hover:text-primary transition-colors" />
           </div>
 
           {/* Center: Logo */}

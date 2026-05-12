@@ -22,6 +22,7 @@
 - [Compliance](mem://features/compliance) — Age verification and Shopify wine compliance at checkout
 - [No Free Gifts](mem://features/no-free-gifts) — Tied-house: no free totes/merch/gifts with wine purchases
 - [Case Discount Tiers](mem://features/case-discount-tiers) — Guests 10% case off, Wine Club members 20% (member-only premium tier)
+- [Vinoshipper Discounts](mem://features/vinoshipper-discounts) — VS owns discount math; member via Customer Group, guest via promo code; CMS `vinoshipper.case_discount_code` + `member_group_id`
 - [Dual Site Branding](mem://features/branding) — Domain-specific branding (wine vs merch) and logos
 - [Brand Guidelines](mem://style/brand) — Colors, fonts, and minimalist styling rules
 - [Wine Sort Order](mem://features/wine-sort-order) — Strict product sorting sequence for the shop page

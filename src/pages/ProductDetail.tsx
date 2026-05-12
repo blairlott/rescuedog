@@ -304,12 +304,14 @@ const ProductDetail = () => {
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t border-border p-3 pb-[env(safe-area-inset-bottom)] space-y-1.5">
         {/* Status line: ship-to-state + member savings */}
         <div className="flex items-center justify-between text-[11px] leading-tight">
-          {shipState ? (
+          {!isMerch && shipState ? (
             <span className={canShip ? "text-foreground" : "text-destructive font-semibold"}>
               {canShip ? `✓ Ships to ${shipState}` : `✕ Not shipped to ${shipState}`}
             </span>
-          ) : (
+          ) : !isMerch ? (
             <span className="text-muted-foreground">Check your state for shipping</span>
+          ) : (
+            <span className="text-muted-foreground">Ships from US partners · 3–7 days</span>
           )}
           {isMember && !locked && selectedVariant?.availableForSale && (
             <span className="text-primary font-bold uppercase tracking-brand text-[10px]">
@@ -319,7 +321,7 @@ const ProductDetail = () => {
         </div>
         <Button
           onClick={handleAddToCart}
-          disabled={cartLoading || !selectedVariant?.availableForSale || locked || blockedByState}
+          disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
           size="lg"
           className="w-full bg-primary hover:bg-primary/90"
         >
@@ -327,7 +329,7 @@ const ProductDetail = () => {
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : !selectedVariant?.availableForSale ? "Sold Out"
           : locked ? <><Lock className="w-4 h-4 mr-2" /> Members only</>
-          : blockedByState ? "Not available in your state"
+          : blockedByState && !isMerch ? "Not available in your state"
           : subscribeMode ? `Subscribe ${quantity} btl — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
           : <><ShoppingCart className="w-4 h-4 mr-2" /> Add {quantity} btl — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}</>}
         </Button>

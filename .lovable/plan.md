@@ -1,70 +1,118 @@
-## Goal
+# Wine Club & Subscribe-and-Save in Customer Profile
 
-Make every Lovable Cloud customer account also exist as a Vinoshipper customer, so wine club shipments, age verification, and stored credit cards all live on the Vinoshipper side. The Lovable account stays the login of record; the Vinoshipper customer ID is stored on the profile and reused for club joins, à la carte orders, and member-discount lookups.
+Make the Account page the single hub for all recurring-wine activity. Every action that touches shipments, billing, or stored cards goes through Vinoshipper using the `vinoshipper_customer_id` we now store on `customer_profiles`.
 
-## Approach
+## Scope
 
-We already have `supabase/functions/vinoshipper-create-membership` and `supabase/functions/_shared/vinoshipper.ts` (with `vsCreateCustomer`). We extend that pattern so a Vinoshipper customer is created/linked at **signup**, not just at wine-club join.
+Add four sub-areas under `/account`, all gated by the existing customer auth:
 
-### 1. Schema change
+1. **Wine Club Membership** (existing club members)
+2. **Subscribe & Save** (recurring single-SKU auto-ship)
+3. **Gift Club Certificates** (purchase + print/download)
+4. **Payment Methods** (Vinoshipper-stored cards, read-only mirror)
 
-Add to `customer_profiles`:
-- `vinoshipper_customer_id text` (nullable, unique)
-- `vinoshipper_linked_at timestamptz`
+Tabs in the Account page: Profile · Wine Club · Subscriptions · Gifts · Payment · Orders · Favorites.
 
-### 2. New edge function: `vinoshipper-link-customer`
+## 1. Wine Club Membership tab
 
-Idempotent server-side function the client calls after signup/login:
-1. Auth-gate via JWT (require logged-in user).
-2. Load `customer_profiles` for the user.
-3. If `vinoshipper_customer_id` already set → return it.
-4. Otherwise: try Vinoshipper customer-search by email (`GET /customers?email=…`).
-   - If found → store the existing ID on the profile.
-   - If not found → call `vsCreateCustomer` with name/email/phone (no shipping address required yet — that's collected at club join / checkout).
-5. Persist `vinoshipper_customer_id` + `vinoshipper_linked_at`.
-6. Return `{ vinoshipperCustomerId }`.
+Shows the member's current tier (Pup / Rescue / Pack), next ship date, ship-to address, and a tier-comparison panel.
 
-Adds a matching `vsFindCustomerByEmail` helper to `_shared/vinoshipper.ts`.
+Actions:
+- **Switch club** — pick a new tier; confirm; calls `vinoshipper-update-membership` edge fn (PATCH membership tier on VS). Effective next billing cycle.
+- **Pause** — 1, 2, or 3 cycles. Calls VS pause endpoint.
+- **Cancel membership** — confirm dialog with retention copy; calls VS cancel endpoint; writes a `wine_club_events` row.
+- **Update shipping address** — already supported; reuses VS address update.
 
-### 3. Wire into auth flows
+Falls back to a "Join the Wine Club" CTA when the user has no active VS membership.
 
-- `CustomerSignupPage`: after `signUp()` succeeds and we have a session, fire-and-forget `supabase.functions.invoke("vinoshipper-link-customer")`.
-- `CustomerLoginPage` + Google/Apple OAuth callback: in `useCustomerAuth`'s `onAuthStateChange`, if the user has no `vinoshipper_customer_id` yet, invoke `vinoshipper-link-customer`. This back-fills existing accounts on next login.
-- All calls non-blocking: a Vinoshipper outage must not break login.
+## 2. Subscribe & Save tab
 
-### 4. Reuse on club join
+Per-SKU recurring auto-ship for any wine in the catalog (separate from club tiers).
 
-Update `vinoshipper-create-membership` to:
-- Use the stored `vinoshipper_customer_id` if present (skip `vsCreateCustomer`).
-- Otherwise create one and write it back to `customer_profiles` in addition to `wine_club_memberships`.
-- Always update the customer's shipping address on Vinoshipper before creating the membership.
+- List active subscriptions with SKU, qty, cadence (monthly / quarterly / biannual), next ship date, price.
+- Edit qty / cadence / skip next / cancel.
+- "Browse wines to subscribe" → product page gets a "Subscribe & Save 10%" toggle that, on add-to-cart, routes through Vinoshipper subscription creation rather than the one-time deep-link.
+- Requires a stored payment method (see tab 4); if none, prompt user to add one first via the VS hosted card form.
 
-### 5. Surface the link in the UI
+New table `wine_subscriptions` mirrors the VS subscription IDs so we can render and manage from our UI without a round-trip on every page load.
 
-- Account page: small "Vinoshipper account linked" indicator once the ID is set, plus a "Re-link" button that re-invokes the function if the field is empty.
-- Wine Club CTA copy clarifies: "Sign in or create an account — your Rescue Dog Wines account is automatically linked to Vinoshipper for shipping, age verification, and secure payment."
+## 3. Gift Club Certificates tab
 
-## Prerequisite — Vinoshipper API key
+- "Purchase a gift" form: tier, # of shipments, recipient name + email, optional personal note, delivery date.
+- Calls `vinoshipper-create-gift` edge fn → returns a unique gift code + activation URL.
+- Stores in new `gift_certificates` table (code, tier, shipments, recipient_email, redeemed_at, purchaser_id).
+- "Print certificate" → opens a print-optimized React route `/account/gifts/:id/print` with branded PDF-ready layout (logo, code, redemption URL, expiry, note). Browser-native print.
+- Email the recipient on the chosen delivery date via Resend (scheduled with `pg_cron` or sent immediately if delivery date is past).
 
-The shared client reads `VINOSHIPPER_API_KEY` from Supabase secrets, and that secret is **not yet configured**. The exact auth header (`Authorization: Bearer …` vs `X-API-Key: …`) and the customer-search endpoint shape both need to be confirmed against Vinoshipper's docs once we have credentials.
+## 4. Payment Methods tab
 
-Before I build this out, I'll need:
-1. A Vinoshipper API key (added via the secrets tool).
-2. Confirmation of the auth header format and the `GET /customers` query parameter for email lookup (I can verify against their docs once the key is in).
+Cards live on Vinoshipper for PCI compliance — we never store PANs.
+- "Add a card" → opens VS hosted iframe / redirect for tokenization.
+- List existing cards (last4, brand, exp) fetched live via `vinoshipper-list-payment-methods` edge fn.
+- Set default / remove.
 
-## Out of scope for this change
+## Data model additions
 
-- Storing credit cards in our DB (cards stay on Vinoshipper — we never touch PAN data).
-- Migrating historical customers in bulk (the login back-fill handles them organically as they sign in).
-- Replacing the Vinoshipper deep-link wine checkout (still the compliance/payment path).
+```text
+wine_subscriptions
+  id, user_id, vinoshipper_subscription_id (unique), sku, product_title,
+  quantity, cadence, status (active|paused|cancelled),
+  next_ship_date, unit_price_cents, created_at, updated_at
 
-## Files touched
+gift_certificates
+  id, purchaser_user_id, vinoshipper_gift_id, code (unique), tier,
+  shipments_count, total_cents, recipient_name, recipient_email,
+  personal_note, deliver_on, sent_at, redeemed_at, redeemed_by_email,
+  status (issued|delivered|redeemed|expired), created_at
 
-- `supabase/migrations/<new>.sql` — add 2 columns to `customer_profiles`
-- `supabase/functions/_shared/vinoshipper.ts` — add `vsFindCustomerByEmail`
-- `supabase/functions/vinoshipper-link-customer/index.ts` — new
-- `supabase/functions/vinoshipper-create-membership/index.ts` — reuse stored customer ID, write back
-- `src/hooks/useCustomerAuth.tsx` — invoke link function on auth state change
-- `src/pages/CustomerSignupPage.tsx` — invoke link function after signup
-- `src/pages/AccountPage.tsx` — show link status + re-link button
-- `src/pages/WineClubPage.tsx` — small copy clarifier on the auth CTA
+wine_club_events
+  id, user_id, event_type (joined|switched|paused|resumed|cancelled),
+  from_tier, to_tier, vinoshipper_membership_id, metadata jsonb, created_at
+```
+
+All three: RLS — owner can SELECT/INSERT own rows; admins manage all.
+
+## Edge functions (new / updated)
+
+- `vinoshipper-get-membership` — returns current tier, status, next ship for the linked customer.
+- `vinoshipper-update-membership` — switch tier, pause, resume, cancel.
+- `vinoshipper-list-subscriptions` / `vinoshipper-create-subscription` / `vinoshipper-update-subscription`.
+- `vinoshipper-list-payment-methods` / `vinoshipper-create-payment-session` (returns hosted form URL) / `vinoshipper-delete-payment-method`.
+- `vinoshipper-create-gift` — creates a gift purchase on VS, returns code/URL.
+- `send-gift-certificate-email` — Resend template; called immediately or via scheduled job.
+
+All require the existing `VINOSHIPPER_API_KEY` runtime secret and use the `vinoshipper_customer_id` from `customer_profiles`.
+
+## UI files to add / change
+
+- `src/pages/AccountPage.tsx` — add tabs, route sub-paths.
+- `src/components/account/WineClubTab.tsx`
+- `src/components/account/SubscriptionsTab.tsx`
+- `src/components/account/GiftsTab.tsx`
+- `src/components/account/PaymentMethodsTab.tsx`
+- `src/components/account/CancelMembershipDialog.tsx`, `SwitchTierDialog.tsx`, `PauseMembershipDialog.tsx`
+- `src/pages/GiftCertificatePrintPage.tsx` + route in `App.tsx`
+- Product detail page: add "Subscribe & Save" toggle.
+- `src/integrations/supabase/types.ts` regenerates after migration.
+
+## Out of scope
+
+- Storing PANs in our DB (always Vinoshipper-tokenized).
+- Building a full PDF generator — we use browser print-to-PDF with a styled route.
+- Migrating existing manual subscribers; this only handles records created via the new flow.
+- Wholesale/B2B subscriptions.
+
+## Prerequisites / open items
+
+1. **`VINOSHIPPER_API_KEY`** must be set (still pending from prior step). I will request it once you approve this plan if it isn't already configured.
+2. Confirm Vinoshipper supports: tier switch on an active membership, hosted card iframe URL, gift certificate API. If any of these aren't exposed, we'll fall back to (a) email-to-staff workflow for switches/cancellations and (b) a Stripe-based card vault as a contingency — but only with your sign-off.
+
+## Build order
+
+1. Migration: 3 new tables + RLS.
+2. Edge functions stubs returning typed responses (mock data when API key absent) so UI can be built/tested.
+3. Account page tab refactor + Wine Club tab + Cancel/Switch/Pause flows.
+4. Subscriptions tab + product page Subscribe & Save toggle.
+5. Gifts tab + print route + Resend template.
+6. Payment Methods tab.
+7. Wire to live VS endpoints once API key + endpoint details confirmed.

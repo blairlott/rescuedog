@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RefreshCw, Truck, Lock } from "lucide-react";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { WineClubDisclaimer } from "@/components/WineClubDisclaimer";
+import { useCheckoutIntentStore } from "@/stores/checkoutIntentStore";
 
 const FREQUENCIES = [
   { value: "monthly", label: "Monthly", discount: 15 },
@@ -18,9 +19,14 @@ interface CartSubscribeToggleProps {
 }
 
 export function CartSubscribeToggle({ price, quantity }: CartSubscribeToggleProps) {
-  const [enabled, setEnabled] = useState(false);
   const [frequency, setFrequency] = useState("monthly");
   const { user } = useCustomerAuth();
+  const intent = useCheckoutIntentStore((s) => s.intent);
+  const setIntent = useCheckoutIntentStore((s) => s.setIntent);
+
+  const enabled = intent === "subscribe";
+  const blockedByClub = intent === "club";
+  const handleToggle = (next: boolean) => setIntent(next ? "subscribe" : "none");
 
   const freq = FREQUENCIES.find((f) => f.value === frequency) ?? FREQUENCIES[0];
   const lineTotal = price * quantity;
@@ -35,7 +41,12 @@ export function CartSubscribeToggle({ price, quantity }: CartSubscribeToggleProp
           {!enabled && <span className="text-muted-foreground">up to 15%</span>}
         </div>
         {user ? (
-          <Switch checked={enabled} onCheckedChange={setEnabled} className="scale-75 origin-right" />
+          <Switch
+            checked={enabled}
+            onCheckedChange={handleToggle}
+            disabled={blockedByClub}
+            className="scale-75 origin-right"
+          />
         ) : (
           <Lock className="w-3.5 h-3.5 text-muted-foreground" />
         )}
@@ -48,6 +59,12 @@ export function CartSubscribeToggle({ price, quantity }: CartSubscribeToggleProp
             <Link to="/login" className="flex-1 text-center border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted">Sign In</Link>
             <Link to="/signup" className="flex-1 text-center border border-primary bg-primary text-primary-foreground px-2 py-1 text-[11px] font-medium hover:bg-primary/90">Sign Up</Link>
           </div>
+        </div>
+      )}
+
+      {blockedByClub && user && !enabled && (
+        <div className="px-2.5 pb-2 text-[11px] text-muted-foreground border-t border-border/50 pt-2">
+          Wine Club join is active — discounts can't be combined.
         </div>
       )}
 

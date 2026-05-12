@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 
 const perks = [
   { icon: Wine, title: "Curated Selections", desc: "Hand-picked wines from our award-winning portfolio, delivered to your door." },
-  { icon: Gift, title: "Up to 25% Off", desc: "Members save 15–25% on à la carte wine purchases. More bottles and higher frequency = bigger discount." },
+  { icon: Gift, title: "20% Off", desc: "Members save 20% on à la carte wine purchases — plus shipping included on club shipments." },
   { icon: Truck, title: "Free Club Shipping", desc: "Complimentary shipping on all regular club shipments." },
   { icon: Star, title: "Free to Join", desc: "No membership fee or upfront cost. Just sign up, pick your club, and start saving." },
   { icon: Heart, title: "Double the Impact", desc: "Your membership means even more support for rescue organizations." },

@@ -1724,8 +1724,6 @@ export type Database = {
           title: string
           updated_at: string
           variants: Json
-          vinoshipper_product_id: string | null
-          vinoshipper_synced_at: string | null
         }
         Insert: {
           category?: string | null
@@ -1748,8 +1746,6 @@ export type Database = {
           title: string
           updated_at?: string
           variants?: Json
-          vinoshipper_product_id?: string | null
-          vinoshipper_synced_at?: string | null
         }
         Update: {
           category?: string | null
@@ -1772,8 +1768,6 @@ export type Database = {
           title?: string
           updated_at?: string
           variants?: Json
-          vinoshipper_product_id?: string | null
-          vinoshipper_synced_at?: string | null
         }
         Relationships: []
       }
@@ -2220,54 +2214,6 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
-        }
-        Relationships: []
-      }
-      vinoshipper_webhook_events: {
-        Row: {
-          created_at: string
-          detail_url: string | null
-          dropship_order_ids: string[] | null
-          error_message: string | null
-          event: string
-          id: string
-          identifier: string
-          order_payload: Json | null
-          processed: boolean
-          processed_at: string | null
-          raw_payload: Json
-          received_at: string
-          subject: string
-        }
-        Insert: {
-          created_at?: string
-          detail_url?: string | null
-          dropship_order_ids?: string[] | null
-          error_message?: string | null
-          event: string
-          id?: string
-          identifier: string
-          order_payload?: Json | null
-          processed?: boolean
-          processed_at?: string | null
-          raw_payload?: Json
-          received_at?: string
-          subject: string
-        }
-        Update: {
-          created_at?: string
-          detail_url?: string | null
-          dropship_order_ids?: string[] | null
-          error_message?: string | null
-          event?: string
-          id?: string
-          identifier?: string
-          order_payload?: Json | null
-          processed?: boolean
-          processed_at?: string | null
-          raw_payload?: Json
-          received_at?: string
-          subject?: string
         }
         Relationships: []
       }

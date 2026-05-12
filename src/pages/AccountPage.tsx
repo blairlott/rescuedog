@@ -302,6 +302,28 @@ const AccountPage = () => {
                   <Label>Phone</Label>
                   <Input value={profileForm.phone} onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))} placeholder="(555) 123-4567" />
                 </div>
+                <div className="space-y-1.5">
+                  <Label>Your Birthday</Label>
+                  <Input type="date" value={profileForm.birth_date} onChange={e => setProfileForm(f => ({ ...f, birth_date: e.target.value }))} />
+                  <p className="text-xs text-muted-foreground">We'll send you a birthday bottle perk on the house.</p>
+                </div>
+                <Separator className="my-2" />
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <PawPrint className="w-4 h-4 text-primary" /> Your Rescue Dog
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Tell us about your pup — we'll celebrate their birthday too with an exclusive member offer.
+                  </p>
+                  <div className="space-y-1.5">
+                    <Label>Pet Name</Label>
+                    <Input value={profileForm.pet_name} onChange={e => setProfileForm(f => ({ ...f, pet_name: e.target.value }))} placeholder="Buddy" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Pet Birthday (or adopt-iversary)</Label>
+                    <Input type="date" value={profileForm.pet_birth_date} onChange={e => setProfileForm(f => ({ ...f, pet_birth_date: e.target.value }))} />
+                  </div>
+                </div>
                 <Button onClick={handleProfileSave} disabled={profileSaving}>
                   {profileSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   Save Changes

@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Check, Sparkles } from "lucide-react";
+import { RefreshCw, Check, Sparkles, Lock } from "lucide-react";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
+import { WineClubDisclaimer } from "@/components/WineClubDisclaimer";
 
 const DISCOUNT_PERCENT = 15;
 
@@ -20,11 +23,15 @@ interface SubscribeAndSaveProps {
 export function SubscribeAndSave({ price, onSubscriptionChange }: SubscribeAndSaveProps) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [frequency, setFrequency] = useState("monthly");
+  const { user } = useCustomerAuth();
+  const location = useLocation();
+  const next = encodeURIComponent(location.pathname + location.search);
 
   const discountedPrice = price * (1 - DISCOUNT_PERCENT / 100);
   const savings = price - discountedPrice;
 
   const handleToggle = (checked: boolean) => {
+    if (checked && !user) return; // gated UI below
     setIsSubscribed(checked);
     onSubscriptionChange(checked, frequency);
   };
@@ -48,12 +55,28 @@ export function SubscribeAndSave({ price, onSubscriptionChange }: SubscribeAndSa
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Auto-deliver at your pace, cancel anytime
+              {user ? "Auto-deliver at your pace, cancel anytime" : "Account required to manage recurring shipments"}
             </p>
           </div>
         </div>
-        <Switch checked={isSubscribed} onCheckedChange={handleToggle} />
+        {user ? (
+          <Switch checked={isSubscribed} onCheckedChange={handleToggle} />
+        ) : (
+          <Lock className="w-4 h-4 text-muted-foreground" />
+        )}
       </div>
+
+      {!user && (
+        <div className="px-4 pb-4 pt-0 space-y-2 border-t border-border/50">
+          <p className="text-xs text-muted-foreground">
+            Subscribe & Save requires an account so we can securely store your payment method on Vinoshipper, verify age 21+, and let you manage shipments. Guest checkout is available for one-time purchases.
+          </p>
+          <div className="flex gap-2">
+            <Button asChild size="sm" variant="outline" className="flex-1"><Link to={`/login?next=${next}`}>Sign In</Link></Button>
+            <Button asChild size="sm" className="flex-1"><Link to={`/signup?next=${next}`}>Create Account</Link></Button>
+          </div>
+        </div>
+      )}
 
       {/* Expanded Details */}
       {isSubscribed && (
@@ -95,14 +118,16 @@ export function SubscribeAndSave({ price, onSubscriptionChange }: SubscribeAndSa
               </li>
             ))}
           </ul>
+
+          <WineClubDisclaimer variant="subscription" />
         </div>
       )}
 
       {/* One-time purchase option */}
       {!isSubscribed && (
-        <div className="px-4 pb-3 flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="px-4 pb-3 flex items-center gap-2 text-xs text-muted-foreground border-t border-border/50 pt-3">
           <Check className="w-3 h-3" />
-          <span>One-time purchase: <strong className="text-foreground">${price.toFixed(2)}</strong></span>
+          <span>One-time purchase (guest checkout OK): <strong className="text-foreground">${price.toFixed(2)}</strong></span>
         </div>
       )}
     </div>

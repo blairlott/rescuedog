@@ -1,9 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 170" role="img" aria-label="Rescue Dog">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 170" role="img" aria-label="Rescue Dog">
   <defs>
     <style>
-      .word{font-family: Avenir Next, Nunito Sans, Arial, sans-serif;font-size:58px;font-weight:800;letter-spacing:-1px;fill:#8b8b8b;}
+      .word{font-family:Avenir Next,Nunito Sans,Arial,sans-serif;font-size:58px;font-weight:800;letter-spacing:0;fill:#8b8b8b;}
       .mark{fill:none;stroke:#c30017;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;}
-      .tm{font-family: Avenir Next, Nunito Sans, Arial, sans-serif;font-size:15px;font-weight:700;fill:#8b8b8b;}
     </style>
   </defs>
   <text class="word" x="0" y="104">RESCUE DOG</text>
@@ -17,5 +16,4 @@
     <path class="mark" d="M98 129 C115 111 135 102 156 104 C179 107 186 130 169 153 C151 177 118 175 88 151"/>
     <path class="mark" d="M61 106 L88 125 L116 106"/>
   </g>
-  <text class="tm" x="688" y="47">TM</text>
 </svg>

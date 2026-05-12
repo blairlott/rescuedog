@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import heroImg from "@/assets/merch-hero.jpg";
 import missionImg from "@/assets/merch-mission.jpg";
 import { BundleStrip } from "@/components/merch/BundleStrip";
+import { WineBarStrip } from "@/components/merch/WineBarStrip";
 
 const CATEGORIES = [
   { id: "all", label: "All" },
@@ -163,6 +164,7 @@ const MerchHomePage = () => {
             </h2>
           </div>
           <BundleStrip />
+          <WineBarStrip />
 
           {/* Category chips */}
           <div className="flex flex-wrap justify-center gap-2 mb-8">

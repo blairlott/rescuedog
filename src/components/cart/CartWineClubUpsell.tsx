@@ -7,6 +7,7 @@ import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useIsMember } from "@/hooks/useIsMember";
 import { useWineClubTiers } from "@/hooks/useWineClub";
 import { useEffect } from "react";
+import { useCartStore } from "@/stores/cartStore";
 
 /**
  * Cart-level Wine Club join nudge. Toggling it ON applies the 20% member
@@ -22,6 +23,11 @@ export function CartWineClubUpsell() {
   const clubTierId = useCheckoutIntentStore((s) => s.clubTierId);
   const setClubTierId = useCheckoutIntentStore((s) => s.setClubTierId);
   const { data: tiers } = useWineClubTiers();
+  const items = useCartStore((s) => s.items);
+  const subtotal = items.reduce(
+    (sum, i) => sum + parseFloat(i.price?.amount ?? "0") * i.quantity,
+    0,
+  );
 
   // Already a member — no need to upsell joining
   if (isMember) return null;
@@ -117,8 +123,31 @@ export function CartWineClubUpsell() {
           {selectedTier?.description && (
             <p className="text-[11px] text-muted-foreground">{selectedTier.description}</p>
           )}
+          {selectedTier && subtotal > 0 && (() => {
+            const shipmentPct = selectedTier.shipment_discount_percent ?? selectedTier.discount_percent;
+            const alacartePct = selectedTier.discount_percent;
+            const shipmentSavings = subtotal * (shipmentPct / 100);
+            const alacarteSavings = subtotal * (alacartePct / 100);
+            return (
+              <div className="border border-primary/30 bg-background/60 p-2 text-[11px] space-y-1">
+                <div className="font-semibold uppercase tracking-brand text-foreground text-[10px]">
+                  Your savings on this ${subtotal.toFixed(2)} cart
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Scheduled shipment ({shipmentPct}% off)</span>
+                  <span className="font-bold text-primary">−${shipmentSavings.toFixed(2)}</span>
+                </div>
+                {shipmentPct !== alacartePct && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">À la carte ({alacartePct}% off)</span>
+                    <span className="font-bold text-primary">−${alacarteSavings.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           <p className="text-[11px] text-primary font-medium">
-            ✓ 20% Member discount applied to this order. First club shipment ships next cycle.
+            ✓ Member discount applied to this order. First club shipment ships next cycle.
           </p>
           <p className="text-[10px] text-muted-foreground">
             Change tier anytime in your account · cancel after first shipment.

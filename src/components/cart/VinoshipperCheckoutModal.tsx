@@ -354,6 +354,12 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
               accent
             />
           )}
+          {activePromoCode && (
+            <div className="flex justify-between text-[11px] uppercase tracking-brand text-green-700 dark:text-green-400">
+              <span>Promo code applied</span>
+              <span className="font-mono font-bold">{activePromoCode}</span>
+            </div>
+          )}
           <Row
             label={
               shipping === 0

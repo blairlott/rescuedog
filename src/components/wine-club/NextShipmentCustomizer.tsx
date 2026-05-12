@@ -32,16 +32,25 @@ interface Props {
   membership: WineClubMembership & { tier: WineClubTier };
 }
 
+interface UpsAccessPoint {
+  id: string; name: string; line1: string; city: string; state: string; zip: string; distance_miles: number; hours?: string;
+}
+
 const LOCKED_STATUSES = new Set(["locked", "shipped", "cancelled"]);
 
 export function NextShipmentCustomizer({ membership }: Props) {
-  const [shipment, setShipment] = useState<{ id: string; status: string; shipment_date: string | null; customization_deadline: string | null } | null>(null);
+  const [shipment, setShipment] = useState<{ id: string; status: string; shipment_date: string | null; cutoff_at: string | null } | null>(null);
   const [items, setItems] = useState<ShipmentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [catalog, setCatalog] = useState<CatalogWine[] | null>(null);
   const [search, setSearch] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [destType, setDestType] = useState<"address" | "ups_access_point">("address");
+  const [accessPoint, setAccessPoint] = useState<UpsAccessPoint | null>(null);
+  const [apZip, setApZip] = useState("");
+  const [apResults, setApResults] = useState<UpsAccessPoint[] | null>(null);
+  const [apSearching, setApSearching] = useState(false);
 
   const isLegacy = membership.origin === "vinoshipper_legacy" || (membership as any).is_legacy_member;
   const tier = membership.tier;
@@ -52,14 +61,14 @@ export function NextShipmentCustomizer({ membership }: Props) {
     (async () => {
       const { data } = await supabase
         .from("wine_club_shipments")
-        .select("id, status, shipment_date, customization_deadline, items:wine_club_shipment_items(*)")
+        .select("id, status, shipment_date, cutoff_at, delivery_destination_type, delivery_ups_access_point, items:wine_club_shipment_items(*)")
         .eq("membership_id", membership.id)
         .not("status", "in", "(shipped,cancelled)")
         .order("shipment_date", { ascending: true, nullsFirst: false })
         .limit(1)
         .maybeSingle();
       if (data) {
-        setShipment({ id: data.id, status: data.status, shipment_date: data.shipment_date, customization_deadline: data.customization_deadline });
+        setShipment({ id: data.id, status: data.status, shipment_date: data.shipment_date, cutoff_at: (data as any).cutoff_at });
         setItems(((data as any).items ?? []).map((i: any) => ({
           id: i.id,
           product_handle: i.product_handle,
@@ -70,10 +79,22 @@ export function NextShipmentCustomizer({ membership }: Props) {
           quantity: i.quantity ?? 1,
           is_customer_swap: i.is_customer_swap,
         })));
+        const dt = (data as any).delivery_destination_type;
+        const ap = (data as any).delivery_ups_access_point;
+        if (dt === "ups_access_point" && ap) { setDestType("ups_access_point"); setAccessPoint(ap); }
       }
       setLoading(false);
     })();
   }, [membership.id, isLegacy]);
+
+  const searchAccessPoints = async () => {
+    if (!/^\d{5}$/.test(apZip)) { toast.error("Enter a 5-digit ZIP"); return; }
+    setApSearching(true);
+    const { data, error } = await supabase.functions.invoke("ups-access-point-search", { body: { zip: apZip } });
+    setApSearching(false);
+    if (error || (data as any)?.error) { toast.error("Couldn't find UPS Access Points"); return; }
+    setApResults(((data as any).results ?? []) as UpsAccessPoint[]);
+  };
 
   const totalBottles = useMemo(() => items.reduce((s, i) => s + i.quantity, 0), [items]);
   const totalCents = useMemo(() => items.reduce((s, i) => s + i.price_cents * i.quantity, 0), [items]);
@@ -124,7 +145,12 @@ export function NextShipmentCustomizer({ membership }: Props) {
     if (belowMin) { toast.error(`Tier minimum is ${minBottles} bottles`); return; }
     setSaving(true);
     const { data, error } = await supabase.functions.invoke("wine-club-shipment-save", {
-      body: { shipment_id: shipment.id, items: items.map(({ id, is_customer_swap, ...rest }) => rest) },
+      body: {
+        shipment_id: shipment.id,
+        items: items.map(({ id, is_customer_swap, ...rest }) => rest),
+        delivery_destination_type: destType,
+        delivery_ups_access_point: destType === "ups_access_point" ? accessPoint : null,
+      },
     });
     setSaving(false);
     if (error || (data as any)?.error) {
@@ -188,10 +214,54 @@ export function NextShipmentCustomizer({ membership }: Props) {
           <h3 className="font-bold text-foreground flex items-center gap-2"><ShoppingBag className="h-5 w-5" /> Next Shipment</h3>
           <p className="text-xs text-muted-foreground mt-1">
             Ships {shipment.shipment_date ? new Date(shipment.shipment_date).toLocaleDateString() : "TBD"}
-            {shipment.customization_deadline && ` · Locks ${new Date(shipment.customization_deadline).toLocaleDateString()}`}
+            {shipment.cutoff_at && ` · Locks ${new Date(shipment.cutoff_at).toLocaleDateString()}`}
           </p>
         </div>
         <span className="text-[11px] uppercase tracking-brand font-bold px-2 py-1 bg-muted">{shipment.status.replace(/_/g, " ")}</span>
+      </div>
+
+      {/* Delivery destination */}
+      <div className="border border-border p-3 mb-4 bg-muted/20">
+        <div className="text-xs font-bold uppercase tracking-brand mb-2">Delivery destination</div>
+        <div className="flex flex-col sm:flex-row gap-2 mb-2">
+          <button type="button" disabled={locked} onClick={() => setDestType("address")} className={`flex-1 border p-2 text-sm text-left ${destType === "address" ? "border-primary bg-primary/5" : "border-border"}`}>
+            <div className="font-bold">Ship to my address</div>
+            <div className="text-xs text-muted-foreground">Adult signature 21+ required</div>
+          </button>
+          <button type="button" disabled={locked} onClick={() => setDestType("ups_access_point")} className={`flex-1 border p-2 text-sm text-left ${destType === "ups_access_point" ? "border-primary bg-primary/5" : "border-border"}`}>
+            <div className="font-bold">UPS Access Point</div>
+            <div className="text-xs text-muted-foreground">Pick up with ID 21+</div>
+          </button>
+        </div>
+        {destType === "ups_access_point" && (
+          <div className="space-y-2 mt-2">
+            {accessPoint && (
+              <div className="border border-border p-2 text-xs">
+                <div className="font-bold">{accessPoint.name}</div>
+                <div className="text-muted-foreground">{accessPoint.line1}, {accessPoint.city}, {accessPoint.state} {accessPoint.zip}</div>
+              </div>
+            )}
+            {!locked && (
+              <div className="flex gap-2">
+                <Input value={apZip} onChange={(e) => setApZip(e.target.value)} placeholder="ZIP code" maxLength={5} className="h-8 text-sm" />
+                <Button size="sm" variant="outline" onClick={searchAccessPoints} disabled={apSearching}>
+                  {apSearching ? <Loader2 className="h-3 w-3 animate-spin" /> : "Search"}
+                </Button>
+              </div>
+            )}
+            {apResults && apResults.length > 0 && (
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {apResults.map((ap) => (
+                  <button key={ap.id} onClick={() => { setAccessPoint(ap); setApResults(null); }} className="w-full text-left border border-border p-2 text-xs hover:border-primary">
+                    <div className="font-bold">{ap.name}</div>
+                    <div className="text-muted-foreground">{ap.line1}, {ap.city}, {ap.state} {ap.zip} · {ap.distance_miles.toFixed(1)} mi</div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="text-[10px] text-muted-foreground">Adult signature 21+ still required at the UPS Access Point. Bring a valid government-issued ID matching the order name.</p>
+          </div>
+        )}
       </div>
 
       {locked && (

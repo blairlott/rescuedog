@@ -18,6 +18,8 @@ interface Body {
   shipment_id: string;
   items: IncomingItem[];
   action?: "save" | "skip";
+  delivery_destination_type?: "address" | "ups_access_point";
+  delivery_ups_access_point?: Record<string, unknown> | null;
 }
 
 Deno.serve(async (req) => {
@@ -88,6 +90,8 @@ Deno.serve(async (req) => {
     await svc.from("wine_club_shipments").update({
       status: "customer_customized",
       total_cents: totalCents,
+      delivery_destination_type: body.delivery_destination_type === "ups_access_point" ? "ups_access_point" : "address",
+      delivery_ups_access_point: body.delivery_destination_type === "ups_access_point" ? (body.delivery_ups_access_point ?? null) : null,
       updated_at: new Date().toISOString(),
     }).eq("id", shipment.id);
 

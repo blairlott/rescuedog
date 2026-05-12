@@ -444,6 +444,7 @@ export type Database = {
         Row: {
           birth_date: string | null
           created_at: string
+          default_ups_access_point: Json | null
           display_name: string | null
           email: string | null
           favorite_rescue_id: string | null
@@ -459,6 +460,7 @@ export type Database = {
         Insert: {
           birth_date?: string | null
           created_at?: string
+          default_ups_access_point?: Json | null
           display_name?: string | null
           email?: string | null
           favorite_rescue_id?: string | null
@@ -474,6 +476,7 @@ export type Database = {
         Update: {
           birth_date?: string | null
           created_at?: string
+          default_ups_access_point?: Json | null
           display_name?: string | null
           email?: string | null
           favorite_rescue_id?: string | null
@@ -2226,6 +2229,118 @@ export type Database = {
         }
         Relationships: []
       }
+      wine_club_curation_picks: {
+        Row: {
+          ai_rationale: string | null
+          created_at: string
+          id: string
+          price_cents: number
+          product_handle: string
+          product_image_url: string | null
+          product_title: string
+          quantity: number
+          role: string | null
+          run_id: string
+          sort_order: number
+          tier_id: string
+          wine_product_id: string | null
+        }
+        Insert: {
+          ai_rationale?: string | null
+          created_at?: string
+          id?: string
+          price_cents?: number
+          product_handle: string
+          product_image_url?: string | null
+          product_title: string
+          quantity?: number
+          role?: string | null
+          run_id: string
+          sort_order?: number
+          tier_id: string
+          wine_product_id?: string | null
+        }
+        Update: {
+          ai_rationale?: string | null
+          created_at?: string
+          id?: string
+          price_cents?: number
+          product_handle?: string
+          product_image_url?: string | null
+          product_title?: string
+          quantity?: number
+          role?: string | null
+          run_id?: string
+          sort_order?: number
+          tier_id?: string
+          wine_product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wine_club_curation_picks_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_curation_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wine_club_curation_picks_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wine_club_curation_picks_wine_product_id_fkey"
+            columns: ["wine_product_id"]
+            isOneToOne: false
+            referencedRelation: "wine_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wine_club_curation_runs: {
+        Row: {
+          ai_model: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          season: string
+          ship_window_end: string
+          ship_window_start: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_model?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          season: string
+          ship_window_end: string
+          ship_window_start: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_model?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          season?: string
+          ship_window_end?: string
+          ship_window_start?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       wine_club_events: {
         Row: {
           created_at: string
@@ -2355,6 +2470,39 @@ export type Database = {
           },
         ]
       }
+      wine_club_settings: {
+        Row: {
+          cutoff_offset_days: number
+          dispatch_hour_local: number
+          id: number
+          preview_email_offset_days: number
+          ship_dow: number
+          timezone: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cutoff_offset_days?: number
+          dispatch_hour_local?: number
+          id?: number
+          preview_email_offset_days?: number
+          ship_dow?: number
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cutoff_offset_days?: number
+          dispatch_hour_local?: number
+          id?: number
+          preview_email_offset_days?: number
+          ship_dow?: number
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       wine_club_shipment_items: {
         Row: {
           created_at: string | null
@@ -2408,7 +2556,15 @@ export type Database = {
       wine_club_shipments: {
         Row: {
           created_at: string | null
+          curation_run_id: string | null
+          customer_notified_at: string | null
           customization_deadline: string | null
+          cutoff_at: string | null
+          delivery_destination_type: string
+          delivery_ups_access_point: Json | null
+          dispatch_error: string | null
+          dispatched_at: string | null
+          final_reminder_sent_at: string | null
           id: string
           membership_id: string
           notes: string | null
@@ -2420,10 +2576,21 @@ export type Database = {
           updated_at: string | null
           vinoshipper_coupon_code: string | null
           vinoshipper_order_id: string | null
+          weather_hold_notified_at: string | null
+          weather_hold_state: string | null
+          weather_hold_until: string | null
         }
         Insert: {
           created_at?: string | null
+          curation_run_id?: string | null
+          customer_notified_at?: string | null
           customization_deadline?: string | null
+          cutoff_at?: string | null
+          delivery_destination_type?: string
+          delivery_ups_access_point?: Json | null
+          dispatch_error?: string | null
+          dispatched_at?: string | null
+          final_reminder_sent_at?: string | null
           id?: string
           membership_id: string
           notes?: string | null
@@ -2435,10 +2602,21 @@ export type Database = {
           updated_at?: string | null
           vinoshipper_coupon_code?: string | null
           vinoshipper_order_id?: string | null
+          weather_hold_notified_at?: string | null
+          weather_hold_state?: string | null
+          weather_hold_until?: string | null
         }
         Update: {
           created_at?: string | null
+          curation_run_id?: string | null
+          customer_notified_at?: string | null
           customization_deadline?: string | null
+          cutoff_at?: string | null
+          delivery_destination_type?: string
+          delivery_ups_access_point?: Json | null
+          dispatch_error?: string | null
+          dispatched_at?: string | null
+          final_reminder_sent_at?: string | null
           id?: string
           membership_id?: string
           notes?: string | null
@@ -2450,6 +2628,9 @@ export type Database = {
           updated_at?: string | null
           vinoshipper_coupon_code?: string | null
           vinoshipper_order_id?: string | null
+          weather_hold_notified_at?: string | null
+          weather_hold_state?: string | null
+          weather_hold_until?: string | null
         }
         Relationships: [
           {
@@ -2512,6 +2693,42 @@ export type Database = {
           updated_at?: string | null
           vinoshipper_club_id?: string | null
           wine_type?: string
+        }
+        Relationships: []
+      }
+      wine_club_weather_holds: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_notified_at: string | null
+          hold_until: string
+          id: string
+          lifted_at: string | null
+          reason: string | null
+          severity: string
+          state: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_notified_at?: string | null
+          hold_until: string
+          id?: string
+          lifted_at?: string | null
+          reason?: string | null
+          severity?: string
+          state: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_notified_at?: string | null
+          hold_until?: string
+          id?: string
+          lifted_at?: string | null
+          reason?: string | null
+          severity?: string
+          state?: string
         }
         Relationships: []
       }

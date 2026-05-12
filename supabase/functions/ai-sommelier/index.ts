@@ -247,8 +247,8 @@ Deno.serve(async (req: Request) => {
   }
 
   const catalogContext = catalogStr
-    ? `\n\n=== Current catalog (the ONLY wines you may recommend) ===\n${catalogStr.slice(0, 6000)}\n=== End of catalog ===`
-    : `\n\nNOTE: No catalog could be loaded. Do NOT name any specific wines. Speak in general terms only and invite the guest to browse our shop.`;
+    ? `\n\nCurrent catalog (the ONLY wines you may recommend):\n${catalogStr.slice(0, 4500)}`
+    : `\n\nNOTE: No catalog could be loaded. Do NOT name any specific wines. Ask one quiz-style question instead.`;
 
   if (catalogStr && isDirectQuizAnswer(cleaned)) {
     return new Response(JSON.stringify({ reply: catalogSafeFallback(catalogStr, cleaned) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -259,16 +259,16 @@ Deno.serve(async (req: Request) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [{ role: 'system', content: SYSTEM_PROMPT + catalogContext }, ...cleaned],
       }),
     });
-    if (aiRes.status === 429) return new Response(JSON.stringify({ error: 'Busy — try again in a moment.' }), { status: 429, headers: corsHeaders });
-    if (aiRes.status === 402) return new Response(JSON.stringify({ error: 'AI credits exhausted.' }), { status: 402, headers: corsHeaders });
+    if (aiRes.status === 429) return jsonResponse({ reply: 'I’m getting a lot of requests right now. Try me again in a moment.\n\nFollow-ups: Pick a bold red | Pair with dinner | Gift bottle' }, 429);
+    if (aiRes.status === 402) return jsonResponse({ reply: 'The AI sommelier is temporarily unavailable. I can still help with a simple pick from the current catalog.\n\nFollow-ups: Pick a bold red | Pair with dinner | Gift bottle' }, 402);
     if (!aiRes.ok) {
       const t = await aiRes.text();
       console.error('AI error', aiRes.status, t);
-      return new Response(JSON.stringify({ error: 'AI request failed' }), { status: 500, headers: corsHeaders });
+      return jsonResponse({ reply: catalogSafeFallback(catalogStr, cleaned), error: 'AI request failed' });
     }
     const data = await aiRes.json();
     let reply: string = data?.choices?.[0]?.message?.content ?? '';

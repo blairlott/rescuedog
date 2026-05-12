@@ -12,6 +12,7 @@
 - Age gate required for wine routes; bypassed for /merch, /crm, /cms.
 - TIED-HOUSE: any consumer comm naming retailers MUST list 3+ unaffiliated retailers, equal prominence, no exclusivity language. Block send if <3.
 - Email provider: Mailchimp (marketing). Locator/CRM is the brain; Mailchimp delivers.
+- Live = TWO Lovable projects (wine + merch), separate Cloud DBs, DNS cut at end. NO Shopify publishing — fully native catalog.
 
 ## Memories
 - [Order Routing](mem://features/order-routing) — All orders flow through Vinoshipper including wine club
@@ -62,3 +63,4 @@
 - [Tied-House Compliance](mem://features/tied-house-compliance) — Hard rule: 3+ retailers, equal prominence, no exclusivity, in any where-to-buy comm
 - [Mailchimp Integration](mem://tech/mailchimp-integration) — How signal engine pushes compliant retailer campaigns via Mailchimp
 - [Final Stack](mem://tech/final-stack) — Canonical stack: Vinoshipper + Lovable Cloud + WP + Mailchimp + Lindy (read-only). Shopify SUNSET.
+- [Live Split Architecture](mem://plans/live-split-architecture) — Wine + Merch as two separate Lovable projects with separate DBs; DNS transfers at cutover

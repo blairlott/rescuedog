@@ -801,6 +801,7 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          fulfills_from_us: boolean
           id: string
           name: string
           notes: string | null
@@ -820,6 +821,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          fulfills_from_us?: boolean
           id?: string
           name: string
           notes?: string | null
@@ -839,6 +841,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          fulfills_from_us?: boolean
           id?: string
           name?: string
           notes?: string | null
@@ -1366,6 +1369,7 @@ export type Database = {
           ein_or_tax_id: string | null
           est_monthly_units: number | null
           fulfillment_model: string | null
+          fulfills_from_us: boolean
           id: string
           ip_address: string | null
           product_categories: string[] | null
@@ -1395,6 +1399,7 @@ export type Database = {
           ein_or_tax_id?: string | null
           est_monthly_units?: number | null
           fulfillment_model?: string | null
+          fulfills_from_us?: boolean
           id?: string
           ip_address?: string | null
           product_categories?: string[] | null
@@ -1424,6 +1429,7 @@ export type Database = {
           ein_or_tax_id?: string | null
           est_monthly_units?: number | null
           fulfillment_model?: string | null
+          fulfills_from_us?: boolean
           id?: string
           ip_address?: string | null
           product_categories?: string[] | null

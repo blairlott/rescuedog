@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Download, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, RefreshCw, CheckCircle2, BookOpen } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 type FulfillmentMode = "vinoshipper_warehouse" | "printify" | "printful" | "gooten" | "partner_direct";
@@ -29,6 +30,8 @@ type Sku = {
   vendor_product_id: string | null;
   vendor_variant_id: string | null;
   last_synced_at: string | null;
+  notes: string | null;
+  short_description: string | null;
 };
 
 const FULFILLMENT_LABELS: Record<FulfillmentMode, string> = {
@@ -39,7 +42,7 @@ const FULFILLMENT_LABELS: Record<FulfillmentMode, string> = {
   partner_direct: "Partner Direct",
 };
 
-const empty: Partial<Sku> = { sku: "", partner_sku: "", product_title: "", cost_cents: 0, retail_cents: 0, is_active: true, fulfillment_mode: "partner_direct" };
+const empty: Partial<Sku> = { sku: "", partner_sku: "", product_title: "", cost_cents: 0, retail_cents: 0, is_active: true, fulfillment_mode: "partner_direct", notes: "", short_description: "" };
 const dollars = (c: number) => `$${(c / 100).toFixed(2)}`;
 
 export function SkusTab() {
@@ -227,6 +230,26 @@ export function SkusTab() {
                   <Input type="number" placeholder="Cost (cents)" value={draft.cost_cents ?? 0} onChange={(e) => setDraft({ ...draft, cost_cents: Number(e.target.value) })} />
                   <Input type="number" placeholder="Retail (cents)" value={draft.retail_cents ?? 0} onChange={(e) => setDraft({ ...draft, retail_cents: Number(e.target.value) })} />
                 </div>
+                <Textarea
+                  placeholder="Short description (shown on product card)"
+                  rows={2}
+                  value={draft.short_description || ""}
+                  onChange={(e) => setDraft({ ...draft, short_description: e.target.value })}
+                />
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-brand text-muted-foreground mb-1 block">
+                    Sourcing notes (CMS-only)
+                  </label>
+                  <Textarea
+                    placeholder={'Where to find this product. Example:\nSOURCE: Printify → search "Bella+Canvas 6005 V-Neck". Pick US provider "Monster Digital (FL)".'}
+                    rows={5}
+                    value={draft.notes || ""}
+                    onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    US-fulfillment partners only. Include vendor name, catalog/search term, and the US warehouse it ships from.
+                  </p>
+                </div>
               </div>
               <DialogFooter>
                 <Button onClick={() => save.mutate(draft)} disabled={!draft.partner_id || !draft.sku || !draft.product_title || save.isPending}>Save</Button>
@@ -250,7 +273,8 @@ export function SkusTab() {
             {skus.map((s) => {
               const margin = s.retail_cents - s.cost_cents;
               return (
-                <TableRow key={s.id}>
+                <Fragment key={s.id}>
+                <TableRow>
                   <TableCell className="font-medium flex items-center gap-2">
                     {s.product_image_url && <img src={s.product_image_url} alt="" className="w-8 h-8 object-cover" />}
                     {s.product_title}
@@ -275,6 +299,17 @@ export function SkusTab() {
                     <Button variant="ghost" size="icon" onClick={() => { if (confirm("Delete SKU?")) del.mutate(s.id); }}><Trash2 className="h-4 w-4" /></Button>
                   </TableCell>
                 </TableRow>
+                {s.notes && (
+                  <TableRow className="hover:bg-transparent border-b-0">
+                    <TableCell colSpan={9} className="pt-0 pb-3">
+                      <div className="border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex gap-2">
+                        <BookOpen className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+                        <pre className="whitespace-pre-wrap font-sans flex-1">{s.notes}</pre>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+                </Fragment>
               );
             })}
           </TableBody>

@@ -189,7 +189,7 @@ export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
               <Check className="h-4 w-4 text-primary flex-shrink-0" /> {matchedTier.discount_percent}% off à la carte orders
             </li>
             <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary flex-shrink-0" /> Free shipping on club shipments
+              <Check className="h-4 w-4 text-primary flex-shrink-0" /> Shipping included on club shipments
             </li>
             <li className="flex items-center gap-2">
               <Check className="h-4 w-4 text-primary flex-shrink-0" /> Cancel anytime

@@ -90,7 +90,7 @@ const WineClubPage = () => {
       title: "Membership Section",
       fields: [
         { key: "heading", label: "Heading", type: "text", value: getVal("membership", "heading", "Choose Your Club") },
-        { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase and free shipping on shipments.") },
+      { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase and shipping included on shipments.") },
       ],
     },
   };
@@ -167,7 +167,7 @@ const WineClubPage = () => {
                         {getVal("membership", "heading", "Choose Your Club")}
                       </h3>
                       <p className="text-muted-foreground max-w-2xl mx-auto">
-                        {getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase and free shipping on shipments.")}
+                        {getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase and shipping included on shipments.")}
                       </p>
                     </div>
 

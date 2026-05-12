@@ -1,118 +1,84 @@
-# Wine Club & Subscribe-and-Save in Customer Profile
+# Membership Origin Tracking + Full Member Customization
 
-Make the Account page the single hub for all recurring-wine activity. Every action that touches shipments, billing, or stored cards goes through Vinoshipper using the `vinoshipper_customer_id` we now store on `customer_profiles`.
+Skipping legacy member migration for now. Legacy VS members continue to manage on Vinoshipper directly until we revisit. This plan covers (1) lightweight origin tracking so we don't lose track of who's who when we DO migrate later, and (2) full member customization for app-originated memberships.
 
-## Scope
+---
 
-Add four sub-areas under `/account`, all gated by the existing customer auth:
+## 1. Origin tracking (minimal)
 
-1. **Wine Club Membership** (existing club members)
-2. **Subscribe & Save** (recurring single-SKU auto-ship)
-3. **Gift Club Certificates** (purchase + print/download)
-4. **Payment Methods** (Vinoshipper-stored cards, read-only mirror)
+Add to `wine_club_memberships`:
 
-Tabs in the Account page: Profile · Wine Club · Subscriptions · Gifts · Payment · Orders · Favorites.
+- `origin` text NOT NULL DEFAULT `'app_join'` — `'vinoshipper_legacy' | 'app_join' | 'app_curated_gift' | 'admin_manual'`
+- `app_tier_config_id` uuid NULL — FK to `wine_club_tiers` (null for legacy until mapped)
+- `imported_at` timestamptz NULL — set if discovered via webhook with no prior app row
 
-## 1. Wine Club Membership tab
+Webhook (`vinoshipper-webhook` CLUB_MEMBERSHIP/CREATED):
+- If row exists → update status only.
+- If missing → INSERT with `origin = 'vinoshipper_legacy'`, `imported_at = now()`, `app_tier_config_id = NULL`.
 
-Shows the member's current tier (Pup / Rescue / Pack), next ship date, ship-to address, and a tier-comparison panel.
+Edge fns that create memberships in-app (`vinoshipper-create-membership`, `create-gift-certificate`) write the appropriate `origin` + `app_tier_config_id`.
 
-Actions:
-- **Switch club** — pick a new tier; confirm; calls `vinoshipper-update-membership` edge fn (PATCH membership tier on VS). Effective next billing cycle.
-- **Pause** — 1, 2, or 3 cycles. Calls VS pause endpoint.
-- **Cancel membership** — confirm dialog with retention copy; calls VS cancel endpoint; writes a `wine_club_events` row.
-- **Update shipping address** — already supported; reuses VS address update.
+That's it for now — no migration UI, no auto-linking of historic VS memberships, no member-facing legacy banner.
 
-Falls back to a "Join the Wine Club" CTA when the user has no active VS membership.
+---
 
-## 2. Subscribe & Save tab
+## 2. Full member customization (app-originated only)
 
-Per-SKU recurring auto-ship for any wine in the catalog (separate from club tiers).
+Members on `origin = 'app_join'` (or `'app_curated_gift'`) get full per-shipment control. Only constraint: bottle count ≥ tier `min_bottles`.
 
-- List active subscriptions with SKU, qty, cadence (monthly / quarterly / biannual), next ship date, price.
-- Edit qty / cadence / skip next / cancel.
-- "Browse wines to subscribe" → product page gets a "Subscribe & Save 10%" toggle that, on add-to-cart, routes through Vinoshipper subscription creation rather than the one-time deep-link.
-- Requires a stored payment method (see tab 4); if none, prompt user to add one first via the VS hosted card form.
+### Schema additions
 
-New table `wine_subscriptions` mirrors the VS subscription IDs so we can render and manage from our UI without a round-trip on every page load.
+- `wine_club_shipments` (new): id, membership_id, scheduled_ship_date, status (`scheduled | member_customized | locked | shipped | skipped`), locked_at, vinoshipper_order_id, total_cents, created_at, updated_at
+- `wine_club_shipment_items` (new): id, shipment_id, wine_product_id, quantity, unit_price_cents, source (`curator_default | member_pick`)
+- RLS: member can SELECT/UPDATE own shipment + items where `status NOT IN ('locked','shipped')`; admin/wine_club_manager full access.
 
-## 3. Gift Club Certificates tab
+Reuse existing `wine_club_tiers.min_bottles`.
 
-- "Purchase a gift" form: tier, # of shipments, recipient name + email, optional personal note, delivery date.
-- Calls `vinoshipper-create-gift` edge fn → returns a unique gift code + activation URL.
-- Stores in new `gift_certificates` table (code, tier, shipments, recipient_email, redeemed_at, purchaser_id).
-- "Print certificate" → opens a print-optimized React route `/account/gifts/:id/print` with branded PDF-ready layout (logo, code, redemption URL, expiry, note). Browser-native print.
-- Email the recipient on the chosen delivery date via Resend (scheduled with `pg_cron` or sent immediately if delivery date is past).
+### UI: `/account/wine-club` → "Next Shipment"
 
-## 4. Payment Methods tab
+New component `NextShipmentCustomizer`:
 
-Cards live on Vinoshipper for PCI compliance — we never store PANs.
-- "Add a card" → opens VS hosted iframe / redirect for tokenization.
-- List existing cards (last4, brand, exp) fetched live via `vinoshipper-list-payment-methods` edge fn.
-- Set default / remove.
+- Lists items with: thumb, name, varietal, price, qty stepper, swap button, remove button.
+- "Add a wine" opens drawer of in-catalog wines (filtered to ship-to-state via `wineShippingStates`).
+- Live totals + member-discount preview.
+- Skip-this-shipment button (1 cycle) — uses existing `wine-club-membership-action` `pause` flow.
+- Cutoff banner: "Locks 7 days before ship date" — disables editing once `locked_at` is set.
+- Save button calls new edge fn `wine-club-shipment-save`.
 
-## Data model additions
+### Validation (server)
 
-```text
-wine_subscriptions
-  id, user_id, vinoshipper_subscription_id (unique), sku, product_title,
-  quantity, cadence, status (active|paused|cancelled),
-  next_ship_date, unit_price_cents, created_at, updated_at
+New edge fn `wine-club-shipment-save`:
+- Verifies caller owns the membership.
+- Rejects if total bottles < tier `min_bottles` → 400 with friendly message.
+- Rejects if shipment status is `locked|shipped`.
+- Writes items, sets shipment status to `member_customized`, recalculates total.
+- Writes `wine_club_events` row (`event_type = 'shipment_customized'`).
 
-gift_certificates
-  id, purchaser_user_id, vinoshipper_gift_id, code (unique), tier,
-  shipments_count, total_cents, recipient_name, recipient_email,
-  personal_note, deliver_on, sent_at, redeemed_at, redeemed_by_email,
-  status (issued|delivered|redeemed|expired), created_at
+### Curator workflow
 
-wine_club_events
-  id, user_id, event_type (joined|switched|paused|resumed|cancelled),
-  from_tier, to_tier, vinoshipper_membership_id, metadata jsonb, created_at
-```
+Curator's default-shipment proposal still seeds items. `MemberDashboard` and `WineClubAdminPage` flag shipments where `source` mix includes `member_pick` so curator doesn't overwrite without confirmation.
 
-All three: RLS — owner can SELECT/INSERT own rows; admins manage all.
+---
 
-## Edge functions (new / updated)
+## 3. Disclaimer copy
 
-- `vinoshipper-get-membership` — returns current tier, status, next ship for the linked customer.
-- `vinoshipper-update-membership` — switch tier, pause, resume, cancel.
-- `vinoshipper-list-subscriptions` / `vinoshipper-create-subscription` / `vinoshipper-update-subscription`.
-- `vinoshipper-list-payment-methods` / `vinoshipper-create-payment-session` (returns hosted form URL) / `vinoshipper-delete-payment-method`.
-- `vinoshipper-create-gift` — creates a gift purchase on VS, returns code/URL.
-- `send-gift-certificate-email` — Resend template; called immediately or via scheduled job.
+Append to `WineClubDisclaimer` (`variant="club"`):
 
-All require the existing `VINOSHIPPER_API_KEY` runtime secret and use the `vinoshipper_customer_id` from `customer_profiles`.
+> "You can fully customize each shipment in your account up to 7 days before the ship date — swap, add, or remove bottles, as long as you stay at or above your tier's minimum bottle count."
 
-## UI files to add / change
+---
 
-- `src/pages/AccountPage.tsx` — add tabs, route sub-paths.
-- `src/components/account/WineClubTab.tsx`
-- `src/components/account/SubscriptionsTab.tsx`
-- `src/components/account/GiftsTab.tsx`
-- `src/components/account/PaymentMethodsTab.tsx`
-- `src/components/account/CancelMembershipDialog.tsx`, `SwitchTierDialog.tsx`, `PauseMembershipDialog.tsx`
-- `src/pages/GiftCertificatePrintPage.tsx` + route in `App.tsx`
-- Product detail page: add "Subscribe & Save" toggle.
-- `src/integrations/supabase/types.ts` regenerates after migration.
+## Out of scope (this round)
 
-## Out of scope
-
-- Storing PANs in our DB (always Vinoshipper-tokenized).
-- Building a full PDF generator — we use browser print-to-PDF with a styled route.
-- Migrating existing manual subscribers; this only handles records created via the new flow.
-- Wholesale/B2B subscriptions.
-
-## Prerequisites / open items
-
-1. **`VINOSHIPPER_API_KEY`** must be set (still pending from prior step). I will request it once you approve this plan if it isn't already configured.
-2. Confirm Vinoshipper supports: tier switch on an active membership, hosted card iframe URL, gift certificate API. If any of these aren't exposed, we'll fall back to (a) email-to-staff workflow for switches/cancellations and (b) a Stripe-based card vault as a contingency — but only with your sign-off.
+- Importing or auto-linking legacy VS memberships.
+- Migrating billing off Vinoshipper.
+- Customization for `vinoshipper_legacy` rows — those keep being managed on VS until we run the migration project later.
 
 ## Build order
 
-1. Migration: 3 new tables + RLS.
-2. Edge functions stubs returning typed responses (mock data when API key absent) so UI can be built/tested.
-3. Account page tab refactor + Wine Club tab + Cancel/Switch/Pause flows.
-4. Subscriptions tab + product page Subscribe & Save toggle.
-5. Gifts tab + print route + Resend template.
-6. Payment Methods tab.
-7. Wire to live VS endpoints once API key + endpoint details confirmed.
+1. Migration: add `origin`, `app_tier_config_id`, `imported_at` columns; backfill existing rows; update webhook + create-membership edge fn.
+2. Migration: create `wine_club_shipments` + `wine_club_shipment_items` with RLS.
+3. Edge fn `wine-club-shipment-save` with min-volume validation.
+4. `NextShipmentCustomizer` UI in account dashboard.
+5. Update `WineClubDisclaimer` copy.
+6. Save updated wine-club memory note reflecting "legacy migration deferred; app-originated members get full customization above tier minimum."

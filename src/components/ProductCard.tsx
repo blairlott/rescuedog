@@ -168,7 +168,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <h3 className="text-sm font-medium text-foreground tracking-brand leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-200">
           {node.title}
         </h3>
-        {isMember && !isSampler ? (
+        {isMember && !isSampler && isWine ? (
           <div>
             <p className="text-foreground">
               <span className="text-[10px] align-top leading-none">$</span>

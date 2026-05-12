@@ -16,6 +16,7 @@ import { Link as RouterLink } from "react-router-dom";
 import { ShipsToStateCheck, useShipState } from "@/components/ShipsToStateCheck";
 import { PairingChips } from "@/components/PairingChips";
 import { Seo } from "@/components/Seo";
+import { PairItPicker } from "@/components/merch/PairItPicker";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -62,6 +63,11 @@ const ProductDetail = () => {
   const variants = product.variants.edges;
   const selectedVariant = variants[selectedVariantIdx]?.node;
   const tags = ((product as any).tags || []) as string[];
+  const productKind = (product as any).productKind as "wine" | "merch" | undefined;
+  const isMerch = productKind === "merch";
+  const merchCategory = tags
+    .map((t) => t.toLowerCase())
+    .find((t) => ["apparel", "drinkware", "pet", "home", "gift"].includes(t));
   const isClubExclusive = tags.map(t => t.toLowerCase()).some(t => t === 'club-exclusive' || t === 'club exclusive');
   const locked = isClubExclusive && !isMember;
   const variantPrice = parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount);
@@ -71,7 +77,7 @@ const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
-    if (blockedByState) {
+    if (blockedByState && !isMerch) {
       toast.error("We can't ship wine to your state yet. Use the store locator to find us nearby.", { position: "top-center" });
       return;
     }
@@ -186,11 +192,19 @@ const ProductDetail = () => {
                 <p className="text-muted-foreground leading-relaxed">{product.description}</p>
               )}
 
-              {/* Ships-to-your-state compliance check */}
-              <ShipsToStateCheck />
+              {/* Ships-to-your-state compliance check (wine only) */}
+              {!isMerch && <ShipsToStateCheck />}
 
-              {/* Food pairing chips → opens AI Sommelier */}
-              <PairingChips tags={tags} productTitle={product.title} />
+              {/* Food pairing chips for wine; Pair-It cross-sell for merch */}
+              {isMerch ? (
+                <PairItPicker
+                  productHandle={product.handle}
+                  productTitle={product.title}
+                  productCategory={merchCategory}
+                />
+              ) : (
+                <PairingChips tags={tags} productTitle={product.title} />
+              )}
 
               {/* Variant Selection */}
               {variants.length > 1 && (
@@ -258,7 +272,7 @@ const ProductDetail = () => {
 
               <Button
                 onClick={handleAddToCart}
-                disabled={cartLoading || !selectedVariant?.availableForSale || locked || blockedByState}
+                disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
                 size="lg"
                 className="w-full bg-primary hover:bg-primary/90 hidden md:flex"
               >

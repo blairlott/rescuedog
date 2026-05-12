@@ -164,6 +164,7 @@ const MerchHomePage = () => {
             </h2>
           </div>
           <BundleStrip />
+          <WineBarStrip />
 
           {/* Category chips */}
           <div className="flex flex-wrap justify-center gap-2 mb-8">

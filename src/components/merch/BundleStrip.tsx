@@ -64,8 +64,8 @@ export function BundleStrip() {
     <section className="container mx-auto px-4 mb-16">
       <div className="flex items-end justify-between mb-6">
         <div>
-          <p className="text-xs uppercase tracking-brand text-muted-foreground mb-1">Curated for you</p>
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground">The Edits</h2>
+          <p className="text-xs uppercase tracking-brand text-muted-foreground mb-1">Curated Bundles</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground">The Packs</h2>
         </div>
         <span className="hidden md:inline-flex items-center text-xs uppercase tracking-brand text-muted-foreground">
           One click. Bundle savings included <ArrowRight className="ml-1 h-3 w-3" />

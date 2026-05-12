@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCartStore } from "@/stores/cartStore";
 import { toast } from "sonner";
+import { NextShipmentCustomizer } from "./NextShipmentCustomizer";
 
 const frequencyLabel: Record<string, string> = {
   monthly: "Monthly",
@@ -166,15 +167,8 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
         </div>
       )}
 
-      {/* Upcoming Shipment Placeholder */}
-      <div className="border border-border p-8 text-center">
-        <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-bold text-foreground mb-2">No Upcoming Shipments Yet</h3>
-        <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          When your next shipment is being prepared, you'll receive an email to review and customize
-          your AI-curated selection before it ships.
-        </p>
-      </div>
+      {/* Next Shipment Customizer */}
+      <NextShipmentCustomizer membership={membership} />
     </div>
   );
 }

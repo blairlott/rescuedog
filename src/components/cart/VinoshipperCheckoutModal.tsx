@@ -12,6 +12,7 @@ import "leaflet/dist/leaflet.css";
 import { useCartStore } from "@/stores/cartStore";
 import { useMyMembership } from "@/hooks/useWineClub";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
+import { useCheckoutIntentStore } from "@/stores/checkoutIntentStore";
 import { supabase } from "@/integrations/supabase/client";
 import { getFbc, getFbp, getGclaw, getGclid } from "@/lib/metaAttribution";
 import {
@@ -45,6 +46,8 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
   const { user } = useCustomerAuth();
   const { data: membership } = useMyMembership();
   const { items, clearCart } = useCartStore();
+  const checkoutIntent = useCheckoutIntentStore((s) => s.intent);
+  const resetCheckoutIntent = useCheckoutIntentStore((s) => s.reset);
 
   const [ageOk, setAgeOk] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -87,11 +90,14 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
     0,
   );
   const isMember = !!membership && membership.status !== "cancelled";
+  const joiningClub = checkoutIntent === "club" && !isMember;
+  // Joining the club applies the same 20% member discount on this order.
+  const discountActive = isMember || joiningClub;
   // Bundles are excluded from member discount (matches Vinoshipper rule).
   const discountable = useMemo(() => discountEligibleSubtotal(items as any), [items]);
   const memberDiscount = useMemo(
-    () => (isMember ? discountable * (VS_MEMBER_DISCOUNT_PERCENT / 100) : 0),
-    [isMember, discountable],
+    () => (discountActive ? discountable * (VS_MEMBER_DISCOUNT_PERCENT / 100) : 0),
+    [discountActive, discountable],
   );
   const baseShipping =
     totalBottles >= VS_SHIPPING_THRESHOLD_BOTTLES ? 0 : VS_FLAT_SHIPPING_USD;
@@ -227,6 +233,9 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             quantity: i.quantity,
             unit_price: parseFloat(i.price.amount),
           })),
+          wine_club_signup: joiningClub
+            ? { tier: "to_be_selected", discount_applied_percent: VS_MEMBER_DISCOUNT_PERCENT }
+            : null,
           totals: {
             subtotal: subtotal.toFixed(2),
             member_discount: memberDiscount.toFixed(2),
@@ -255,6 +264,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
         description: `Order ${fakeOrderId} — total $${total.toFixed(2)}`,
       });
       clearCart();
+      resetCheckoutIntent();
       onOpenChange(false);
     } catch (e: any) {
       toast.error("Could not log simulated order", {
@@ -323,9 +333,9 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
           ))}
           <div className="border-t border-border my-2" />
           <Row label="Subtotal" value={subtotal} />
-          {isMember && (
+          {discountActive && (
             <Row
-              label={`Member discount (${VS_MEMBER_DISCOUNT_PERCENT}%)`}
+              label={`${joiningClub ? "Club join" : "Member"} discount (${VS_MEMBER_DISCOUNT_PERCENT}%)`}
               value={-memberDiscount}
               accent
             />

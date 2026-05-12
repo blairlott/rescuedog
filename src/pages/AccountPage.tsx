@@ -175,6 +175,44 @@ const AccountPage = () => {
     navigate("/");
   };
 
+  const reorderFavorite = async (fav: any) => {
+    setReorderingId(fav.id);
+    try {
+      const { data: wine } = await supabase
+        .from("wine_products")
+        .select("handle, title, price_cents, image_url, gallery_urls")
+        .eq("handle", fav.product_handle)
+        .maybeSingle();
+      if (!wine) {
+        toast.error("This wine isn't available right now");
+        return;
+      }
+      const fakeProduct: any = {
+        node: {
+          handle: wine.handle,
+          title: wine.title,
+          images: {
+            edges: (wine.gallery_urls?.length ? wine.gallery_urls : (wine.image_url ? [wine.image_url] : []))
+              .map((url: string) => ({ node: { url, altText: wine.title } })),
+          },
+        },
+      };
+      await addItem({
+        product: fakeProduct,
+        variantId: `wine-variant:${wine.handle}`,
+        variantTitle: "Default",
+        price: { amount: ((wine.price_cents || 0) / 100).toFixed(2), currencyCode: "USD" },
+        quantity: 1,
+        selectedOptions: [],
+      });
+      toast.success(`Added ${wine.title} to cart`, { position: "top-center" });
+    } catch (e: any) {
+      toast.error("Couldn't reorder", { description: e?.message });
+    } finally {
+      setReorderingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">

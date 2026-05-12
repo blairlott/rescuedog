@@ -22,6 +22,9 @@ interface TierCardProps {
 }
 
 export function TierCard({ tier, onSelect, isSelected }: TierCardProps) {
+  const shipmentPct = tier.shipment_discount_percent ?? tier.discount_percent;
+  const alacartePct = tier.discount_percent;
+  const splitRate = shipmentPct !== alacartePct;
   return (
     <div
       className={`border p-6 flex flex-col transition-all ${
@@ -39,7 +42,7 @@ export function TierCard({ tier, onSelect, isSelected }: TierCardProps) {
         </div>
         <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-sm uppercase tracking-brand">
           <Percent className="h-3 w-3" />
-          20% Off
+          {splitRate ? `${shipmentPct}% / ${alacartePct}%` : `${shipmentPct}% Off`}
         </span>
       </div>
 
@@ -61,11 +64,13 @@ export function TierCard({ tier, onSelect, isSelected }: TierCardProps) {
         </li>
         <li className="flex items-center gap-2">
           <Check className="h-4 w-4 text-primary" />
-          20% off all à la carte wine purchases
+          {splitRate
+            ? `${shipmentPct}% off your scheduled shipments, ${alacartePct}% off à la carte`
+            : `${alacartePct}% off all à la carte wine purchases`}
         </li>
         <li className="flex items-center gap-2">
           <Check className="h-4 w-4 text-primary" />
-          Free shipping on club shipments
+          Shipping included on club shipments
         </li>
         <li className="flex items-center gap-2">
           <Check className="h-4 w-4 text-primary" />

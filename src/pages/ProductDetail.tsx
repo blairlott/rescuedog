@@ -15,6 +15,7 @@ import { useIsMember } from "@/hooks/useIsMember";
 import { Link as RouterLink } from "react-router-dom";
 import { ShipsToStateCheck, useShipState } from "@/components/ShipsToStateCheck";
 import { PairingChips } from "@/components/PairingChips";
+import { Seo } from "@/components/Seo";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -94,6 +95,28 @@ const ProductDetail = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo
+        title={product.title}
+        description={product.description?.slice(0, 155) || `${product.title} — sustainable wine from Rescue Dog Wines. 50% of profits support animal rescue.`}
+        image={product.images.edges[0]?.node?.url}
+        path={`/product/${product.handle}`}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.title,
+          image: product.images.edges.map(e => e.node.url),
+          description: product.description,
+          brand: { "@type": "Brand", name: "Rescue Dog Wines" },
+          offers: {
+            "@type": "Offer",
+            price: variantPrice.toFixed(2),
+            priceCurrency: "USD",
+            availability: selectedVariant?.availableForSale
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock",
+          },
+        }}
+      />
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Gift, Loader2, Printer, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { WineClubDisclaimer } from "@/components/WineClubDisclaimer";
 
 const TIER_PRICES: Record<string, { label: string; cents: number }> = {
   pup: { label: "Pup Pack — 3 bottles", cents: 9900 },
@@ -130,6 +131,7 @@ export const GiftCertificatesTab = ({ userId }: { userId: string }) => {
             <p className="text-sm text-muted-foreground">
               Total: <strong className="text-foreground">${((TIER_PRICES[form.tier]?.cents || 0) * form.shipments_count / 100).toFixed(2)}</strong>
             </p>
+            <WineClubDisclaimer variant="gift" />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)} disabled={create.isPending}>Cancel</Button>

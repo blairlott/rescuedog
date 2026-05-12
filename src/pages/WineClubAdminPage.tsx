@@ -57,7 +57,7 @@ function useAllMemberships() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("wine_club_memberships")
-        .select("*, tier:wine_club_tiers(name, frequency, bottle_count)")
+        .select("*, tier:wine_club_tiers!tier_id(name, frequency, bottle_count)")
         .order("joined_at", { ascending: false });
       if (error) throw error;
       return data as MemberRow[];
@@ -71,7 +71,7 @@ function useAllShipments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("wine_club_shipments")
-        .select("*, membership:wine_club_memberships(user_id, tier:wine_club_tiers(name))")
+        .select("*, membership:wine_club_memberships(user_id, tier:wine_club_tiers!tier_id(name))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as any[];

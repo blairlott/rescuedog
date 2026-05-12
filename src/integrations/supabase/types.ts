@@ -2261,14 +2261,17 @@ export type Database = {
       }
       wine_club_memberships: {
         Row: {
+          app_tier_config_id: string | null
           cancelled_at: string | null
           created_at: string | null
           gift_message: string | null
           id: string
+          imported_at: string | null
           is_gift: boolean | null
           is_legacy_member: boolean
           joined_at: string | null
           next_shipment_date: string | null
+          origin: string
           payment_status: string
           shipping_address_line1: string | null
           shipping_address_line2: string | null
@@ -2284,14 +2287,17 @@ export type Database = {
           wine_preferences: string[] | null
         }
         Insert: {
+          app_tier_config_id?: string | null
           cancelled_at?: string | null
           created_at?: string | null
           gift_message?: string | null
           id?: string
+          imported_at?: string | null
           is_gift?: boolean | null
           is_legacy_member?: boolean
           joined_at?: string | null
           next_shipment_date?: string | null
+          origin?: string
           payment_status?: string
           shipping_address_line1?: string | null
           shipping_address_line2?: string | null
@@ -2307,14 +2313,17 @@ export type Database = {
           wine_preferences?: string[] | null
         }
         Update: {
+          app_tier_config_id?: string | null
           cancelled_at?: string | null
           created_at?: string | null
           gift_message?: string | null
           id?: string
+          imported_at?: string | null
           is_gift?: boolean | null
           is_legacy_member?: boolean
           joined_at?: string | null
           next_shipment_date?: string | null
+          origin?: string
           payment_status?: string
           shipping_address_line1?: string | null
           shipping_address_line2?: string | null
@@ -2330,6 +2339,13 @@ export type Database = {
           wine_preferences?: string[] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "wine_club_memberships_app_tier_config_id_fkey"
+            columns: ["app_tier_config_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_tiers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wine_club_memberships_tier_id_fkey"
             columns: ["tier_id"]

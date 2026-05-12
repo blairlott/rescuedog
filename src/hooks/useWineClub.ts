@@ -36,6 +36,9 @@ export interface WineClubMembership {
   joined_at: string;
   vinoshipper_customer_id?: string | null;
   vinoshipper_membership_id?: string | null;
+  origin?: string | null;
+  is_legacy_member?: boolean | null;
+  app_tier_config_id?: string | null;
   tier?: WineClubTier;
 }
 
@@ -62,7 +65,7 @@ export function useMyMembership() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("wine_club_memberships")
-        .select("*, tier:wine_club_tiers(*)")
+        .select("*, tier:wine_club_tiers!tier_id(*)")
         .eq("user_id", user!.id)
         .neq("status", "cancelled")
         .maybeSingle();

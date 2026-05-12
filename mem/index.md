@@ -29,6 +29,7 @@
 - [Cart Marketing](mem://features/cart-marketing) — Shipping terminology and upsell rules
 - [Subscriptions](mem://features/subscriptions) — Subscribe & Save and curated box tiers
 - [Wine Club System](mem://features/wine-club-system) — 14 tiers, flat 20% off, signup UX + portal handing off to Vinoshipper
+- [Wine Club Customization](mem://features/wine-club-customization) — Per-shipment customization, `origin` column, legacy VS members gated
 - [B2B Wholesale](mem://features/b2b-wholesale) — Region-based routing for wholesale inquiries
 - [Donation Form](mem://features/donation-form) — 501(c) strict form with Resend email logic
 - [CRM Core](mem://features/crm) — Sales CRM dashboard structure and features

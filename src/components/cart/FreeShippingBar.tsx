@@ -34,7 +34,7 @@ export function FreeShippingBar({ totalBottles, cartTotal = 0, mode = "wine" }: 
 
   // Wine mode: stacked rewards
   const milestones = [
-    { at: freeShippingBottleCount, label: "Shipping", icon: Truck },
+    { at: freeShippingBottleCount, label: "Shipping included", icon: Truck },
     { at: fullCaseCount, label: `Case ${fullCaseDiscount}% off`, icon: Percent },
     { at: fullCaseCount + 6, label: "Free tote", icon: Gift },
   ];
@@ -65,7 +65,7 @@ export function FreeShippingBar({ totalBottles, cartTotal = 0, mode = "wine" }: 
                 <span className={`text-[10px] leading-tight ${reached ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
                   {m.label}
                 </span>
-                <span className="text-[9px] text-muted-foreground">{m.at} btl</span>
+                <span className="text-[9px] text-muted-foreground">{m.at} bottles</span>
               </div>
             );
           })}

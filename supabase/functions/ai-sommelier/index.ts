@@ -84,6 +84,13 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 let cachedCatalog: { value: string; titles: string[]; ts: number } | null = null;
 const CATALOG_TTL_MS = 5 * 60 * 1000;
 
+function jsonResponse(payload: unknown, status = 200): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 async function fetchLiveCatalog(): Promise<{ value: string; titles: string[] }> {
   if (cachedCatalog && Date.now() - cachedCatalog.ts < CATALOG_TTL_MS) {
     return { value: cachedCatalog.value, titles: cachedCatalog.titles };
@@ -208,20 +215,20 @@ Deno.serve(async (req: Request) => {
 
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) {
-    return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return jsonResponse({ reply: catalogSafeFallback('', []), error: 'AI not configured' });
   }
 
   let body: any;
-  try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: corsHeaders }); }
+  try { body = await req.json(); } catch { return jsonResponse({ error: 'Invalid JSON' }, 400); }
 
   const messages = Array.isArray(body?.messages) ? body.messages : null;
   if (!messages || messages.length === 0 || messages.length > 30) {
-    return new Response(JSON.stringify({ error: 'messages must be 1-30 entries' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return jsonResponse({ error: 'messages must be 1-30 entries' }, 400);
   }
   const cleaned = messages
     .filter((m: any) => m && typeof m.content === 'string' && ['user', 'assistant'].includes(m.role))
     .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
-  if (cleaned.length === 0) return new Response(JSON.stringify({ error: 'no valid messages' }), { status: 400, headers: corsHeaders });
+  if (cleaned.length === 0) return jsonResponse({ error: 'no valid messages' }, 400);
 
   // Source-of-truth catalog: prefer the client's snapshot, but always fall back to a live fetch
   // so the model NEVER reasons without one.
@@ -240,8 +247,8 @@ Deno.serve(async (req: Request) => {
   }
 
   const catalogContext = catalogStr
-    ? `\n\n=== Current catalog (the ONLY wines you may recommend) ===\n${catalogStr.slice(0, 6000)}\n=== End of catalog ===`
-    : `\n\nNOTE: No catalog could be loaded. Do NOT name any specific wines. Speak in general terms only and invite the guest to browse our shop.`;
+    ? `\n\nCurrent catalog (the ONLY wines you may recommend):\n${catalogStr.slice(0, 4500)}`
+    : `\n\nNOTE: No catalog could be loaded. Do NOT name any specific wines. Ask one quiz-style question instead.`;
 
   if (catalogStr && isDirectQuizAnswer(cleaned)) {
     return new Response(JSON.stringify({ reply: catalogSafeFallback(catalogStr, cleaned) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -252,16 +259,16 @@ Deno.serve(async (req: Request) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [{ role: 'system', content: SYSTEM_PROMPT + catalogContext }, ...cleaned],
       }),
     });
-    if (aiRes.status === 429) return new Response(JSON.stringify({ error: 'Busy — try again in a moment.' }), { status: 429, headers: corsHeaders });
-    if (aiRes.status === 402) return new Response(JSON.stringify({ error: 'AI credits exhausted.' }), { status: 402, headers: corsHeaders });
+    if (aiRes.status === 429) return jsonResponse({ reply: 'I’m getting a lot of requests right now. Try me again in a moment.\n\nFollow-ups: Pick a bold red | Pair with dinner | Gift bottle' }, 429);
+    if (aiRes.status === 402) return jsonResponse({ reply: 'The AI sommelier is temporarily unavailable. I can still help with a simple pick from the current catalog.\n\nFollow-ups: Pick a bold red | Pair with dinner | Gift bottle' }, 402);
     if (!aiRes.ok) {
       const t = await aiRes.text();
       console.error('AI error', aiRes.status, t);
-      return new Response(JSON.stringify({ error: 'AI request failed' }), { status: 500, headers: corsHeaders });
+      return jsonResponse({ reply: catalogSafeFallback(catalogStr, cleaned), error: 'AI request failed' });
     }
     const data = await aiRes.json();
     let reply: string = data?.choices?.[0]?.message?.content ?? '';
@@ -279,6 +286,6 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ reply }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('Sommelier exception', e?.message);
-    return new Response(JSON.stringify({ error: 'Unexpected error' }), { status: 500, headers: corsHeaders });
+    return jsonResponse({ reply: 'I’m having trouble reaching the cellar notes right now. Quick question — which sounds best: (a) crisp white, (b) rich white, (c) easy red, or (d) bold red?\n\nFollow-ups: a | b | c', error: 'Unexpected error' });
   }
 });

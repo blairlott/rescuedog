@@ -95,7 +95,7 @@ export function Header() {
           <div className="relative flex justify-center px-1 md:px-2 min-w-0">
             <CmsEditButton onClick={() => setEditSection("logos")} label="Edit Logo" />
             <Link to={isMerch ? "/merch" : "/"} className="flex justify-center min-w-0">
-              <span className="relative inline-flex items-center overflow-visible leading-none pb-1">
+              <span className={`relative inline-flex items-center overflow-visible leading-none ${isMerch ? "pb-3 md:pb-4" : "pb-1"}`}>
                 <img
                   src={logo}
                   alt={logoAlt}

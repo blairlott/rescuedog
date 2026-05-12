@@ -1,6 +1,7 @@
 import { Progress } from "@/components/ui/progress";
 import { Truck, PartyPopper, Check, Percent } from "lucide-react";
 import { useCartSettings } from "@/hooks/useCartSettings";
+import { useIsMember } from "@/hooks/useIsMember";
 
 interface FreeShippingBarProps {
   /** For wine mode: bottle count. For merch mode: cart total in dollars. */
@@ -11,6 +12,7 @@ interface FreeShippingBarProps {
 
 export function FreeShippingBar({ totalBottles, cartTotal = 0, mode = "wine" }: FreeShippingBarProps) {
   const { freeShippingBottleCount, merchFreeShippingThreshold, fullCaseCount, fullCaseDiscount } = useCartSettings();
+  const { isMember, discountPercent } = useIsMember();
   const isMerch = mode === "merch";
 
   // Merch mode: single shipping threshold (no case mechanic)
@@ -34,9 +36,18 @@ export function FreeShippingBar({ totalBottles, cartTotal = 0, mode = "wine" }: 
 
   // Wine mode: stacked rewards. Tied-house / ABC laws prohibit giving away
   // merch with wine purchases — no "free gift" tiers allowed.
+  // Members get the higher club discount on cases; everyone else sees the
+  // public case discount.
+  const effectiveCaseDiscount = isMember ? discountPercent : fullCaseDiscount;
   const milestones = [
     { at: freeShippingBottleCount, label: "Shipping included", icon: Truck },
-    { at: fullCaseCount, label: `Case ${fullCaseDiscount}% off`, icon: Percent },
+    {
+      at: fullCaseCount,
+      label: isMember
+        ? `Member case ${effectiveCaseDiscount}% off`
+        : `Case ${effectiveCaseDiscount}% off`,
+      icon: Percent,
+    },
   ];
   const max = milestones[milestones.length - 1].at;
   const progress = Math.min(100, (totalBottles / max) * 100);

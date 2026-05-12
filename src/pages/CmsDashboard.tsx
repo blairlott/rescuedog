@@ -43,6 +43,8 @@ import { CART_DEFAULTS } from "@/hooks/useCartSettings";
 import { WordpressImportPanel } from "@/components/cms/WordpressImportPanel";
 import { ContentLibraryPanel } from "@/components/cms/ContentLibraryPanel";
 import { PairingsPanel } from "@/components/cms/PairingsPanel";
+import { MerchImagesPanel } from "@/components/cms/MerchImagesPanel";
+import { Image as ImageIcon } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────
 type CmsUser = {
@@ -373,6 +375,9 @@ const CmsDashboard = () => {
             <TabsTrigger value="pairings" className="gap-1.5">
               <ChefHat className="h-3.5 w-3.5" /> Pairings
             </TabsTrigger>
+            <TabsTrigger value="merch-images" className="gap-1.5">
+              <ImageIcon className="h-3.5 w-3.5" /> Merch Images
+            </TabsTrigger>
             <TabsTrigger value="users" className="gap-1.5">
               <Users className="h-3.5 w-3.5" /> Users
             </TabsTrigger>
@@ -573,6 +578,10 @@ const CmsDashboard = () => {
           {/* ── Pairings Tab ──────────────────────────────── */}
           <TabsContent value="pairings">
             <PairingsPanel />
+          </TabsContent>
+
+          <TabsContent value="merch-images">
+            <MerchImagesPanel />
           </TabsContent>
         </Tabs>
       </main>

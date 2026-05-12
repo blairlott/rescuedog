@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles, Trophy, Copy, Share2, PawPrint, Wine, Link2, RefreshCw } from "lucide-react";
+import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles, Trophy, Copy, Share2, PawPrint, Wine, Link2, RefreshCw, CreditCard } from "lucide-react";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,10 @@ import { PersonalizedRecommendations } from "@/components/PersonalizedRecommenda
 import { MyRescueTab } from "@/components/account/MyRescueTab";
 import { useMyMembership } from "@/hooks/useWineClub";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
+import { WineClubManagement } from "@/components/account/WineClubManagement";
+import { SubscribeAndSaveTab } from "@/components/account/SubscribeAndSaveTab";
+import { GiftCertificatesTab } from "@/components/account/GiftCertificatesTab";
+import { PaymentMethodsTab } from "@/components/account/PaymentMethodsTab";
 
 const AccountPage = () => {
   const { user, loading, signOut } = useCustomerAuth();
@@ -204,6 +208,12 @@ const AccountPage = () => {
               <TabsTrigger value="wine-club" className="gap-1.5">
                 <Wine className="h-3.5 w-3.5" /> Wine Club
               </TabsTrigger>
+              <TabsTrigger value="gifts" className="gap-1.5">
+                <Gift className="h-3.5 w-3.5" /> Gifts
+              </TabsTrigger>
+              <TabsTrigger value="payment" className="gap-1.5">
+                <CreditCard className="h-3.5 w-3.5" /> Payment
+              </TabsTrigger>
               <TabsTrigger value="referrals" className="gap-1.5">
                 <Gift className="h-3.5 w-3.5" /> Referrals
               </TabsTrigger>
@@ -314,32 +324,7 @@ const AccountPage = () => {
 
             {/* Subscriptions Tab */}
             <TabsContent value="subscriptions">
-              {subscriptions.length === 0 ? (
-                <div className="text-center py-12 border border-border">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-bold text-foreground mb-2">No subscriptions</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Start a wine subscription and save on every shipment</p>
-                  <Button asChild><Link to="/subscribe">Browse Subscriptions</Link></Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {subscriptions.map((sub: any) => (
-                    <div key={sub.id} className="border border-border p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-bold text-foreground capitalize">{sub.tier || sub.subscription_type} Plan</h3>
-                        <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-sm ${
-                          sub.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-muted text-muted-foreground'
-                        }`}>{sub.status}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">Frequency: {sub.frequency}</p>
-                      {sub.wine_preferences?.length > 0 && (
-                        <p className="text-sm text-muted-foreground">Preferences: {sub.wine_preferences.join(", ")}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-2">Created {new Date(sub.created_at).toLocaleDateString()}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <SubscribeAndSaveTab userId={user.id} vinoshipperLinked={!!profile?.vinoshipper_customer_id} />
             </TabsContent>
 
             {/* Wine Club Tab */}
@@ -349,7 +334,10 @@ const AccountPage = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : membership ? (
-                <MemberDashboard membership={membership} />
+                <>
+                  <MemberDashboard membership={membership} />
+                  <WineClubManagement currentTier={(membership as any)?.tier} />
+                </>
               ) : (
                 <div className="text-center py-12 border border-border">
                   <Wine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -360,6 +348,16 @@ const AccountPage = () => {
                   <Button asChild><Link to="/club">Explore Wine Clubs</Link></Button>
                 </div>
               )}
+            </TabsContent>
+
+            {/* Gifts Tab */}
+            <TabsContent value="gifts">
+              <GiftCertificatesTab userId={user.id} />
+            </TabsContent>
+
+            {/* Payment Tab */}
+            <TabsContent value="payment">
+              <PaymentMethodsTab vinoshipperLinked={!!profile?.vinoshipper_customer_id} />
             </TabsContent>
 
             {/* Referrals Tab */}

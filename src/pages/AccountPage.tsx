@@ -390,9 +390,22 @@ const AccountPage = () => {
                           {fav.product_title}
                         </Link>
                         {fav.product_price && <p className="text-sm text-muted-foreground">${fav.product_price}</p>}
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive mt-1 px-0" onClick={() => removeFav.mutate(fav.id)}>
-                          <Trash2 className="w-3 h-3 mr-1" />Remove
-                        </Button>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => reorderFavorite(fav)}
+                            disabled={reorderingId === fav.id}
+                          >
+                            {reorderingId === fav.id
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <><RefreshCw className="w-3 h-3 mr-1" />Reorder</>}
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => removeFav.mutate(fav.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -449,6 +449,8 @@ export type Database = {
           email: string | null
           favorite_rescue_id: string | null
           id: string
+          pet_birth_date: string | null
+          pet_name: string | null
           phone: string | null
           referral_code: string | null
           referred_by: string | null
@@ -465,6 +467,8 @@ export type Database = {
           email?: string | null
           favorite_rescue_id?: string | null
           id: string
+          pet_birth_date?: string | null
+          pet_name?: string | null
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null
@@ -481,6 +485,8 @@ export type Database = {
           email?: string | null
           favorite_rescue_id?: string | null
           id?: string
+          pet_birth_date?: string | null
+          pet_name?: string | null
           phone?: string | null
           referral_code?: string | null
           referred_by?: string | null

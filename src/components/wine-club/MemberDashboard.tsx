@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Wine, Package, Calendar, Settings, Percent, RotateCcw, Loader2 } from "lucide-react";
+import { Wine, Package, Calendar, Settings, Percent, RotateCcw, Loader2, SkipForward } from "lucide-react";
 import type { WineClubMembership, WineClubTier } from "@/hooks/useWineClub";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -168,6 +168,13 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
       )}
 
       {/* Next Shipment Customizer */}
+      <div className="border border-border bg-muted/30 p-4 mb-4 flex items-center gap-3">
+        <SkipForward className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+        <p className="text-sm text-muted-foreground">
+          <strong className="text-foreground">Not feeling this month?</strong> Skip any
+          shipment with one tap below — no penalty, no commitment lost.
+        </p>
+      </div>
       <NextShipmentCustomizer membership={membership} />
     </div>
   );

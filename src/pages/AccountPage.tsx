@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PersonalizedRecommendations } from "@/components/PersonalizedRecommendations";
+import { useCartStore } from "@/stores/cartStore";
 import { MyRescueTab } from "@/components/account/MyRescueTab";
 import { useMyMembership } from "@/hooks/useWineClub";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
@@ -114,19 +115,33 @@ const AccountPage = () => {
   });
 
   // Profile form
-  const [profileForm, setProfileForm] = useState({ display_name: "", phone: "" });
+  const [profileForm, setProfileForm] = useState({
+    display_name: "",
+    phone: "",
+    birth_date: "",
+    pet_name: "",
+    pet_birth_date: "",
+  });
   const [profileSaving, setProfileSaving] = useState(false);
+  const addItem = useCartStore((s) => s.addItem);
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
       setProfileForm({
         display_name: profile.display_name || user?.user_metadata?.full_name || "",
         phone: profile.phone || "",
+        birth_date: (profile as any).birth_date || "",
+        pet_name: (profile as any).pet_name || "",
+        pet_birth_date: (profile as any).pet_birth_date || "",
       });
     } else if (user) {
       setProfileForm({
         display_name: user.user_metadata?.full_name || "",
         phone: "",
+        birth_date: "",
+        pet_name: "",
+        pet_birth_date: "",
       });
     }
   }, [profile, user]);
@@ -139,6 +154,9 @@ const AccountPage = () => {
         id: user.id,
         display_name: profileForm.display_name,
         phone: profileForm.phone,
+        birth_date: profileForm.birth_date || null,
+        pet_name: profileForm.pet_name || null,
+        pet_birth_date: profileForm.pet_birth_date || null,
         email: user.email,
         updated_at: new Date().toISOString(),
       } as any);
@@ -155,6 +173,44 @@ const AccountPage = () => {
   const handleLogout = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const reorderFavorite = async (fav: any) => {
+    setReorderingId(fav.id);
+    try {
+      const { data: wine } = await supabase
+        .from("wine_products")
+        .select("handle, title, price_cents, image_url, gallery_urls")
+        .eq("handle", fav.product_handle)
+        .maybeSingle();
+      if (!wine) {
+        toast.error("This wine isn't available right now");
+        return;
+      }
+      const fakeProduct: any = {
+        node: {
+          handle: wine.handle,
+          title: wine.title,
+          images: {
+            edges: (wine.gallery_urls?.length ? wine.gallery_urls : (wine.image_url ? [wine.image_url] : []))
+              .map((url: string) => ({ node: { url, altText: wine.title } })),
+          },
+        },
+      };
+      await addItem({
+        product: fakeProduct,
+        variantId: `wine-variant:${wine.handle}`,
+        variantTitle: "Default",
+        price: { amount: ((wine.price_cents || 0) / 100).toFixed(2), currencyCode: "USD" },
+        quantity: 1,
+        selectedOptions: [],
+      });
+      toast.success(`Added ${wine.title} to cart`, { position: "top-center" });
+    } catch (e: any) {
+      toast.error("Couldn't reorder", { description: e?.message });
+    } finally {
+      setReorderingId(null);
+    }
   };
 
   if (loading) {
@@ -246,6 +302,28 @@ const AccountPage = () => {
                   <Label>Phone</Label>
                   <Input value={profileForm.phone} onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))} placeholder="(555) 123-4567" />
                 </div>
+                <div className="space-y-1.5">
+                  <Label>Your Birthday</Label>
+                  <Input type="date" value={profileForm.birth_date} onChange={e => setProfileForm(f => ({ ...f, birth_date: e.target.value }))} />
+                  <p className="text-xs text-muted-foreground">We'll send you a birthday bottle perk on the house.</p>
+                </div>
+                <Separator className="my-2" />
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <PawPrint className="w-4 h-4 text-primary" /> Your Rescue Dog
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Tell us about your pup — we'll celebrate their birthday too with an exclusive member offer.
+                  </p>
+                  <div className="space-y-1.5">
+                    <Label>Pet Name</Label>
+                    <Input value={profileForm.pet_name} onChange={e => setProfileForm(f => ({ ...f, pet_name: e.target.value }))} placeholder="Buddy" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Pet Birthday (or adopt-iversary)</Label>
+                    <Input type="date" value={profileForm.pet_birth_date} onChange={e => setProfileForm(f => ({ ...f, pet_birth_date: e.target.value }))} />
+                  </div>
+                </div>
                 <Button onClick={handleProfileSave} disabled={profileSaving}>
                   {profileSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   Save Changes
@@ -312,9 +390,22 @@ const AccountPage = () => {
                           {fav.product_title}
                         </Link>
                         {fav.product_price && <p className="text-sm text-muted-foreground">${fav.product_price}</p>}
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive mt-1 px-0" onClick={() => removeFav.mutate(fav.id)}>
-                          <Trash2 className="w-3 h-3 mr-1" />Remove
-                        </Button>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => reorderFavorite(fav)}
+                            disabled={reorderingId === fav.id}
+                          >
+                            {reorderingId === fav.id
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <><RefreshCw className="w-3 h-3 mr-1" />Reorder</>}
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => removeFav.mutate(fav.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}

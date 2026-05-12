@@ -36,6 +36,12 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return json({ error: "unauthorized" }, 401);
 
+    // If Vinoshipper isn't configured yet (simulation mode), no-op gracefully
+    // so client auth flow doesn't surface a 500.
+    if (!Deno.env.get("VINOSHIPPER_API_KEY")) {
+      return json({ ok: true, source: "simulation", vinoshipperCustomerId: null });
+    }
+
     // Service-role client for writing back to customer_profiles regardless of RLS
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,

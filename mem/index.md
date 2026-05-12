@@ -45,6 +45,7 @@
 - [Pairings & Sommelier](mem://features/pairings) — PDP chips, reverse pairing widget, and recipe pairing pages
 - [Sommelier & Ship Check](mem://features/sommelier-and-ship-check) — AI sommelier widget on wine routes; per-state shipping eligibility gate on PDP
 - [Marketplace Partners](mem://features/marketplace-partners) — Apply-to-sell flow + admin per-product approvals
+- [US Fulfillment Requirement](mem://features/us-fulfillment-requirement) — All dropship + marketplace partners must ship from US; sourcing notes per SKU
 - [WordPress Import](mem://tech/wordpress-import) — Migrate Cloudways posts/pages/events into Lovable with image rehost + 301s
 - [Dropship Architecture](mem://features/dropship-architecture) — One Vinoshipper cart; vendor-routed fulfillment (Printify, partner-direct, VS warehouse)
 - [Merch Self-Curation](mem://features/merch-self-curation) — AI scans SKUs for stock/margin/freshness; admin approves actions

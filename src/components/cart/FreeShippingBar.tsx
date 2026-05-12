@@ -1,5 +1,5 @@
 import { Progress } from "@/components/ui/progress";
-import { Truck, PartyPopper, Check, Gift, Percent } from "lucide-react";
+import { Truck, PartyPopper, Check, Percent } from "lucide-react";
 import { useCartSettings } from "@/hooks/useCartSettings";
 
 interface FreeShippingBarProps {

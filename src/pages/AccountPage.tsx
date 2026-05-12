@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PersonalizedRecommendations } from "@/components/PersonalizedRecommendations";
+import { useCartStore } from "@/stores/cartStore";
 import { MyRescueTab } from "@/components/account/MyRescueTab";
 import { useMyMembership } from "@/hooks/useWineClub";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
@@ -114,19 +115,33 @@ const AccountPage = () => {
   });
 
   // Profile form
-  const [profileForm, setProfileForm] = useState({ display_name: "", phone: "" });
+  const [profileForm, setProfileForm] = useState({
+    display_name: "",
+    phone: "",
+    birth_date: "",
+    pet_name: "",
+    pet_birth_date: "",
+  });
   const [profileSaving, setProfileSaving] = useState(false);
+  const addItem = useCartStore((s) => s.addItem);
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
       setProfileForm({
         display_name: profile.display_name || user?.user_metadata?.full_name || "",
         phone: profile.phone || "",
+        birth_date: (profile as any).birth_date || "",
+        pet_name: (profile as any).pet_name || "",
+        pet_birth_date: (profile as any).pet_birth_date || "",
       });
     } else if (user) {
       setProfileForm({
         display_name: user.user_metadata?.full_name || "",
         phone: "",
+        birth_date: "",
+        pet_name: "",
+        pet_birth_date: "",
       });
     }
   }, [profile, user]);
@@ -139,6 +154,9 @@ const AccountPage = () => {
         id: user.id,
         display_name: profileForm.display_name,
         phone: profileForm.phone,
+        birth_date: profileForm.birth_date || null,
+        pet_name: profileForm.pet_name || null,
+        pet_birth_date: profileForm.pet_birth_date || null,
         email: user.email,
         updated_at: new Date().toISOString(),
       } as any);

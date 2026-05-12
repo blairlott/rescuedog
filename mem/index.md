@@ -64,3 +64,4 @@
 - [Mailchimp Integration](mem://tech/mailchimp-integration) — How signal engine pushes compliant retailer campaigns via Mailchimp
 - [Final Stack](mem://tech/final-stack) — Canonical stack: Vinoshipper + Lovable Cloud + WP + Mailchimp + Lindy (read-only). Shopify SUNSET.
 - [Live Split Architecture](mem://plans/live-split-architecture) — Wine + Merch as two separate Lovable projects with separate DBs; DNS transfers at cutover
+- [VS Go-Live Checklist](mem://plans/vs-golive-checklist) — Steps to flip from simulation to live Vinoshipper when laptop is available

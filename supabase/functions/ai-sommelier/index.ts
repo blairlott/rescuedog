@@ -223,7 +223,7 @@ Deno.serve(async (req: Request) => {
 
   const messages = Array.isArray(body?.messages) ? body.messages : null;
   if (!messages || messages.length === 0 || messages.length > 30) {
-    return new Response(JSON.stringify({ error: 'messages must be 1-30 entries' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return jsonResponse({ error: 'messages must be 1-30 entries' }, 400);
   }
   const cleaned = messages
     .filter((m: any) => m && typeof m.content === 'string' && ['user', 'assistant'].includes(m.role))
@@ -286,6 +286,6 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ reply }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('Sommelier exception', e?.message);
-    return new Response(JSON.stringify({ error: 'Unexpected error' }), { status: 500, headers: corsHeaders });
+    return jsonResponse({ reply: 'I’m having trouble reaching the cellar notes right now. Quick question — which sounds best: (a) crisp white, (b) rich white, (c) easy red, or (d) bold red?\n\nFollow-ups: a | b | c', error: 'Unexpected error' });
   }
 });

@@ -84,6 +84,13 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 let cachedCatalog: { value: string; titles: string[]; ts: number } | null = null;
 const CATALOG_TTL_MS = 5 * 60 * 1000;
 
+function jsonResponse(payload: unknown, status = 200): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 async function fetchLiveCatalog(): Promise<{ value: string; titles: string[] }> {
   if (cachedCatalog && Date.now() - cachedCatalog.ts < CATALOG_TTL_MS) {
     return { value: cachedCatalog.value, titles: cachedCatalog.titles };
@@ -208,11 +215,11 @@ Deno.serve(async (req: Request) => {
 
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) {
-    return new Response(JSON.stringify({ error: 'AI not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return jsonResponse({ reply: catalogSafeFallback('', []), error: 'AI not configured' });
   }
 
   let body: any;
-  try { body = await req.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: corsHeaders }); }
+  try { body = await req.json(); } catch { return jsonResponse({ error: 'Invalid JSON' }, 400); }
 
   const messages = Array.isArray(body?.messages) ? body.messages : null;
   if (!messages || messages.length === 0 || messages.length > 30) {
@@ -221,7 +228,7 @@ Deno.serve(async (req: Request) => {
   const cleaned = messages
     .filter((m: any) => m && typeof m.content === 'string' && ['user', 'assistant'].includes(m.role))
     .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
-  if (cleaned.length === 0) return new Response(JSON.stringify({ error: 'no valid messages' }), { status: 400, headers: corsHeaders });
+  if (cleaned.length === 0) return jsonResponse({ error: 'no valid messages' }, 400);
 
   // Source-of-truth catalog: prefer the client's snapshot, but always fall back to a live fetch
   // so the model NEVER reasons without one.

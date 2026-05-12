@@ -199,6 +199,9 @@ const WineClubPage = () => {
                             Create Account
                           </Button>
                         </div>
+                        <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">
+                          Your Rescue Dog Wines account is automatically linked to Vinoshipper for shipping, age verification, and secure payment.
+                        </p>
                       </div>
                     )}
                   </>

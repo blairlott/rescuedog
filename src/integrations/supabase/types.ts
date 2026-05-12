@@ -452,6 +452,8 @@ export type Database = {
           referral_code: string | null
           referred_by: string | null
           updated_at: string
+          vinoshipper_customer_id: string | null
+          vinoshipper_linked_at: string | null
           wine_preferences: string[] | null
         }
         Insert: {
@@ -465,6 +467,8 @@ export type Database = {
           referral_code?: string | null
           referred_by?: string | null
           updated_at?: string
+          vinoshipper_customer_id?: string | null
+          vinoshipper_linked_at?: string | null
           wine_preferences?: string[] | null
         }
         Update: {
@@ -478,6 +482,8 @@ export type Database = {
           referral_code?: string | null
           referred_by?: string | null
           updated_at?: string
+          vinoshipper_customer_id?: string | null
+          vinoshipper_linked_at?: string | null
           wine_preferences?: string[] | null
         }
         Relationships: [

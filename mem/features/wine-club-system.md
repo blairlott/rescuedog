@@ -31,3 +31,11 @@ Vinoshipper owns membership lookup and discount application. Our app passes the 
 - Quarterly: timed around Valentine's Day, Mother's Day, end of summer, Thanksgiving
 - Yearly: ships around Thanksgiving through ~Dec 14 for holiday delivery
 - New holiday signups accepted through ~Dec 14
+
+## Vinoshipper customer linking
+Every Lovable Cloud customer account is auto-linked to a Vinoshipper customer record so wine shipments, age verification, and stored credit cards live on Vinoshipper.
+- `customer_profiles.vinoshipper_customer_id` + `vinoshipper_linked_at` track the link.
+- Edge function `vinoshipper-link-customer` is idempotent: short-circuits if already linked, else searches Vinoshipper by email and falls back to creating a new customer.
+- Invoked automatically from `useCustomerAuth.onAuthStateChange` (once per session via `sessionStorage` flag); also exposed as a manual "Link Vinoshipper Account" button on the Account → Profile tab.
+- `vinoshipper-create-membership` reuses the stored ID before creating a new VS customer, so club joins never duplicate.
+- Requires the `VINOSHIPPER_API_KEY` runtime secret — without it the link call fails silently and login still works.

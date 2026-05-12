@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles, Trophy, Copy, Share2, PawPrint, Wine } from "lucide-react";
+import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles, Trophy, Copy, Share2, PawPrint, Wine, Link2, RefreshCw } from "lucide-react";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -240,6 +240,44 @@ const AccountPage = () => {
                   {profileSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   Save Changes
                 </Button>
+
+                <Separator className="my-2" />
+
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <Link2 className="w-4 h-4 text-primary" /> Vinoshipper Account
+                  </h3>
+                  {profile?.vinoshipper_customer_id ? (
+                    <p className="text-xs text-muted-foreground">
+                      Linked — wine shipments, age verification, and stored payment methods
+                      are managed securely on Vinoshipper.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        Your account is not yet linked to Vinoshipper. Wine club shipments
+                        and stored payment methods require this link.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={async () => {
+                          try {
+                            const { error } = await supabase.functions.invoke("vinoshipper-link-customer");
+                            if (error) throw error;
+                            toast.success("Linked to Vinoshipper");
+                            queryClient.invalidateQueries({ queryKey: ["customer-profile"] });
+                          } catch (err: any) {
+                            toast.error(err.message || "Could not link Vinoshipper account");
+                          }
+                        }}
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" /> Link Vinoshipper Account
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </TabsContent>
 

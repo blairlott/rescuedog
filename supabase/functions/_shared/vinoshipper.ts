@@ -134,6 +134,35 @@ export async function vsCreateCustomer(input: VsCreateCustomerInput) {
   return vsFetch("/customers", { method: "POST", body: input });
 }
 
+/**
+ * Look up an existing Vinoshipper customer by email.
+ * Returns the first matching customer, or null if none found.
+ * Endpoint shape may need to be confirmed against the real Vinoshipper docs;
+ * we call /customers?email= and accept either a list or a single object response.
+ */
+export async function vsFindCustomerByEmail(
+  email: string,
+): Promise<{ id: string | number } | null> {
+  try {
+    const result = await vsFetch<unknown>("/customers", {
+      method: "GET",
+      query: { email },
+    });
+    if (Array.isArray(result)) {
+      const first = result[0] as { id?: string | number } | undefined;
+      return first?.id !== undefined ? { id: first.id } : null;
+    }
+    if (result && typeof result === "object" && "id" in (result as Record<string, unknown>)) {
+      const id = (result as { id?: string | number }).id;
+      return id !== undefined ? { id } : null;
+    }
+    return null;
+  } catch (err) {
+    if (err instanceof VinoshipperError && err.status === 404) return null;
+    throw err;
+  }
+}
+
 export interface VsCreateClubMembershipInput {
   customerId: string | number;
   clubId: string | number; // Vinoshipper-side club product/tier id

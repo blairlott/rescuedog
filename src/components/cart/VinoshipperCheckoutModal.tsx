@@ -22,6 +22,7 @@ import {
   VS_SIMULATION,
 } from "@/lib/vinoshipperConfig";
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
+import { useCartSettings } from "@/hooks/useCartSettings";
 
 interface Props {
   open: boolean;
@@ -46,6 +47,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
   const { user } = useCustomerAuth();
   const { data: membership } = useMyMembership();
   const { items, clearCart } = useCartStore();
+  const { caseDiscountCode, fullCaseCount } = useCartSettings();
   const checkoutIntent = useCheckoutIntentStore((s) => s.intent);
   const resetCheckoutIntent = useCheckoutIntentStore((s) => s.reset);
   const clubTierId = useCheckoutIntentStore((s) => s.clubTierId);
@@ -92,6 +94,13 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
   );
   const isMember = !!membership && membership.status !== "cancelled";
   const joiningClub = checkoutIntent === "club" && !isMember;
+  // Guest case discount code is only valid when the customer is NOT a member
+  // (members get the higher 20% via Vinoshipper customer-group discount,
+  // applied automatically at checkout — no code needed).
+  const activePromoCode =
+    !isMember && !joiningClub && totalBottles >= fullCaseCount && caseDiscountCode
+      ? caseDiscountCode
+      : null;
   // Joining the club applies the same 20% member discount on this order.
   const discountActive = isMember || joiningClub;
   // Bundles are excluded from member discount (matches Vinoshipper rule).
@@ -247,6 +256,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             tax: tax.toFixed(2),
             total: total.toFixed(2),
           },
+          promo_code: activePromoCode,
           ship_to: {
             name: form.name,
             address: form.address,
@@ -343,6 +353,12 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
               value={-memberDiscount}
               accent
             />
+          )}
+          {activePromoCode && (
+            <div className="flex justify-between text-[11px] uppercase tracking-brand text-green-700 dark:text-green-400">
+              <span>Promo code applied</span>
+              <span className="font-mono font-bold">{activePromoCode}</span>
+            </div>
           )}
           <Row
             label={

@@ -254,7 +254,6 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [{ role: 'system', content: SYSTEM_PROMPT + catalogContext }, ...cleaned],
-        max_tokens: 400,
       }),
     });
     if (aiRes.status === 429) return new Response(JSON.stringify({ error: 'Busy — try again in a moment.' }), { status: 429, headers: corsHeaders });

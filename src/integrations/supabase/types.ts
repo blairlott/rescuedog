@@ -2660,6 +2660,7 @@ export type Database = {
           is_active: boolean | null
           name: string
           price_cents: number
+          shipment_discount_percent: number | null
           slug: string
           sort_order: number | null
           updated_at: string | null
@@ -2677,6 +2678,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           price_cents: number
+          shipment_discount_percent?: number | null
           slug: string
           sort_order?: number | null
           updated_at?: string | null
@@ -2694,6 +2696,7 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           price_cents?: number
+          shipment_discount_percent?: number | null
           slug?: string
           sort_order?: number | null
           updated_at?: string | null

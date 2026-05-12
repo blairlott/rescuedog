@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 690 190" role="img" aria-label="Rescue Dog">
+  <defs>
+    <style>
+      .word{font-family:Avenir Next,Nunito Sans,Arial,sans-serif;font-size:58px;font-weight:800;letter-spacing:0;fill:#8b8b8b;}
+      .mark{fill:none;stroke:#c30017;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;}
+    </style>
+  </defs>
+  <text class="word" x="0" y="104">RESCUE DOG</text>
+  <g transform="translate(504 13)">
+    <ellipse class="mark" cx="63" cy="30" rx="18" ry="28"/>
+    <ellipse class="mark" cx="112" cy="30" rx="18" ry="28"/>
+    <ellipse class="mark" cx="24" cy="68" rx="17" ry="27" transform="rotate(-22 24 68)"/>
+    <ellipse class="mark" cx="151" cy="68" rx="17" ry="27" transform="rotate(22 151 68)"/>
+    <path class="mark" d="M54 88 L120 88 L128 119 L88 151 L47 119 Z"/>
+    <path class="mark" d="M78 129 C61 111 41 102 20 104 C-3 107 -10 130 7 153 C25 177 58 175 88 151"/>
+    <path class="mark" d="M98 129 C115 111 135 102 156 104 C179 107 186 130 169 153 C151 177 118 175 88 151"/>
+    <path class="mark" d="M61 106 L88 125 L116 106"/>
+  </g>
+</svg>

@@ -49,6 +49,14 @@ export interface CartItem {
   price: { amount: string; currencyCode: string };
   quantity: number;
   selectedOptions: Array<{ name: string; value: string }>;
+  /** Optional: tag added when this line was added as part of a curated bundle. */
+  bundleId?: string | null;
+  /** Optional: gift wrap + recipient details captured in the cart drawer. */
+  giftMeta?: {
+    wrap?: boolean;
+    message?: string;
+    recipientEmail?: string;
+  } | null;
 }
 
 const cents = (n: number | null | undefined) => ((n ?? 0) / 100).toFixed(2);

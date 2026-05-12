@@ -1,9 +1,12 @@
 import { Link } from "react-router-dom";
 import { Wine, Lock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCheckoutIntentStore } from "@/stores/checkoutIntentStore";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useIsMember } from "@/hooks/useIsMember";
+import { useWineClubTiers } from "@/hooks/useWineClub";
+import { useEffect } from "react";
 
 /**
  * Cart-level Wine Club join nudge. Toggling it ON applies the 20% member
@@ -16,6 +19,9 @@ export function CartWineClubUpsell() {
   const { isMember } = useIsMember();
   const intent = useCheckoutIntentStore((s) => s.intent);
   const setIntent = useCheckoutIntentStore((s) => s.setIntent);
+  const clubTierId = useCheckoutIntentStore((s) => s.clubTierId);
+  const setClubTierId = useCheckoutIntentStore((s) => s.setClubTierId);
+  const { data: tiers } = useWineClubTiers();
 
   // Already a member — no need to upsell joining
   if (isMember) return null;
@@ -23,9 +29,19 @@ export function CartWineClubUpsell() {
   const joining = intent === "club";
   const blockedBySubscribe = intent === "subscribe";
 
+  // Default to lowest sort_order tier the first time user opts in
+  useEffect(() => {
+    if (joining && !clubTierId && tiers && tiers.length > 0) {
+      setClubTierId(tiers[0].id);
+    }
+  }, [joining, clubTierId, tiers, setClubTierId]);
+
   const handleToggle = (next: boolean) => {
     setIntent(next ? "club" : "none");
+    if (!next) setClubTierId(null);
   };
+
+  const selectedTier = tiers?.find((t) => t.id === clubTierId) ?? null;
 
   return (
     <div
@@ -79,9 +95,32 @@ export function CartWineClubUpsell() {
       )}
 
       {joining && (
-        <p className="mt-2 text-[11px] text-primary font-medium">
-          ✓ 20% Member discount will be applied at checkout.
-        </p>
+        <div className="mt-3 pt-3 border-t border-primary/20 space-y-2">
+          <label className="text-[11px] font-semibold uppercase tracking-brand text-foreground block">
+            Choose your membership
+          </label>
+          <Select value={clubTierId ?? undefined} onValueChange={setClubTierId}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Select a club tier" />
+            </SelectTrigger>
+            <SelectContent>
+              {(tiers ?? []).map((t) => (
+                <SelectItem key={t.id} value={t.id} className="text-xs">
+                  {t.name} — {t.bottle_count} btl · {t.frequency} · ${(t.price_cents / 100).toFixed(0)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedTier?.description && (
+            <p className="text-[11px] text-muted-foreground">{selectedTier.description}</p>
+          )}
+          <p className="text-[11px] text-primary font-medium">
+            ✓ 20% Member discount applied to this order. First club shipment ships next cycle.
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            Change tier anytime in your account · cancel after first shipment.
+          </p>
+        </div>
       )}
     </div>
   );

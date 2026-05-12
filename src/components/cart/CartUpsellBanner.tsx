@@ -43,9 +43,20 @@ export function CartUpsellBanner({ totalBottles, cartTotal }: CartUpsellBannerPr
       {totalBottles >= fullCaseCount && (
         <div className="flex items-start gap-2 rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 text-sm">
           <Gift className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
-          <p className="text-green-700 dark:text-green-300 font-semibold">
-            🎉 Full case! You qualify for {effectiveCaseDiscount}% off at checkout{isMember ? " (Wine Club rate)" : ""}.
-          </p>
+          <div className="text-green-700 dark:text-green-300 text-sm">
+            <p className="font-semibold">
+              🎉 Full case! You qualify for {effectiveCaseDiscount}% off at checkout{isMember ? " (Wine Club rate — auto-applied)" : ""}.
+            </p>
+            {!isMember && caseDiscountCode && (
+              <p className="mt-1 text-[12px] font-normal">
+                We'll auto-apply code{" "}
+                <span className="font-mono font-bold tracking-wider bg-green-600 text-white px-1.5 py-0.5">
+                  {caseDiscountCode}
+                </span>{" "}
+                at checkout.
+              </p>
+            )}
+          </div>
         </div>
       )}
 

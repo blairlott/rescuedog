@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -273,8 +273,8 @@ export function SkusTab() {
             {skus.map((s) => {
               const margin = s.retail_cents - s.cost_cents;
               return (
-                <>
-                <TableRow key={s.id}>
+                <Fragment key={s.id}>
+                <TableRow>
                   <TableCell className="font-medium flex items-center gap-2">
                     {s.product_image_url && <img src={s.product_image_url} alt="" className="w-8 h-8 object-cover" />}
                     {s.product_title}
@@ -300,7 +300,7 @@ export function SkusTab() {
                   </TableCell>
                 </TableRow>
                 {s.notes && (
-                  <TableRow key={s.id + "-notes"} className="hover:bg-transparent border-b-0">
+                  <TableRow className="hover:bg-transparent border-b-0">
                     <TableCell colSpan={9} className="pt-0 pb-3">
                       <div className="border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex gap-2">
                         <BookOpen className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
@@ -309,7 +309,7 @@ export function SkusTab() {
                     </TableCell>
                   </TableRow>
                 )}
-                </>
+                </Fragment>
               );
             })}
           </TableBody>

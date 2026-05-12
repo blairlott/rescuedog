@@ -36,6 +36,9 @@ export interface WineClubMembership {
   joined_at: string;
   vinoshipper_customer_id?: string | null;
   vinoshipper_membership_id?: string | null;
+  origin?: string | null;
+  is_legacy_member?: boolean | null;
+  app_tier_config_id?: string | null;
   tier?: WineClubTier;
 }
 

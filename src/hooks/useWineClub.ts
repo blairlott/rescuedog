@@ -62,7 +62,7 @@ export function useMyMembership() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("wine_club_memberships")
-        .select("*, tier:wine_club_tiers(*)")
+        .select("*, tier:wine_club_tiers!tier_id(*)")
         .eq("user_id", user!.id)
         .neq("status", "cancelled")
         .maybeSingle();

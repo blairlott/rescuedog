@@ -7,6 +7,7 @@ import { useIsMember } from "@/hooks/useIsMember";
 import { Button } from "@/components/ui/button";
 import { Loader2, Award, ShoppingBag, Heart, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { isWineProduct } from "@/lib/productUtils";
 
 interface ProductCardProps {
   product: ShopifyProduct;
@@ -42,6 +43,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const tagSet = new Set((node.tags || []).map(t => t.toLowerCase()));
   const isClubExclusive = tagSet.has('club-exclusive') || tagSet.has('club exclusive');
   const locked = isClubExclusive && !isMember;
+  const isWine = isWineProduct(product);
 
   const priceNum = parseFloat(price.amount);
   const dollars = Math.floor(priceNum);
@@ -166,7 +168,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <h3 className="text-sm font-medium text-foreground tracking-brand leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-200">
           {node.title}
         </h3>
-        {isMember && !isSampler ? (
+        {isMember && !isSampler && isWine ? (
           <div>
             <p className="text-foreground">
               <span className="text-[10px] align-top leading-none">$</span>
@@ -185,7 +187,7 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
         {isSampler ? (
           <p className="text-[10px] text-muted-foreground italic">Not valid with any other offer</p>
-        ) : !isMember ? (
+        ) : !isMember && isWine ? (
           <p className="text-[11px] text-muted-foreground">
             <Link to="/club" onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">
               Club Price: ${(priceNum * 0.8).toFixed(2)}

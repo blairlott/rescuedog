@@ -59,10 +59,10 @@ export function Header() {
         { key: "merch_logo", label: "Merch Site Logo URL", type: "url", value: merchLogo },
       ],
     },
-    banner: {
+      banner: {
       title: "Announcement Banner",
       fields: [
-        { key: "wine_banner", label: "Wine Site Banner Text", type: "text", value: getVal("banner", "wine_banner", "Use code STOCKUP for 20% off your order of 12 bottles or more (shipping included)!") },
+        { key: "wine_banner", label: "Wine Site Banner Text", type: "text", value: getVal("banner", "wine_banner", "Shipping included on 6+ bottles · Use STOCKUP for 20% off 12+") },
         { key: "merch_banner", label: "Merch Site Banner Text", type: "text", value: getVal("banner", "merch_banner", "50% of our profits supports rescue organizations.") },
       ],
     },
@@ -76,7 +76,7 @@ export function Header() {
         <p className="text-sm tracking-wide">
           {isMerch
             ? getVal("banner", "merch_banner", "50% of our profits supports rescue organizations.")
-            : getVal("banner", "wine_banner", "Use code STOCKUP for 20% off your order of 12 bottles or more (shipping included)!")}
+            : getVal("banner", "wine_banner", "Shipping included on 6+ bottles · Use STOCKUP for 20% off 12+")}
         </p>
       </div>
 

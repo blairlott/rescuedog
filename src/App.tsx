@@ -31,6 +31,7 @@ import CustomerResetPasswordPage from "./pages/CustomerResetPasswordPage";
 import AccountPage from "./pages/AccountPage";
 import GiftCertificatePrintPage from "./pages/GiftCertificatePrintPage";
 import NotFound from "./pages/NotFound";
+import ThankYouPage from "./pages/ThankYouPage";
 import CrmLoginPage from "./pages/CrmLoginPage";
 import CrmLayout from "./components/crm/CrmLayout";
 import CrmDashboard from "./pages/CrmDashboard";
@@ -62,6 +63,7 @@ import AmbassadorDirectoryPage from "./pages/AmbassadorDirectoryPage";
 import AmbassadorDisclosurePage from "./pages/AmbassadorDisclosurePage";
 import CrmAmbassadorsPage from "./pages/CrmAmbassadorsPage";
 import { SommelierChat } from "./components/SommelierChat";
+import { EmailCapturePrompt } from "./components/cart/EmailCapturePrompt";
 import { useLocation } from "react-router-dom";
 
 const queryClient = new QueryClient();
@@ -123,6 +125,7 @@ function AppContent() {
       <Route path="/reset-password" element={<CustomerResetPasswordPage />} />
       <Route path="/account" element={<AccountPage />} />
       <Route path="/account/gifts/:id/print" element={<GiftCertificatePrintPage />} />
+      <Route path="/thank-you" element={<ThankYouPage />} />
       <Route path="/crm/login" element={<CrmLoginPage />} />
       <Route path="/crm/reset-password" element={<CrmResetPasswordPage />} />
       <Route caseSensitive path="/CMS/login" element={<Navigate to="/cms/login" replace />} />
@@ -141,6 +144,7 @@ function AppContent() {
       <Route path="*" element={<NotFound />} />
     </Routes>
     {showSommelier && <SommelierChat />}
+    <EmailCapturePrompt />
     </>
   );
 }

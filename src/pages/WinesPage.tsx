@@ -8,6 +8,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { Loader2 } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useState, useMemo } from "react";
+import { Seo } from "@/components/Seo";
 
 const WINE_SORT_ORDER = [
   "6bottle-sampler",
@@ -57,6 +58,11 @@ const WinesPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo
+        title="Shop Wines"
+        description="Award-winning Lodi wines — Cabernet, Red Blend, Sauvignon Blanc, Chardonnay, Rosé and Sparkling. Shipping included on 6+ bottles."
+        path="/wines"
+      />
       <Header />
 
       <PageHero

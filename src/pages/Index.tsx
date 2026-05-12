@@ -17,6 +17,8 @@ import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 import { ImpactCounter } from "@/components/ImpactCounter";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { PairingFinder } from "@/components/PairingFinder";
+import { LazyYouTube } from "@/components/LazyYouTube";
+import { Seo } from "@/components/Seo";
 
 const instagramPosts = [
   {
@@ -136,6 +138,19 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo
+        title="Award-Winning Sustainable Wines That Help Rescue Dogs"
+        description="Lodi-grown, sustainably crafted wines. 50% of profits support animal rescue. Shipping included on 6+ bottles. Join the Wine Club for 20% off."
+        path="/"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Rescue Dog Wines",
+          url: "https://rescuedogwines.com",
+          logo: "https://rescuedogwines.myshopify.com/cdn/shop/files/rdw_black_4x_7dece252-0ae7-4039-b832-0a86b7adec60.png",
+          sameAs: ["https://www.instagram.com/rescuedogwines"],
+        }}
+      />
       <Header />
 
       {/* Hero — Full-bleed image background */}
@@ -274,13 +289,11 @@ const Index = () => {
 
       {/* Video Background Section */}
       <section className="relative h-[60vh] min-h-[400px] flex items-center overflow-hidden">
-        <iframe
-          ref={iframeRef}
-          className="absolute inset-0 w-full h-full scale-[1.5] pointer-events-none"
-          src="https://www.youtube.com/embed/rNxSRJpqz_w?autoplay=1&mute=1&controls=0&loop=1&playlist=rNxSRJpqz_w&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=*"
+        <LazyYouTube
+          videoId="rNxSRJpqz_w"
           title="Rescue Dog Wines"
-          allow="autoplay; encrypted-media"
-          allowFullScreen
+          className="absolute inset-0 w-full h-full"
+          iframeRef={iframeRef}
         />
         <div className="absolute inset-0 bg-foreground/40 pointer-events-none" />
         <div className="relative container mx-auto px-4 text-center z-10">

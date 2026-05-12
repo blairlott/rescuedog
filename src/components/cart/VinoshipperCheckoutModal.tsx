@@ -347,7 +347,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
           <Row
             label={
               shipping === 0
-                ? `Shipping (${shipMethod === "ups_ap" ? "UPS Access Point" : "included, 6+ bottles"})`
+                ? `Shipping (${shipMethod === "ups_ap" ? "UPS Access Point" : `included, ${VS_SHIPPING_THRESHOLD_BOTTLES}+ bottles`})`
                 : shipMethod === "ups_ap"
                   ? "Shipping (UPS Access Point — save $5)"
                   : "Shipping (Home delivery, adult signature)"

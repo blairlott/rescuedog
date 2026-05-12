@@ -63,6 +63,7 @@ import AmbassadorDirectoryPage from "./pages/AmbassadorDirectoryPage";
 import AmbassadorDisclosurePage from "./pages/AmbassadorDisclosurePage";
 import CrmAmbassadorsPage from "./pages/CrmAmbassadorsPage";
 import { SommelierChat } from "./components/SommelierChat";
+import { EmailCapturePrompt } from "./components/cart/EmailCapturePrompt";
 import { useLocation } from "react-router-dom";
 
 const queryClient = new QueryClient();
@@ -143,6 +144,7 @@ function AppContent() {
       <Route path="*" element={<NotFound />} />
     </Routes>
     {showSommelier && <SommelierChat />}
+    <EmailCapturePrompt />
     </>
   );
 }

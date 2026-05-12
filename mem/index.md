@@ -20,6 +20,7 @@
 - [CMS Image Storage](mem://tech/cms-image-storage) — CMS images stored in Shopify Files
 - [Age Verification](mem://features/age-verification) — Modal gate for wine routes, bypassed for merch/crm/cms
 - [Compliance](mem://features/compliance) — Age verification and Shopify wine compliance at checkout
+- [No Free Gifts](mem://features/no-free-gifts) — Tied-house: no free totes/merch/gifts with wine purchases
 - [Dual Site Branding](mem://features/branding) — Domain-specific branding (wine vs merch) and logos
 - [Brand Guidelines](mem://style/brand) — Colors, fonts, and minimalist styling rules
 - [Wine Sort Order](mem://features/wine-sort-order) — Strict product sorting sequence for the shop page

@@ -1,5 +1,5 @@
 import { Progress } from "@/components/ui/progress";
-import { Truck, PartyPopper, Check, Gift, Percent } from "lucide-react";
+import { Truck, PartyPopper, Check, Percent } from "lucide-react";
 import { useCartSettings } from "@/hooks/useCartSettings";
 
 interface FreeShippingBarProps {
@@ -32,11 +32,11 @@ export function FreeShippingBar({ totalBottles, cartTotal = 0, mode = "wine" }: 
     );
   }
 
-  // Wine mode: stacked rewards
+  // Wine mode: stacked rewards. Tied-house / ABC laws prohibit giving away
+  // merch with wine purchases — no "free gift" tiers allowed.
   const milestones = [
     { at: freeShippingBottleCount, label: "Shipping included", icon: Truck },
     { at: fullCaseCount, label: `Case ${fullCaseDiscount}% off`, icon: Percent },
-    { at: fullCaseCount + 6, label: "Free tote", icon: Gift },
   ];
   const max = milestones[milestones.length - 1].at;
   const progress = Math.min(100, (totalBottles / max) * 100);

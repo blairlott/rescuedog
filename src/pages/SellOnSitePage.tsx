@@ -24,6 +24,7 @@ export default function SellOnSitePage() {
   const [submitting, setSubmitting] = useState(false);
   const [cats, setCats] = useState<string[]>([]);
   const [agreed, setAgreed] = useState(false);
+  const [usFulfilled, setUsFulfilled] = useState(false);
 
   const toggleCat = (c: string) =>
     setCats((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
@@ -31,6 +32,7 @@ export default function SellOnSitePage() {
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!agreed) return toast.error("Please agree to the marketplace terms.");
+    if (!usFulfilled) return toast.error("Marketplace partners must fulfill orders from within the United States.");
     setSubmitting(true);
     const f = new FormData(e.currentTarget);
     const payload = {
@@ -58,6 +60,7 @@ export default function SellOnSitePage() {
         tiktok: String(f.get("tiktok") ?? "") || null,
       },
       agreed_to_terms: true,
+      fulfills_from_us: true,
     };
     const { error } = await supabase.from("marketplace_partner_applications").insert(payload);
     setSubmitting(false);
@@ -153,6 +156,10 @@ export default function SellOnSitePage() {
 
             <Card className="p-6 space-y-4">
               <h3 className="text-lg font-bold tracking-brand uppercase">Fulfillment</h3>
+              <div className="border border-primary/40 bg-primary/5 p-3 text-sm">
+                <strong className="block text-primary uppercase tracking-brand text-xs mb-1">US Fulfillment Required</strong>
+                We only partner with brands and drop-shippers that pick, pack, and ship from within the United States. International-only fulfillment will be declined.
+              </div>
               <div>
                 <Label>How will you fulfill orders? *</Label>
                 <div className="grid gap-2 mt-2">
@@ -164,6 +171,12 @@ export default function SellOnSitePage() {
                   ))}
                 </div>
               </div>
+              <label className="flex items-start gap-3 text-sm">
+                <Checkbox checked={usFulfilled} onCheckedChange={(v) => setUsFulfilled(Boolean(v))} className="mt-1" />
+                <span>
+                  I confirm that 100% of customer orders will ship from a warehouse, fulfillment center, or print provider located in the United States. *
+                </span>
+              </label>
             </Card>
 
             <Card className="p-6 space-y-4">

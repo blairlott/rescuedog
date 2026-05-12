@@ -267,29 +267,42 @@ export const CartDrawer = () => {
                     <span><strong>${dollarsNeeded.toFixed(2)} to go</strong> — shipping included at ${merchFreeShippingThreshold}+</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-display font-semibold">Total</span>
-                  <span className="text-xl font-bold">
-                    {!isMerchRoute && isMember ? (
-                      <>
-                        <span className="text-sm text-muted-foreground line-through mr-2 font-normal">${totalPrice.toFixed(2)}</span>
-                        ${(totalPrice - memberSavings).toFixed(2)}
-                      </>
-                    ) : (
-                      <>${totalPrice.toFixed(2)}</>
-                    )}
-                  </span>
-                </div>
-                <Button onClick={handleCheckout} className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={items.length === 0 || isLoading || isSyncing}>
-                  {isLoading || isSyncing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      {isMerchRoute ? "Email us to order" : "Checkout via Vinoshipper"}
-                    </>
+                {merchItems.length > 0 && (
+                  <CartGiftMode />
+                )}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-display font-semibold">Subtotal</span>
+                    <span className="font-bold">${(totalPrice + wrapFee).toFixed(2)}</span>
+                  </div>
+                  {isMember && wineTotal > 0 && (
+                    <p className="text-[11px] text-primary font-bold uppercase tracking-brand text-right">
+                      Member savings: -${memberSavings.toFixed(2)}
+                    </p>
                   )}
-                </Button>
+                  {wrapFee > 0 && (
+                    <p className="text-[11px] text-muted-foreground text-right">
+                      Includes ${wrapFee.toFixed(2)} gift wrap
+                    </p>
+                  )}
+                </div>
+                {wineItems.length > 0 && (
+                  <Button onClick={handleCheckoutWines} className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={isLoading || isSyncing}>
+                    {isLoading || isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                      <><ExternalLink className="w-4 h-4 mr-2" /> Checkout {wineItems.length} wine{wineItems.length !== 1 ? "s" : ""} · ${wineTotal.toFixed(2)}</>
+                    )}
+                  </Button>
+                )}
+                {merchItems.length > 0 && (
+                  <Button onClick={handleCheckoutMerch} variant={wineItems.length > 0 ? "outline" : "default"} className={`w-full ${wineItems.length === 0 ? "bg-primary hover:bg-primary/90" : ""}`} size="lg" disabled={isLoading || isSyncing}>
+                    <ExternalLink className="w-4 h-4 mr-2" /> Checkout {merchItems.length} merch · ${merchTotal.toFixed(2)}
+                  </Button>
+                )}
+                {wineItems.length > 0 && merchItems.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground text-center leading-tight">
+                    Wine ships via our compliance partner Vinoshipper; merch ships from our US fulfillment partners. Two checkouts, one cart.
+                  </p>
+                )}
               </div>
             </>
           )}

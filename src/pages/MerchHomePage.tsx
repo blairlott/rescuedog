@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import heroImg from "@/assets/merch-hero.jpg";
 import missionImg from "@/assets/merch-mission.jpg";
 import { BundleStrip } from "@/components/merch/BundleStrip";
+import { WineBarStrip } from "@/components/merch/WineBarStrip";
 
 const CATEGORIES = [
   { id: "all", label: "All" },

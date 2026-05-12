@@ -104,11 +104,14 @@ export function CartWineClubUpsell() {
               <SelectValue placeholder="Select a club tier" />
             </SelectTrigger>
             <SelectContent>
-              {(tiers ?? []).map((t) => (
-                <SelectItem key={t.id} value={t.id} className="text-xs">
-                  {t.name} — {t.bottle_count} btl · {t.frequency} · ${(t.price_cents / 100).toFixed(0)}
-                </SelectItem>
-              ))}
+              {(tiers ?? []).map((t) => {
+                const pct = t.shipment_discount_percent ?? t.discount_percent;
+                return (
+                  <SelectItem key={t.id} value={t.id} className="text-xs">
+                    {t.name} — {t.bottle_count} btl · {t.frequency} · {pct}% off
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           {selectedTier?.description && (

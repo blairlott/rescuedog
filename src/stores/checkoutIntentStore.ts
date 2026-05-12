@@ -15,15 +15,28 @@ export type CheckoutDiscountIntent = "none" | "club" | "subscribe";
 interface CheckoutIntentStore {
   intent: CheckoutDiscountIntent;
   clubTierId: string | null;
+  giftEnabled: boolean;
+  giftRecipientName: string;
+  giftMessage: string;
   setIntent: (next: CheckoutDiscountIntent) => void;
   setClubTierId: (id: string | null) => void;
+  setGift: (next: { enabled?: boolean; recipientName?: string; message?: string }) => void;
   reset: () => void;
 }
 
 export const useCheckoutIntentStore = create<CheckoutIntentStore>((set) => ({
   intent: "none",
   clubTierId: null,
+  giftEnabled: false,
+  giftRecipientName: "",
+  giftMessage: "",
   setIntent: (next) => set({ intent: next }),
   setClubTierId: (id) => set({ clubTierId: id }),
-  reset: () => set({ intent: "none", clubTierId: null }),
+  setGift: (next) =>
+    set((s) => ({
+      giftEnabled: next.enabled ?? s.giftEnabled,
+      giftRecipientName: next.recipientName ?? s.giftRecipientName,
+      giftMessage: next.message ?? s.giftMessage,
+    })),
+  reset: () => set({ intent: "none", clubTierId: null, giftEnabled: false, giftRecipientName: "", giftMessage: "" }),
 }));

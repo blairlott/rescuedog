@@ -109,8 +109,19 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
         </div>
         <div className="border border-border p-6 text-center">
           <Percent className="h-8 w-8 text-primary mx-auto mb-3" />
-          <p className="text-2xl font-bold text-foreground">{tier.discount_percent}% Off</p>
-          <p className="text-sm text-muted-foreground">À la carte purchases</p>
+          {tier.shipment_discount_percent && tier.shipment_discount_percent !== tier.discount_percent ? (
+            <>
+              <p className="text-2xl font-bold text-foreground">
+                {tier.shipment_discount_percent}% / {tier.discount_percent}%
+              </p>
+              <p className="text-sm text-muted-foreground">Shipments / à la carte</p>
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-bold text-foreground">{tier.discount_percent}% Off</p>
+              <p className="text-sm text-muted-foreground">À la carte purchases</p>
+            </>
+          )}
         </div>
       </div>
 

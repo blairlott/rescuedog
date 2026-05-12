@@ -3,7 +3,8 @@ import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2, History } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2, History, ChevronDown } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCartStore } from "@/stores/cartStore";
 import { FreeShippingBar } from "@/components/cart/FreeShippingBar";
 import { useCartSettings } from "@/hooks/useCartSettings";
@@ -208,27 +209,29 @@ export const CartDrawer = () => {
                   <CartUpsellBanner totalBottles={totalItems} cartTotal={totalPrice} />
                 </div>
 
-                {/* Product recommendations */}
-                <div className="mt-4">
-                  <CartRecommendations cartItems={items} cartTotal={totalPrice} />
-                </div>
-
-                {/* Trust + brand block */}
-                {!isMerchRoute && (
+                {/* Product recommendations — only when cart is small (avoid drawer bloat) */}
+                {totalItems > 0 && totalItems <= 2 && (
                   <div className="mt-4">
-                    <CartTrustBlock totalBottles={totalBottlesEffective} />
+                    <CartRecommendations cartItems={items} cartTotal={totalPrice} />
                   </div>
                 )}
 
-                {/* Gift this order */}
-                <div className="mt-4">
-                  <CartGiftToggle />
-                </div>
-
-                {/* Save / email me this cart */}
-                <div className="mt-3">
-                  <CartSaveForLater />
-                </div>
+                {/* Collapsed extras — keeps the checkout button reachable on mobile */}
+                <Accordion type="single" collapsible className="mt-4">
+                  <AccordionItem value="more" className="border-t border-b border-border">
+                    <AccordionTrigger className="text-xs uppercase tracking-brand font-bold py-3 hover:no-underline">
+                      More options
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3 pb-3">
+                      {!isMerchRoute && <CartTrustBlock totalBottles={totalBottlesEffective} />}
+                      <CartGiftToggle />
+                      <CartSaveForLater />
+                      {totalItems > 2 && (
+                        <CartRecommendations cartItems={items} cartTotal={totalPrice} />
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
 
               {/* Footer with total and checkout */}

@@ -99,7 +99,7 @@ export function NextShipmentCustomizer({ membership }: Props) {
   const totalBottles = useMemo(() => items.reduce((s, i) => s + i.quantity, 0), [items]);
   const totalCents = useMemo(() => items.reduce((s, i) => s + i.price_cents * i.quantity, 0), [items]);
   const memberSavingsCents = useMemo(
-    () => Math.round(totalCents * ((tier?.discount_percent ?? 0) / 100)),
+    () => Math.round(totalCents * (((tier?.shipment_discount_percent ?? tier?.discount_percent) ?? 0) / 100)),
     [totalCents, tier]
   );
   const locked = !shipment || LOCKED_STATUSES.has(shipment.status);

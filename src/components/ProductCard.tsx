@@ -89,16 +89,16 @@ export function ProductCard({ product }: ProductCardProps) {
     <Link to={`/product/${node.handle}`} className="group block">
       {/* Image container with overlay add-to-cart */}
       <div className="relative overflow-hidden mb-3">
-        <div className="aspect-[3/4] overflow-hidden bg-secondary">
+        <div className={`aspect-[3/4] overflow-hidden ${isWine ? 'bg-secondary' : 'bg-background'}`}>
           {image ? (
             <img
               src={image.url}
               alt={image.altText || node.title}
-              className="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              className={`w-full h-full ${isWine ? 'object-contain p-2' : 'object-cover'} transition-transform duration-700 ease-out group-hover:scale-[1.04]`}
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs uppercase tracking-brand">
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs uppercase tracking-brand bg-secondary">
               No image
             </div>
           )}

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2, History, ChevronDown } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2, History, ChevronDown, ArrowLeft } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCartStore } from "@/stores/cartStore";
 import { FreeShippingBar } from "@/components/cart/FreeShippingBar";
@@ -307,6 +307,16 @@ export const CartDrawer = () => {
                   disabled={isLoading || isSyncing}
                 >
                   Checkout · ${(totalPrice + wrapFee).toFixed(2)}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full uppercase tracking-brand text-xs font-bold"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-1.5" />
+                  Continue shopping
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center leading-tight">
                   One card. One charge. Wine + merch in a single transaction.

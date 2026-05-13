@@ -1,8 +1,8 @@
 # Project Memory
 
 ## Core
-- Stack (transitioning): Vinoshipper = checkout + payments (wine + eventually merch). WordPress on Cloudways = CMS (pages, blog, wine product copy joined by SKU). Supabase = auth/CRM/wine-club/CMS-fallback. Shopify is being sunset — kept only for /merch behind MERCH_BACKEND flag until VS drop-ship bridge ships.
-- ALL orders (à la carte + wine club) flow through Vinoshipper. No Stripe for wine.
+- Stack: Vinoshipper = wine checkout + payments (compliance + card-on-file). Shopify (rescuedoggear / gear.rescuedog.com) = LIVE merch catalog + merch checkout. Lovable Cloud (Supabase) = auth/CRM/wine-club/CMS. WordPress on Cloudways = legacy content + wine copy joined by SKU.
+- Forked unified cart: wine items → Vinoshipper deep-link checkout, merch items → Shopify hosted checkout. Customer is told they complete two transactions. ALL wine orders (à la carte + club) still flow through Vinoshipper. No Stripe.
 - Wine club: 14 tiers, FREE to join, FLAT 20% off all orders (not tiered), cancel anytime.
 - NEVER say "free shipping" — ALWAYS use "shipping included".
 - Wine club: Vinoshipper identifies members and auto-applies 20% off everything. Shipping included on cadence shipments only — NOT à la carte.
@@ -12,11 +12,12 @@
 - Age gate required for wine routes; bypassed for /merch, /crm, /cms.
 - TIED-HOUSE: any consumer comm naming retailers MUST list 3+ unaffiliated retailers, equal prominence, no exclusivity language. Block send if <3.
 - Email provider: Mailchimp (marketing). Locator/CRM is the brain; Mailchimp delivers.
-- Live = TWO Lovable projects (wine + merch), separate Cloud DBs, DNS cut at end. NO Shopify publishing — fully native catalog.
+- Live = ONE Lovable project (Option B), Shopify = merch backend, Vinoshipper = wine backend. Look & feel source of truth is the current Lovable build, NOT Shopify themes.
 
 ## Memories
 - [Order Routing](mem://features/order-routing) — All orders flow through Vinoshipper including wine club
 - [Shopify Integration](mem://tech/shopify) — Storefront API connection for products, cart, and checkout
+- [Shopify Merch Backend](mem://tech/shopify-merch) — Live Storefront API for /merch catalog + forked checkout (rescuedoggear)
 - [CMS Strategy](mem://tech/cms-strategy) — Hybrid content management using Shopify and Supabase
 - [CMS Image Storage](mem://tech/cms-image-storage) — CMS images stored in Shopify Files
 - [Age Verification](mem://features/age-verification) — Modal gate for wine routes, bypassed for merch/crm/cms

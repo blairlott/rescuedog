@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { isRewardsRedemptionAllowed, REWARDS_BLOCKED_STATES, REWARDS_RULES } from "@/lib/rewardsCompliance";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 interface Account { points_balance: number; lifetime_points_earned: number; tier: string; }
 interface Entry { id: string; delta_points: number; event_type: string; reason: string; created_at: string; }
@@ -30,6 +31,7 @@ const US_STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","
 
 export function RescueRewardsDashboard() {
   const { user } = useCustomerAuth();
+  const testMode = useFeatureFlag("rewards_test_mode", true);
   const [acct, setAcct] = useState<Account | null>(null);
   const [ledger, setLedger] = useState<Entry[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
@@ -128,6 +130,31 @@ export function RescueRewardsDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Mode banner */}
+      <div
+        className={`border p-3 flex items-center justify-between text-xs ${
+          testMode
+            ? "border-primary/50 bg-primary/5"
+            : "border-border bg-muted/30"
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-block h-2 w-2 rounded-full ${
+              testMode ? "bg-primary animate-pulse" : "bg-emerald-500"
+            }`}
+          />
+          <span className="uppercase tracking-brand font-bold">
+            {testMode ? "Test Mode" : "Production"}
+          </span>
+          <span className="text-muted-foreground hidden sm:inline">
+            {testMode
+              ? "Simulated earns enabled — points are not from real orders."
+              : "Live mode — points come only from real Vinoshipper orders."}
+          </span>
+        </div>
+      </div>
+
       {/* Balance hero */}
       <section className="border border-border bg-card p-5 space-y-4">
         <div className="flex items-center gap-2">
@@ -209,7 +236,8 @@ export function RescueRewardsDashboard() {
         </div>
       </section>
 
-      {/* Simulated earn (UX testing) */}
+      {/* Simulated earn (UX testing) — Test mode only */}
+      {testMode && (
       <section className="border border-dashed border-primary/50 bg-primary/5 p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -232,6 +260,7 @@ export function RescueRewardsDashboard() {
           </Button>
         </div>
       </section>
+      )}
 
       {/* Redemptions */}
       {redemptions.length > 0 && (

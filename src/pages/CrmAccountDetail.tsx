@@ -279,6 +279,11 @@ export default function CrmAccountDetail() {
         </div>
       </div>
       <AccountFormDialog open={editOpen} onOpenChange={setEditOpen} account={account} />
+      <AwardPointsDialog
+        open={awardOpen}
+        onOpenChange={setAwardOpen}
+        defaultEmail={account.email || ""}
+      />
     </div>
   );
 }

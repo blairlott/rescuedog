@@ -236,9 +236,9 @@ export function RescueRewardsDashboard() {
         </div>
       </section>
 
-      {/* Simulated earn (UX testing) — Test mode only */}
+      {/* Simulated earn + redemption presets (UX testing) — Test mode only */}
       {testMode && (
-      <section className="border border-dashed border-primary/50 bg-primary/5 p-5 space-y-3">
+      <section className="border border-dashed border-primary/50 bg-primary/5 p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
           <h3 className="font-display text-sm font-bold uppercase tracking-brand">Simulate Purchase</h3>
@@ -258,6 +258,33 @@ export function RescueRewardsDashboard() {
           <Button size="sm" onClick={handleSimulate} disabled={busy}>
             {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : "Earn points"}
           </Button>
+        </div>
+
+        {/* Redemption presets */}
+        <div className="border-t border-primary/30 pt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="font-display text-xs font-bold uppercase tracking-brand">Redemption Presets</h4>
+            <span className="text-[10px] uppercase tracking-brand text-muted-foreground">Edge-case testing</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Run preset scenarios against the cheapest reward ({cheapestReward.title}, {cheapestReward.cost} pts) to confirm UX for partial, full, and over-balance redemptions.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => runPreset("partial")}>
+              Partial spend
+            </Button>
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => runPreset("full")}>
+              Full balance
+            </Button>
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => runPreset("insufficient")}>
+              Insufficient balance
+            </Button>
+          </div>
+          <ul className="text-[10px] text-muted-foreground space-y-0.5 pl-4 list-disc">
+            <li><strong>Partial:</strong> tops balance to 2× cost, then redeems once — expect remainder.</li>
+            <li><strong>Full:</strong> sets balance to exactly the reward cost, then redeems — expect 0 remaining.</li>
+            <li><strong>Insufficient:</strong> drains balance below cost, then attempts redeem — expect rejection toast.</li>
+          </ul>
         </div>
       </section>
       )}

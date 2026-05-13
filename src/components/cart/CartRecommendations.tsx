@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCartSettings } from "@/hooks/useCartSettings";
+import { isAgeVerified } from "@/lib/ageVerification";
+import { isWineProduct } from "@/lib/productUtils";
 
 interface CartRecommendationsProps {
   cartItems: CartItem[];
@@ -25,9 +27,14 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
   const hasWine = cartItems.some(i => i.product.node.productKind === "wine");
   const hasMerch = cartItems.some(i => i.product.node.productKind !== "wine");
 
+  // Compliance: never recommend wine to visitors who haven't confirmed 21+.
+  const ageOk = isAgeVerified();
   const available = allProducts.filter(p => {
     const firstVariant = p.node.variants.edges[0]?.node;
-    return firstVariant?.availableForSale && !cartVariantIds.has(firstVariant.id);
+    if (!firstVariant?.availableForSale) return false;
+    if (cartVariantIds.has(firstVariant.id)) return false;
+    if (!ageOk && (p.node.productKind === "wine" || isWineProduct(p))) return false;
+    return true;
   });
   if (available.length === 0) return null;
 
@@ -39,7 +46,7 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
       pool = merchOnly;
       heading = "Pair it with merch";
     }
-  } else if (hasMerch && !hasWine) {
+  } else if (hasMerch && !hasWine && ageOk) {
     const wineOnly = available.filter(p => p.node.productKind === "wine");
     if (wineOnly.length > 0) {
       pool = wineOnly;

@@ -29,11 +29,11 @@ export function GeoNotice() {
       </p>
       <Button
         size="sm"
-        variant="ghost"
-        className="h-6 px-2 text-[10px] uppercase tracking-brand text-background hover:text-background hover:bg-background/10"
+        variant="outline"
+        className="h-7 px-3 text-[10px] uppercase tracking-brand bg-background text-foreground border-background hover:bg-background/90"
         onClick={() => setOverrideUS(true)}
       >
-        I'm in the US
+        {t("geo.shipping_to_us")}
       </Button>
       <button
         onClick={dismiss}

@@ -10,26 +10,30 @@ import { isRescueDogDomain } from "@/lib/productUtils";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "./cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "./cms/CmsEditDialog";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 interface NavItem {
   label: string;
+  i18nKey: string;
   to: string;
   external?: boolean;
 }
 
 const navItems: NavItem[] = [
-  { label: "SHOP WINES", to: "/wines" },
-  { label: "WINE CLUB", to: "/club" },
-  { label: "FIND A STORE", to: "/store-locator" },
-  { label: "MERCH", to: "/merch" },
-  { label: "ABOUT", to: "/about" },
-  { label: "MISSION", to: "/mission" },
-  { label: "DONATION", to: "/donation" },
-  { label: "EVENTS", to: "/events" },
-  { label: "AMBASSADORS", to: "/ambassadors" },
+  { label: "SHOP WINES", i18nKey: "nav.shop_wines", to: "/wines" },
+  { label: "WINE CLUB", i18nKey: "nav.wine_club", to: "/club" },
+  { label: "FIND A STORE", i18nKey: "nav.find_a_store", to: "/store-locator" },
+  { label: "MERCH", i18nKey: "nav.merch", to: "/merch" },
+  { label: "ABOUT", i18nKey: "nav.about", to: "/about" },
+  { label: "MISSION", i18nKey: "nav.mission", to: "/mission" },
+  { label: "DONATION", i18nKey: "nav.donation", to: "/donation" },
+  { label: "EVENTS", i18nKey: "nav.events", to: "/events" },
+  { label: "AMBASSADORS", i18nKey: "nav.ambassadors", to: "/ambassadors" },
 ];
 
 export function Header() {
+  const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [editSection, setEditSection] = useState<"logos" | "banner" | null>(null);
   const location = useLocation();
@@ -113,7 +117,8 @@ export function Header() {
 
           {/* Right: Account + Cart */}
           <div className="flex items-center justify-end gap-3 min-w-0">
-            <Link to={user ? "/account" : "/login"} className="hidden md:block p-1 text-foreground hover:text-primary transition-colors" title={user ? "My Account" : "Sign In"}>
+            <LanguageSwitcher compact />
+            <Link to={user ? "/account" : "/login"} className="hidden md:block p-1 text-foreground hover:text-primary transition-colors" title={user ? t("nav.account") : t("nav.sign_in")}>
               {user ? <User className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
             </Link>
             <CartDrawer />
@@ -133,7 +138,7 @@ export function Header() {
                       rel="noopener noreferrer"
                       className="text-sm font-medium tracking-brand uppercase text-foreground hover:text-primary transition-colors"
                     >
-                      {item.label}
+                      {t(item.i18nKey, item.label)}
                     </a>
                   ) : (
                     <Link
@@ -142,7 +147,7 @@ export function Header() {
                         location.pathname === item.to ? "text-primary" : "text-foreground hover:text-primary"
                       }`}
                     >
-                      {item.label}
+                      {t(item.i18nKey, item.label)}
                     </Link>
                   )}
                 </li>
@@ -155,7 +160,7 @@ export function Header() {
       {/* Mobile Nav */}
       {mobileMenuOpen && (
         <nav className="md:hidden border-b border-border bg-background px-4 py-4 space-y-3">
-          {[...navItems, { label: "WHOLESALE / B2B", to: "/wholesale" } as NavItem].map((item) => (
+          {[...navItems, { label: "WHOLESALE / B2B", i18nKey: "nav.wholesale", to: "/wholesale" } as NavItem].map((item) => (
             item.external ? (
               <a
                 key={item.label}
@@ -165,7 +170,7 @@ export function Header() {
                 className="block text-sm font-medium tracking-brand uppercase text-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                {item.label}
+                {t(item.i18nKey, item.label)}
               </a>
             ) : (
               <Link
@@ -174,10 +179,13 @@ export function Header() {
                 className="block text-sm font-medium tracking-brand uppercase text-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                {item.label}
+                {t(item.i18nKey, item.label)}
               </Link>
             )
           ))}
+          <div className="pt-2 border-t border-border">
+            <LanguageSwitcher />
+          </div>
         </nav>
       )}
 

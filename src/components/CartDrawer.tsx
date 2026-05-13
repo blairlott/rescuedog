@@ -31,6 +31,8 @@ export const CartDrawer = () => {
   const [vsCheckoutOpen, setVsCheckoutOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { purchaseAllowed } = useGeo();
+  const { t } = useTranslation();
   const isMerchRoute = location.pathname.startsWith("/merch");
   const { items, isLoading, isSyncing, updateQuantity, removeItem, syncCart, addItem, getShopifyCheckoutUrl, clearCart } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -316,10 +318,18 @@ export const CartDrawer = () => {
                   onClick={() => { setIsOpen(false); navigate("/checkout"); }}
                   className="w-full bg-primary hover:bg-primary/90"
                   size="lg"
-                  disabled={isLoading || isSyncing}
+                  disabled={isLoading || isSyncing || !purchaseAllowed}
+                  title={!purchaseAllowed ? t("geo.purchase_disabled_tooltip") : undefined}
                 >
-                  Checkout · ${(totalPrice + wrapFee).toFixed(2)}
+                  {!purchaseAllowed
+                    ? t("geo.checkout_disabled_label")
+                    : `${t("common.checkout")} · $${(totalPrice + wrapFee).toFixed(2)}`}
                 </Button>
+                {!purchaseAllowed && (
+                  <p className="text-[10px] text-destructive text-center leading-tight">
+                    {t("geo.purchase_disabled_tooltip")}
+                  </p>
+                )}
                 <Button
                   type="button"
                   variant="ghost"
@@ -328,7 +338,7 @@ export const CartDrawer = () => {
                   className="w-full uppercase tracking-brand text-xs font-bold"
                 >
                   <ArrowLeft className="h-4 w-4 mr-1.5" />
-                  Continue shopping
+                  {t("common.continue_shopping")}
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center leading-tight">
                   One card. One charge. Wine + merch in a single transaction.
@@ -341,14 +351,14 @@ export const CartDrawer = () => {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-2 pt-2">
                 {wineItems.length > 0 && (
-                  <Button onClick={handleCheckoutWines} className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={isLoading || isSyncing}>
+                  <Button onClick={handleCheckoutWines} className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={isLoading || isSyncing || !purchaseAllowed}>
                     {isLoading || isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                       <><ExternalLink className="w-4 h-4 mr-2" /> Checkout {wineItems.length} wine{wineItems.length !== 1 ? "s" : ""} · ${wineTotal.toFixed(2)}</>
                     )}
                   </Button>
                 )}
                 {merchItems.length > 0 && (
-                  <Button onClick={handleCheckoutMerch} variant={wineItems.length > 0 ? "outline" : "default"} className={`w-full ${wineItems.length === 0 ? "bg-primary hover:bg-primary/90" : ""}`} size="lg" disabled={isLoading || isSyncing}>
+                  <Button onClick={handleCheckoutMerch} variant={wineItems.length > 0 ? "outline" : "default"} className={`w-full ${wineItems.length === 0 ? "bg-primary hover:bg-primary/90" : ""}`} size="lg" disabled={isLoading || isSyncing || !purchaseAllowed}>
                     <ExternalLink className="w-4 h-4 mr-2" /> Checkout {merchItems.length} merch · ${merchTotal.toFixed(2)}
                   </Button>
                 )}

@@ -42,7 +42,7 @@ export default function CrmMarginPage() {
         supabase.from("order_margin_v" as any).select("*").order("created_at", { ascending: false }).limit(500),
         supabase.from("order_items").select("order_id,product_kind,partner_kind,partner_id,product_name,product_sku,quantity,unit_price_cents,cost_cents").limit(2000),
       ]);
-      setOrders((o as MarginRow[]) ?? []);
+      setOrders((o as unknown as MarginRow[]) ?? []);
       setItems((i as unknown as ItemRow[]) ?? []);
       setLoading(false);
     })();

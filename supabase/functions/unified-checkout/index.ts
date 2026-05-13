@@ -19,20 +19,18 @@
 // with a synthetic order id. Flip both flags + add VS API secrets to go live.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import Stripe from "npm:stripe@17";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3.23";
+import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const STRIPE_SECRET = Deno.env.get("STRIPE_SANDBOX_API_KEY") ?? Deno.env.get("STRIPE_LIVE_API_KEY") ?? "";
 
 // Simulation flag mirrors src/lib/vinoshipperConfig.ts. Flip to false once VS
 // API secrets are in place and we're ready to actually create wine orders.
 const VS_SIMULATION = true;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: "2024-09-30.acacia" as any }) : null;
 
 const LineItemSchema = z.object({
   product_kind: z.enum(["wine", "merch"]),
@@ -67,11 +65,13 @@ const CreateIntentSchema = z.object({
   tax_cents: z.number().int().nonnegative().default(0),
   age_verified: z.boolean(),
   user_id: z.string().uuid().nullable().optional(),
+  environment: z.enum(["sandbox", "live"]).default("sandbox"),
 });
 
 const FinalizeSchema = z.object({
   action: z.literal("finalize"),
   order_id: z.string().uuid(),
+  environment: z.enum(["sandbox", "live"]).default("sandbox"),
 });
 
 const RequestSchema = z.discriminatedUnion("action", [CreateIntentSchema, FinalizeSchema]);
@@ -94,7 +94,6 @@ function genOrderNumber(): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResp({ error: "Method not allowed" }, 405);
-  if (!stripe) return jsonResp({ error: "Stripe not configured" }, 500);
 
   let parsed;
   try {
@@ -107,9 +106,55 @@ Deno.serve(async (req) => {
     return jsonResp({ error: "Validation failed", details: parsed.error.flatten() }, 400);
   }
   const data = parsed.data;
+  const env: StripeEnv = data.environment;
+  let stripe;
+  try {
+    stripe = createStripeClient(env);
+  } catch (e) {
+    console.error("[unified-checkout] stripe client init failed", e);
+    return jsonResp({ error: "Stripe not configured" }, 500);
+  }
 
   try {
     if (data.action === "create-intent") {
+      // ── Cost snapshot lookup (margin tracking) ──────────────────────────
+      // Wine: cost from wine_products.cost_cents, partner = Vinoshipper.
+      // Merch: prefer dropship_skus.cost_cents (matched by sku), fall back to
+      // merch_products.cost_cents (self-fulfilled).
+      const wineVsIds = data.items.filter(i => i.product_kind === "wine" && i.vinoshipper_product_id).map(i => i.vinoshipper_product_id!);
+      const merchSkus = data.items.filter(i => i.product_kind === "merch" && i.product_sku).map(i => i.product_sku!);
+      const merchIds = data.items.filter(i => i.product_kind === "merch" && i.product_id).map(i => i.product_id!);
+
+      const [wineCostMap, dropshipCostMap, merchCostMap] = await Promise.all([
+        wineVsIds.length
+          ? supabase.from("wine_products").select("vinoshipper_product_id, cost_cents")
+              .in("vinoshipper_product_id", wineVsIds)
+              .then(r => new Map((r.data ?? []).map((w: any) => [w.vinoshipper_product_id, w.cost_cents])))
+          : Promise.resolve(new Map<string, number | null>()),
+        merchSkus.length
+          ? supabase.from("dropship_skus").select("sku, cost_cents, partner_id")
+              .in("sku", merchSkus).eq("is_active", true)
+              .then(r => new Map((r.data ?? []).map((d: any) => [d.sku, { cost: d.cost_cents, partner_id: d.partner_id }])))
+          : Promise.resolve(new Map<string, { cost: number; partner_id: string }>()),
+        merchIds.length
+          ? supabase.from("merch_products").select("id, cost_cents")
+              .in("id", merchIds)
+              .then(r => new Map((r.data ?? []).map((m: any) => [m.id, m.cost_cents])))
+          : Promise.resolve(new Map<string, number | null>()),
+      ]);
+
+      function snapshotCost(i: typeof data.items[number]): { cost_cents: number | null; partner_kind: string | null; partner_id: string | null } {
+        if (i.product_kind === "wine") {
+          const c = i.vinoshipper_product_id ? wineCostMap.get(i.vinoshipper_product_id) : null;
+          return { cost_cents: c ?? null, partner_kind: "vinoshipper", partner_id: i.vinoshipper_product_id ?? null };
+        }
+        // merch — try dropship match first
+        const ds = i.product_sku ? dropshipCostMap.get(i.product_sku) as any : null;
+        if (ds) return { cost_cents: ds.cost ?? null, partner_kind: "dropship", partner_id: ds.partner_id ?? null };
+        const mc = i.product_id ? merchCostMap.get(i.product_id) : null;
+        return { cost_cents: mc ?? null, partner_kind: "self", partner_id: null };
+      }
+
       const wineSubtotal = data.items.filter(i => i.product_kind === "wine")
         .reduce((s, i) => s + i.unit_price_cents * i.quantity, 0);
       const merchSubtotal = data.items.filter(i => i.product_kind === "merch")
@@ -179,6 +224,7 @@ Deno.serve(async (req) => {
         quantity: i.quantity,
         unit_price_cents: i.unit_price_cents,
         line_total_cents: i.unit_price_cents * i.quantity,
+        ...snapshotCost(i),
       }));
       const { error: itemsErr } = await supabase.from("order_items").insert(itemRows);
       if (itemsErr) {

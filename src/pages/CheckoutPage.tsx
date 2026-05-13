@@ -308,6 +308,15 @@ export default function CheckoutPage() {
 
           {!intent && (
             <form onSubmit={handleStartIntent} className="space-y-6">
+              {IS_SANDBOX && (
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...SANDBOX_FORM, email: form.email || SANDBOX_FORM.email })}
+                  className="text-xs underline text-orange-700 hover:text-orange-900"
+                >
+                  Fill sandbox test details
+                </button>
+              )}
               <section className="space-y-3">
                 <h2 className="font-semibold text-lg">Contact</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

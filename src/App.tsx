@@ -67,6 +67,7 @@ import AmbassadorDirectoryPage from "./pages/AmbassadorDirectoryPage";
 import AmbassadorDisclosurePage from "./pages/AmbassadorDisclosurePage";
 import CrmAmbassadorsPage from "./pages/CrmAmbassadorsPage";
 import RewardsTermsPage from "./pages/RewardsTermsPage";
+import RewardsPage from "./pages/RewardsPage";
 import { SommelierChat } from "./components/SommelierChat";
 import { EmailCapturePrompt } from "./components/cart/EmailCapturePrompt";
 import { useLocation } from "react-router-dom";
@@ -138,6 +139,7 @@ function AppContent() {
       <Route path="/reset-password" element={<CustomerResetPasswordPage />} />
       <Route path="/account" element={<AccountPage />} />
       <Route path="/account/gifts/:id/print" element={<GiftCertificatePrintPage />} />
+      <Route path="/rewards" element={<RewardsPage />} />
       <Route path="/rewards/terms" element={<RewardsTermsPage />} />
       <Route path="/thank-you" element={<ThankYouPage />} />
       <Route path="/checkout" element={<CheckoutPage />} />

@@ -132,7 +132,7 @@ export const CartDrawer = () => {
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-lg flex flex-col h-full">
+      <SheetContent className="w-full sm:max-w-lg flex flex-col h-full overflow-hidden p-4 sm:p-6">
         {/* Diagonal corner ribbon — communicates shipping threshold for both wine & merch */}
         {totalItems > 0 && (
           <div className="pointer-events-none absolute top-0 right-0 h-24 w-24 overflow-hidden z-20">

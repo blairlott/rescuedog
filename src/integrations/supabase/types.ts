@@ -1773,11 +1773,14 @@ export type Database = {
       }
       order_items: {
         Row: {
+          cost_cents: number | null
           created_at: string
           id: string
           line_total_cents: number
           metadata: Json
           order_id: string
+          partner_id: string | null
+          partner_kind: string | null
           product_id: string | null
           product_kind: string
           product_name: string
@@ -1788,11 +1791,14 @@ export type Database = {
           vinoshipper_product_id: string | null
         }
         Insert: {
+          cost_cents?: number | null
           created_at?: string
           id?: string
           line_total_cents: number
           metadata?: Json
           order_id: string
+          partner_id?: string | null
+          partner_kind?: string | null
           product_id?: string | null
           product_kind: string
           product_name: string
@@ -1803,11 +1809,14 @@ export type Database = {
           vinoshipper_product_id?: string | null
         }
         Update: {
+          cost_cents?: number | null
           created_at?: string
           id?: string
           line_total_cents?: number
           metadata?: Json
           order_id?: string
+          partner_id?: string | null
+          partner_kind?: string | null
           product_id?: string | null
           product_kind?: string
           product_name?: string
@@ -1818,6 +1827,13 @@ export type Database = {
           vinoshipper_product_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "order_margin_v"
+            referencedColumns: ["order_id"]
+          },
           {
             foreignKeyName: "order_items_order_id_fkey"
             columns: ["order_id"]
@@ -1843,6 +1859,7 @@ export type Database = {
           notes: string | null
           order_number: string
           payment_status: string
+          processor_net_cents: number | null
           ship_address1: string
           ship_address2: string | null
           ship_city: string
@@ -1851,6 +1868,7 @@ export type Database = {
           ship_zip: string
           shipping_cents: number
           stripe_charge_id: string | null
+          stripe_fee_cents: number | null
           stripe_payment_intent_id: string | null
           tax_cents: number
           total_cents: number
@@ -1875,6 +1893,7 @@ export type Database = {
           notes?: string | null
           order_number: string
           payment_status?: string
+          processor_net_cents?: number | null
           ship_address1: string
           ship_address2?: string | null
           ship_city: string
@@ -1883,6 +1902,7 @@ export type Database = {
           ship_zip: string
           shipping_cents?: number
           stripe_charge_id?: string | null
+          stripe_fee_cents?: number | null
           stripe_payment_intent_id?: string | null
           tax_cents?: number
           total_cents: number
@@ -1907,6 +1927,7 @@ export type Database = {
           notes?: string | null
           order_number?: string
           payment_status?: string
+          processor_net_cents?: number | null
           ship_address1?: string
           ship_address2?: string | null
           ship_city?: string
@@ -1915,6 +1936,7 @@ export type Database = {
           ship_zip?: string
           shipping_cents?: number
           stripe_charge_id?: string | null
+          stripe_fee_cents?: number | null
           stripe_payment_intent_id?: string | null
           tax_cents?: number
           total_cents?: number
@@ -3146,6 +3168,20 @@ export type Database = {
           storefront_sort: number | null
           vendor_name: string | null
           vendor_type: string | null
+        }
+        Relationships: []
+      }
+      order_margin_v: {
+        Row: {
+          cogs_cents: number | null
+          created_at: string | null
+          gross_cents: number | null
+          gross_margin_cents: number | null
+          margin_pct: number | null
+          order_id: string | null
+          order_number: string | null
+          payment_status: string | null
+          stripe_fee_cents: number | null
         }
         Relationships: []
       }

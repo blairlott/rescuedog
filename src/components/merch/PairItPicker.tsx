@@ -6,6 +6,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { isWineProduct } from "@/lib/productUtils";
 import { ShopifyProduct } from "@/lib/shopify";
 import { toast } from "sonner";
+import { isAgeVerified } from "@/lib/ageVerification";
 
 interface Props {
   productHandle: string;
@@ -25,6 +26,10 @@ const PAIRINGS: Record<string, string[]> = {
 export function PairItPicker({ productHandle, productTitle, productCategory }: Props) {
   const { data: products } = useProducts(200);
   const addItem = useCartStore((s) => s.addItem);
+
+  // Compliance: never suggest wine on the merch site to a visitor who
+  // hasn't confirmed they're 21+.
+  if (!isAgeVerified()) return null;
 
   const recommended: ShopifyProduct | null = useMemo(() => {
     if (!products) return null;

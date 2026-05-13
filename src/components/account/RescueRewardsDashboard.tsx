@@ -113,6 +113,79 @@ export function RescueRewardsDashboard() {
     }
   };
 
+  const cheapestReward = useMemo(
+    () => REWARDS.reduce((a, b) => (a.cost <= b.cost ? a : b)),
+    []
+  );
+
+  const topUpTo = async (targetPts: number) => {
+    const need = targetPts - balance;
+    if (need <= 0) return;
+    const { error } = await supabase.rpc("simulate_loyalty_earn", {
+      _subtotal_cents: Math.round(need * 100),
+      _client_request_id: `preset-topup-${Date.now()}`,
+    });
+    if (error) throw error;
+  };
+
+  const redeemAt = async (cost: number, label: string) => {
+    const { data, error } = await supabase.rpc("redeem_loyalty_points", {
+      _reward_id: cheapestReward.id,
+      _reward_title: `${cheapestReward.title} (${label})`,
+      _reward_category: cheapestReward.category,
+      _points_cost: cost,
+      _ship_state: shipState || null,
+      _client_request_id: `preset-${label}-${Date.now()}`,
+      _simulated: true,
+      _metadata: { preset: label },
+    });
+    if (error) throw error;
+    return Array.isArray(data) ? data[0] : data;
+  };
+
+  const runPreset = async (preset: "partial" | "full" | "insufficient") => {
+    if (!user) return;
+    if (!allowed && preset !== "insufficient") {
+      toast.error("Set a redemption-eligible state first");
+      return;
+    }
+    setBusy(true);
+    try {
+      const cost = cheapestReward.cost;
+      if (preset === "partial") {
+        await topUpTo(cost * 2);
+        const row = await redeemAt(cost, "partial");
+        toast.success("Partial redemption OK", {
+          description: `Spent ${cost} pts, ${row?.new_balance ?? "?"} pts remaining.`,
+        });
+      } else if (preset === "full") {
+        await topUpTo(cost);
+        const row = await redeemAt(cost, "full");
+        toast.success("Full-balance redemption OK", {
+          description: `Spent ${cost} pts, ${row?.new_balance ?? 0} pts remaining.`,
+        });
+      } else {
+        // insufficient: attempt to spend more than the user holds
+        const overCost = Math.max(balance + 500, cost + 500);
+        try {
+          await redeemAt(overCost, "insufficient");
+          toast.error("Expected rejection but redemption succeeded", {
+            description: "Check redeem_loyalty_points balance guard.",
+          });
+        } catch (e: any) {
+          toast.success("Insufficient-balance guard fired", {
+            description: e?.message ?? "Redemption correctly blocked.",
+          });
+        }
+      }
+      await refresh();
+    } catch (e: any) {
+      toast.error("Preset failed", { description: e?.message ?? "Try again." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!user) {
     return (
       <section className="border border-border bg-card p-6 text-center space-y-3">

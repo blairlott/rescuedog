@@ -4,18 +4,25 @@ import { Button } from "@/components/ui/button";
 import { isRescueDogDomain } from "@/lib/productUtils";
 import rdwLogo from "@/assets/rdw-logo.png";
 
-const MERCH_ONLY_ROUTES = ["/merch", "/shop"];
-
-function isMerchOnlyRoute(pathname: string): boolean {
-  return MERCH_ONLY_ROUTES.includes(pathname);
-}
+// Wine-only entry points. The age gate ONLY pops up when a visitor
+// lands on (or navigates to) one of these routes. Everything else —
+// merch, CRM, CMS, ambassadors, donation, locator, account, about,
+// mission, blog, contact, etc. — is non-alcohol and stays gate-free.
+const WINE_ROUTE_PREFIXES = [
+  "/wines",
+  "/club",
+  "/wine-club",
+  "/pairings",
+  "/vineyard",
+  "/subscribe",
+  "/sommelier",
+];
+const WINE_EXACT_ROUTES = new Set<string>(["/", "/index", "/checkout", "/thank-you"]);
 
 function needsAgeGate(pathname: string): boolean {
   const lower = pathname.toLowerCase();
-  if (lower.startsWith("/cms") || lower.startsWith("/crm")) return false;
-  if (isRescueDogDomain() && isMerchOnlyRoute(pathname)) return false;
-  if (pathname === "/merch") return false;
-  return true;
+  if (WINE_EXACT_ROUTES.has(lower)) return true;
+  return WINE_ROUTE_PREFIXES.some((p) => lower === p || lower.startsWith(p + "/"));
 }
 
 export function AgeGate({ children }: { children: React.ReactNode }) {

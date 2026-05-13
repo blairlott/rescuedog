@@ -166,12 +166,12 @@ const Index = () => {
         <div className="relative container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="max-w-xl">
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-primary-foreground mb-6 leading-[0.9] uppercase">
-              {getVal("hero", "headline", "Our Wine")}<br />
-              {getVal("hero", "headline2", "Is For The")}<br />
-              {getVal("hero", "headline3", "Dogs")}
+              <T>{getVal("hero", "headline", "Our Wine")}</T><br />
+              <T>{getVal("hero", "headline2", "Is For The")}</T><br />
+              <T>{getVal("hero", "headline3", "Dogs")}</T>
             </h1>
             <p className="text-primary-foreground/80 text-lg mb-8 max-w-md">
-              {getVal("hero", "subtitle", "Award-winning, sustainable wines. 50% of our profits support animal rescue organizations.")}
+              <T>{getVal("hero", "subtitle", "Award-winning, sustainable wines. 50% of our profits support animal rescue organizations.")}</T>
             </p>
             <div className="flex flex-wrap gap-4">
               <Button
@@ -179,7 +179,7 @@ const Index = () => {
                 size="lg"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
               >
-                <Link to="/wines">Shop Wines</Link>
+                <Link to="/wines"><T>Shop Wines</T></Link>
               </Button>
               <Button
                 asChild
@@ -187,7 +187,7 @@ const Index = () => {
                 variant="outline"
                 className="border-primary-foreground text-primary-foreground bg-transparent hover:bg-primary-foreground/10 uppercase tracking-brand text-sm font-bold px-10 py-6"
               >
-                <Link to="/store-locator">Find a Store</Link>
+                <Link to="/store-locator"><T>Find a Store</T></Link>
               </Button>
             </div>
           </div>
@@ -219,16 +219,16 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <p className="text-sm tracking-brand uppercase text-primary font-bold mb-2">
-                {getVal("mission", "tagline", "Our wine is for the dogs")}
+                <T>{getVal("mission", "tagline", "Our wine is for the dogs")}</T>
               </p>
               <h2 className="text-sm font-bold tracking-brand uppercase text-foreground mb-4">
-                {getVal("mission", "heading", "50% of our PROFITS SUPPORT RESCUE ORGANIZATIONS")}
+                <T>{getVal("mission", "heading", "50% of our PROFITS SUPPORT RESCUE ORGANIZATIONS")}</T>
               </h2>
               <p className="text-foreground leading-relaxed mb-4">
-                {getVal("mission", "paragraph1", "At Rescue Dog Wines®, we craft award-winning wines from sustainable grapes. Enjoy our wines knowing half our profits support animal rescue organizations.")}
+                <T>{getVal("mission", "paragraph1", "At Rescue Dog Wines®, we craft award-winning wines from sustainable grapes. Enjoy our wines knowing half our profits support animal rescue organizations.")}</T>
               </p>
               <p className="text-foreground mb-6">
-                {getVal("mission", "paragraph2", "Rescue Dog™ ships to most of the US from our online store!")}
+                <T>{getVal("mission", "paragraph2", "Rescue Dog™ ships to most of the US from our online store!")}</T>
               </p>
               <div className="flex flex-wrap gap-4">
                 <Button

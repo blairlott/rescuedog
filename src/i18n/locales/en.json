@@ -1,0 +1,34 @@
+{
+  "language": { "label": "Language", "en": "English", "fr": "Français", "es": "Español" },
+  "nav": {
+    "shop_wines": "Shop Wines",
+    "wine_club": "Wine Club",
+    "find_a_store": "Find a Store",
+    "merch": "Merch",
+    "about": "About",
+    "mission": "Mission",
+    "donation": "Donation",
+    "events": "Events",
+    "ambassadors": "Ambassadors",
+    "wholesale": "Wholesale / B2B",
+    "account": "My Account",
+    "sign_in": "Sign In"
+  },
+  "common": {
+    "add_to_cart": "Add to Cart",
+    "sold_out": "Sold Out",
+    "checkout": "Checkout",
+    "continue_shopping": "Continue shopping",
+    "members_only": "Members only",
+    "join_the_club": "Join the club",
+    "club_price": "Club Price"
+  },
+  "geo": {
+    "us_only_short": "US shipping only",
+    "banner_title": "Shipping inside the US only",
+    "banner_body": "We currently ship wine and merch to US addresses. Browse freely — checkout will reopen for international visitors soon.",
+    "purchase_disabled_tooltip": "Purchases are paused outside the US.",
+    "checkout_disabled_label": "US-only checkout",
+    "join_waitlist": "Join the international waitlist"
+  }
+}

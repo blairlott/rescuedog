@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { supabase } from "@/integrations/supabase/client";
@@ -304,7 +304,22 @@ export default function CheckoutPage() {
       <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8">
         {/* LEFT: form / payment */}
         <div className="space-y-6">
-          <h1 className="text-3xl font-bold">Checkout</h1>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h1 className="text-3xl font-bold">Checkout</h1>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const last = (typeof window !== "undefined" && sessionStorage.getItem("lastStorePath")) || "/shop";
+                navigate(last);
+              }}
+              className="uppercase tracking-brand text-xs font-bold"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Return to shopping
+            </Button>
+          </div>
 
           {!intent && (
             <form onSubmit={handleStartIntent} className="space-y-6">

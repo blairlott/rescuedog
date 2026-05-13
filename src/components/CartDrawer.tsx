@@ -156,6 +156,16 @@ export const CartDrawer = () => {
           <SheetDescription>
             {totalItems === 0 ? "Your cart is empty" : `${totalItems} item${totalItems !== 1 ? 's' : ''} in your cart`}
           </SheetDescription>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsOpen(false)}
+            className="mt-2 self-start uppercase tracking-brand text-xs font-bold h-8 px-2"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            Continue shopping
+          </Button>
           {!isMerchRoute && isMember && totalItems > 0 && (
             <div className="mt-2 inline-flex items-center gap-1.5 bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-brand px-2 py-1 rounded-sm w-fit">
               <Percent className="h-3 w-3" /> Member price applied at checkout — save ${memberSavings.toFixed(2)}

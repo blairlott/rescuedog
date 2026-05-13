@@ -64,6 +64,7 @@ import AmbassadorDisclosurePage from "./pages/AmbassadorDisclosurePage";
 import CrmAmbassadorsPage from "./pages/CrmAmbassadorsPage";
 import { SommelierChat } from "./components/SommelierChat";
 import { EmailCapturePrompt } from "./components/cart/EmailCapturePrompt";
+import { ScenarioPicker } from "./components/dev/ScenarioPicker";
 import { useLocation } from "react-router-dom";
 
 const queryClient = new QueryClient();
@@ -145,6 +146,7 @@ function AppContent() {
     </Routes>
     {showSommelier && <SommelierChat />}
     <EmailCapturePrompt />
+    <ScenarioPicker />
     </>
   );
 }

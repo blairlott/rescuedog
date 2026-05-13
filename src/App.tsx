@@ -94,6 +94,7 @@ function AppContent() {
   return (
     <>
     <a href="#main-content" className="skip-link">Skip to main content</a>
+    <main id="main-content" tabIndex={-1}>
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/merch" element={<MerchHomePage />} />
@@ -164,6 +165,7 @@ function AppContent() {
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </main>
     {showSommelier && <SommelierChat />}
     <EmailCapturePrompt />
     </>

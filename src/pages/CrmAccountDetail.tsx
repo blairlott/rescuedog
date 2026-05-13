@@ -76,6 +76,7 @@ export default function CrmAccountDetail() {
   const [activityText, setActivityText] = useState("");
   const [activityType, setActivityType] = useState("note");
   const [editOpen, setEditOpen] = useState(false);
+  const [awardOpen, setAwardOpen] = useState(false);
 
   if (isLoading) return <div className="p-6 text-muted-foreground">Loading...</div>;
   if (!account) return <div className="p-6 text-muted-foreground">Account not found</div>;
@@ -139,6 +140,9 @@ export default function CrmAccountDetail() {
           </Button>
           <Button variant="outline" onClick={() => setEditOpen(true)}>
             <Pencil className="h-4 w-4 mr-1" /> Edit
+          </Button>
+          <Button variant="outline" onClick={() => setAwardOpen(true)}>
+            <Gift className="h-4 w-4 mr-1" /> Award Points
           </Button>
         </div>
       </div>

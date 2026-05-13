@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.unified-checkout]
 verify_jwt = false
+
+[functions.compliance-audit]
+verify_jwt = false

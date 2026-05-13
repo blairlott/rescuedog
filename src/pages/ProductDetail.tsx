@@ -93,12 +93,18 @@ const ProductDetail = () => {
       quantity,
       selectedOptions: selectedVariant.selectedOptions || [],
     });
-    const currentBottles = useCartStore.getState().items.reduce((sum, i) => sum + i.quantity, 0);
-    const remaining = freeShippingBottleCount - currentBottles;
-    if (remaining > 0) {
-      toast.success(`${product.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for shipping included`, { position: "top-center" });
+    if (isMerch) {
+      toast.success(`${product.title} added to cart`, { position: "top-center" });
     } else {
-      toast.success(`${product.title} added! Shipping included! 🎉`, { position: "top-center" });
+      const currentBottles = useCartStore.getState().items
+        .filter(i => i.product.node.productKind === "wine")
+        .reduce((sum, i) => sum + i.quantity, 0);
+      const remaining = freeShippingBottleCount - currentBottles;
+      if (remaining > 0) {
+        toast.success(`${product.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for shipping included`, { position: "top-center" });
+      } else {
+        toast.success(`${product.title} added! Shipping included! 🎉`, { position: "top-center" });
+      }
     }
   };
 

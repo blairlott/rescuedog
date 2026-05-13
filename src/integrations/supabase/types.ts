@@ -1506,6 +1506,63 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_redemptions: {
+        Row: {
+          client_request_id: string | null
+          created_at: string
+          fulfilled_at: string | null
+          fulfillment_notes: string | null
+          id: string
+          ledger_id: string | null
+          metadata: Json
+          points_cost: number
+          reward_category: string
+          reward_id: string
+          reward_title: string
+          ship_state: string | null
+          simulated: boolean
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_request_id?: string | null
+          created_at?: string
+          fulfilled_at?: string | null
+          fulfillment_notes?: string | null
+          id?: string
+          ledger_id?: string | null
+          metadata?: Json
+          points_cost: number
+          reward_category: string
+          reward_id: string
+          reward_title: string
+          ship_state?: string | null
+          simulated?: boolean
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_request_id?: string | null
+          created_at?: string
+          fulfilled_at?: string | null
+          fulfillment_notes?: string | null
+          id?: string
+          ledger_id?: string | null
+          metadata?: Json
+          points_cost?: number
+          reward_category?: string
+          reward_id?: string
+          reward_title?: string
+          ship_state?: string | null
+          simulated?: boolean
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       marketplace_partner_applications: {
         Row: {
           admin_note: string | null
@@ -3475,6 +3532,31 @@ export type Database = {
           message: Json
           msg_id: number
           read_ct: number
+        }[]
+      }
+      redeem_loyalty_points: {
+        Args: {
+          _client_request_id?: string
+          _metadata?: Json
+          _points_cost: number
+          _reward_category: string
+          _reward_id: string
+          _reward_title: string
+          _ship_state?: string
+          _simulated?: boolean
+        }
+        Returns: {
+          ledger_id: string
+          new_balance: number
+          redemption_id: string
+        }[]
+      }
+      simulate_loyalty_earn: {
+        Args: { _client_request_id?: string; _subtotal_cents: number }
+        Returns: {
+          ledger_id: string
+          new_balance: number
+          points_awarded: number
         }[]
       }
     }

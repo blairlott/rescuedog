@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import rdwLogo from "@/assets/rdw-logo.png";
+import { T } from "@/components/T";
 
 // Wine-only entry points. The age gate ONLY pops up when a visitor
 // lands on (or navigates to) one of these routes. Everything else —
@@ -90,19 +91,19 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
         {denied ? (
           <>
             <h2 id="age-gate-title" className="text-xl font-bold text-foreground mb-4">
-              Sorry, you must be 21 or older to visit this site.
+              <T>Sorry, you must be 21 or older to visit this site.</T>
             </h2>
             <p id="age-gate-desc" className="text-sm text-muted-foreground">
-              Please come back when you're of legal drinking age.
+              <T>Please come back when you're of legal drinking age.</T>
             </p>
           </>
         ) : (
           <>
             <h2 id="age-gate-title" className="text-xl font-bold text-foreground mb-2">
-              Are you over 21 years of age?
+              <T>Are you over 21 years of age?</T>
             </h2>
             <p id="age-gate-desc" className="text-sm text-muted-foreground mb-6">
-              You must be of legal drinking age to enter this site.
+              <T>You must be of legal drinking age to enter this site.</T>
             </p>
             <div className="flex gap-4 justify-center mb-6">
               <Button
@@ -113,7 +114,7 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
                 className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10"
                 aria-label="Yes, I am over 21"
               >
-                Yes
+                <T>Yes</T>
               </Button>
               <Button
                 onClick={handleNo}
@@ -122,7 +123,7 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
                 className="uppercase tracking-brand text-sm font-bold px-10 border-foreground text-foreground hover:bg-foreground hover:text-background"
                 aria-label="No, I am under 21"
               >
-                No
+                <T>No</T>
               </Button>
             </div>
             <label className="flex items-center justify-center gap-2 cursor-pointer text-sm text-muted-foreground">
@@ -132,7 +133,7 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
                 onChange={(e) => setRemember(e.target.checked)}
                 className="accent-primary"
               />
-              Remember me
+              <T>Remember me</T>
             </label>
           </>
         )}

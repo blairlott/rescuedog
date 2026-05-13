@@ -6,6 +6,7 @@ import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Heart, Users, Gift } from "lucide-react";
 import { useIsMember } from "@/hooks/useIsMember";
+import { PostPurchaseUpsell } from "@/components/PostPurchaseUpsell";
 
 export default function ThankYouPage() {
   const [params] = useSearchParams();
@@ -58,6 +59,8 @@ export default function ThankYouPage() {
               </p>
             </div>
           )}
+
+          {orderId && <PostPurchaseUpsell orderId={orderId} />}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {!isMember && (

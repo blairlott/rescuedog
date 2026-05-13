@@ -13,7 +13,7 @@ const TOPICS = [
   { key: "email_sms_marketing", title: "Email & SMS Marketing (CAN-SPAM, TCPA)", prompt: "Audit a DTC alcohol brand's email & SMS marketing for CAN-SPAM, TCPA, double-opt-in, and unsubscribe requirements." },
   { key: "donations_intake", title: "Donations Intake (501(c) & charitable solicitation)", prompt: "Audit a 501(c) donation intake form for charitable solicitation registration requirements across US states." },
   { key: "privacy", title: "Privacy (CCPA/CPRA, GDPR, cookie consent)", prompt: "Audit a US ecommerce site for CCPA/CPRA, GDPR, and cookie-consent compliance." },
-  { key: "accessibility", title: "Accessibility (WCAG 2.2 AA)", prompt: "Audit common public ecommerce pages for WCAG 2.2 AA conformance risks." },
+  { key: "accessibility", title: "Accessibility — ADA & WCAG 2.2 AA", prompt: "Audit a US ecommerce site for ADA Title III compliance and WCAG 2.2 AA conformance. Cover keyboard navigation, focus indicators, color contrast (4.5:1 text / 3:1 UI), alt text, form labels, ARIA, screen-reader compatibility, captions/transcripts for media, modal/dialog focus traps (relevant for the age-gate), skip-links, semantic HTML, and reduced-motion support. Reference DOJ 2024 ADA web rule and recent case law." },
   { key: "tied_house_retail", title: "Tied-House Rules at Retail (CRM/wholesale)", prompt: "Audit a winery's CRM/wholesale workflow (rep visits, sample tracking, retailer interactions) for tied-house violations." },
 ];
 

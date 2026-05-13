@@ -18,10 +18,12 @@ import { PairingChips } from "@/components/PairingChips";
 import { Seo } from "@/components/Seo";
 import { PairItPicker } from "@/components/merch/PairItPicker";
 import { PairWineWithMerch } from "@/components/cross-sell/PairWineWithMerch";
+import { ProductReviews, useProductRating } from "@/components/reviews/ProductReviews";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
   const { data: product, isLoading } = useProductByHandle(handle || "");
+  const productRating = useProductRating(handle || "");
   const addItem = useCartStore(state => state.addItem);
   const cartLoading = useCartStore(state => state.isLoading);
   const { freeShippingBottleCount } = useCartSettings();
@@ -122,6 +124,15 @@ const ProductDetail = () => {
               ? "https://schema.org/InStock"
               : "https://schema.org/OutOfStock",
           },
+          ...(productRating && productRating.count > 0
+            ? {
+                aggregateRating: {
+                  "@type": "AggregateRating",
+                  ratingValue: productRating.value.toFixed(1),
+                  reviewCount: productRating.count,
+                },
+              }
+            : {}),
         }}
       />
       <Header />
@@ -307,6 +318,9 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
+      <div className="container mx-auto px-4 pb-12">
+        <ProductReviews productHandle={product.handle} />
+      </div>
       {/* Mobile sticky add-to-cart bar */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t border-border p-3 pb-[env(safe-area-inset-bottom)] space-y-1.5">
         {/* Status line: ship-to-state + member savings */}

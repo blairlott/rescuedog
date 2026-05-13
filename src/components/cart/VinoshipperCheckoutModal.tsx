@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,16 +63,17 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
   const [loadingAPs, setLoadingAPs] = useState(false);
   const abandonmentIdRef = useRef<string | null>(null);
   const [form, setForm] = useState({
-    email: user?.email ?? "",
-    name: "",
-    address: "",
-    city: "",
-    state: "",
-    zip: "",
+    email: user?.email ?? "demo.customer@rescuedogwines.com",
+    name: "Sam Rescue",
+    address: "1234 Vintner Lane",
+    city: "Lodi",
+    state: "CA",
+    zip: "95240",
     card: "4242 4242 4242 4242",
     exp: "12/29",
     cvc: "123",
   });
+  const navigate = useNavigate();
 
   // Autofill ship-to from membership address once available
   useEffect(() => {
@@ -277,9 +279,14 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
       toast.success("Order placed (simulated)", {
         description: `Order ${fakeOrderId} — total $${total.toFixed(2)}`,
       });
+      const bottlesForRedirect = totalBottles;
+      const totalForRedirect = total;
       clearCart();
       resetCheckoutIntent();
       onOpenChange(false);
+      navigate(
+        `/thank-you?order=${encodeURIComponent(fakeOrderId)}&total=${totalForRedirect.toFixed(2)}&bottles=${bottlesForRedirect}`,
+      );
     } catch (e: any) {
       toast.error("Could not log simulated order", {
         description: e?.message,

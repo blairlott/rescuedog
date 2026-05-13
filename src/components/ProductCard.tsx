@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Award, ShoppingBag, Heart, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { isWineProduct } from "@/lib/productUtils";
+import { useGeo } from "@/hooks/useGeo";
+import { useTranslation } from "react-i18next";
 
 interface ProductCardProps {
   product: ShopifyProduct;
@@ -33,6 +35,8 @@ export function ProductCard({ product }: ProductCardProps) {
   const { freeShippingBottleCount } = useCartSettings();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { isMember, discountPercent } = useIsMember();
+  const { purchaseAllowed } = useGeo();
+  const { t } = useTranslation();
   const { node } = product;
   const image = node.images.edges[0]?.node;
   const price = node.priceRange.minVariantPrice;
@@ -54,6 +58,10 @@ export function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
     if (locked) return;
+    if (!purchaseAllowed) {
+      toast.error(t("geo.purchase_disabled_tooltip"));
+      return;
+    }
     if (!firstVariant) return;
     await addItem({
       product,
@@ -152,17 +160,20 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out p-3">
           <Button
             onClick={handleAddToCart}
-            disabled={isLoading || !firstVariant?.availableForSale}
+            disabled={isLoading || !firstVariant?.availableForSale || !purchaseAllowed}
+            title={!purchaseAllowed ? t("geo.purchase_disabled_tooltip") : undefined}
             className="w-full uppercase tracking-brand text-xs font-bold bg-foreground text-background hover:bg-foreground/90 h-10"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : !firstVariant?.availableForSale ? (
-              "Sold Out"
+              t("common.sold_out")
+            ) : !purchaseAllowed ? (
+              t("geo.checkout_disabled_label")
             ) : (
               <>
                 <ShoppingBag className="w-3.5 h-3.5 mr-1.5" />
-                Add to Cart
+                {t("common.add_to_cart")}
               </>
             )}
           </Button>

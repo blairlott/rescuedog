@@ -13,6 +13,8 @@ import { CartRecommendations } from "@/components/cart/CartRecommendations";
 import { CartSubscribeToggle } from "@/components/cart/CartSubscribeToggle";
 import { CartWineClubUpsell } from "@/components/cart/CartWineClubUpsell";
 import { VinoshipperCheckoutModal } from "@/components/cart/VinoshipperCheckoutModal";
+import { useGeo } from "@/hooks/useGeo";
+import { useTranslation } from "react-i18next";
 import { CartTrustBlock } from "@/components/cart/CartTrustBlock";
 import { CartGiftToggle } from "@/components/cart/CartGiftToggle";
 import { CartSaveForLater } from "@/components/cart/CartSaveForLater";

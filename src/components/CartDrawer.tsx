@@ -29,7 +29,7 @@ export const CartDrawer = () => {
   const [vsCheckoutOpen, setVsCheckoutOpen] = useState(false);
   const location = useLocation();
   const isMerchRoute = location.pathname.startsWith("/merch");
-  const { items, isLoading, isSyncing, updateQuantity, removeItem, getCheckoutUrl, syncCart, addItem } = useCartStore();
+  const { items, isLoading, isSyncing, updateQuantity, removeItem, syncCart, addItem, getShopifyCheckoutUrl } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
   // Split cart into wine + merch groups so each can check out via the right
@@ -95,15 +95,15 @@ export const CartDrawer = () => {
   };
 
   const handleCheckoutMerch = () => {
-    // Merch checkout placeholder — payment provider not yet connected.
-    const subject = encodeURIComponent("Merch order from rescuedogwines.com");
-    const lines = merchItems.map(i => `- ${i.product.node.title} × ${i.quantity}`).join("%0A");
-    const giftSection = giftMode.enabled
-      ? `%0A%0AGIFT ORDER%0AWrap: ${giftMode.wrap ? "yes" : "no"}%0ARecipient: ${encodeURIComponent(giftMode.recipientEmail || "(none)")}%0AMessage: ${encodeURIComponent(giftMode.message || "(none)")}`
-      : "";
-    window.location.href =
-      `mailto:hello@rescuedogwines.com?subject=${subject}&body=I'd like to order:%0A${lines}${giftSection}`;
-    setIsOpen(false);
+    // Merch checkout: hand off to Shopify hosted checkout for the items already
+    // mirrored to the Shopify cart by the cart store.
+    const url = getShopifyCheckoutUrl();
+    if (url) {
+      window.open(url, "_blank");
+      setIsOpen(false);
+    } else {
+      console.warn("[cart] no Shopify checkout URL available");
+    }
   };
 
   return (

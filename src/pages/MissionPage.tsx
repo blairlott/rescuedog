@@ -13,6 +13,7 @@ import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog } from "@/components/cms/CmsEditDialog";
 import { CmsToolbar } from "@/components/cms/CmsToolbar";
+import { T } from "@/components/T";
 import {
   AlertDialog,
   AlertDialogAction,

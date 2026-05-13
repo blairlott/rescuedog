@@ -19,6 +19,7 @@ import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 
 const STRIPE_PK = import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN as string | undefined;
 const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
+const STRIPE_ENV: "sandbox" | "live" = STRIPE_PK?.startsWith("pk_live_") ? "live" : "sandbox";
 
 type CustomerForm = {
   email: string;
@@ -76,7 +77,7 @@ function CheckoutInner({
       }
       // No redirect → call finalize directly.
       const { data, error: fnErr } = await supabase.functions.invoke("unified-checkout", {
-        body: { action: "finalize", order_id: orderId },
+        body: { action: "finalize", order_id: orderId, environment: STRIPE_ENV },
       });
       if (fnErr || !data?.ok) {
         toast.error("Payment captured but order finalization failed. Support has been notified.");
@@ -171,6 +172,7 @@ export default function CheckoutPage() {
       const { data, error } = await supabase.functions.invoke("unified-checkout", {
         body: {
           action: "create-intent",
+          environment: STRIPE_ENV,
           customer: {
             email: form.email,
             first_name: form.first_name,

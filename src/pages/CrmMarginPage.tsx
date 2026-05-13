@@ -4,6 +4,9 @@ import { Card } from "@/components/ui/card";
 import { Loader2, TrendingUp, DollarSign, Receipt, PieChart } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 type MarginRow = {
   order_id: string;
@@ -35,18 +38,46 @@ export default function CrmMarginPage() {
   const [orders, setOrders] = useState<MarginRow[]>([]);
   const [items, setItems] = useState<ItemRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [wines, setWines] = useState<Array<{ id: string; title: string; price_cents: number; cost_cents: number | null }>>([]);
+  const [merch, setMerch] = useState<Array<{ id: string; title: string; price_cents: number; cost_cents: number | null }>>([]);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const [{ data: o }, { data: i }] = await Promise.all([
+      const [{ data: o }, { data: i }, { data: w }, { data: m }] = await Promise.all([
         supabase.from("order_margin_v" as any).select("*").order("created_at", { ascending: false }).limit(500),
         supabase.from("order_items").select("order_id,product_kind,partner_kind,partner_id,product_name,product_sku,quantity,unit_price_cents,cost_cents").limit(2000),
+        supabase.from("wine_products").select("id, title, price_cents, cost_cents").eq("is_active", true).order("title"),
+        supabase.from("merch_products").select("id, title, price_cents, cost_cents").eq("is_active", true).order("title"),
       ]);
       setOrders((o as unknown as MarginRow[]) ?? []);
       setItems((i as unknown as ItemRow[]) ?? []);
+      setWines((w as any) ?? []);
+      setMerch((m as any) ?? []);
       setLoading(false);
     })();
   }, []);
+
+  async function saveCost(table: "wine_products" | "merch_products", id: string, value: string) {
+    const cents = value === "" ? null : Math.round(parseFloat(value) * 100);
+    if (cents !== null && (Number.isNaN(cents) || cents < 0)) {
+      toast.error("Invalid cost");
+      return;
+    }
+    setSavingId(id);
+    const { error } = await supabase.from(table).update({ cost_cents: cents }).eq("id", id);
+    setSavingId(null);
+    if (error) {
+      toast.error("Save failed");
+      return;
+    }
+    toast.success("Cost saved");
+    if (table === "wine_products") {
+      setWines(ws => ws.map(w => w.id === id ? { ...w, cost_cents: cents } : w));
+    } else {
+      setMerch(ms => ms.map(p => p.id === id ? { ...p, cost_cents: cents } : p));
+    }
+  }
 
   const totals = useMemo(() => {
     const paid = orders.filter(o => o.payment_status === "paid");
@@ -111,6 +142,7 @@ export default function CrmMarginPage() {
           <TabsTrigger value="orders">By order</TabsTrigger>
           <TabsTrigger value="sku">By SKU</TabsTrigger>
           <TabsTrigger value="partner">By partner</TabsTrigger>
+          <TabsTrigger value="costs">Set costs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="orders">
@@ -224,8 +256,90 @@ export default function CrmMarginPage() {
             </Table>
           </Card>
         </TabsContent>
+
+        <TabsContent value="costs">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <CostEditor
+              title="Wine cost per bottle"
+              hint="Wholesale cost paid to the producer/Vinoshipper. Used as COGS for margin reporting."
+              rows={wines}
+              savingId={savingId}
+              onSave={(id, v) => saveCost("wine_products", id, v)}
+            />
+            <CostEditor
+              title="Merch cost (self-fulfilled)"
+              hint="Used only when no dropship SKU mapping exists. Dropship items pull cost from dropship_skus automatically."
+              rows={merch}
+              savingId={savingId}
+              onSave={(id, v) => saveCost("merch_products", id, v)}
+            />
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function CostEditor({
+  title, hint, rows, savingId, onSave,
+}: {
+  title: string;
+  hint: string;
+  rows: Array<{ id: string; title: string; price_cents: number; cost_cents: number | null }>;
+  savingId: string | null;
+  onSave: (id: string, value: string) => void;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <div className="p-4 border-b">
+        <h3 className="font-semibold">{title}</h3>
+        <p className="text-xs text-muted-foreground mt-1">{hint}</p>
+      </div>
+      <div className="max-h-[600px] overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Product</TableHead>
+              <TableHead className="text-right">Price</TableHead>
+              <TableHead className="text-right w-40">Cost ($)</TableHead>
+              <TableHead className="text-right">Margin</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.length === 0 && (
+              <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">No products</TableCell></TableRow>
+            )}
+            {rows.map(r => {
+              const m = r.cost_cents != null ? r.price_cents - r.cost_cents : null;
+              const pct = m != null && r.price_cents > 0 ? `${(m / r.price_cents * 100).toFixed(0)}%` : "—";
+              return (
+                <TableRow key={r.id}>
+                  <TableCell className="text-sm">{r.title}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{fmt(r.price_cents)}</TableCell>
+                  <TableCell className="text-right">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      defaultValue={r.cost_cents != null ? (r.cost_cents / 100).toFixed(2) : ""}
+                      disabled={savingId === r.id}
+                      onBlur={(e) => {
+                        const cur = r.cost_cents != null ? (r.cost_cents / 100).toFixed(2) : "";
+                        if (e.target.value !== cur) onSave(r.id, e.target.value);
+                      }}
+                      className="h-8 text-right text-sm"
+                    />
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm">
+                    {m != null ? `${fmt(m)} (${pct})` : "—"}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </Card>
   );
 }
 

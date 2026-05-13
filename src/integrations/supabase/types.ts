@@ -1706,6 +1706,7 @@ export type Database = {
         Row: {
           category: string | null
           collection: string | null
+          cost_cents: number | null
           created_at: string
           description: string | null
           description_html: string | null
@@ -1728,6 +1729,7 @@ export type Database = {
         Insert: {
           category?: string | null
           collection?: string | null
+          cost_cents?: number | null
           created_at?: string
           description?: string | null
           description_html?: string | null
@@ -1750,6 +1752,7 @@ export type Database = {
         Update: {
           category?: string | null
           collection?: string | null
+          cost_cents?: number | null
           created_at?: string
           description?: string | null
           description_html?: string | null
@@ -2979,6 +2982,7 @@ export type Database = {
         Row: {
           badges: string[] | null
           club_price_cents: number | null
+          cost_cents: number | null
           created_at: string
           description: string | null
           gallery_urls: string[] | null
@@ -3003,6 +3007,7 @@ export type Database = {
         Insert: {
           badges?: string[] | null
           club_price_cents?: number | null
+          cost_cents?: number | null
           created_at?: string
           description?: string | null
           gallery_urls?: string[] | null
@@ -3027,6 +3032,7 @@ export type Database = {
         Update: {
           badges?: string[] | null
           club_price_cents?: number | null
+          cost_cents?: number | null
           created_at?: string
           description?: string | null
           gallery_urls?: string[] | null

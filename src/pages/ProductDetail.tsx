@@ -93,12 +93,18 @@ const ProductDetail = () => {
       quantity,
       selectedOptions: selectedVariant.selectedOptions || [],
     });
-    const currentBottles = useCartStore.getState().items.reduce((sum, i) => sum + i.quantity, 0);
-    const remaining = freeShippingBottleCount - currentBottles;
-    if (remaining > 0) {
-      toast.success(`${product.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for shipping included`, { position: "top-center" });
+    if (isMerch) {
+      toast.success(`${product.title} added to cart`, { position: "top-center" });
     } else {
-      toast.success(`${product.title} added! Shipping included! 🎉`, { position: "top-center" });
+      const currentBottles = useCartStore.getState().items
+        .filter(i => i.product.node.productKind === "wine")
+        .reduce((sum, i) => sum + i.quantity, 0);
+      const remaining = freeShippingBottleCount - currentBottles;
+      if (remaining > 0) {
+        toast.success(`${product.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for shipping included`, { position: "top-center" });
+      } else {
+        toast.success(`${product.title} added! Shipping included! 🎉`, { position: "top-center" });
+      }
     }
   };
 
@@ -351,8 +357,8 @@ const ProductDetail = () => {
           ) : !selectedVariant?.availableForSale ? "Sold Out"
           : locked ? <><Lock className="w-4 h-4 mr-2" /> Members only</>
           : blockedByState && !isMerch ? "Not available in your state"
-          : subscribeMode ? `Subscribe ${quantity} btl — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
-          : <><ShoppingCart className="w-4 h-4 mr-2" /> Add {quantity} btl — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}</>}
+          : subscribeMode ? `Subscribe ${quantity} ${isMerch ? 'unit' : 'btl'} — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
+          : <><ShoppingCart className="w-4 h-4 mr-2" /> Add {quantity} {isMerch ? 'unit' : 'btl'} — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}</>}
         </Button>
       </div>
       <Footer />

@@ -1,0 +1,115 @@
+import { useMemo } from "react";
+import { Shirt, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useProducts } from "@/hooks/useProducts";
+import { useCartStore } from "@/stores/cartStore";
+import { isWineProduct } from "@/lib/productUtils";
+import { ShopifyProduct } from "@/lib/shopify";
+import { toast } from "sonner";
+
+interface Props {
+  wineHandle: string;
+  wineTitle: string;
+}
+
+/**
+ * Reverse of PairItPicker — shown on a wine PDP, suggests a merch item
+ * (glassware, tee, gift) to add alongside the bottle.
+ */
+export function PairWineWithMerch({ wineHandle, wineTitle }: Props) {
+  const { data: products } = useProducts(200);
+  const addItem = useCartStore((s) => s.addItem);
+
+  const merchPick: ShopifyProduct | null = useMemo(() => {
+    if (!products) return null;
+    const merch = products.filter((p) => !isWineProduct(p));
+    if (!merch.length) return null;
+    // Prefer drinkware / glassware first, then anything tagged "wine-bar"
+    const preferred = merch.find((p) => {
+      const tags = (p.node.tags || []).map((t) => t.toLowerCase());
+      return tags.includes("wine-bar") || tags.includes("drinkware");
+    });
+    return preferred ?? merch[0];
+  }, [products]);
+
+  if (!merchPick || !products) return null;
+  const wine = products.find((p) => p.node.handle === wineHandle);
+  if (!wine) return null;
+
+  const merchNode = merchPick.node;
+  const winePrice = parseFloat(wine.node.priceRange.minVariantPrice.amount);
+  const merchPrice = parseFloat(merchNode.priceRange.minVariantPrice.amount);
+  const pairTotal = winePrice + merchPrice;
+  const savings = Math.min(5, merchPrice * 0.1);
+
+  const addPair = async () => {
+    const wineVariant = wine.node.variants.edges[0]?.node;
+    const merchVariant = merchNode.variants.edges[0]?.node;
+    if (!wineVariant || !merchVariant) return;
+    await addItem({
+      product: wine,
+      variantId: wineVariant.id,
+      variantTitle: wineVariant.title,
+      price: wineVariant.price,
+      quantity: 1,
+      selectedOptions: wineVariant.selectedOptions ?? [],
+    });
+    await addItem({
+      product: merchPick,
+      variantId: merchVariant.id,
+      variantTitle: merchVariant.title,
+      price: {
+        amount: (merchPrice - savings).toFixed(2),
+        currencyCode: merchVariant.price.currencyCode,
+      },
+      quantity: 1,
+      selectedOptions: merchVariant.selectedOptions ?? [],
+    });
+    toast.success(`Pair added — saved $${savings.toFixed(2)} on the merch`, {
+      position: "top-center",
+    });
+  };
+
+  return (
+    <aside className="border border-border bg-secondary/40 p-4 mt-4">
+      <p className="text-[10px] uppercase tracking-brand text-primary font-bold mb-3 flex items-center gap-1.5">
+        <Shirt className="w-3 h-3" /> Pair It
+      </p>
+      <div className="flex items-center gap-3">
+        <div className="w-14 h-14 bg-background flex items-center justify-center flex-shrink-0">
+          {merchNode.images.edges[0]?.node ? (
+            <img
+              src={merchNode.images.edges[0].node.url}
+              alt={merchNode.title}
+              className="max-h-full object-contain"
+              loading="lazy"
+            />
+          ) : (
+            <Shirt className="w-6 h-6 text-muted-foreground" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{merchNode.title}</p>
+          <p className="text-xs text-muted-foreground">
+            Goes great with {wineTitle.split("—")[0].trim()}
+          </p>
+          <p className="text-xs mt-1">
+            <span className="text-foreground font-bold">
+              ${(pairTotal - savings).toFixed(2)}
+            </span>
+            <span className="text-muted-foreground line-through ml-2">
+              ${pairTotal.toFixed(2)}
+            </span>
+          </p>
+        </div>
+        <Button
+          onClick={addPair}
+          size="sm"
+          className="flex-shrink-0 bg-primary hover:bg-primary/90 uppercase tracking-brand text-[10px] font-bold h-9"
+        >
+          <Plus className="w-3 h-3 mr-1" /> Add Pair
+        </Button>
+      </div>
+    </aside>
+  );
+}

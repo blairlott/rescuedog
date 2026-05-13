@@ -40,6 +40,7 @@ import CrmAccountDetail from "./pages/CrmAccountDetail";
 import CrmMapPage from "./pages/CrmMapPage";
 import CrmRoutePlanner from "./pages/CrmRoutePlanner";
 import CrmAdminPage from "./pages/CrmAdminPage";
+import CrmMarginPage from "./pages/CrmMarginPage";
 import CrmResetPasswordPage from "./pages/CrmResetPasswordPage";
 import CmsLoginPage from "./pages/CmsLoginPage";
 import CmsDashboard from "./pages/CmsDashboard";
@@ -148,6 +149,7 @@ function AppContent() {
         <Route path="routes" element={<CrmRoutePlanner />} />
         <Route path="admin" element={<CrmAdminPage />} />
         <Route path="dropship" element={<DropshipDashboard />} />
+        <Route path="margin" element={<CrmMarginPage />} />
         <Route path="ambassadors" element={<CrmAmbassadorsPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />

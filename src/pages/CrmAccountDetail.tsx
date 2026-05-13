@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, MapPin, Phone, Mail, Globe, Plus, ShoppingCart, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, Mail, Globe, Plus, ShoppingCart, Pencil, Check, X, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSalesAccount, useAccountActivities, useAddActivity, useUpsertAccount } from "@/hooks/useSalesAccounts";
 import { useState } from "react";
 import { AccountFormDialog } from "@/components/crm/AccountFormDialog";
+import { AwardPointsDialog } from "@/components/crm/AwardPointsDialog";
 import { toast } from "sonner";
 import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 import { US_STATES } from "@/lib/usStates";

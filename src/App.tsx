@@ -7,6 +7,7 @@ import { useCartSync } from "@/hooks/useCartSync";
 import { useEffect } from "react";
 import { captureFbclid, captureGclid } from "@/lib/metaAttribution";
 import { AgeGate } from "@/components/AgeGate";
+import { ExitIntentOffer } from "@/components/ExitIntentOffer";
 import { CmsAuthProvider } from "@/hooks/useCmsAuth";
 import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
 import Index from "./pages/Index";
@@ -170,6 +171,7 @@ const App = () => (
           <CmsAuthProvider>
             <AgeGate>
               <AppContent />
+              <ExitIntentOffer />
             </AgeGate>
           </CmsAuthProvider>
         </CustomerAuthProvider>

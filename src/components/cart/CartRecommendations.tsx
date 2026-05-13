@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Wine } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCartStore, CartItem } from "@/stores/cartStore";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,8 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
   const addItem = useCartStore(state => state.addItem);
   const isLoading = useCartStore(state => state.isLoading);
   const { freeShippingBottleCount } = useCartSettings();
+  // Local re-render trigger after the user confirms 21+ inline.
+  const [ageOverride, setAgeOverride] = useState(false);
 
   if (!allProducts || allProducts.length === 0) return null;
 
@@ -28,7 +32,7 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
   const hasMerch = cartItems.some(i => i.product.node.productKind !== "wine");
 
   // Compliance: never recommend wine to visitors who haven't confirmed 21+.
-  const ageOk = isAgeVerified();
+  const ageOk = isAgeVerified() || ageOverride;
   const available = allProducts.filter(p => {
     const firstVariant = p.node.variants.edges[0]?.node;
     if (!firstVariant?.availableForSale) return false;
@@ -74,6 +78,34 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
       toast.success(`${product.node.title} added! Shipping included! 🎉`, { position: "top-center" });
     }
   };
+
+  // Merch-only cart, visitor not yet 21+ confirmed → show an inline opt-in
+  // so they can unlock wine pairings without leaving the drawer.
+  const showAgeUnlock = hasMerch && !hasWine && !ageOk;
+
+  const confirmAge = () => {
+    try {
+      localStorage.setItem("rdw-age-verified", "true");
+      localStorage.setItem("rdw_age_verified", "true");
+    } catch {}
+    setAgeOverride(true);
+  };
+
+  if (showAgeUnlock) {
+    return (
+      <div className="border border-primary/30 bg-primary/5 p-3 space-y-2">
+        <p className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+          <Wine className="w-3.5 h-3.5" /> Add a bottle?
+        </p>
+        <p className="text-xs text-muted-foreground">
+          We pair our merch with award-winning wines from Lodi. Confirm you're 21+ to see pairings.
+        </p>
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={confirmAge}>
+          I'm 21+ — show wine pairings
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">

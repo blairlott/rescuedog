@@ -300,7 +300,7 @@ export default function CrmDashboard() {
                       <TableCell>
                         <div className="flex gap-1">
                           <Link to={`/crm/account/${a.id}`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="View account"><Eye className="h-3.5 w-3.5" /></Button>
                           </Link>
                           {canEditAccount(a) && (
                             <>

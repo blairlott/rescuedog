@@ -52,7 +52,11 @@ export function RescueRewardsCard() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Earn 1 point per $1 spent. Redeem for swag, free shipping, or donate points to a rescue partner.
+            Earn 1 point per $1 spent on any order (excludes tax). Redeem for merch, tasting events,
+            and ambassador experiences — or donate points to a rescue partner.
+          </p>
+          <p className="text-[10px] uppercase tracking-brand text-muted-foreground border-t border-border pt-2">
+            Points are not redeemable on wine. Void where prohibited. See full terms.
           </p>
           {ledger.length > 0 && (
             <ul className="text-xs space-y-1 border-t border-border pt-3">

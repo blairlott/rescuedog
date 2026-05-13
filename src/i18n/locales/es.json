@@ -1,0 +1,34 @@
+{
+  "language": { "label": "Idioma", "en": "English", "fr": "Français", "es": "Español" },
+  "nav": {
+    "shop_wines": "Comprar vinos",
+    "wine_club": "Club de vino",
+    "find_a_store": "Buscar una tienda",
+    "merch": "Tienda",
+    "about": "Sobre nosotros",
+    "mission": "Misión",
+    "donation": "Donación",
+    "events": "Eventos",
+    "ambassadors": "Embajadores",
+    "wholesale": "Mayoreo / B2B",
+    "account": "Mi cuenta",
+    "sign_in": "Iniciar sesión"
+  },
+  "common": {
+    "add_to_cart": "Añadir al carrito",
+    "sold_out": "Agotado",
+    "checkout": "Pagar",
+    "continue_shopping": "Seguir comprando",
+    "members_only": "Solo miembros",
+    "join_the_club": "Únete al club",
+    "club_price": "Precio del club"
+  },
+  "geo": {
+    "us_only_short": "Solo envíos a EE. UU.",
+    "banner_title": "Envíos solo dentro de EE. UU.",
+    "banner_body": "Actualmente enviamos vino y mercancía solo a direcciones en EE. UU. Navega libremente — el pago se reabrirá para visitantes internacionales pronto.",
+    "purchase_disabled_tooltip": "Las compras están en pausa fuera de EE. UU.",
+    "checkout_disabled_label": "Pago solo en EE. UU.",
+    "join_waitlist": "Únete a la lista de espera internacional"
+  }
+}

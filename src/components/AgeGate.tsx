@@ -52,14 +52,18 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
     setDenied(true);
   };
 
+  const open = needsAgeGate(location.pathname) && verified === false;
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
   if (!needsAgeGate(location.pathname)) return <>{children}</>;
   if (verified === null) return null;
   if (verified) return <>{children}</>;
-
-  // Lock background scroll while gate is open
-  if (typeof document !== "undefined") {
-    document.body.style.overflow = "hidden";
-  }
 
   return (
     <div

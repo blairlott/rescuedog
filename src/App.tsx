@@ -32,6 +32,7 @@ import AccountPage from "./pages/AccountPage";
 import GiftCertificatePrintPage from "./pages/GiftCertificatePrintPage";
 import NotFound from "./pages/NotFound";
 import ThankYouPage from "./pages/ThankYouPage";
+import CheckoutPage from "./pages/CheckoutPage";
 import CrmLoginPage from "./pages/CrmLoginPage";
 import CrmLayout from "./components/crm/CrmLayout";
 import CrmDashboard from "./pages/CrmDashboard";
@@ -133,6 +134,7 @@ function AppContent() {
       <Route path="/account" element={<AccountPage />} />
       <Route path="/account/gifts/:id/print" element={<GiftCertificatePrintPage />} />
       <Route path="/thank-you" element={<ThankYouPage />} />
+      <Route path="/checkout" element={<CheckoutPage />} />
       <Route path="/crm/login" element={<CrmLoginPage />} />
       <Route path="/crm/reset-password" element={<CrmResetPasswordPage />} />
       <Route caseSensitive path="/CMS/login" element={<Navigate to="/cms/login" replace />} />

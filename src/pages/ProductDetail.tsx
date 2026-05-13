@@ -126,7 +126,10 @@ const ProductDetail = () => {
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6">
+          <Link
+            to={(typeof window !== "undefined" && sessionStorage.getItem("lastStorePath")) || "/wines"}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6"
+          >
             <ArrowLeft className="mr-1 h-4 w-4" />Back to store
           </Link>
 

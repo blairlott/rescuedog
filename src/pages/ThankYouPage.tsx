@@ -13,6 +13,7 @@ export default function ThankYouPage() {
   const total = params.get("total");
   const bottles = Number(params.get("bottles") || 0);
   const { isMember } = useIsMember();
+  const lastStore = (typeof window !== "undefined" && sessionStorage.getItem("lastStorePath")) || "/wines";
 
   // Fire conversion events (GA4 + Meta CAPI hook is set up via metaAttribution)
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function ThankYouPage() {
           </div>
 
           <Button asChild variant="outline" size="lg" className="uppercase tracking-brand text-sm font-bold">
-            <Link to="/wines">Keep shopping</Link>
+            <Link to={lastStore}>Keep shopping</Link>
           </Button>
         </div>
       </main>

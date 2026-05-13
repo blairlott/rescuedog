@@ -321,12 +321,12 @@ const Index = () => {
       <section className="py-16 md:py-24 relative">
         <CmsEditButton onClick={() => setEditSection("about_us")} />
         <div className="container mx-auto px-4 max-w-3xl text-center">
-            <p className="text-xs tracking-brand uppercase text-muted-foreground mb-2">About us:</p>
+            <p className="text-xs tracking-brand uppercase text-muted-foreground mb-2"><T>About us:</T></p>
             <h2 className="text-3xl md:text-4xl font-bold text-primary leading-tight mb-4">
-              {getVal("about_us", "heading", "Responsible, Sustainable, Exceptional.")}
+              <T>{getVal("about_us", "heading", "Responsible, Sustainable, Exceptional.")}</T>
             </h2>
             <p className="text-foreground leading-relaxed mb-6">
-              {getVal("about_us", "body", "Our mission is to support the placement of as many rescue dogs as possible into loving homes through wine sales and donations. Our business is producing fine wines; our passion is helping rescue dogs.")}
+              <T>{getVal("about_us", "body", "Our mission is to support the placement of as many rescue dogs as possible into loving homes through wine sales and donations. Our business is producing fine wines; our passion is helping rescue dogs.")}</T>
             </p>
             <Button
               asChild
@@ -334,7 +334,7 @@ const Index = () => {
               size="lg"
               className="uppercase tracking-brand text-sm font-bold border-foreground text-foreground hover:bg-foreground hover:text-background px-10"
             >
-              <Link to="/about">Learn About Our Mission</Link>
+              <Link to="/about"><T>Learn About Our Mission</T></Link>
             </Button>
         </div>
       </section>
@@ -353,10 +353,10 @@ const Index = () => {
             </div>
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-                {getVal("lodi", "heading", "Lodi Rules Certified Green")}
+                <T>{getVal("lodi", "heading", "Lodi Rules Certified Green")}</T>
               </h2>
               <p className="text-foreground leading-relaxed mb-6">
-                {getVal("lodi", "body", "Our grapes are grown under one of the most rigorous third-party sustainability certifications in the wine industry, ensuring every bottle is as responsible as it is delicious.")}
+                <T>{getVal("lodi", "body", "Our grapes are grown under one of the most rigorous third-party sustainability certifications in the wine industry, ensuring every bottle is as responsible as it is delicious.")}</T>
               </p>
               <Button
                 asChild
@@ -364,7 +364,7 @@ const Index = () => {
                 size="lg"
                 className="uppercase tracking-brand text-sm font-bold border-foreground text-foreground hover:bg-foreground hover:text-background px-10"
               >
-                <Link to="/vineyard">Learn About Our Vineyard</Link>
+                <Link to="/vineyard"><T>Learn About Our Vineyard</T></Link>
               </Button>
             </div>
           </div>
@@ -374,17 +374,17 @@ const Index = () => {
       {/* Ambassador Program callout */}
       <section className="py-14 bg-foreground text-background">
         <div className="container mx-auto px-4 max-w-4xl text-center">
-          <p className="text-xs tracking-brand uppercase opacity-70 mb-2">Affiliate Program · Powered by impact.com</p>
-          <h2 className="text-2xl md:text-3xl font-bold uppercase mb-4">Turn Your Love for Rescue Dogs into Commission</h2>
+          <p className="text-xs tracking-brand uppercase opacity-70 mb-2"><T>Affiliate Program · Powered by impact.com</T></p>
+          <h2 className="text-2xl md:text-3xl font-bold uppercase mb-4"><T>Turn Your Love for Rescue Dogs into Commission</T></h2>
           <p className="opacity-90 max-w-2xl mx-auto mb-6 text-sm md:text-base">
-            Nonprofits, enthusiasts, and influencers earn percentage-based commission on every bottle sold through their personal link — automatic tracking, automatic payments, no contractor paperwork on your end.
+            <T>Nonprofits, enthusiasts, and influencers earn percentage-based commission on every bottle sold through their personal link — automatic tracking, automatic payments, no contractor paperwork on your end.</T>
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <Button asChild size="lg" variant="secondary" className="uppercase tracking-brand">
-              <Link to="/ambassadors">Become an Ambassador</Link>
+              <Link to="/ambassadors"><T>Become an Ambassador</T></Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="bg-transparent border-background text-background hover:bg-background hover:text-foreground uppercase tracking-brand">
-              <Link to="/ambassadors/find">Find an Ambassador</Link>
+              <Link to="/ambassadors/find"><T>Find an Ambassador</T></Link>
             </Button>
           </div>
         </div>
@@ -394,9 +394,9 @@ const Index = () => {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-10">
-            <h2 className="text-2xl font-bold text-foreground">Events</h2>
+            <h2 className="text-2xl font-bold text-foreground"><T>Events</T></h2>
             <Link to="/events" className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 uppercase tracking-brand">
-              View More Events <ArrowRight className="h-4 w-4" />
+              <T>View More Events</T> <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -427,7 +427,7 @@ const Index = () => {
               rel="noopener noreferrer"
               className="text-sm text-primary hover:underline uppercase tracking-brand font-bold"
             >
-              Follow Us on Instagram
+              <T>Follow Us on Instagram</T>
             </a>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -461,19 +461,19 @@ const Index = () => {
         <CmsEditButton onClick={() => setEditSection("club_cta")} />
         <div className="container mx-auto px-4">
           <div className="bg-primary p-8 md:p-16 text-center">
-            <p className="text-primary-foreground/80 text-sm uppercase tracking-brand font-bold mb-2">Join Our</p>
+            <p className="text-primary-foreground/80 text-sm uppercase tracking-brand font-bold mb-2"><T>Join Our</T></p>
             <h2 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">
-              {getVal("club_cta", "heading", "Club")}
+              <T>{getVal("club_cta", "heading", "Club")}</T>
             </h2>
             <p className="text-primary-foreground/80 text-lg max-w-xl mx-auto mb-4">
-              {getVal("club_cta", "body", "Get 20% off wine purchases! Join us in our commitment to support animal rescue organizations and receive regular shipments of award-winning wines — plus perks!")}
+              <T>{getVal("club_cta", "body", "Get 20% off wine purchases! Join us in our commitment to support animal rescue organizations and receive regular shipments of award-winning wines — plus perks!")}</T>
             </p>
             <Button
               asChild
               size="lg"
               className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
             >
-              <Link to="/club">Learn More & Join</Link>
+              <Link to="/club"><T>Learn More & Join</T></Link>
             </Button>
           </div>
         </div>
@@ -484,9 +484,9 @@ const Index = () => {
         <section className="py-16 bg-secondary">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between mb-10">
-              <h2 className="text-2xl font-bold text-foreground">Merch & Accessories</h2>
+              <h2 className="text-2xl font-bold text-foreground"><T>Merch & Accessories</T></h2>
               <Link to="/merch" className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 uppercase tracking-brand">
-                View All <ArrowRight className="h-4 w-4" />
+                <T>View All</T> <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
@@ -506,8 +506,8 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <Building2 className="h-6 w-6 text-muted-foreground" />
             <div>
-              <p className="font-bold text-foreground text-sm uppercase tracking-brand">Trade & Media</p>
-              <p className="text-sm text-muted-foreground">Interested in carrying our wines? Let's talk.</p>
+              <p className="font-bold text-foreground text-sm uppercase tracking-brand"><T>Trade & Media</T></p>
+              <p className="text-sm text-muted-foreground"><T>Interested in carrying our wines? Let's talk.</T></p>
             </div>
           </div>
           <Button
@@ -515,7 +515,7 @@ const Index = () => {
             variant="outline"
             className="uppercase tracking-brand text-xs font-bold border-foreground text-foreground hover:bg-foreground hover:text-background px-8"
           >
-            <Link to="/wholesale">Learn More</Link>
+            <Link to="/wholesale"><T>Learn More</T></Link>
           </Button>
         </div>
       </section>

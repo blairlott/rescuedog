@@ -31,8 +31,7 @@ export const CartDrawer = () => {
   const [vsCheckoutOpen, setVsCheckoutOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { purchaseAllowed } = useGeo();
-  const { setOverrideUS } = useGeo();
+  const { purchaseAllowed, setOverrideUS } = useGeo();
   const { t } = useTranslation();
   const isMerchRoute = location.pathname.startsWith("/merch");
   const { items, isLoading, isSyncing, updateQuantity, removeItem, syncCart, addItem, getShopifyCheckoutUrl, clearCart } = useCartStore();

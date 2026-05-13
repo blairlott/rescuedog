@@ -11,6 +11,16 @@ import {
 export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const { i18n, t } = useTranslation();
   const current = (i18n.resolvedLanguage || i18n.language || "en").slice(0, 2);
+  const handleSelect = (lng: string) => {
+    const prev = current;
+    i18n.changeLanguage(lng);
+    try { localStorage.setItem("rdw_lang", lng); } catch {}
+    const hasReloaded = (() => { try { return localStorage.getItem("rdw_lang_reloaded") === "1"; } catch { return false; } })();
+    if (lng !== prev && !hasReloaded) {
+      try { localStorage.setItem("rdw_lang_reloaded", "1"); } catch {}
+      setTimeout(() => window.location.reload(), 50);
+    }
+  };
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -24,7 +34,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
         {SUPPORTED_LANGS.map((lng) => (
           <DropdownMenuItem
             key={lng}
-            onSelect={() => i18n.changeLanguage(lng)}
+            onSelect={() => handleSelect(lng)}
             className={`text-xs uppercase tracking-brand ${
               current === lng ? "font-bold text-primary" : ""
             }`}

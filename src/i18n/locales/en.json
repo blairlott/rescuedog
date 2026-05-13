@@ -26,9 +26,11 @@
   "geo": {
     "us_only_short": "US shipping only",
     "banner_title": "Shipping inside the US only",
-    "banner_body": "We currently ship wine and merch to US addresses. Browse freely — checkout will reopen for international visitors soon.",
+    "banner_body": "We currently ship wine and merch to US addresses. Traveling? If you have a US shipping address and US-issued card, tap below to keep checking out.",
     "purchase_disabled_tooltip": "Purchases are paused outside the US.",
     "checkout_disabled_label": "US-only checkout",
-    "join_waitlist": "Join the international waitlist"
+    "join_waitlist": "Join the international waitlist",
+    "shipping_to_us": "I'm shipping to a US address",
+    "shipping_to_us_short": "Shipping to the US?"
   }
 }

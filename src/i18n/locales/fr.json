@@ -26,9 +26,11 @@
   "geo": {
     "us_only_short": "Livraison aux États-Unis uniquement",
     "banner_title": "Expédition uniquement aux États-Unis",
-    "banner_body": "Nous expédions actuellement le vin et les articles uniquement à des adresses américaines. Vous pouvez parcourir librement — la commande sera bientôt rouverte aux visiteurs internationaux.",
+    "banner_body": "Nous expédions actuellement uniquement à des adresses américaines. En voyage ? Si vous avez une adresse de livraison aux États-Unis et une carte américaine, vous pouvez continuer.",
     "purchase_disabled_tooltip": "Les achats sont suspendus en dehors des États-Unis.",
     "checkout_disabled_label": "Commande réservée aux États-Unis",
-    "join_waitlist": "Rejoindre la liste d'attente internationale"
+    "join_waitlist": "Rejoindre la liste d'attente internationale",
+    "shipping_to_us": "Je livre à une adresse aux États-Unis",
+    "shipping_to_us_short": "Livraison aux États-Unis ?"
   }
 }

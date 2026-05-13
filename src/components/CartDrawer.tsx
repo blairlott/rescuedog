@@ -31,7 +31,7 @@ export const CartDrawer = () => {
   const [vsCheckoutOpen, setVsCheckoutOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { purchaseAllowed } = useGeo();
+  const { purchaseAllowed, setOverrideUS } = useGeo();
   const { t } = useTranslation();
   const isMerchRoute = location.pathname.startsWith("/merch");
   const { items, isLoading, isSyncing, updateQuantity, removeItem, syncCart, addItem, getShopifyCheckoutUrl, clearCart } = useCartStore();
@@ -326,9 +326,18 @@ export const CartDrawer = () => {
                     : `${t("common.checkout")} · $${(totalPrice + wrapFee).toFixed(2)}`}
                 </Button>
                 {!purchaseAllowed && (
-                  <p className="text-[10px] text-destructive text-center leading-tight">
-                    {t("geo.purchase_disabled_tooltip")}
-                  </p>
+                  <div className="text-center space-y-1.5">
+                    <p className="text-[10px] text-destructive leading-tight">
+                      {t("geo.purchase_disabled_tooltip")}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setOverrideUS(true)}
+                      className="text-[11px] uppercase tracking-brand font-bold underline text-foreground hover:text-primary"
+                    >
+                      {t("geo.shipping_to_us")}
+                    </button>
+                  </div>
                 )}
                 <Button
                   type="button"

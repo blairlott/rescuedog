@@ -26,9 +26,11 @@
   "geo": {
     "us_only_short": "Solo envíos a EE. UU.",
     "banner_title": "Envíos solo dentro de EE. UU.",
-    "banner_body": "Actualmente enviamos vino y mercancía solo a direcciones en EE. UU. Navega libremente — el pago se reabrirá para visitantes internacionales pronto.",
+    "banner_body": "Actualmente enviamos solo a direcciones en EE. UU. ¿De viaje? Si tienes una dirección de envío en EE. UU. y una tarjeta estadounidense, puedes continuar.",
     "purchase_disabled_tooltip": "Las compras están en pausa fuera de EE. UU.",
     "checkout_disabled_label": "Pago solo en EE. UU.",
-    "join_waitlist": "Únete a la lista de espera internacional"
+    "join_waitlist": "Únete a la lista de espera internacional",
+    "shipping_to_us": "Envío a una dirección en EE. UU.",
+    "shipping_to_us_short": "¿Envío a EE. UU.?"
   }
 }

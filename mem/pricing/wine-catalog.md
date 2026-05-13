@@ -22,7 +22,7 @@ Member price = retail x 0.80 (flat 20% off; matches global club rule).
 | NV Methode Champenoise Sparkling Rose | $33.99 | $27.19 |
 
 ## Bundles / specials
-- Mother's Day 6 Pack: $164.95, shipping included, NOT stackable with any other discount. Contents: 1x Cab Sauv, 1x Red Blend, 1x Central Coast Pinot Noir, 1x Rose of Pinot Noir, 1x Sauv Blanc, 1x Chardonnay.
+- Rescue Dog™ 6-Bottle Sampler (Vinoshipper handle: `mothers-day-6-pack`): $164.95, shipping included, NOT stackable with any other discount. Contents: 1x Cab Sauv, 1x Red Blend, 1x Central Coast Pinot Noir, 1x Rose of Pinot Noir, 1x Sauv Blanc, 1x Chardonnay.
 
 ## Quantity selectors on product cards
-Bottle/unit options: 1-12, then 24, 36, 48, 60, 72. Mother's Day pack uses Pack count 1-12.
+Bottle/unit options: 1-12, then 24, 36, 48, 60, 72. Sampler pack uses Pack count 1-12.

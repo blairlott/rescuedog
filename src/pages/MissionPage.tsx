@@ -13,6 +13,7 @@ import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog } from "@/components/cms/CmsEditDialog";
 import { CmsToolbar } from "@/components/cms/CmsToolbar";
+import { T } from "@/components/T";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -201,8 +202,8 @@ const MissionPage = () => {
         <section className="py-16" id="partners">
           <div className="container mx-auto px-4">
             <div className="text-center mb-8">
-              <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Our Network</h2>
-              <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Supported Rescue Organizations</h3>
+              <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3"><T>Our Network</T></h2>
+              <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-2"><T>Supported Rescue Organizations</T></h3>
               <p className="text-muted-foreground">Showing {filtered.length} of {partners.length}+ partner organizations</p>
             </div>
 

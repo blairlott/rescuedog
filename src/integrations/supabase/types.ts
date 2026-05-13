@@ -219,6 +219,33 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_translations: {
+        Row: {
+          created_at: string
+          id: number
+          lang: string
+          source_hash: string
+          source_text: string
+          translated_text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          lang: string
+          source_hash: string
+          source_text: string
+          translated_text: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          lang?: string
+          source_hash?: string
+          source_text?: string
+          translated_text?: string
+        }
+        Relationships: []
+      }
       cart_abandonments: {
         Row: {
           created_at: string

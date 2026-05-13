@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { T } from "@/components/T";
 
 export function Footer() {
   return (
@@ -7,48 +8,48 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Shop */}
           <div>
-            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground">Shop</h4>
+            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground"><T>Shop</T></h4>
             <ul className="space-y-2 text-sm text-foreground">
-              <li><Link to="/wines" className="hover:text-primary transition-colors">Wine</Link></li>
-              <li><Link to="/club" className="hover:text-primary transition-colors">Wine Club</Link></li>
-              <li><Link to="/store-locator" className="hover:text-primary transition-colors">Store Locator</Link></li>
-              <li><Link to="/merch" className="hover:text-primary transition-colors">Rescue Gear</Link></li>
+              <li><Link to="/wines" className="hover:text-primary transition-colors"><T>Wine</T></Link></li>
+              <li><Link to="/club" className="hover:text-primary transition-colors"><T>Wine Club</T></Link></li>
+              <li><Link to="/store-locator" className="hover:text-primary transition-colors"><T>Store Locator</T></Link></li>
+              <li><Link to="/merch" className="hover:text-primary transition-colors"><T>Rescue Gear</T></Link></li>
             </ul>
           </div>
 
           {/* Explore */}
           <div>
-            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground">Explore</h4>
+            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground"><T>Explore</T></h4>
             <ul className="space-y-2 text-sm text-foreground">
-              <li><Link to="/about" className="hover:text-primary transition-colors">About</Link></li>
-              <li><Link to="/mission" className="hover:text-primary transition-colors">Mission</Link></li>
-              <li><Link to="/vineyard" className="hover:text-primary transition-colors">Vineyard</Link></li>
-              <li><Link to="/events" className="hover:text-primary transition-colors">Events</Link></li>
-              <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+              <li><Link to="/about" className="hover:text-primary transition-colors"><T>About</T></Link></li>
+              <li><Link to="/mission" className="hover:text-primary transition-colors"><T>Mission</T></Link></li>
+              <li><Link to="/vineyard" className="hover:text-primary transition-colors"><T>Vineyard</T></Link></li>
+              <li><Link to="/events" className="hover:text-primary transition-colors"><T>Events</T></Link></li>
+              <li><Link to="/contact" className="hover:text-primary transition-colors"><T>Contact</T></Link></li>
             </ul>
           </div>
 
           {/* More */}
           <div>
-            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground">More</h4>
+            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground"><T>More</T></h4>
             <ul className="space-y-2 text-sm text-foreground">
-              <li><Link to="/wholesale" className="hover:text-primary transition-colors">Wholesale / B2B</Link></li>
-              <li><Link to="/donation" className="hover:text-primary transition-colors">Donation Request</Link></li>
-              <li><Link to="/ambassadors" className="hover:text-primary transition-colors">Become an Ambassador</Link></li>
-              <li><Link to="/sell" className="hover:text-primary transition-colors">Sell on Rescue Dog</Link></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Refund Policy</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Shipping Policy</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
-              <li><Link to="/crm/login" className="hover:text-primary transition-colors">Sales CRM</Link></li>
-              <li><Link to="/cms/login" className="hover:text-primary transition-colors">Content Manager</Link></li>
-              <li><Link to="/club/login" className="hover:text-primary transition-colors">Wine Club Manager</Link></li>
+              <li><Link to="/wholesale" className="hover:text-primary transition-colors"><T>Wholesale / B2B</T></Link></li>
+              <li><Link to="/donation" className="hover:text-primary transition-colors"><T>Donation Request</T></Link></li>
+              <li><Link to="/ambassadors" className="hover:text-primary transition-colors"><T>Become an Ambassador</T></Link></li>
+              <li><Link to="/sell" className="hover:text-primary transition-colors"><T>Sell on Rescue Dog</T></Link></li>
+              <li><a href="#" className="hover:text-primary transition-colors"><T>Privacy Policy</T></a></li>
+              <li><a href="#" className="hover:text-primary transition-colors"><T>Refund Policy</T></a></li>
+              <li><a href="#" className="hover:text-primary transition-colors"><T>Shipping Policy</T></a></li>
+              <li><a href="#" className="hover:text-primary transition-colors"><T>Terms of Service</T></a></li>
+              <li><Link to="/crm/login" className="hover:text-primary transition-colors"><T>Sales CRM</T></Link></li>
+              <li><Link to="/cms/login" className="hover:text-primary transition-colors"><T>Content Manager</T></Link></li>
+              <li><Link to="/club/login" className="hover:text-primary transition-colors"><T>Wine Club Manager</T></Link></li>
             </ul>
           </div>
 
           {/* Newsletter */}
           <div>
-            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground">Newsletter</h4>
+            <h4 className="text-sm font-bold tracking-brand uppercase mb-4 text-foreground"><T>Newsletter</T></h4>
             <form className="flex border-b border-foreground mb-4">
               <input
                 type="email"
@@ -58,11 +59,11 @@ export function Footer() {
               <button type="submit" className="p-2 text-foreground hover:text-primary">→</button>
             </form>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Sign up with your email address to receive promotions, new release updates, and a code for 10% off your first order!
+              <T>Sign up with your email address to receive promotions, new release updates, and a code for 10% off your first order!</T>
             </p>
             <div className="mt-6">
               <p className="text-xs font-bold tracking-brand uppercase text-foreground mb-3">
-                Follow us @rescuedogwines
+                <T>Follow us @rescuedogwines</T>
               </p>
               <div className="flex gap-4 text-foreground">
                 <a href="https://facebook.com/rescuedogwines" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors text-lg">f</a>
@@ -75,7 +76,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border mt-10 pt-8 text-xs text-muted-foreground tracking-wide">
-          <p>© {new Date().getFullYear()} RescueDogWines. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} RescueDogWines. <T>All rights reserved.</T></p>
         </div>
       </div>
     </footer>

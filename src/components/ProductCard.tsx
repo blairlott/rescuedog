@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { isWineProduct } from "@/lib/productUtils";
 import { useGeo } from "@/hooks/useGeo";
 import { useTranslation } from "react-i18next";
+import { T } from "@/components/T";
 
 interface ProductCardProps {
   product: ShopifyProduct;
@@ -183,7 +184,7 @@ export function ProductCard({ product }: ProductCardProps) {
       {/* Product info */}
       <div className="space-y-1 text-center">
         <h3 className="text-sm font-medium text-foreground tracking-brand leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-200">
-          {node.title}
+          <T>{node.title}</T>
         </h3>
         {isMember && !isSampler && isWine ? (
           <div>

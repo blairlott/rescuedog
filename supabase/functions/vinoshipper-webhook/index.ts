@@ -117,6 +117,62 @@ Deno.serve(async (req) => {
         // TODO: GET /orders/{id} from Vinoshipper, then update wine_club_shipments
         // (status, tracking_number, total_cents, etc.) where vinoshipper_order_id matches.
         notes = "ORDER event received; detail fetch pending Vinoshipper API key";
+        // Best-effort loyalty accrual: if the payload includes a linkable
+        // customer + a subtotal, award 1 point per $1. Idempotent on order_id.
+        try {
+          const p = payload as unknown as Record<string, any>;
+          const vsCustomerId =
+            p?.customerId ?? p?.customer_id ?? p?.data?.customerId ?? null;
+          const subtotalCents =
+            typeof p?.subtotalCents === "number" ? p.subtotalCents
+            : typeof p?.subtotal_cents === "number" ? p.subtotal_cents
+            : typeof p?.subtotal === "number" ? Math.round(p.subtotal * 100)
+            : typeof p?.amount === "number" ? Math.round(p.amount * 100)
+            : null;
+          if (vsCustomerId && subtotalCents && subtotalCents > 0) {
+            const { data: profile } = await supabase
+              .from("customer_profiles")
+              .select("id")
+              .eq("vinoshipper_customer_id", String(vsCustomerId))
+              .maybeSingle();
+            if (profile?.id) {
+              // Idempotency: skip if we already awarded for this VS order.
+              const { data: existing } = await supabase
+                .from("loyalty_ledger")
+                .select("id")
+                .eq("user_id", profile.id)
+                .eq("event_type", "earn_order")
+                .contains("metadata", { vinoshipper_order_id: payload.identifier })
+                .maybeSingle();
+              if (existing) {
+                notes += " | loyalty skipped: already awarded";
+                break;
+              }
+              const { error: rpcErr } = await supabase.rpc("award_loyalty_points", {
+                _user_id: profile.id,
+                _delta_points: Math.floor(subtotalCents / 100),
+                _event_type: "earn_order",
+                _reason: `Wine order ${payload.identifier}`,
+                _order_id: null,
+                _subtotal_cents: subtotalCents,
+                _metadata: { vinoshipper_order_id: payload.identifier },
+              });
+              if (rpcErr) {
+                console.error("[loyalty-accrual] failed", rpcErr);
+                notes += " | loyalty award failed: " + rpcErr.message;
+              } else {
+                notes += " | loyalty awarded";
+              }
+            } else {
+              notes += " | loyalty skipped: no linked customer";
+            }
+          } else {
+            notes += " | loyalty skipped: payload missing customer/amount";
+          }
+        } catch (e) {
+          console.error("[loyalty-accrual] exception", e);
+          notes += " | loyalty error: " + String(e);
+        }
         break;
       case "CLUB_MEMBERSHIP":
         // TODO: GET /club-memberships/{id}, then update wine_club_memberships

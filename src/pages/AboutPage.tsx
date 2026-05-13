@@ -144,7 +144,7 @@ const AboutPage = () => {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
               <div>
-                <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Our Story</h2>
+                <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3"><T>Our Story</T></h2>
                 <h3 className="text-3xl font-bold text-foreground mb-6">
                   {getVal("story", "heading", "Great Wine. Greater Purpose.")}
                 </h3>
@@ -207,8 +207,8 @@ const AboutPage = () => {
         <section className="py-16 bg-secondary">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Who We Are</h2>
-              <h3 className="text-3xl md:text-4xl font-bold text-foreground">Meet the Team</h3>
+              <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3"><T>Who We Are</T></h2>
+              <h3 className="text-3xl md:text-4xl font-bold text-foreground"><T>Meet the Team</T></h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {teamMembers.map((member: any, idx: number) => (
@@ -236,7 +236,7 @@ const AboutPage = () => {
                 />
               </div>
               <div>
-                <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Sustainability</h2>
+                <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3"><T>Sustainability</T></h2>
                 <h3 className="text-3xl font-bold text-foreground mb-6">
                   {getVal("sustainability", "heading", "Lodi Rules Certified")}
                 </h3>

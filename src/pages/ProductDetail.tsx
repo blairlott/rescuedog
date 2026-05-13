@@ -17,6 +17,7 @@ import { ShipsToStateCheck, useShipState } from "@/components/ShipsToStateCheck"
 import { PairingChips } from "@/components/PairingChips";
 import { Seo } from "@/components/Seo";
 import { PairItPicker } from "@/components/merch/PairItPicker";
+import { PairWineWithMerch } from "@/components/cross-sell/PairWineWithMerch";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -206,7 +207,10 @@ const ProductDetail = () => {
                   productCategory={merchCategory}
                 />
               ) : (
-                <PairingChips tags={tags} productTitle={product.title} />
+                <>
+                  <PairingChips tags={tags} productTitle={product.title} />
+                  <PairWineWithMerch wineHandle={product.handle} wineTitle={product.title} />
+                </>
               )}
 
               {/* Variant Selection */}

@@ -1354,6 +1354,66 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_accounts: {
+        Row: {
+          created_at: string
+          lifetime_points_earned: number
+          points_balance: number
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          lifetime_points_earned?: number
+          points_balance?: number
+          tier?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          lifetime_points_earned?: number
+          points_balance?: number
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loyalty_ledger: {
+        Row: {
+          created_at: string
+          delta_points: number
+          event_type: string
+          id: string
+          metadata: Json
+          order_id: string | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta_points: number
+          event_type: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta_points?: number
+          event_type?: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       marketplace_partner_applications: {
         Row: {
           admin_note: string | null
@@ -1948,6 +2008,57 @@ export type Database = {
           vinoshipper_order_id?: string | null
           vinoshipper_status?: string
           wine_subtotal_cents?: number
+        }
+        Relationships: []
+      }
+      product_reviews: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          order_id: string | null
+          product_handle: string
+          product_kind: string
+          rating: number
+          reviewer_email: string | null
+          reviewer_name: string
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string | null
+          verified_purchase: boolean
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          product_handle: string
+          product_kind?: string
+          rating: number
+          reviewer_email?: string | null
+          reviewer_name: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+          verified_purchase?: boolean
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          product_handle?: string
+          product_kind?: string
+          rating?: number
+          reviewer_email?: string | null
+          reviewer_name?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+          verified_purchase?: boolean
         }
         Relationships: []
       }

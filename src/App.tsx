@@ -7,12 +7,14 @@ import { useCartSync } from "@/hooks/useCartSync";
 import { useEffect } from "react";
 import { captureFbclid, captureGclid } from "@/lib/metaAttribution";
 import { AgeGate } from "@/components/AgeGate";
+import { ExitIntentOffer } from "@/components/ExitIntentOffer";
 import { CmsAuthProvider } from "@/hooks/useCmsAuth";
 import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
 import Index from "./pages/Index";
 import MerchHomePage from "./pages/MerchHomePage";
 import ProductDetail from "./pages/ProductDetail";
 import WinesPage from "./pages/WinesPage";
+import MixSixPage from "./pages/MixSixPage";
 import ShopPage from "./pages/ShopPage";
 import StoreLocatorPage from "./pages/StoreLocatorPage";
 import WholesalePage from "./pages/WholesalePage";
@@ -94,6 +96,7 @@ function AppContent() {
       <Route path="/product/:handle" element={<ProductDetail />} />
       <Route path="/shop-wine/:handle" element={<ProductDetail />} />
       <Route path="/wines" element={<WinesPage />} />
+      <Route path="/wines/mix-six" element={<MixSixPage />} />
       <Route path="/shop" element={<ShopPage />} />
       <Route path="/shop-wine" element={<ShopPage />} />
       <Route path="/store-locator" element={<StoreLocatorPage />} />
@@ -170,6 +173,7 @@ const App = () => (
           <CmsAuthProvider>
             <AgeGate>
               <AppContent />
+              <ExitIntentOffer />
             </AgeGate>
           </CmsAuthProvider>
         </CustomerAuthProvider>

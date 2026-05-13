@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Heart, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 
@@ -56,7 +57,8 @@ export function RescueRewardsCard() {
             and ambassador experiences — or donate points to a rescue partner.
           </p>
           <p className="text-[10px] uppercase tracking-brand text-muted-foreground border-t border-border pt-2">
-            Points are not redeemable on wine. Void where prohibited. See full terms.
+            Points are not redeemable on wine. Void where prohibited.{" "}
+            <Link to="/rewards/terms" className="underline">See full terms</Link>.
           </p>
           {ledger.length > 0 && (
             <ul className="text-xs space-y-1 border-t border-border pt-3">

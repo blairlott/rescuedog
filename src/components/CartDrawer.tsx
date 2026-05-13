@@ -191,7 +191,7 @@ export const CartDrawer = () => {
               {/* Free shipping progress bar */}
               <div className="flex-shrink-0 mb-3">
                 <FreeShippingBar
-                  totalBottles={totalItems}
+                  totalBottles={totalBottlesEffective}
                   cartTotal={totalPrice}
                   mode={isMerchRoute ? "merch" : "wine"}
                 />
@@ -239,7 +239,7 @@ export const CartDrawer = () => {
 
                 {/* Upsell banners */}
                 <div className="mt-4">
-                  <CartUpsellBanner totalBottles={totalItems} cartTotal={totalPrice} />
+                  <CartUpsellBanner totalBottles={totalBottlesEffective} cartTotal={totalPrice} />
                 </div>
 
                 {/* Product recommendations — only when cart is small (avoid drawer bloat) */}

@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
     }
     if (!order.stripe_payment_intent_id) return jsonResp({ error: "No payment intent on order" }, 400);
 
-    const intent = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id);
+    const intent = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id as string);
     if (intent.status !== "succeeded") {
       return jsonResp({ error: "Payment not completed", status: intent.status }, 402);
     }
@@ -260,11 +260,11 @@ Deno.serve(async (req) => {
     let processorNetCents: number | null = null;
     if (chargeId) {
       try {
-        const charge = await stripe.charges.retrieve(chargeId, { expand: ["balance_transaction"] });
-        const bt = charge.balance_transaction as Stripe.BalanceTransaction | null;
-        if (bt) {
-          stripeFeeCents = bt.fee;
-          processorNetCents = bt.net;
+        const charge: any = await stripe.charges.retrieve(chargeId, { expand: ["balance_transaction"] });
+        const bt = charge.balance_transaction;
+        if (bt && typeof bt === "object") {
+          stripeFeeCents = bt.fee ?? null;
+          processorNetCents = bt.net ?? null;
         }
       } catch (e) {
         console.warn("[unified-checkout] could not retrieve balance_transaction", e);

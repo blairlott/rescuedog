@@ -18,17 +18,35 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
 
   if (!allProducts || allProducts.length === 0) return null;
 
-  // Filter out products already in cart
+  // Suggest the OPPOSITE kind of what's in the cart:
+  // wine-only cart → recommend merch; merch-only → recommend wine.
+  // Mixed or empty → fall back to anything not already in the cart.
   const cartVariantIds = new Set(cartItems.map(i => i.variantId));
+  const hasWine = cartItems.some(i => i.product.node.productKind === "wine");
+  const hasMerch = cartItems.some(i => i.product.node.productKind !== "wine");
+
   const available = allProducts.filter(p => {
     const firstVariant = p.node.variants.edges[0]?.node;
     return firstVariant?.availableForSale && !cartVariantIds.has(firstVariant.id);
   });
-
   if (available.length === 0) return null;
 
-  // Pick up to 2 recommendations
-  const recommendations = available.slice(0, 2);
+  let pool = available;
+  let heading = "You might also like";
+  if (hasWine && !hasMerch) {
+    const merchOnly = available.filter(p => p.node.productKind !== "wine");
+    if (merchOnly.length > 0) {
+      pool = merchOnly;
+      heading = "Pair it with merch";
+    }
+  } else if (hasMerch && !hasWine) {
+    const wineOnly = available.filter(p => p.node.productKind === "wine");
+    if (wineOnly.length > 0) {
+      pool = wineOnly;
+      heading = "Add a bottle to go with it";
+    }
+  }
+  const recommendations = pool.slice(0, 2);
 
   const handleAdd = async (product: typeof recommendations[0]) => {
     const variant = product.node.variants.edges[0]?.node;
@@ -52,7 +70,7 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">You might also like</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{heading}</p>
       <div className="space-y-2">
         {recommendations.map(product => {
           const image = product.node.images.edges[0]?.node;

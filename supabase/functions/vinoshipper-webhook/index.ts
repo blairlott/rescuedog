@@ -136,6 +136,18 @@ Deno.serve(async (req) => {
               .eq("vinoshipper_customer_id", String(vsCustomerId))
               .maybeSingle();
             if (profile?.id) {
+              // Idempotency: skip if we already awarded for this VS order.
+              const { data: existing } = await supabase
+                .from("loyalty_ledger")
+                .select("id")
+                .eq("user_id", profile.id)
+                .eq("event_type", "earn_order")
+                .contains("metadata", { vinoshipper_order_id: payload.identifier })
+                .maybeSingle();
+              if (existing) {
+                notes += " | loyalty skipped: already awarded";
+                break;
+              }
               const { error: rpcErr } = await supabase.rpc("award_loyalty_points", {
                 _user_id: profile.id,
                 _delta_points: Math.floor(subtotalCents / 100),

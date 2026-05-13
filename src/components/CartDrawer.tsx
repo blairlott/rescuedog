@@ -299,6 +299,25 @@ export const CartDrawer = () => {
                     </p>
                   )}
                 </div>
+                {/* NEW unified single-transaction checkout (beta) — one card form, one charge */}
+                <Button
+                  onClick={() => { setIsOpen(false); navigate("/checkout"); }}
+                  className="w-full bg-primary hover:bg-primary/90"
+                  size="lg"
+                  disabled={isLoading || isSyncing}
+                >
+                  Checkout · ${(totalPrice + wrapFee).toFixed(2)}
+                </Button>
+                <p className="text-[10px] text-muted-foreground text-center leading-tight">
+                  One card. One charge. Wine + merch in a single transaction.
+                </p>
+
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="legacy" className="border-0">
+                    <AccordionTrigger className="text-[11px] uppercase tracking-brand text-muted-foreground py-1 hover:no-underline">
+                      Use legacy split checkout
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-2 pt-2">
                 {wineItems.length > 0 && (
                   <Button onClick={handleCheckoutWines} className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={isLoading || isSyncing}>
                     {isLoading || isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : (
@@ -316,6 +335,9 @@ export const CartDrawer = () => {
                     Wine ships via our compliance partner Vinoshipper; merch ships from our US fulfillment partners. Two checkouts, one cart.
                   </p>
                 )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
             </>
           )}

@@ -81,9 +81,6 @@ function AppContent() {
       sessionStorage.setItem("lastStorePath", "/merch");
     } else if (path === "/wines" || path === "/shop" || path === "/shop-wine" || path.startsWith("/shop-wine/")) {
       sessionStorage.setItem("lastStorePath", "/wines");
-    } else if (path.startsWith("/product/")) {
-      // product pages are merch — keep merch as last store
-      sessionStorage.setItem("lastStorePath", "/merch");
     }
   }, [path]);
   const showSommelier = !["/merch", "/crm", "/cms", "/sell", "/donation", "/login", "/signup", "/ambassador"].some(p => path === p || path.startsWith(p + "/"));

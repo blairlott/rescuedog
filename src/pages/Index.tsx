@@ -19,6 +19,7 @@ import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { PairingFinder } from "@/components/PairingFinder";
 import { LazyYouTube } from "@/components/LazyYouTube";
 import { Seo } from "@/components/Seo";
+import { T } from "@/components/T";
 
 const instagramPosts = [
   {

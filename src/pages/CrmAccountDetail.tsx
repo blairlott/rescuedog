@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, MapPin, Phone, Mail, Globe, Plus, ShoppingCart, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, Mail, Globe, Plus, ShoppingCart, Pencil, Check, X, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSalesAccount, useAccountActivities, useAddActivity, useUpsertAccount } from "@/hooks/useSalesAccounts";
 import { useState } from "react";
 import { AccountFormDialog } from "@/components/crm/AccountFormDialog";
+import { AwardPointsDialog } from "@/components/crm/AwardPointsDialog";
 import { toast } from "sonner";
 import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 import { US_STATES } from "@/lib/usStates";
@@ -75,6 +76,7 @@ export default function CrmAccountDetail() {
   const [activityText, setActivityText] = useState("");
   const [activityType, setActivityType] = useState("note");
   const [editOpen, setEditOpen] = useState(false);
+  const [awardOpen, setAwardOpen] = useState(false);
 
   if (isLoading) return <div className="p-6 text-muted-foreground">Loading...</div>;
   if (!account) return <div className="p-6 text-muted-foreground">Account not found</div>;
@@ -138,6 +140,9 @@ export default function CrmAccountDetail() {
           </Button>
           <Button variant="outline" onClick={() => setEditOpen(true)}>
             <Pencil className="h-4 w-4 mr-1" /> Edit
+          </Button>
+          <Button variant="outline" onClick={() => setAwardOpen(true)}>
+            <Gift className="h-4 w-4 mr-1" /> Award Points
           </Button>
         </div>
       </div>
@@ -274,6 +279,11 @@ export default function CrmAccountDetail() {
         </div>
       </div>
       <AccountFormDialog open={editOpen} onOpenChange={setEditOpen} account={account} />
+      <AwardPointsDialog
+        open={awardOpen}
+        onOpenChange={setAwardOpen}
+        defaultEmail={account.email || ""}
+      />
     </div>
   );
 }

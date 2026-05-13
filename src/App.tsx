@@ -66,6 +66,7 @@ import AmbassadorEventPublicPage from "./pages/AmbassadorEventPublicPage";
 import AmbassadorDirectoryPage from "./pages/AmbassadorDirectoryPage";
 import AmbassadorDisclosurePage from "./pages/AmbassadorDisclosurePage";
 import CrmAmbassadorsPage from "./pages/CrmAmbassadorsPage";
+import CrmCompliancePage from "./pages/crm/CrmCompliancePage";
 import RewardsTermsPage from "./pages/RewardsTermsPage";
 import RewardsPage from "./pages/RewardsPage";
 import { SommelierChat } from "./components/SommelierChat";
@@ -158,6 +159,7 @@ function AppContent() {
         <Route path="dropship" element={<DropshipDashboard />} />
         <Route path="margin" element={<CrmMarginPage />} />
         <Route path="ambassadors" element={<CrmAmbassadorsPage />} />
+        <Route path="compliance" element={<CrmCompliancePage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

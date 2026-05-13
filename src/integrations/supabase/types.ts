@@ -294,6 +294,95 @@ export type Database = {
         }
         Relationships: []
       }
+      compliance_audits: {
+        Row: {
+          created_at: string
+          error: string | null
+          fail_count: number | null
+          finished_at: string | null
+          id: string
+          ok_count: number | null
+          source: string
+          started_at: string
+          status: string
+          topic_count: number | null
+          triggered_by: string
+          warn_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          fail_count?: number | null
+          finished_at?: string | null
+          id?: string
+          ok_count?: number | null
+          source?: string
+          started_at?: string
+          status?: string
+          topic_count?: number | null
+          triggered_by?: string
+          warn_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          fail_count?: number | null
+          finished_at?: string | null
+          id?: string
+          ok_count?: number | null
+          source?: string
+          started_at?: string
+          status?: string
+          topic_count?: number | null
+          triggered_by?: string
+          warn_count?: number | null
+        }
+        Relationships: []
+      }
+      compliance_findings: {
+        Row: {
+          audit_id: string
+          citations: Json | null
+          created_at: string
+          findings: Json | null
+          id: string
+          recommendations: Json | null
+          status: string
+          summary: string | null
+          topic: string
+        }
+        Insert: {
+          audit_id: string
+          citations?: Json | null
+          created_at?: string
+          findings?: Json | null
+          id?: string
+          recommendations?: Json | null
+          status: string
+          summary?: string | null
+          topic: string
+        }
+        Update: {
+          audit_id?: string
+          citations?: Json | null
+          created_at?: string
+          findings?: Json | null
+          id?: string
+          recommendations?: Json | null
+          status?: string
+          summary?: string | null
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_findings_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_audits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_index: {
         Row: {
           author: string | null

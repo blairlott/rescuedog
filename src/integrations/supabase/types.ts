@@ -1771,6 +1771,161 @@ export type Database = {
         }
         Relationships: []
       }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          line_total_cents: number
+          metadata: Json
+          order_id: string
+          product_id: string | null
+          product_kind: string
+          product_name: string
+          product_sku: string | null
+          quantity: number
+          unit_price_cents: number
+          variant_name: string | null
+          vinoshipper_product_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_total_cents: number
+          metadata?: Json
+          order_id: string
+          product_id?: string | null
+          product_kind: string
+          product_name: string
+          product_sku?: string | null
+          quantity: number
+          unit_price_cents: number
+          variant_name?: string | null
+          vinoshipper_product_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_total_cents?: number
+          metadata?: Json
+          order_id?: string
+          product_id?: string | null
+          product_kind?: string
+          product_name?: string
+          product_sku?: string | null
+          quantity?: number
+          unit_price_cents?: number
+          variant_name?: string | null
+          vinoshipper_product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          age_verified: boolean
+          created_at: string
+          customer_email: string
+          customer_first_name: string
+          customer_last_name: string
+          customer_phone: string | null
+          date_of_birth: string | null
+          id: string
+          merch_fulfillment_status: string
+          merch_subtotal_cents: number
+          metadata: Json
+          notes: string | null
+          order_number: string
+          payment_status: string
+          ship_address1: string
+          ship_address2: string | null
+          ship_city: string
+          ship_country: string
+          ship_state: string
+          ship_zip: string
+          shipping_cents: number
+          stripe_charge_id: string | null
+          stripe_payment_intent_id: string | null
+          tax_cents: number
+          total_cents: number
+          updated_at: string
+          user_id: string | null
+          vinoshipper_order_id: string | null
+          vinoshipper_status: string
+          wine_subtotal_cents: number
+        }
+        Insert: {
+          age_verified?: boolean
+          created_at?: string
+          customer_email: string
+          customer_first_name: string
+          customer_last_name: string
+          customer_phone?: string | null
+          date_of_birth?: string | null
+          id?: string
+          merch_fulfillment_status?: string
+          merch_subtotal_cents?: number
+          metadata?: Json
+          notes?: string | null
+          order_number: string
+          payment_status?: string
+          ship_address1: string
+          ship_address2?: string | null
+          ship_city: string
+          ship_country?: string
+          ship_state: string
+          ship_zip: string
+          shipping_cents?: number
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          tax_cents?: number
+          total_cents: number
+          updated_at?: string
+          user_id?: string | null
+          vinoshipper_order_id?: string | null
+          vinoshipper_status?: string
+          wine_subtotal_cents?: number
+        }
+        Update: {
+          age_verified?: boolean
+          created_at?: string
+          customer_email?: string
+          customer_first_name?: string
+          customer_last_name?: string
+          customer_phone?: string | null
+          date_of_birth?: string | null
+          id?: string
+          merch_fulfillment_status?: string
+          merch_subtotal_cents?: number
+          metadata?: Json
+          notes?: string | null
+          order_number?: string
+          payment_status?: string
+          ship_address1?: string
+          ship_address2?: string | null
+          ship_city?: string
+          ship_country?: string
+          ship_state?: string
+          ship_zip?: string
+          shipping_cents?: number
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+          tax_cents?: number
+          total_cents?: number
+          updated_at?: string
+          user_id?: string | null
+          vinoshipper_order_id?: string | null
+          vinoshipper_status?: string
+          wine_subtotal_cents?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           approved: boolean

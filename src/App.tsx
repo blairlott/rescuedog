@@ -10,6 +10,8 @@ import { AgeGate } from "@/components/AgeGate";
 import { ExitIntentOffer } from "@/components/ExitIntentOffer";
 import { CmsAuthProvider } from "@/hooks/useCmsAuth";
 import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
+import { GeoProvider } from "@/hooks/useGeo";
+import { GeoNotice } from "@/components/GeoNotice";
 import Index from "./pages/Index";
 import MerchHomePage from "./pages/MerchHomePage";
 import ProductDetail from "./pages/ProductDetail";
@@ -180,10 +182,13 @@ const App = () => (
       <BrowserRouter>
         <CustomerAuthProvider>
           <CmsAuthProvider>
-            <AgeGate>
-              <AppContent />
-              <ExitIntentOffer />
-            </AgeGate>
+            <GeoProvider>
+              <AgeGate>
+                <GeoNotice />
+                <AppContent />
+                <ExitIntentOffer />
+              </AgeGate>
+            </GeoProvider>
           </CmsAuthProvider>
         </CustomerAuthProvider>
       </BrowserRouter>

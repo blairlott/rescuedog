@@ -21,6 +21,7 @@ import { WineClubManagement } from "@/components/account/WineClubManagement";
 import { SubscribeAndSaveTab } from "@/components/account/SubscribeAndSaveTab";
 import { GiftCertificatesTab } from "@/components/account/GiftCertificatesTab";
 import { PaymentMethodsTab } from "@/components/account/PaymentMethodsTab";
+import { RescueRewardsDashboard } from "@/components/account/RescueRewardsDashboard";
 
 const AccountPage = () => {
   const { user, loading, signOut } = useCustomerAuth();
@@ -272,6 +273,9 @@ const AccountPage = () => {
               </TabsTrigger>
               <TabsTrigger value="referrals" className="gap-1.5">
                 <Gift className="h-3.5 w-3.5" /> Referrals
+              </TabsTrigger>
+              <TabsTrigger value="rewards" className="gap-1.5">
+                <Trophy className="h-3.5 w-3.5" /> Rewards
               </TabsTrigger>
               <TabsTrigger value="my-rescue" className="gap-1.5">
                 <PawPrint className="h-3.5 w-3.5" /> My Rescue
@@ -548,6 +552,11 @@ const AccountPage = () => {
             {/* My Rescue Tab */}
             <TabsContent value="my-rescue">
               <MyRescueTab userId={user.id} />
+            </TabsContent>
+
+            {/* Rewards Tab */}
+            <TabsContent value="rewards">
+              <RescueRewardsDashboard />
             </TabsContent>
           </Tabs>
         </div>

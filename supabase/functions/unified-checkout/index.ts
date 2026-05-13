@@ -208,11 +208,27 @@ Deno.serve(async (req) => {
       return jsonResp({ error: "Payment not completed", status: intent.status }, 402);
     }
 
-    // Mark paid.
+    // Mark paid + capture Stripe fee for margin tracking.
     const chargeId = (intent.latest_charge as string | null) ?? null;
+    let stripeFeeCents: number | null = null;
+    let processorNetCents: number | null = null;
+    if (chargeId) {
+      try {
+        const charge = await stripe.charges.retrieve(chargeId, { expand: ["balance_transaction"] });
+        const bt = charge.balance_transaction as Stripe.BalanceTransaction | null;
+        if (bt) {
+          stripeFeeCents = bt.fee;
+          processorNetCents = bt.net;
+        }
+      } catch (e) {
+        console.warn("[unified-checkout] could not retrieve balance_transaction", e);
+      }
+    }
     await supabase.from("orders").update({
       payment_status: "paid",
       stripe_charge_id: chargeId,
+      stripe_fee_cents: stripeFeeCents,
+      processor_net_cents: processorNetCents,
     }).eq("id", order.id);
 
     // Dispatch Vinoshipper leg if there are wine items.

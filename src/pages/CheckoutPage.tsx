@@ -20,6 +20,49 @@ import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 const STRIPE_PK = import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN as string | undefined;
 const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
 const STRIPE_ENV: "sandbox" | "live" = STRIPE_PK?.startsWith("pk_live_") ? "live" : "sandbox";
+const IS_SANDBOX = STRIPE_ENV === "sandbox";
+
+const SANDBOX_TEST_CARD = {
+  number: "4242 4242 4242 4242",
+  exp: "12 / 34",
+  cvc: "123",
+  zip: "90001",
+};
+
+function copy(text: string) {
+  navigator.clipboard?.writeText(text.replace(/\s/g, ""));
+  toast.success(`Copied ${text}`);
+}
+
+function SandboxTestCardHint() {
+  if (!IS_SANDBOX) return null;
+  return (
+    <div className="border border-orange-300 bg-orange-50 p-3 text-xs space-y-2">
+      <p className="font-semibold text-orange-900">
+        Sandbox mode — use this test card (Stripe blocks auto-fill for security):
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {[
+          { label: "Card", value: SANDBOX_TEST_CARD.number },
+          { label: "Expiry", value: SANDBOX_TEST_CARD.exp },
+          { label: "CVC", value: SANDBOX_TEST_CARD.cvc },
+          { label: "ZIP", value: SANDBOX_TEST_CARD.zip },
+        ].map((f) => (
+          <button
+            key={f.label}
+            type="button"
+            onClick={() => copy(f.value)}
+            className="text-left bg-white border border-orange-200 px-2 py-1.5 hover:bg-orange-100 transition"
+          >
+            <span className="block text-[10px] uppercase tracking-wide text-orange-700">{f.label}</span>
+            <span className="font-mono text-orange-900">{f.value}</span>
+          </button>
+        ))}
+      </div>
+      <p className="text-orange-800">Tap any field to copy, then paste into the Stripe form below.</p>
+    </div>
+  );
+}
 
 type CustomerForm = {
   email: string;
@@ -37,6 +80,19 @@ type CustomerForm = {
 const EMPTY_FORM: CustomerForm = {
   email: "", first_name: "", last_name: "", phone: "", date_of_birth: "",
   address1: "", address2: "", city: "", state: "", zip: "",
+};
+
+const SANDBOX_FORM: CustomerForm = {
+  email: "test@rescuedogwines.com",
+  first_name: "Sandbox",
+  last_name: "Tester",
+  phone: "5555550123",
+  date_of_birth: "1990-01-01",
+  address1: "1 Vineyard Way",
+  address2: "",
+  city: "Lodi",
+  state: "CA",
+  zip: "95240",
 };
 
 function lineUnitCents(it: CartItem): number {
@@ -94,6 +150,7 @@ function CheckoutInner({
 
   return (
     <form onSubmit={handlePay} className="space-y-4">
+      <SandboxTestCardHint />
       <PaymentElement options={{ layout: "tabs" }} />
       <Button
         type="submit"
@@ -251,6 +308,15 @@ export default function CheckoutPage() {
 
           {!intent && (
             <form onSubmit={handleStartIntent} className="space-y-6">
+              {IS_SANDBOX && (
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...SANDBOX_FORM, email: form.email || SANDBOX_FORM.email })}
+                  className="text-xs underline text-orange-700 hover:text-orange-900"
+                >
+                  Fill sandbox test details
+                </button>
+              )}
               <section className="space-y-3">
                 <h2 className="font-semibold text-lg">Contact</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

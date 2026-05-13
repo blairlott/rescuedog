@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { isRescueDogDomain } from "@/lib/productUtils";
 import rdwLogo from "@/assets/rdw-logo.png";
 
 // Wine-only entry points. The age gate ONLY pops up when a visitor

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -28,8 +28,9 @@ export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [vsCheckoutOpen, setVsCheckoutOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const isMerchRoute = location.pathname.startsWith("/merch");
-  const { items, isLoading, isSyncing, updateQuantity, removeItem, syncCart, addItem, getShopifyCheckoutUrl } = useCartStore();
+  const { items, isLoading, isSyncing, updateQuantity, removeItem, syncCart, addItem, getShopifyCheckoutUrl, clearCart } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
   // Split cart into wine + merch groups so each can check out via the right
@@ -95,15 +96,27 @@ export const CartDrawer = () => {
   };
 
   const handleCheckoutMerch = () => {
-    // Merch checkout: hand off to Shopify hosted checkout for the items already
-    // mirrored to the Shopify cart by the cart store.
-    const url = getShopifyCheckoutUrl();
-    if (url) {
-      window.open(url, "_blank");
-      setIsOpen(false);
+    // Simulated merch checkout — bypass Shopify hosted checkout for now and
+    // walk the user through to the thank-you screen with a fake order ID so
+    // the full UX can be evaluated end-to-end.
+    const fakeOrderId = `MERCH-SIM-${Date.now()}`;
+    const merchOnlyTotal = merchTotal;
+    const merchUnits = merchItems.reduce((s, i) => s + i.quantity, 0);
+    try {
+      localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items: merchItems, savedAt: new Date().toISOString() }));
+    } catch {}
+    // Drop merch lines but keep wine in cart if any.
+    const remainingWine = wineItems;
+    if (remainingWine.length === 0) {
+      clearCart();
     } else {
-      console.warn("[cart] no Shopify checkout URL available");
+      // remove each merch line locally
+      merchItems.forEach((i) => removeItem(i.variantId));
     }
+    setIsOpen(false);
+    navigate(
+      `/thank-you?order=${encodeURIComponent(fakeOrderId)}&total=${merchOnlyTotal.toFixed(2)}&bottles=0&units=${merchUnits}`,
+    );
   };
 
   return (

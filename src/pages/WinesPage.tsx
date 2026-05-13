@@ -4,6 +4,7 @@ import { PageHero } from "@/components/PageHero";
 import { FeaturedProduct } from "@/components/FeaturedProduct";
 import { AnimatedProductGrid } from "@/components/AnimatedProductGrid";
 import { ShippingIncludedBanner } from "@/components/ShippingIncludedBanner";
+import { MerchForWineLoversStrip } from "@/components/cross-sell/MerchForWineLoversStrip";
 import { useProducts } from "@/hooks/useProducts";
 import { Loader2 } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
@@ -105,6 +106,8 @@ const WinesPage = () => {
           )}
         </div>
       </main>
+
+      <MerchForWineLoversStrip />
 
       <Footer />
     </div>

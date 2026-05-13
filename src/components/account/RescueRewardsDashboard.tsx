@@ -113,6 +113,79 @@ export function RescueRewardsDashboard() {
     }
   };
 
+  const cheapestReward = useMemo(
+    () => REWARDS.reduce((a, b) => (a.cost <= b.cost ? a : b)),
+    []
+  );
+
+  const topUpTo = async (targetPts: number) => {
+    const need = targetPts - balance;
+    if (need <= 0) return;
+    const { error } = await supabase.rpc("simulate_loyalty_earn", {
+      _subtotal_cents: Math.round(need * 100),
+      _client_request_id: `preset-topup-${Date.now()}`,
+    });
+    if (error) throw error;
+  };
+
+  const redeemAt = async (cost: number, label: string) => {
+    const { data, error } = await supabase.rpc("redeem_loyalty_points", {
+      _reward_id: cheapestReward.id,
+      _reward_title: `${cheapestReward.title} (${label})`,
+      _reward_category: cheapestReward.category,
+      _points_cost: cost,
+      _ship_state: shipState || null,
+      _client_request_id: `preset-${label}-${Date.now()}`,
+      _simulated: true,
+      _metadata: { preset: label },
+    });
+    if (error) throw error;
+    return Array.isArray(data) ? data[0] : data;
+  };
+
+  const runPreset = async (preset: "partial" | "full" | "insufficient") => {
+    if (!user) return;
+    if (!allowed && preset !== "insufficient") {
+      toast.error("Set a redemption-eligible state first");
+      return;
+    }
+    setBusy(true);
+    try {
+      const cost = cheapestReward.cost;
+      if (preset === "partial") {
+        await topUpTo(cost * 2);
+        const row = await redeemAt(cost, "partial");
+        toast.success("Partial redemption OK", {
+          description: `Spent ${cost} pts, ${row?.new_balance ?? "?"} pts remaining.`,
+        });
+      } else if (preset === "full") {
+        await topUpTo(cost);
+        const row = await redeemAt(cost, "full");
+        toast.success("Full-balance redemption OK", {
+          description: `Spent ${cost} pts, ${row?.new_balance ?? 0} pts remaining.`,
+        });
+      } else {
+        // insufficient: attempt to spend more than the user holds
+        const overCost = Math.max(balance + 500, cost + 500);
+        try {
+          await redeemAt(overCost, "insufficient");
+          toast.error("Expected rejection but redemption succeeded", {
+            description: "Check redeem_loyalty_points balance guard.",
+          });
+        } catch (e: any) {
+          toast.success("Insufficient-balance guard fired", {
+            description: e?.message ?? "Redemption correctly blocked.",
+          });
+        }
+      }
+      await refresh();
+    } catch (e: any) {
+      toast.error("Preset failed", { description: e?.message ?? "Try again." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!user) {
     return (
       <section className="border border-border bg-card p-6 text-center space-y-3">
@@ -236,9 +309,9 @@ export function RescueRewardsDashboard() {
         </div>
       </section>
 
-      {/* Simulated earn (UX testing) — Test mode only */}
+      {/* Simulated earn + redemption presets (UX testing) — Test mode only */}
       {testMode && (
-      <section className="border border-dashed border-primary/50 bg-primary/5 p-5 space-y-3">
+      <section className="border border-dashed border-primary/50 bg-primary/5 p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
           <h3 className="font-display text-sm font-bold uppercase tracking-brand">Simulate Purchase</h3>
@@ -258,6 +331,33 @@ export function RescueRewardsDashboard() {
           <Button size="sm" onClick={handleSimulate} disabled={busy}>
             {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : "Earn points"}
           </Button>
+        </div>
+
+        {/* Redemption presets */}
+        <div className="border-t border-primary/30 pt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="font-display text-xs font-bold uppercase tracking-brand">Redemption Presets</h4>
+            <span className="text-[10px] uppercase tracking-brand text-muted-foreground">Edge-case testing</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Run preset scenarios against the cheapest reward ({cheapestReward.title}, {cheapestReward.cost} pts) to confirm UX for partial, full, and over-balance redemptions.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => runPreset("partial")}>
+              Partial spend
+            </Button>
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => runPreset("full")}>
+              Full balance
+            </Button>
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => runPreset("insufficient")}>
+              Insufficient balance
+            </Button>
+          </div>
+          <ul className="text-[10px] text-muted-foreground space-y-0.5 pl-4 list-disc">
+            <li><strong>Partial:</strong> tops balance to 2× cost, then redeems once — expect remainder.</li>
+            <li><strong>Full:</strong> sets balance to exactly the reward cost, then redeems — expect 0 remaining.</li>
+            <li><strong>Insufficient:</strong> drains balance below cost, then attempts redeem — expect rejection toast.</li>
+          </ul>
         </div>
       </section>
       )}

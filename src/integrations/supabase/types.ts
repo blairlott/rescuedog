@@ -1479,6 +1479,7 @@ export type Database = {
           metadata: Json
           order_id: string | null
           reason: string
+          subtotal_cents: number | null
           user_id: string
         }
         Insert: {
@@ -1489,6 +1490,7 @@ export type Database = {
           metadata?: Json
           order_id?: string | null
           reason: string
+          subtotal_cents?: number | null
           user_id: string
         }
         Update: {
@@ -1499,6 +1501,7 @@ export type Database = {
           metadata?: Json
           order_id?: string | null
           reason?: string
+          subtotal_cents?: number | null
           user_id?: string
         }
         Relationships: []
@@ -3393,6 +3396,18 @@ export type Database = {
       }
     }
     Functions: {
+      award_loyalty_points: {
+        Args: {
+          _delta_points: number
+          _event_type: string
+          _metadata?: Json
+          _order_id?: string
+          _reason: string
+          _subtotal_cents?: number
+          _user_id: string
+        }
+        Returns: string
+      }
       compliant_retailer_set: {
         Args: {
           _latitude: number

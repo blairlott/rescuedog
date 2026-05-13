@@ -70,12 +70,19 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
       quantity: 1,
       selectedOptions: variant.selectedOptions || [],
     });
-    const currentBottles = useCartStore.getState().items.reduce((sum, i) => sum + i.quantity, 0);
-    const remaining = freeShippingBottleCount - currentBottles;
-    if (remaining > 0) {
-      toast.success(`${product.node.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for shipping included`, { position: "top-center" });
+    const isWineRec = product.node.productKind === "wine";
+    if (!isWineRec) {
+      toast.success(`${product.node.title} added to cart`, { position: "top-center" });
     } else {
-      toast.success(`${product.node.title} added! Shipping included! 🎉`, { position: "top-center" });
+      const currentBottles = useCartStore.getState().items
+        .filter(i => i.product.node.productKind === "wine")
+        .reduce((sum, i) => sum + i.quantity, 0);
+      const remaining = freeShippingBottleCount - currentBottles;
+      if (remaining > 0) {
+        toast.success(`${product.node.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for shipping included`, { position: "top-center" });
+      } else {
+        toast.success(`${product.node.title} added! Shipping included! 🎉`, { position: "top-center" });
+      }
     }
   };
 

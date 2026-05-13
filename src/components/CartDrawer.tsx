@@ -132,7 +132,7 @@ export const CartDrawer = () => {
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-lg flex flex-col h-full overflow-hidden p-4 sm:p-6">
+      <SheetContent className="w-full sm:max-w-lg flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden p-4 sm:p-6">
         {/* Diagonal corner ribbon — communicates shipping threshold for both wine & merch */}
         {totalItems > 0 && (
           <div className="pointer-events-none absolute top-0 right-0 h-24 w-24 overflow-hidden z-20">
@@ -162,9 +162,9 @@ export const CartDrawer = () => {
             </div>
           )}
         </SheetHeader>
-        <div className="flex flex-col flex-1 pt-4 min-h-0">
+        <div className="flex-1 overflow-y-auto pt-4 pr-1 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
           {items.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="min-h-[50vh] flex items-center justify-center">
               <div className="text-center">
                 <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">Your cart is empty</p>
@@ -188,7 +188,7 @@ export const CartDrawer = () => {
               </div>
 
               {/* Cart items */}
-              <div className="flex-1 overflow-y-auto pr-2 min-h-0">
+              <div>
                 <div className="space-y-4">
                   {items.map((item) => (
                     <div key={item.variantId} className="p-3 rounded-md bg-card">
@@ -258,7 +258,7 @@ export const CartDrawer = () => {
               </div>
 
               {/* Footer with total and checkout */}
-              <div className="flex-shrink-0 space-y-3 pt-4 border-t">
+              <div className="space-y-3 pt-4 border-t pb-2">
                 {bottlesToCase > 0 && bottlesToCase <= 4 && (
                   <div className="text-xs bg-primary/10 border border-primary/30 px-3 py-2 flex items-center justify-between gap-2">
                     <span>

@@ -63,12 +63,18 @@ export function ProductCard({ product }: ProductCardProps) {
       quantity: 1,
       selectedOptions: firstVariant.selectedOptions || [],
     });
-    const currentBottles = useCartStore.getState().items.reduce((sum, i) => sum + i.quantity, 0);
-    const remaining = freeShippingBottleCount - currentBottles;
-    if (remaining > 0) {
-      toast.success(`${node.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for shipping included`, { position: "top-center" });
+    if (isWine) {
+      const currentBottles = useCartStore.getState().items
+        .filter(i => i.product.node.productKind === "wine")
+        .reduce((sum, i) => sum + i.quantity, 0);
+      const remaining = freeShippingBottleCount - currentBottles;
+      if (remaining > 0) {
+        toast.success(`${node.title} added! ${remaining} more bottle${remaining !== 1 ? 's' : ''} for shipping included`, { position: "top-center" });
+      } else {
+        toast.success(`${node.title} added! Shipping included! 🎉`, { position: "top-center" });
+      }
     } else {
-      toast.success(`${node.title} added! Shipping included! 🎉`, { position: "top-center" });
+      toast.success(`${node.title} added to cart`, { position: "top-center" });
     }
   };
 

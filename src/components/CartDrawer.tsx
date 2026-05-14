@@ -123,6 +123,34 @@ export const CartDrawer = () => {
     );
   };
 
+  // Smart sequential checkout: combines wine (Vinoshipper) and merch
+  // (Shopify) into a single click. When both are present, merch opens
+  // in a new tab first, then the VS modal takes over the current tab.
+  const hasWine = wineItems.length > 0;
+  const hasMerch = merchItems.length > 0;
+  const isDual = hasWine && hasMerch;
+
+  const handleSmartCheckout = () => {
+    if (hasMerch && !hasWine) {
+      const url = getShopifyCheckoutUrl();
+      if (url) {
+        window.open(url, "_blank");
+        setIsOpen(false);
+      } else {
+        handleCheckoutMerch();
+      }
+      return;
+    }
+    if (hasWine && !hasMerch) {
+      handleCheckoutWines();
+      return;
+    }
+    // Both: open merch in a new tab, then hand wine off to VS in this tab.
+    const url = getShopifyCheckoutUrl();
+    if (url) window.open(url, "_blank");
+    handleCheckoutWines();
+  };
+
   return (
     <>
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -313,17 +341,23 @@ export const CartDrawer = () => {
                     </p>
                   )}
                 </div>
-                {/* NEW unified single-transaction checkout (beta) — one card form, one charge */}
+                {/* Smart sequential checkout — wine via VS, merch via Shopify */}
                 <Button
-                  onClick={() => { setIsOpen(false); navigate("/checkout"); }}
+                  onClick={handleSmartCheckout}
                   className="w-full bg-primary hover:bg-primary/90"
                   size="lg"
                   disabled={isLoading || isSyncing || !purchaseAllowed}
                   title={!purchaseAllowed ? t("geo.purchase_disabled_tooltip") : undefined}
                 >
-                  {!purchaseAllowed
-                    ? t("geo.checkout_disabled_label")
-                    : `${t("common.checkout")} · $${(totalPrice + wrapFee).toFixed(2)}`}
+                  {isLoading || isSyncing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : !purchaseAllowed ? (
+                    t("geo.checkout_disabled_label")
+                  ) : isDual ? (
+                    <>Checkout (2 steps) · ${(totalPrice + wrapFee).toFixed(2)}</>
+                  ) : (
+                    <>{t("common.checkout")} · ${(totalPrice + wrapFee).toFixed(2)}</>
+                  )}
                 </Button>
                 {!purchaseAllowed && (
                   <div className="text-center space-y-1.5">
@@ -350,32 +384,31 @@ export const CartDrawer = () => {
                   {t("common.continue_shopping")}
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center leading-tight">
-                  One card. One charge. Wine + merch in a single transaction.
+                  {isDual
+                    ? "Merch opens in a new tab; wine checkout follows here. One cart, two confirmations."
+                    : hasWine
+                      ? "Wine ships via our compliance partner, Vinoshipper."
+                      : "Merch ships from our US fulfillment partners."}
                 </p>
 
                 <Accordion type="single" collapsible>
                   <AccordionItem value="legacy" className="border-0">
                     <AccordionTrigger className="text-[11px] uppercase tracking-brand text-muted-foreground py-1 hover:no-underline">
-                      Use legacy split checkout
+                      Use unified single-transaction checkout (beta)
                     </AccordionTrigger>
                     <AccordionContent className="space-y-2 pt-2">
-                {wineItems.length > 0 && (
-                  <Button onClick={handleCheckoutWines} className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={isLoading || isSyncing || !purchaseAllowed}>
-                    {isLoading || isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                      <><ExternalLink className="w-4 h-4 mr-2" /> Checkout {wineItems.length} wine{wineItems.length !== 1 ? "s" : ""} · ${wineTotal.toFixed(2)}</>
-                    )}
-                  </Button>
-                )}
-                {merchItems.length > 0 && (
-                  <Button onClick={handleCheckoutMerch} variant={wineItems.length > 0 ? "outline" : "default"} className={`w-full ${wineItems.length === 0 ? "bg-primary hover:bg-primary/90" : ""}`} size="lg" disabled={isLoading || isSyncing || !purchaseAllowed}>
-                    <ExternalLink className="w-4 h-4 mr-2" /> Checkout {merchItems.length} merch · ${merchTotal.toFixed(2)}
-                  </Button>
-                )}
-                {wineItems.length > 0 && merchItems.length > 0 && (
-                  <p className="text-[10px] text-muted-foreground text-center leading-tight">
-                    Wine ships via our compliance partner Vinoshipper; merch ships from our US fulfillment partners. Two checkouts, one cart.
-                  </p>
-                )}
+                      <Button
+                        onClick={() => { setIsOpen(false); navigate("/checkout"); }}
+                        variant="outline"
+                        className="w-full"
+                        size="lg"
+                        disabled={isLoading || isSyncing || !purchaseAllowed}
+                      >
+                        Try unified checkout · ${(totalPrice + wrapFee).toFixed(2)}
+                      </Button>
+                      <p className="text-[10px] text-muted-foreground leading-tight">
+                        Combines wine + merch into one card form and one charge. Requires Vinoshipper Order API live mode.
+                      </p>
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>

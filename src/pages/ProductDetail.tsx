@@ -200,13 +200,14 @@ const ProductDetail = () => {
               <div className="relative flex items-end justify-center group w-full max-w-md">
                 <div
                   ref={heroImgRef}
-                  className="aspect-[3/4] w-full overflow-hidden bg-transparent transition-transform duration-1000 will-change-transform group-hover:scale-[1.03] drop-shadow-2xl"
+                  className="aspect-square w-full overflow-hidden bg-transparent transition-transform duration-1000 will-change-transform group-hover:scale-[1.03] drop-shadow-2xl"
                 >
                   {images[selectedImage]?.node ? (
                     <img
                       src={images[selectedImage].node.url}
                       alt={images[selectedImage].node.altText || product.title}
                       className="w-full h-full object-contain"
+                      loading="eager"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>
@@ -259,7 +260,7 @@ const ProductDetail = () => {
                   </button>
                 </div>
 
-                <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-light tracking-tight leading-[1.05] uppercase text-foreground">
+                <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-light tracking-tight leading-[1.05] uppercase text-foreground">
                   {product.title}
                 </h1>
 

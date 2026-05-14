@@ -27,6 +27,25 @@ import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundle
 
 const LAST_ORDER_KEY = "rdw_last_order";
 const PENDING_WINE_KEY = "rdw_pending_wine_checkout";
+const PENDING_WINE_TTL_MS = 60 * 60 * 1000; // 1h — abandoned sessions don't auto-reopen days later
+
+/**
+ * Lightweight telemetry hook for the dual-checkout flow. Always logs to the
+ * console, and pushes to window.dataLayer when GTM is wired up so we can chart
+ * popup-blocked rate, resume success, mismatch, and expiry over time.
+ */
+const logCheckoutEvent = (event: string, data: Record<string, unknown> = {}) => {
+  try {
+    // eslint-disable-next-line no-console
+    console.info(`[checkout] ${event}`, data);
+    const w = window as unknown as { dataLayer?: Array<Record<string, unknown>> };
+    if (Array.isArray(w.dataLayer)) {
+      w.dataLayer.push({ event: `rdw_checkout_${event}`, ...data });
+    }
+  } catch {
+    // never let telemetry break checkout
+  }
+};
 
 type WineSnapshotLine = { variantId: string; quantity: number };
 type WineSnapshot = { lines: WineSnapshotLine[]; savedAt: string };
@@ -49,6 +68,10 @@ const wineSnapshotsMatch = (a: WineSnapshotLine[], b: WineSnapshotLine[]) => {
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [vsCheckoutOpen, setVsCheckoutOpen] = useState(false);
+  // Surfaces a manual "Resume wine checkout" button as a fallback whenever
+  // the auto-resume bailed (snapshot mismatch, expired, or user dismissed
+  // the toast before clicking the action).
+  const [manualResumeAvailable, setManualResumeAvailable] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { purchaseAllowed, setOverrideUS } = useGeo();
@@ -123,7 +146,21 @@ export const CartDrawer = () => {
       const currentWine = useCartStore.getState().items.filter(
         (i) => i.product.node.productKind === "wine",
       );
-      if (currentWine.length === 0) return;
+      if (currentWine.length === 0) {
+        logCheckoutEvent("resume_skipped_no_wine");
+        return;
+      }
+
+      // Expire stale snapshots — if the user came back hours/days later,
+      // surface the manual button instead of silently popping a modal.
+      if (snapshot?.savedAt) {
+        const ageMs = Date.now() - new Date(snapshot.savedAt).getTime();
+        if (Number.isFinite(ageMs) && ageMs > PENDING_WINE_TTL_MS) {
+          logCheckoutEvent("resume_expired", { ageMs });
+          setManualResumeAvailable(true);
+          return;
+        }
+      }
 
       // If we have a snapshot, require the wine cart to match exactly.
       // If items were added/removed/quantities changed since handoff, do not
@@ -131,6 +168,11 @@ export const CartDrawer = () => {
       if (snapshot) {
         const currentSnapshot = snapshotWineLines(currentWine);
         if (!wineSnapshotsMatch(snapshot.lines, currentSnapshot.lines)) {
+          logCheckoutEvent("resume_mismatch", {
+            snapshotLines: snapshot.lines.length,
+            currentLines: currentSnapshot.lines.length,
+          });
+          setManualResumeAvailable(true);
           // Cart changed — let the user decide instead of silently reopening.
           toast("Wine cart changed since merch checkout", {
             id: "rdw-wine-resume-mismatch",
@@ -148,6 +190,9 @@ export const CartDrawer = () => {
         }
       }
 
+      logCheckoutEvent("resume_success", {
+        bottles: currentWine.reduce((s, i) => s + i.quantity, 0),
+      });
       toast.success("Wine checkout resumed", {
         id: "rdw-wine-resume-success",
         description: `Picking up ${currentWine.reduce((s, i) => s + i.quantity, 0)} bottle${currentWine.reduce((s, i) => s + i.quantity, 0) !== 1 ? "s" : ""} where you left off after merch.`,
@@ -243,10 +288,12 @@ export const CartDrawer = () => {
       if (url) {
         const win = window.open(url, "_blank");
         if (!win || win.closed || typeof win.closed === "undefined") {
+          logCheckoutEvent("popup_blocked", { kind: "merch_only" });
           // Popup blocked — fall back to same-tab navigation
           window.location.href = url;
           return;
         }
+        logCheckoutEvent("merch_popup_opened");
         setIsOpen(false);
       } else {
         handleCheckoutMerch();
@@ -262,6 +309,7 @@ export const CartDrawer = () => {
     if (url) {
       const win = window.open(url, "_blank");
       if (!win || win.closed || typeof win.closed === "undefined") {
+        logCheckoutEvent("popup_blocked", { kind: "dual" });
         // Popup blocked — stash wine intent and navigate to merch checkout
         // in the same tab. User finishes merch first, then returns for wine.
         try {
@@ -273,6 +321,7 @@ export const CartDrawer = () => {
         window.location.href = url;
         return;
       }
+      logCheckoutEvent("dual_popup_opened");
     }
     handleCheckoutWines();
   };
@@ -451,6 +500,26 @@ export const CartDrawer = () => {
                 {merchItems.length > 0 && (
                   <CartGiftMode />
                 )}
+                {manualResumeAvailable && hasWine && (
+                  <div className="text-xs bg-primary/10 border border-primary/30 px-3 py-2 flex items-center justify-between gap-2">
+                    <span className="leading-tight">
+                      <strong>Finished merch checkout?</strong> Resume your wine order.
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[11px] px-2 whitespace-nowrap"
+                      onClick={() => {
+                        logCheckoutEvent("manual_resume_clicked");
+                        setManualResumeAvailable(false);
+                        setIsOpen(false);
+                        setVsCheckoutOpen(true);
+                      }}
+                    >
+                      Resume wine
+                    </Button>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-display font-semibold">Subtotal</span>
@@ -523,7 +592,7 @@ export const CartDrawer = () => {
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center leading-tight">
                   {isDual
-                    ? "Step 1: Merch checkout opens in a new tab (pay there). Step 2: Wine checkout takes over this tab right after. You'll receive two order confirmations — one from our merch partner, one from Vinoshipper."
+                    ? "Merch pays in a new tab. Wine checkout opens here next. Two confirmations — one per order."
                     : hasWine
                       ? "Wine ships via our compliance partner, Vinoshipper."
                       : "Merch ships from our US fulfillment partners."}

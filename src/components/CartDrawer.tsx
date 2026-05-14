@@ -25,6 +25,25 @@ import { Percent } from "lucide-react";
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
 
 const LAST_ORDER_KEY = "rdw_last_order";
+const PENDING_WINE_KEY = "rdw_pending_wine_checkout";
+
+type WineSnapshotLine = { variantId: string; quantity: number };
+type WineSnapshot = { lines: WineSnapshotLine[]; savedAt: string };
+
+const snapshotWineLines = (wineItems: { variantId: string; quantity: number }[]): WineSnapshot => ({
+  lines: wineItems
+    .map((i) => ({ variantId: i.variantId, quantity: i.quantity }))
+    .sort((a, b) => a.variantId.localeCompare(b.variantId)),
+  savedAt: new Date().toISOString(),
+});
+
+const wineSnapshotsMatch = (a: WineSnapshotLine[], b: WineSnapshotLine[]) => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].variantId !== b[i].variantId || a[i].quantity !== b[i].quantity) return false;
+  }
+  return true;
+};
 
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -77,15 +96,33 @@ export const CartDrawer = () => {
   // tab refocus), pick up where we left off and open the VS modal.
   useEffect(() => {
     const resumeIfPending = () => {
-      let pending: string | null = null;
-      try { pending = localStorage.getItem("rdw_pending_wine_checkout"); } catch {}
-      if (!pending) return;
-      // Only resume if there are still wine items in the cart
-      const stillHasWine = useCartStore.getState().items.some(
+      let raw: string | null = null;
+      try { raw = localStorage.getItem(PENDING_WINE_KEY); } catch {}
+      if (!raw) return;
+
+      let snapshot: WineSnapshot | null = null;
+      try {
+        const parsed = JSON.parse(raw);
+        // Tolerate the legacy "1" flag — treat as no snapshot to compare against.
+        if (parsed && Array.isArray(parsed.lines)) snapshot = parsed as WineSnapshot;
+      } catch {}
+
+      // Always clear the flag — we only get one chance to resume.
+      try { localStorage.removeItem(PENDING_WINE_KEY); } catch {}
+
+      const currentWine = useCartStore.getState().items.filter(
         (i) => i.product.node.productKind === "wine",
       );
-      try { localStorage.removeItem("rdw_pending_wine_checkout"); } catch {}
-      if (!stillHasWine) return;
+      if (currentWine.length === 0) return;
+
+      // If we have a snapshot, require the wine cart to match exactly.
+      // If items were added/removed/quantities changed since handoff, do not
+      // auto-reopen — the user can hit Checkout again.
+      if (snapshot) {
+        const currentSnapshot = snapshotWineLines(currentWine);
+        if (!wineSnapshotsMatch(snapshot.lines, currentSnapshot.lines)) return;
+      }
+
       setIsOpen(false);
       setVsCheckoutOpen(true);
     };
@@ -191,7 +228,10 @@ export const CartDrawer = () => {
         // Popup blocked — stash wine intent and navigate to merch checkout
         // in the same tab. User finishes merch first, then returns for wine.
         try {
-          localStorage.setItem("rdw_pending_wine_checkout", "1");
+          localStorage.setItem(
+            PENDING_WINE_KEY,
+            JSON.stringify(snapshotWineLines(wineItems)),
+          );
         } catch {}
         window.location.href = url;
         return;

@@ -133,6 +133,7 @@ export const CartDrawer = () => {
         if (!wineSnapshotsMatch(snapshot.lines, currentSnapshot.lines)) {
           // Cart changed — let the user decide instead of silently reopening.
           toast("Wine cart changed since merch checkout", {
+            id: "rdw-wine-resume-mismatch",
             description: "Review your bottles, then continue when ready.",
             duration: 8000,
             action: {
@@ -148,6 +149,7 @@ export const CartDrawer = () => {
       }
 
       toast.success("Wine checkout resumed", {
+        id: "rdw-wine-resume-success",
         description: `Picking up ${currentWine.reduce((s, i) => s + i.quantity, 0)} bottle${currentWine.reduce((s, i) => s + i.quantity, 0) !== 1 ? "s" : ""} where you left off after merch.`,
         duration: 5000,
         action: {

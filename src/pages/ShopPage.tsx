@@ -6,6 +6,7 @@ import { ShippingIncludedBanner } from "@/components/ShippingIncludedBanner";
 import { useProducts } from "@/hooks/useProducts";
 import { Loader2 } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
+import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
 
 const ShopPage = () => {
   const { data: products, isLoading } = useProducts(50);
@@ -30,7 +31,23 @@ const ShopPage = () => {
           ) : !products || products.length === 0 ? (
             <p className="text-center text-muted-foreground py-12">No products found.</p>
           ) : (
-            <AnimatedProductGrid products={products} />
+            (() => {
+              // Drop a rescue spotlight after the first ~2 rows (10 cards on
+              // desktop xl, fewer on smaller breakpoints). Falls back to the
+              // end of the grid if there aren't enough products.
+              const breakAt = Math.min(10, products.length);
+              const head = products.slice(0, breakAt);
+              const tail = products.slice(breakAt);
+              return (
+                <>
+                  <AnimatedProductGrid products={head} />
+                  <div className="my-12">
+                    <RescueSpotlightCard variant="inline" seed="shop" />
+                  </div>
+                  {tail.length > 0 && <AnimatedProductGrid products={tail} />}
+                </>
+              );
+            })()
           )}
         </div>
       </main>

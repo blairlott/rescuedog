@@ -2363,7 +2363,11 @@ export type Database = {
           city: string
           created_at: string
           id: string
+          is_active: boolean
+          is_focus: boolean
+          mission_blurb: string | null
           name: string
+          photo_url: string | null
           state: string
           url: string
         }
@@ -2371,7 +2375,11 @@ export type Database = {
           city?: string
           created_at?: string
           id?: string
+          is_active?: boolean
+          is_focus?: boolean
+          mission_blurb?: string | null
           name: string
+          photo_url?: string | null
           state?: string
           url?: string
         }
@@ -2379,7 +2387,11 @@ export type Database = {
           city?: string
           created_at?: string
           id?: string
+          is_active?: boolean
+          is_focus?: boolean
+          mission_blurb?: string | null
           name?: string
+          photo_url?: string | null
           state?: string
           url?: string
         }

@@ -24,6 +24,7 @@ import { CartGiftMode, GIFT_WRAP_FEE_CENTS, readGiftMode } from "@/components/ca
 import { useIsMember } from "@/hooks/useIsMember";
 import { Percent } from "lucide-react";
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
+import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
 
 const LAST_ORDER_KEY = "rdw_last_order";
 const PENDING_WINE_KEY = "rdw_pending_wine_checkout";
@@ -548,6 +549,9 @@ export const CartDrawer = () => {
                     </p>
                   )}
                 </div>
+                {totalItems > 0 && (
+                  <RescueSpotlightCard variant="compact" seed="cart" />
+                )}
                 {/* Smart sequential checkout — wine via VS, merch via Shopify */}
                 <Button
                   onClick={handleSmartCheckout}

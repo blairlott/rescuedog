@@ -44,7 +44,8 @@ import { WordpressImportPanel } from "@/components/cms/WordpressImportPanel";
 import { ContentLibraryPanel } from "@/components/cms/ContentLibraryPanel";
 import { PairingsPanel } from "@/components/cms/PairingsPanel";
 import { MerchImagesPanel } from "@/components/cms/MerchImagesPanel";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, Heart } from "lucide-react";
+import { RescueSpotlightPanel } from "@/components/cms/RescueSpotlightPanel";
 
 // ─── Types ───────────────────────────────────────────────────
 type CmsUser = {
@@ -378,6 +379,9 @@ const CmsDashboard = () => {
             <TabsTrigger value="merch-images" className="gap-1.5">
               <ImageIcon className="h-3.5 w-3.5" /> Merch Images
             </TabsTrigger>
+            <TabsTrigger value="rescues" className="gap-1.5">
+              <Heart className="h-3.5 w-3.5" /> Rescues
+            </TabsTrigger>
             <TabsTrigger value="users" className="gap-1.5">
               <Users className="h-3.5 w-3.5" /> Users
             </TabsTrigger>
@@ -582,6 +586,10 @@ const CmsDashboard = () => {
 
           <TabsContent value="merch-images">
             <MerchImagesPanel />
+          </TabsContent>
+
+          <TabsContent value="rescues">
+            <RescueSpotlightPanel />
           </TabsContent>
         </Tabs>
       </main>

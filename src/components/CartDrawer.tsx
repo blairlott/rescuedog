@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -120,9 +121,34 @@ export const CartDrawer = () => {
       // auto-reopen — the user can hit Checkout again.
       if (snapshot) {
         const currentSnapshot = snapshotWineLines(currentWine);
-        if (!wineSnapshotsMatch(snapshot.lines, currentSnapshot.lines)) return;
+        if (!wineSnapshotsMatch(snapshot.lines, currentSnapshot.lines)) {
+          // Cart changed — let the user decide instead of silently reopening.
+          toast("Wine cart changed since merch checkout", {
+            description: "Review your bottles, then continue when ready.",
+            duration: 8000,
+            action: {
+              label: "Continue wine checkout",
+              onClick: () => {
+                setIsOpen(false);
+                setVsCheckoutOpen(true);
+              },
+            },
+          });
+          return;
+        }
       }
 
+      toast("Resuming wine checkout…", {
+        description: "Picking up where you left off after merch.",
+        duration: 5000,
+        action: {
+          label: "Open now",
+          onClick: () => {
+            setIsOpen(false);
+            setVsCheckoutOpen(true);
+          },
+        },
+      });
       setIsOpen(false);
       setVsCheckoutOpen(true);
     };

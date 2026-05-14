@@ -134,7 +134,12 @@ export const CartDrawer = () => {
     if (hasMerch && !hasWine) {
       const url = getShopifyCheckoutUrl();
       if (url) {
-        window.open(url, "_blank");
+        const win = window.open(url, "_blank");
+        if (!win || win.closed || typeof win.closed === "undefined") {
+          // Popup blocked — fall back to same-tab navigation
+          window.location.href = url;
+          return;
+        }
         setIsOpen(false);
       } else {
         handleCheckoutMerch();
@@ -147,7 +152,18 @@ export const CartDrawer = () => {
     }
     // Both: open merch in a new tab, then hand wine off to VS in this tab.
     const url = getShopifyCheckoutUrl();
-    if (url) window.open(url, "_blank");
+    if (url) {
+      const win = window.open(url, "_blank");
+      if (!win || win.closed || typeof win.closed === "undefined") {
+        // Popup blocked — stash wine intent and navigate to merch checkout
+        // in the same tab. User finishes merch first, then returns for wine.
+        try {
+          localStorage.setItem("rdw_pending_wine_checkout", "1");
+        } catch {}
+        window.location.href = url;
+        return;
+      }
+    }
     handleCheckoutWines();
   };
 

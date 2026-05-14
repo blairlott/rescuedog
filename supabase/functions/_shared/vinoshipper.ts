@@ -1,10 +1,35 @@
 // Shared helpers for talking to the Vinoshipper REST API.
 // Docs: https://developer.vinoshipper.com/reference
 //
-// Auth: Vinoshipper uses an API key passed via header. When the user adds the
-// VINOSHIPPER_API_KEY secret, this client will start working.
+// Auth: supports two modes (auto-detected from which secrets are present):
+//   1. Basic auth — VINOSHIPPER_API_KEY_ID + VINOSHIPPER_API_SECRET (preferred,
+//      matches VS dashboard "API Keys" page).
+//   2. Bearer token — VINOSHIPPER_API_KEY (legacy fallback).
+//
+// Live vs simulation is gated by the VS_LIVE_MODE env var (see vsLiveMode()).
 
 const VS_BASE_URL = "https://vinoshipper.com/api/v3";
+
+/** Single source of truth for "are we calling the real Vinoshipper API?" */
+export function vsLiveMode(): boolean {
+  const v = Deno.env.get("VS_LIVE_MODE");
+  return v === "true" || v === "1";
+}
+
+function buildAuthHeader(): string {
+  const id = Deno.env.get("VINOSHIPPER_API_KEY_ID");
+  const secret = Deno.env.get("VINOSHIPPER_API_SECRET");
+  if (id && secret) {
+    return `Basic ${btoa(`${id}:${secret}`)}`;
+  }
+  const bearer = Deno.env.get("VINOSHIPPER_API_KEY");
+  if (bearer) return `Bearer ${bearer}`;
+  throw new VinoshipperError(
+    500,
+    "Vinoshipper credentials not configured (need VINOSHIPPER_API_KEY_ID + VINOSHIPPER_API_SECRET, or VINOSHIPPER_API_KEY)",
+    null,
+  );
+}
 
 export interface VsRequestOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
@@ -26,11 +51,6 @@ export async function vsFetch<T = unknown>(
   path: string,
   opts: VsRequestOptions = {},
 ): Promise<T> {
-  const apiKey = Deno.env.get("VINOSHIPPER_API_KEY");
-  if (!apiKey) {
-    throw new VinoshipperError(500, "VINOSHIPPER_API_KEY not configured", null);
-  }
-
   const url = new URL(`${VS_BASE_URL}${path}`);
   if (opts.query) {
     for (const [k, v] of Object.entries(opts.query)) {
@@ -43,9 +63,7 @@ export async function vsFetch<T = unknown>(
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      // NOTE: confirm exact header name with Vinoshipper docs once creds are in
-      // (commonly "Authorization: Bearer ..." or "X-API-Key: ...")
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: buildAuthHeader(),
     },
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });

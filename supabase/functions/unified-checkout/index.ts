@@ -22,13 +22,13 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3.23";
 import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
+import { vsCreateOrder, vsLiveMode, VinoshipperError } from "../_shared/vinoshipper.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Simulation flag mirrors src/lib/vinoshipperConfig.ts. Flip to false once VS
-// API secrets are in place and we're ready to actually create wine orders.
-const VS_SIMULATION = true;
+// Live vs simulation is now controlled by the VS_LIVE_MODE secret (see
+// _shared/vinoshipper.ts → vsLiveMode()). Default = simulation.
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -280,16 +280,73 @@ Deno.serve(async (req) => {
     // Dispatch Vinoshipper leg if there are wine items.
     let vsOrderId: string | null = null;
     if (order.vinoshipper_status === "pending") {
-      if (VS_SIMULATION) {
+      const live = vsLiveMode();
+      if (!live) {
+        // SIMULATION: stamp a synthetic VS order id so the rest of the
+        // pipeline (admin queues, webhook simulator) has something to work with.
         vsOrderId = `VS-SIM-${order.order_number}`;
         await supabase.from("orders").update({
           vinoshipper_order_id: vsOrderId,
           vinoshipper_status: "submitted",
         }).eq("id", order.id);
       } else {
-        // TODO: real call to vinoshipper-create-order with paid:true
-        // For now log and leave pending so it shows up in admin queues.
-        console.warn("[unified-checkout] VS live mode not yet wired");
+        // LIVE: pull wine line items + ship address off the order and POST to VS.
+        // VS is acting as our fulfillment vendor — payment already captured on
+        // our Stripe, so we mark the order paid:true so VS does NOT re-charge.
+        try {
+          const { data: wineItems } = await supabase
+            .from("order_items")
+            .select("vinoshipper_product_id, quantity")
+            .eq("order_id", order.id)
+            .eq("product_kind", "wine");
+
+          const lineItems = (wineItems ?? [])
+            .filter((i: any) => i.vinoshipper_product_id)
+            .map((i: any) => ({
+              productId: i.vinoshipper_product_id as string,
+              quantity: i.quantity as number,
+            }));
+
+          if (lineItems.length === 0) {
+            console.warn("[unified-checkout] live mode but no VS-mapped wine items on order", order.id);
+            await supabase.from("orders").update({
+              vinoshipper_status: "error",
+              vinoshipper_error: "no vinoshipper_product_id on wine line items",
+            } as Record<string, unknown>).eq("id", order.id);
+          } else {
+            const vsResp = await vsCreateOrder({
+              orderNumber: order.order_number,
+              lineItems,
+              shippingAddress: {
+                firstName: order.customer_first_name,
+                lastName: order.customer_last_name,
+                address1: order.ship_address1,
+                address2: order.ship_address2 ?? undefined,
+                city: order.ship_city,
+                state: order.ship_state,
+                zip: order.ship_zip,
+                phone: order.customer_phone ?? undefined,
+                email: order.customer_email,
+              },
+              // @ts-expect-error — paid flag passed through to VS payload
+              paid: true,
+            }) as { id: string | number };
+            vsOrderId = String(vsResp.id);
+            await supabase.from("orders").update({
+              vinoshipper_order_id: vsOrderId,
+              vinoshipper_status: "submitted",
+            }).eq("id", order.id);
+          }
+        } catch (e) {
+          const detail = e instanceof VinoshipperError ? e.details : String(e);
+          console.error("[unified-checkout] VS live order failed", detail);
+          await supabase.from("orders").update({
+            vinoshipper_status: "error",
+            vinoshipper_error: typeof detail === "string" ? detail : JSON.stringify(detail).slice(0, 1000),
+          } as Record<string, unknown>).eq("id", order.id);
+          // Don't fail the whole finalize — payment already captured. Admin
+          // queue will surface the failed VS dispatch for manual retry.
+        }
       }
     }
 

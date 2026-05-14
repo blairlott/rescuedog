@@ -2113,6 +2113,7 @@ export type Database = {
           total_cents: number
           updated_at: string
           user_id: string | null
+          vinoshipper_error: string | null
           vinoshipper_order_id: string | null
           vinoshipper_status: string
           wine_subtotal_cents: number
@@ -2147,6 +2148,7 @@ export type Database = {
           total_cents: number
           updated_at?: string
           user_id?: string | null
+          vinoshipper_error?: string | null
           vinoshipper_order_id?: string | null
           vinoshipper_status?: string
           wine_subtotal_cents?: number
@@ -2181,6 +2183,7 @@ export type Database = {
           total_cents?: number
           updated_at?: string
           user_id?: string | null
+          vinoshipper_error?: string | null
           vinoshipper_order_id?: string | null
           vinoshipper_status?: string
           wine_subtotal_cents?: number

@@ -147,8 +147,8 @@ export const CartDrawer = () => {
         }
       }
 
-      toast("Resuming wine checkout…", {
-        description: "Picking up where you left off after merch.",
+      toast.success("Wine checkout resumed", {
+        description: `Picking up ${currentWine.reduce((s, i) => s + i.quantity, 0)} bottle${currentWine.reduce((s, i) => s + i.quantity, 0) !== 1 ? "s" : ""} where you left off after merch.`,
         duration: 5000,
         action: {
           label: "Open now",

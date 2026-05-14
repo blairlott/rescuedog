@@ -202,7 +202,7 @@ const ProductDetail = () => {
                   ref={heroImgRef}
                   className="aspect-square w-full overflow-hidden bg-transparent transition-transform duration-1000 will-change-transform group-hover:scale-[1.03] drop-shadow-2xl"
                 >
-                  {images[selectedImage]?.node ? (
+                  {images[selectedImage]?.node?.url ? (
                     <img
                       src={images[selectedImage].node.url}
                       alt={images[selectedImage].node.altText || product.title}

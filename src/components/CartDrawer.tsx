@@ -346,6 +346,18 @@ export const CartDrawer = () => {
                     <span className="font-display font-semibold">Subtotal</span>
                     <span className="font-bold">${(totalPrice + wrapFee).toFixed(2)}</span>
                   </div>
+                  {isDual && (
+                    <div className="text-[11px] text-muted-foreground space-y-0.5 border-t border-dashed border-border pt-1.5">
+                      <div className="flex justify-between">
+                        <span>Step 1 · Merch ({merchItems.reduce((s,i)=>s+i.quantity,0)} item{merchItems.reduce((s,i)=>s+i.quantity,0)!==1?'s':''})</span>
+                        <span className="font-mono">${merchTotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Step 2 · Wine ({wineItems.reduce((s,i)=>s+i.quantity,0)} bottle{wineItems.reduce((s,i)=>s+i.quantity,0)!==1?'s':''})</span>
+                        <span className="font-mono">${wineTotal.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
                   {isMember && wineTotal > 0 && (
                     <p className="text-[11px] text-primary font-bold uppercase tracking-brand text-right">
                       Member savings: -${memberSavings.toFixed(2)}
@@ -401,7 +413,7 @@ export const CartDrawer = () => {
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center leading-tight">
                   {isDual
-                    ? "Merch opens in a new tab; wine checkout follows here. One cart, two confirmations."
+                    ? "Step 1: Merch checkout opens in a new tab (pay there). Step 2: Wine checkout takes over this tab right after. You'll receive two order confirmations — one from our merch partner, one from Vinoshipper."
                     : hasWine
                       ? "Wine ships via our compliance partner, Vinoshipper."
                       : "Merch ships from our US fulfillment partners."}

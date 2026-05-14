@@ -153,7 +153,7 @@ export const CartDrawer = () => {
         description: `Picking up ${currentWine.reduce((s, i) => s + i.quantity, 0)} bottle${currentWine.reduce((s, i) => s + i.quantity, 0) !== 1 ? "s" : ""} where you left off after merch.`,
         duration: 5000,
         action: {
-          label: "Open now",
+          label: "Open wine checkout",
           onClick: () => {
             setIsOpen(false);
             setVsCheckoutOpen(true);

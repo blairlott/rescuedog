@@ -71,6 +71,39 @@ export const CartDrawer = () => {
 
   useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
 
+  // Resume wine checkout after a same-tab Shopify handoff.
+  // When popup was blocked, handleSmartCheckout sets rdw_pending_wine_checkout
+  // and navigates this tab to Shopify. On return (back button, return URL, or
+  // tab refocus), pick up where we left off and open the VS modal.
+  useEffect(() => {
+    const resumeIfPending = () => {
+      let pending: string | null = null;
+      try { pending = localStorage.getItem("rdw_pending_wine_checkout"); } catch {}
+      if (!pending) return;
+      // Only resume if there are still wine items in the cart
+      const stillHasWine = useCartStore.getState().items.some(
+        (i) => i.product.node.productKind === "wine",
+      );
+      try { localStorage.removeItem("rdw_pending_wine_checkout"); } catch {}
+      if (!stillHasWine) return;
+      setIsOpen(false);
+      setVsCheckoutOpen(true);
+    };
+    // Run on mount (covers full page reload / return URL navigation)
+    resumeIfPending();
+    // Run on tab refocus (covers back-button restore from bfcache)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") resumeIfPending();
+    };
+    const onPageShow = () => resumeIfPending();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, []);
+
   const reorderLast = async () => {
     if (!lastOrder?.items?.length) return;
     for (const it of lastOrder.items) {

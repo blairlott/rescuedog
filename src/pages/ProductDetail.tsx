@@ -6,7 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Loader2, ArrowLeft, Minus, Plus, Heart, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SubscribeAndSave, DISCOUNT_PERCENT } from "@/components/SubscribeAndSave";
 import { supabase } from "@/integrations/supabase/client";
 import { useCartSettings } from "@/hooks/useCartSettings";
@@ -36,6 +36,27 @@ const ProductDetail = () => {
   const { isMember, discountPercent } = useIsMember();
   const { canShip, state: shipState } = useShipState();
   const blockedByState = !!shipState && !canShip;
+
+  // Subtle parallax for the sculptural bottle image on hero scroll
+  const heroImgRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const el = heroImgRef.current;
+        if (!el) return;
+        const y = Math.max(-40, Math.min(40, window.scrollY * -0.08));
+        el.style.transform = `translate3d(0, ${y}px, 0)`;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -68,6 +89,9 @@ const ProductDetail = () => {
   const tags = ((product as any).tags || []) as string[];
   const productKind = (product as any).productKind as "wine" | "merch" | undefined;
   const isMerch = productKind === "merch";
+  const vintage =
+    tags.find((t) => /^(19|20)\d{2}$/.test(t.trim())) ||
+    (product.title.match(/(19|20)\d{2}/)?.[0] ?? null);
   const merchCategory = tags
     .map((t) => t.toLowerCase())
     .find((t) => ["apparel", "drinkware", "pet", "home", "gift"].includes(t));
@@ -142,29 +166,68 @@ const ProductDetail = () => {
         }}
       />
       <Header />
-      <main className="flex-1 py-8">
-        <div className="container mx-auto px-4">
-          <Link
-            to={(typeof window !== "undefined" && sessionStorage.getItem("lastStorePath")) || "/wines"}
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6"
-          >
-            <ArrowLeft className="mr-1 h-4 w-4" />Back to store
-          </Link>
+      <main className="flex-1">
+        {/* Editorial hero — story-led, sculptural product staging */}
+        <section className="relative bg-[#fcfcfc] overflow-hidden">
+          {/* Elegant impact line (wine only) */}
+          {!isMerch && (
+            <div className="w-full text-center py-4 text-[10px] tracking-[0.3em] uppercase text-muted-foreground bg-white/80 backdrop-blur-md border-b border-border">
+              Every bottle helps a dog find their forever home
+            </div>
+          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-            {/* Images */}
-            <div className="space-y-4">
-              <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                {images[selectedImage]?.node ? (
-                  <img src={images[selectedImage].node.url} alt={images[selectedImage].node.altText || product.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>
-                )}
+          <div className="container mx-auto px-4 md:px-12 pt-6">
+            <Link
+              to={(typeof window !== "undefined" && sessionStorage.getItem("lastStorePath")) || "/wines"}
+              className="inline-flex items-center text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="mr-2 h-3.5 w-3.5" />Back to store
+            </Link>
+          </div>
+
+          <div className="container mx-auto px-4 md:px-12 flex flex-col lg:flex-row items-center gap-12 lg:gap-24 py-12 lg:py-20">
+            {/* Sculptural product imagery */}
+            <div className="relative w-full lg:w-1/2 flex justify-center">
+              {/* Soft radial glow */}
+              <div
+                aria-hidden
+                className="absolute inset-0 -z-10 blur-3xl opacity-60 scale-150"
+                style={{
+                  background:
+                    "radial-gradient(circle at center, rgba(195,0,23,0.06), transparent 60%)",
+                }}
+              />
+              <div className="relative flex items-end justify-center group w-full max-w-md">
+                <div
+                  ref={heroImgRef}
+                  className="aspect-square w-full overflow-hidden bg-transparent transition-transform duration-1000 will-change-transform group-hover:scale-[1.03] drop-shadow-2xl"
+                >
+                  {images[selectedImage]?.node?.url ? (
+                    <img
+                      src={images[selectedImage].node.url}
+                      alt={images[selectedImage].node.altText || product.title}
+                      className="w-full h-full object-contain"
+                      loading="eager"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>
+                  )}
+                </div>
+                {/* Subtle floor shadow */}
+                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-black/10 blur-2xl rounded-[100%] -z-10" />
               </div>
+
               {images.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto">
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-12 flex gap-2 overflow-x-auto px-2">
                   {images.map((img: { node: { url: string; altText: string | null } }, idx: number) => (
-                    <button key={idx} onClick={() => setSelectedImage(idx)} className={`w-16 h-16 rounded-md overflow-hidden border-2 flex-shrink-0 ${idx === selectedImage ? 'border-primary' : 'border-border'}`}>
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedImage(idx)}
+                      className={`w-12 h-12 overflow-hidden border flex-shrink-0 transition-opacity ${
+                        idx === selectedImage ? 'border-primary opacity-100' : 'border-border opacity-60 hover:opacity-100'
+                      }`}
+                      aria-label={`View image ${idx + 1}`}
+                    >
                       <img src={img.node.url} alt={img.node.altText || ''} className="w-full h-full object-cover" />
                     </button>
                   ))}
@@ -172,11 +235,35 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {/* Product Info */}
-            <div className="space-y-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h1 className="font-display text-3xl font-bold text-foreground mb-2">{product.title}</h1>
+            {/* Product details — editorial */}
+            <div className="w-full lg:w-1/2 space-y-8 flex flex-col items-start text-left">
+              <div className="space-y-4 w-full">
+                <div className="flex items-center justify-between gap-4">
+                  {vintage ? (
+                    <span className="px-3 py-1 bg-zinc-100 text-[10px] tracking-[0.25em] uppercase font-extrabold text-foreground border border-border">
+                      {vintage} Vintage
+                    </span>
+                  ) : <span />}
+                  <button
+                    onClick={() =>
+                      toggleFavorite.mutate({
+                        handle: product.handle,
+                        title: product.title,
+                        imageUrl: product.images.edges[0]?.node?.url,
+                        price: parseFloat(product.priceRange.minVariantPrice.amount).toFixed(2),
+                      })
+                    }
+                    className="w-10 h-10 flex items-center justify-center border border-border hover:bg-muted transition-colors"
+                    aria-label={isFavorite(product.handle) ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <Heart className={`w-4 h-4 transition-colors ${isFavorite(product.handle) ? 'fill-destructive text-destructive' : 'text-muted-foreground hover:text-destructive'}`} />
+                  </button>
+                </div>
+
+                <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-light tracking-tight leading-[1.05] uppercase text-foreground">
+                  {product.title}
+                </h1>
+
                   {isMember ? (
                     <div>
                       <p className="text-2xl font-bold text-primary">
@@ -190,27 +277,24 @@ const ProductDetail = () => {
                       </p>
                     </div>
                   ) : (
-                    <p className="text-2xl font-bold text-primary">${variantPrice.toFixed(2)}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-primary">${variantPrice.toFixed(2)}</p>
                   )}
                 </div>
-                <button
-                  onClick={() =>
-                    toggleFavorite.mutate({
-                      handle: product.handle,
-                      title: product.title,
-                      imageUrl: product.images.edges[0]?.node?.url,
-                      price: parseFloat(product.priceRange.minVariantPrice.amount).toFixed(2),
-                    })
-                  }
-                  className="mt-1 w-10 h-10 flex items-center justify-center rounded-full border border-border hover:bg-muted transition-colors flex-shrink-0"
-                  aria-label={isFavorite(product.handle) ? "Remove from favorites" : "Add to favorites"}
-                >
-                  <Heart className={`w-5 h-5 transition-colors ${isFavorite(product.handle) ? 'fill-destructive text-destructive' : 'text-muted-foreground hover:text-destructive'}`} />
-                </button>
-              </div>
 
               {product.description && (
-                <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+                <p className="text-muted-foreground leading-relaxed text-base lg:text-lg font-light max-w-md">
+                  {product.description}
+                </p>
+              )}
+
+              {/* Mission micro-line — qualitative, story-led */}
+              {!isMerch && (
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-[1px] bg-primary" />
+                  <p className="text-xs tracking-[0.2em] uppercase font-extrabold text-foreground">
+                    Poured for the dogs still waiting
+                  </p>
+                </div>
               )}
 
               {/* Ships-to-your-state compliance check (wine only) */}
@@ -233,14 +317,14 @@ const ProductDetail = () => {
               {/* Variant Selection */}
               {variants.length > 1 && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Options</label>
+                  <label className="text-[10px] uppercase tracking-[0.25em] font-bold text-muted-foreground">Options</label>
                   <div className="flex flex-wrap gap-2">
                     {variants.map((v: { node: { id: string; title: string; availableForSale: boolean } }, idx: number) => (
                       <button
                         key={v.node.id}
                         onClick={() => setSelectedVariantIdx(idx)}
                         disabled={!v.node.availableForSale}
-                        className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                        className={`px-3 py-1.5 text-sm border transition-colors ${
                           idx === selectedVariantIdx
                             ? 'border-primary bg-primary text-primary-foreground'
                             : v.node.availableForSale
@@ -257,7 +341,7 @@ const ProductDetail = () => {
 
               {/* Quantity */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Quantity</label>
+                <label className="text-[10px] uppercase tracking-[0.25em] font-bold text-muted-foreground">Quantity</label>
                 <div className="flex items-center gap-3">
                   <Button variant="outline" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))}><Minus className="h-4 w-4" /></Button>
                   <span className="w-12 text-center font-medium text-lg">{quantity}</span>
@@ -276,7 +360,7 @@ const ProductDetail = () => {
 
               {/* Bulk pricing note */}
               {quantity >= 6 && (
-                <div className="bg-brand-gold/10 border border-brand-gold/30 rounded-md p-3 text-sm">
+                <div className="bg-brand-gold/10 border border-brand-gold/30 p-3 text-sm">
                   <strong className="text-brand-gold">Bulk order!</strong> Contact us at <Link to="/wholesale" className="text-primary underline">wholesale</Link> for volume pricing on orders of 6+ bottles.
                 </div>
               )}
@@ -298,7 +382,7 @@ const ProductDetail = () => {
                 onClick={handleAddToCart}
                 disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
                 size="lg"
-                className="w-full bg-primary hover:bg-primary/90 hidden md:flex"
+                className="w-full md:min-w-[320px] bg-foreground text-background hover:bg-primary hover:text-primary-foreground px-12 py-7 text-[11px] tracking-[0.4em] uppercase font-bold border-0 transition-all duration-500 hidden md:flex"
               >
                 {cartLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -316,13 +400,19 @@ const ProductDetail = () => {
                 ) : (
                   <>
                     <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Cart — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}
+                    Add to Cellar — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}
                   </>
                 )}
               </Button>
             </div>
           </div>
-        </div>
+
+          {/* Scroll cue — hidden on small */}
+          <div className="hidden lg:flex absolute bottom-6 left-1/2 -translate-x-1/2 flex-col items-center gap-3 opacity-30 hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+            <span className="text-[9px] uppercase tracking-[0.5em] font-bold text-foreground">Our Mission</span>
+            <div className="w-[1px] h-12 bg-gradient-to-b from-foreground to-transparent" />
+          </div>
+        </section>
       </main>
       <div className="container mx-auto px-4 pb-12">
         <ProductReviews productHandle={product.handle} />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -91,15 +91,24 @@ export const CartDrawer = () => {
 
   useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
 
+  // Guard so resume logic runs at most once per page visit, even if
+  // pageshow + visibilitychange + mount all fire in quick succession.
+  const resumeAttemptedRef = useRef(false);
+
   // Resume wine checkout after a same-tab Shopify handoff.
   // When popup was blocked, handleSmartCheckout sets rdw_pending_wine_checkout
   // and navigates this tab to Shopify. On return (back button, return URL, or
   // tab refocus), pick up where we left off and open the VS modal.
   useEffect(() => {
     const resumeIfPending = () => {
+      if (resumeAttemptedRef.current) return;
       let raw: string | null = null;
       try { raw = localStorage.getItem(PENDING_WINE_KEY); } catch {}
       if (!raw) return;
+      // Mark attempted as soon as we see a pending flag — even if we bail
+      // out below (no wine, snapshot mismatch), we don't want another event
+      // to retrigger this in the same visit.
+      resumeAttemptedRef.current = true;
 
       let snapshot: WineSnapshot | null = null;
       try {

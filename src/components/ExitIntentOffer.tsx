@@ -28,6 +28,12 @@ export function ExitIntentOffer() {
     if (path.startsWith("/crm") || path.startsWith("/cms")) return;
     if (path.startsWith("/checkout") || path.startsWith("/thank-you")) return;
 
+    // QA / preview trigger — append ?_previewExitOffer=1 to any consumer URL.
+    if (new URLSearchParams(location.search).get("_previewExitOffer") === "1") {
+      setOpen(true);
+      return;
+    }
+
     if (sessionStorage.getItem(KEY) === "true") return;
 
     let armed = false;

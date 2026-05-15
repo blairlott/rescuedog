@@ -458,20 +458,30 @@ const ProductDetail = () => {
             </span>
           )}
         </div>
-        <Button
-          onClick={handleAddToCart}
-          disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
-          size="lg"
-          className="w-full bg-primary hover:bg-primary/90"
-        >
-          {cartLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : !selectedVariant?.availableForSale ? "Sold Out"
-          : locked ? <><Lock className="w-4 h-4 mr-2" /> Members only</>
-          : blockedByState && !isMerch ? "Not available in your state"
-          : subscribeMode ? `Subscribe ${quantity} ${isMerch ? 'unit' : 'btl'} — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
-          : <><ShoppingCart className="w-4 h-4 mr-2" /> Add {quantity} {isMerch ? 'unit' : 'btl'} — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}</>}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => handleAddToCart()}
+            disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
+            size="lg"
+            className="flex-1 bg-foreground text-background hover:bg-foreground/90"
+          >
+            {cartLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : !selectedVariant?.availableForSale ? "Sold Out"
+            : locked ? <><Lock className="w-4 h-4 mr-2" /> Members only</>
+            : blockedByState && !isMerch ? "Not available in your state"
+            : subscribeMode ? `Subscribe — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
+            : <><ShoppingCart className="w-4 h-4 mr-2" /> Add to Cart</>}
+          </Button>
+          <Button
+            onClick={() => handleAddToCart({ buyNow: true })}
+            disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch) || subscribeMode}
+            size="lg"
+            className="flex-1 bg-primary hover:bg-primary/90"
+          >
+            <Zap className="w-4 h-4 mr-2" /> Buy Now
+          </Button>
+        </div>
       </div>
       <Footer />
     </div>

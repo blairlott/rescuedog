@@ -50,18 +50,14 @@ export function CrmBreadcrumbs() {
         return (
           <span key={c.href} className="flex items-center gap-1 min-w-0">
             <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />
-            {isLast ? (
-              <span className="text-foreground font-medium truncate">
-                {c.label}
-              </span>
-            ) : (
-              <Link
-                to={c.href}
-                className="hover:text-foreground transition-colors truncate"
-              >
-                {c.label}
-              </Link>
-            )}
+            <Link
+              to={c.href}
+              className={`hover:text-foreground transition-colors truncate ${
+                isLast ? "text-foreground font-medium" : ""
+              }`}
+            >
+              {c.label}
+            </Link>
           </span>
         );
       })}

@@ -16,6 +16,7 @@ import { ReferralAdminTab } from "@/components/crm/ReferralAdminTab";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
 import { TestEmailsCard } from "@/components/crm/TestEmailsCard";
+import { DepletionUploadCard } from "@/components/crm/DepletionUploadCard";
 
 interface UserWithRoles {
   id: string;
@@ -250,6 +251,8 @@ export default function CrmAdminPage() {
       {roleInfo?.isOwner || roleInfo?.roles?.includes("admin") ? (
         <TestEmailsCard />
       ) : null}
+
+      <DepletionUploadCard />
 
       <TeamInviteDialog
         open={createOpen}

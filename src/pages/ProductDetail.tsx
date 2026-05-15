@@ -347,11 +347,17 @@ const ProductDetail = () => {
               {/* Quantity */}
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-[0.25em] font-bold text-muted-foreground">Quantity</label>
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))}><Minus className="h-4 w-4" /></Button>
-                  <span className="w-12 text-center font-medium text-lg">{quantity}</span>
-                  <Button variant="outline" size="icon" onClick={() => setQuantity(quantity + 1)}><Plus className="h-4 w-4" /></Button>
-                </div>
+                <Select value={String(quantity)} onValueChange={(v) => setQuantity(Number(v))}>
+                  <SelectTrigger className="w-32 rounded-none border-foreground font-bold uppercase tracking-brand text-sm">
+                    <SelectValue>Qty: {quantity}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none">
+                    {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                    <SelectItem value="12">12 (case)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Subscribe & Save */}

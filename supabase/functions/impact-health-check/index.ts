@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const PIXEL_PROBE_URL = "https://rescuedogwines.com/";
+const PIXEL_PROBE_URL = `${(Deno.env.get("PUBLIC_SITE_URL") ?? "https://shopify-buddy-b2b.lovable.app")}/`;
 const PIXEL_MARKERS = ["d.impactradius-event.com", "ire(", "impact.com", "ad.invoc.us"];
 
 type CheckRow = {

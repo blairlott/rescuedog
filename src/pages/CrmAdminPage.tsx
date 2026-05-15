@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole, AppRole } from "@/hooks/useUserRole";
 import { useQueryClient } from "@tanstack/react-query";
@@ -78,6 +79,14 @@ export default function CrmAdminPage() {
   };
 
   useEffect(() => { fetchUsers(); }, []);
+
+  const location = useLocation();
+  useEffect(() => {
+    if (location.hash) {
+      const el = document.getElementById(location.hash.slice(1));
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    }
+  }, [location.hash, loading]);
 
   const approveUser = async (userId: string) => {
     const { error } = await supabase.from("profiles").update({ approved: true } as any).eq("id", userId);

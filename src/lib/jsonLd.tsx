@@ -59,6 +59,54 @@ export function organizationSchema() {
   };
 }
 
+export function faqPageSchema(faqs: Array<{ question: string; answer: string }>) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.question,
+      acceptedAnswer: { "@type": "Answer", text: f.answer },
+    })),
+  };
+}
+
+export function breadcrumbListSchema(items: Array<{ name: string; url: string }>) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.name,
+      item: it.url,
+    })),
+  };
+}
+
+export function winerySchema() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Winery",
+    name: "Rescue Dog Wines",
+    url: "https://rescuedogwines.com",
+    logo: "https://rescuedogwines.com/rdw-logo.png",
+    description:
+      "Family-owned, sustainably-farmed Lodi, California winery. A portion of every bottle helps rescue dogs find their forever home.",
+    address: {
+      "@type": "PostalAddress",
+      addressRegion: "CA",
+      addressCountry: "US",
+      addressLocality: "Lodi",
+    },
+    areaServed: "US",
+    sameAs: [
+      "https://www.instagram.com/rescuedogwines",
+      "https://www.facebook.com/rescuedogwines",
+    ],
+  };
+}
+
 export function JsonLd({ data }: { data: unknown }) {
   return (
     <script

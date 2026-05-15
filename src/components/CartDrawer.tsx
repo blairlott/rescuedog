@@ -115,6 +115,13 @@ export const CartDrawer = () => {
 
   useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
 
+  // Global "open cart" event — used by Buy Now buttons across the site.
+  useEffect(() => {
+    const handler = () => setIsOpen(true);
+    window.addEventListener("rdw:open-cart", handler);
+    return () => window.removeEventListener("rdw:open-cart", handler);
+  }, []);
+
   // Guard so resume logic runs at most once per page visit, even if
   // pageshow + visibilitychange + mount all fire in quick succession.
   const resumeAttemptedRef = useRef(false);

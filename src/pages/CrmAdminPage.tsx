@@ -10,11 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, ShieldCheck, UserCog, CheckCircle, XCircle, Clock, UserPlus, Globe, MapPin, Map, Gift, Heart, Wine, Truck, FileText } from "lucide-react";
+import { Shield, ShieldCheck, UserCog, CheckCircle, XCircle, Clock, UserPlus, Globe, MapPin, Map, Gift, Heart, Wine, Truck, FileText, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { ReferralAdminTab } from "@/components/crm/ReferralAdminTab";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
+import { TestEmailsCard } from "@/components/crm/TestEmailsCard";
 
 interface UserWithRoles {
   id: string;
@@ -245,6 +246,10 @@ export default function CrmAdminPage() {
       <div className="mt-8 border border-border bg-background p-6">
         <TeamInvitationsList surface="crm" />
       </div>
+
+      {roleInfo?.isOwner || roleInfo?.roles?.includes("admin") ? (
+        <TestEmailsCard />
+      ) : null}
 
       <TeamInviteDialog
         open={createOpen}

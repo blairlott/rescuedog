@@ -145,7 +145,7 @@ async function sendMetaCapi(input: ConversionInput): Promise<{ ok: boolean; skip
         event_time: Math.floor(Date.now() / 1000),
         event_id: input.orderId, // dedupe with browser pixel
         action_source: "website",
-        event_source_url: "https://rescuedogwines.com/thank-you",
+        event_source_url: `${(Deno.env.get("PUBLIC_SITE_URL") ?? "https://shopify-buddy-b2b.lovable.app")}/thank-you`,
         user_data: userData,
         custom_data: {
           currency: input.currency || "USD",

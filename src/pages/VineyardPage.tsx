@@ -6,6 +6,11 @@ import { useState } from "react";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
+import vineyardGrapes from "@/assets/migrated/vineyard-grapes.jpg";
+import vineyard1 from "@/assets/migrated/vineyard-1.jpg";
+import vineyard3 from "@/assets/migrated/vineyard-3.jpg";
+import vineyard5 from "@/assets/migrated/vineyard-5.jpg";
+import lodiSustainable from "@/assets/migrated/lodi-sustainable.png";
 
 type EditSection = "hero" | "story" | "lodi_rules" | null;
 
@@ -27,7 +32,7 @@ const VineyardPage = () => {
       fields: [
         { key: "title", label: "Title", type: "text", value: getVal("hero", "title", "About Our Vineyard") },
         { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("hero", "subtitle", "Committed to sustainable farming and exceptional winemaking in Lodi, California.") },
-        { key: "image", label: "Background Image URL", type: "url", value: getVal("hero", "image", "https://rescuedogwines.com/wp-content/uploads/2023/09/rdw-vineyard-grapes.jpg") },
+        { key: "image", label: "Background Image URL", type: "url", value: getVal("hero", "image", vineyardGrapes) },
       ],
     },
     story: {
@@ -58,7 +63,7 @@ const VineyardPage = () => {
         {/* Hero */}
         <section className="relative h-[50vh] min-h-[400px] flex items-center bg-foreground">
           <CmsEditButton onClick={() => setEditSection("hero")} />
-          <div className="absolute inset-0 bg-cover bg-center opacity-50" style={{ backgroundImage: `url('${getVal("hero", "image", "https://rescuedogwines.com/wp-content/uploads/2023/09/rdw-vineyard-grapes.jpg")}')` }} />
+          <div className="absolute inset-0 bg-cover bg-center opacity-50" style={{ backgroundImage: `url('${getVal("hero", "image", vineyardGrapes)}')` }} />
           <div className="relative container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">
               {getVal("hero", "title", "About Our Vineyard")}
@@ -99,13 +104,13 @@ const VineyardPage = () => {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="aspect-[4/3] bg-secondary overflow-hidden">
-                <img src="https://rescuedogwines.com/wp-content/uploads/2023/12/rdw-vineyard-5.jpg" alt="Rescue Dog Wines vineyard" className="w-full h-full object-cover" />
+                <img src={vineyard5} alt="Rescue Dog Wines vineyard" className="w-full h-full object-cover" />
               </div>
               <div className="aspect-[4/3] bg-secondary overflow-hidden">
-                <img src="https://rescuedogwines.com/wp-content/uploads/2023/12/rdw-vineyard-3.jpg" alt="Vineyard rows" className="w-full h-full object-cover" />
+                <img src={vineyard3} alt="Vineyard rows" className="w-full h-full object-cover" />
               </div>
               <div className="aspect-[4/3] bg-secondary overflow-hidden">
-                <img src="https://rescuedogwines.com/wp-content/uploads/2023/12/rdw-vineyard-1.jpg" alt="Vineyard landscape" className="w-full h-full object-cover" />
+                <img src={vineyard1} alt="Vineyard landscape" className="w-full h-full object-cover" />
               </div>
             </div>
           </div>
@@ -118,7 +123,7 @@ const VineyardPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
               <div className="flex justify-center">
                 <img
-                  src="https://rescuedogwines.com/wp-content/uploads/2023/12/lodi-sustainable-winegrowing.png"
+                  src={lodiSustainable}
                   alt="Lodi Rules Sustainable Winegrowing certification"
                   className="max-w-[300px] w-full h-auto"
                 />

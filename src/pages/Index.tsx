@@ -11,6 +11,14 @@ import { isWineProduct, isRescueDogDomain } from "@/lib/productUtils";
 import MerchHomePage from "./MerchHomePage";
 import { useState, useRef, useCallback } from "react";
 import heroRedBlend from "@/assets/hero-red-blend-v2.jpg";
+import rdwHero from "@/assets/migrated/rdw-hero.jpg";
+import lodiSustainable from "@/assets/migrated/lodi-sustainable.png";
+import ig1 from "@/assets/migrated/ig-1.webp";
+import ig2 from "@/assets/migrated/ig-2.webp";
+import ig3 from "@/assets/migrated/ig-3.webp";
+import ig4 from "@/assets/migrated/ig-4.webp";
+import ig5 from "@/assets/migrated/ig-5.webp";
+import ig6 from "@/assets/migrated/ig-6.webp";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
@@ -23,32 +31,32 @@ import { T } from "@/components/T";
 
 const instagramPosts = [
   {
-    image: "https://rescuedogwines.com/wp-content/uploads/sb-instagram-feed-images/509200012_18274825045278452_9128659293986212215_nfull.webp",
+    image: ig1,
     url: "https://www.instagram.com/p/DLIV_-zT9F-/",
     caption: "There's no better season than summer to gather with friends outdoors and savor our acclaimed sustainable wines.",
   },
   {
-    image: "https://rescuedogwines.com/wp-content/uploads/sb-instagram-feed-images/509593828_18274607290278452_6667065609178035295_nfull.webp",
+    image: ig2,
     url: "https://www.instagram.com/p/DLDKygESqiN/",
     caption: "Rescue Dog Wines teams up with the Humane Society of Truckee-Tahoe for the Truckee Reggae Festival!",
   },
   {
-    image: "https://rescuedogwines.com/wp-content/uploads/sb-instagram-feed-images/508621501_18274405666278452_6272862151890429357_nfull.webp",
+    image: ig3,
     url: "https://www.instagram.com/p/DK-Km3iTBM6/",
     caption: "Isn't it awesome when that package from the Rescue Dog Wine Club shows up at your door?",
   },
   {
-    image: "https://rescuedogwines.com/wp-content/uploads/sb-instagram-feed-images/505850797_1164084389096508_4424757564102632030_nfull.webp",
+    image: ig4,
     url: "https://www.instagram.com/p/DK9vmEkzdNr/",
     caption: "Rescue Dog Wines is excited to team up with the Siskiyou Humane Society!",
   },
   {
-    image: "https://rescuedogwines.com/wp-content/uploads/sb-instagram-feed-images/505430600_18274161556278452_5065465879235968056_nfull.webp",
+    image: ig5,
     url: "https://www.instagram.com/p/DK4xNDRzSUC/",
     caption: "In honor of Father's Day, Rescue Dog Wines asks, 'What kind of dog dad are you?'",
   },
   {
-    image: "https://rescuedogwines.com/wp-content/uploads/sb-instagram-feed-images/505464961_1124419793044014_993106266832108770_nfull.webp",
+    image: ig6,
     url: "https://www.instagram.com/reel/DK2XSDit-Yn/",
     caption: "Happy Father's Day to all the Dads and Dog Dads!",
   },
@@ -89,7 +97,7 @@ const Index = () => {
         { key: "heading", label: "Heading", type: "text", value: getVal("mission", "heading", "50% of our PROFITS SUPPORT RESCUE ORGANIZATIONS") },
         { key: "paragraph1", label: "Paragraph 1", type: "textarea", value: getVal("mission", "paragraph1", "At Rescue Dog Wines®, we craft award-winning wines from sustainable grapes. Enjoy our wines knowing half our profits support animal rescue organizations.") },
         { key: "paragraph2", label: "Paragraph 2", type: "textarea", value: getVal("mission", "paragraph2", "Rescue Dog™ ships to most of the US from our online store!") },
-        { key: "image", label: "Image URL", type: "url", value: getVal("mission", "image", "https://rescuedogwines.com/wp-content/uploads/2023/09/rescue-dog-wines-1.jpg") },
+        { key: "image", label: "Image URL", type: "url", value: getVal("mission", "image", rdwHero) },
       ],
     },
     about_us: {
@@ -251,7 +259,7 @@ const Index = () => {
             </div>
             <div className="aspect-[4/3] bg-secondary overflow-hidden">
               <img
-                src={getVal("mission", "image", "https://rescuedogwines.com/wp-content/uploads/2023/09/rescue-dog-wines-1.jpg")}
+                src={getVal("mission", "image", rdwHero)}
                 alt="Rescue Dog Wines bottles"
                 className="w-full h-full object-cover"
               />
@@ -346,7 +354,7 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="flex justify-center">
               <img
-                src="https://rescuedogwines.com/wp-content/uploads/2023/12/lodi-sustainable-winegrowing.png"
+                src={lodiSustainable}
                 alt="Lodi Rules Sustainable Winegrowing certification"
                 className="max-w-[250px] w-full h-auto"
               />

@@ -282,6 +282,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
       if (error) throw error;
       await markAbandonment("converted");
       if (isSignupPromoActive) markSignupPromoUsed();
+      try { localStorage.setItem("rdw_returning_customer", "true"); } catch {}
       toast.success("Order placed (simulated)", {
         description: `Order ${fakeOrderId} — total $${total.toFixed(2)}`,
       });

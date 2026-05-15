@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { saveSignupPromo, SIGNUP_PROMO_CODE } from "@/lib/signupPromo";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 
 const KEY = "rdw_exit_intent_seen";
 const CODE = SIGNUP_PROMO_CODE;
@@ -17,6 +18,7 @@ const CODE = SIGNUP_PROMO_CODE;
  * hidden after they've been on a wine route 20s+).
  */
 export function ExitIntentOffer() {
+  const { user } = useCustomerAuth();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +36,15 @@ export function ExitIntentOffer() {
       setOpen(true);
       return;
     }
+
+    // Don't show to returning customers — logged-in users, anyone who's
+    // already signed up for the newsletter (code stored), or anyone with
+    // a prior order recorded in this browser.
+    if (user) return;
+    try {
+      if (localStorage.getItem("rdw_signup_promo")) return;
+      if (localStorage.getItem("rdw_returning_customer") === "true") return;
+    } catch {}
 
     if (sessionStorage.getItem(KEY) === "true") return;
 
@@ -71,7 +82,7 @@ export function ExitIntentOffer() {
       document.removeEventListener("mouseleave", handleMouseLeave);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [location.pathname]);
+  }, [location.pathname, location.search, user]);
 
   const copyCode = () => {
     navigator.clipboard?.writeText(CODE);

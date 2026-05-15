@@ -17,6 +17,10 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const url = new URL(req.url);
+  const debugMode = url.searchParams.get("debug") === "1";
+  const metaTestCode = url.searchParams.get("meta_test_code");
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -212,10 +216,22 @@ Deno.serve(async (req) => {
               fbc: null,
               fbp: null,
               gclid: null,
+              debug: debugMode,
+              metaTestEventCode: metaTestCode,
             });
             notes += ` | conv ga4=${result.ga4.skipped ? "skip" : result.ga4.ok ? "ok" : "err"} meta=${result.meta.skipped ? "skip" : result.meta.ok ? "ok" : "err"}`;
+            if (debugMode) notes += ` | DEBUG`;
             if (result.ga4.error) console.error("[conv-ga4]", result.ga4.error);
             if (result.meta.error) console.error("[conv-meta]", result.meta.error);
+            if (debugMode) {
+              return new Response(JSON.stringify({
+                ok: true,
+                debug: true,
+                ga4: result.ga4,
+                meta: result.meta,
+                notes,
+              }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
           }
         } catch (e) {
           console.error("[server-conversions] exception", e);

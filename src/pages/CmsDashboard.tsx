@@ -46,6 +46,8 @@ import { PairingsPanel } from "@/components/cms/PairingsPanel";
 import { MerchImagesPanel } from "@/components/cms/MerchImagesPanel";
 import { Image as ImageIcon, Heart } from "lucide-react";
 import { RescueSpotlightPanel } from "@/components/cms/RescueSpotlightPanel";
+import { IntegrationsPanel } from "@/components/cms/IntegrationsPanel";
+import { Plug } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────
 type CmsUser = {
@@ -391,6 +393,9 @@ const CmsDashboard = () => {
             <TabsTrigger value="import" className="gap-1.5">
               <Download className="h-3.5 w-3.5" /> Import
             </TabsTrigger>
+            <TabsTrigger value="integrations" className="gap-1.5">
+              <Plug className="h-3.5 w-3.5" /> Integrations
+            </TabsTrigger>
           </TabsList>
 
           {/* ── Content Tab ───────────────────────────────── */}
@@ -590,6 +595,10 @@ const CmsDashboard = () => {
 
           <TabsContent value="rescues">
             <RescueSpotlightPanel />
+          </TabsContent>
+
+          <TabsContent value="integrations">
+            <IntegrationsPanel />
           </TabsContent>
         </Tabs>
       </main>

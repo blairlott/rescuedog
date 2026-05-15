@@ -40,6 +40,10 @@ export interface ConversionInput {
   userAgent?: string | null;
   // Optional GA4 client_id (anonymous browser id). If absent we synthesize.
   ga4ClientId?: string | null;
+  // Debug routing — when true, GA4 uses /debug/mp/collect + debug_mode:true,
+  // and Meta receives a test_event_code so events appear in Test Events only.
+  debug?: boolean;
+  metaTestEventCode?: string | null;
 }
 
 async function sha256Lower(input: string | null | undefined): Promise<string | undefined> {
@@ -51,7 +55,7 @@ async function sha256Lower(input: string | null | undefined): Promise<string | u
     .join("");
 }
 
-async function sendGa4(input: ConversionInput): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+async function sendGa4(input: ConversionInput): Promise<{ ok: boolean; skipped?: boolean; error?: string; debug?: any }> {
   const measurementId = Deno.env.get("GA4_MEASUREMENT_ID");
   const apiSecret = Deno.env.get("GA4_API_SECRET");
   if (!measurementId || !apiSecret) return { ok: true, skipped: true };
@@ -59,7 +63,10 @@ async function sendGa4(input: ConversionInput): Promise<{ ok: boolean; skipped?:
   // GA4 requires a stable client_id. Fallback: derive from order id so dedupe still works.
   const clientId = input.ga4ClientId || `vs.${input.orderId}`;
 
-  const url = `https://www.google-analytics.com/mp/collect?measurement_id=${encodeURIComponent(measurementId)}&api_secret=${encodeURIComponent(apiSecret)}`;
+  const base = input.debug
+    ? "https://www.google-analytics.com/debug/mp/collect"
+    : "https://www.google-analytics.com/mp/collect";
+  const url = `${base}?measurement_id=${encodeURIComponent(measurementId)}&api_secret=${encodeURIComponent(apiSecret)}`;
   const body = {
     client_id: clientId,
     non_personalized_ads: false,
@@ -70,6 +77,7 @@ async function sendGa4(input: ConversionInput): Promise<{ ok: boolean; skipped?:
           transaction_id: input.orderId,
           value: (input.valueCents / 100),
           currency: input.currency || "USD",
+          ...(input.debug ? { debug_mode: true } : {}),
           ...(input.gclid ? { gclid: input.gclid } : {}),
         },
       },
@@ -82,6 +90,14 @@ async function sendGa4(input: ConversionInput): Promise<{ ok: boolean; skipped?:
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    if (input.debug) {
+      // Debug endpoint returns validation messages in the body
+      const text = await r.text().catch(() => "");
+      let parsed: any = text;
+      try { parsed = JSON.parse(text); } catch { /* keep text */ }
+      if (!r.ok) return { ok: false, error: `GA4 ${r.status}`, debug: parsed };
+      return { ok: true, debug: parsed };
+    }
     if (!r.ok) return { ok: false, error: `GA4 ${r.status}` };
     return { ok: true };
   } catch (e) {
@@ -89,7 +105,7 @@ async function sendGa4(input: ConversionInput): Promise<{ ok: boolean; skipped?:
   }
 }
 
-async function sendMetaCapi(input: ConversionInput): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+async function sendMetaCapi(input: ConversionInput): Promise<{ ok: boolean; skipped?: boolean; error?: string; debug?: any }> {
   const pixelId = Deno.env.get("META_PIXEL_ID");
   const token = Deno.env.get("META_CAPI_TOKEN");
   if (!pixelId || !token) return { ok: true, skipped: true };
@@ -119,7 +135,10 @@ async function sendMetaCapi(input: ConversionInput): Promise<{ ok: boolean; skip
   if (input.clientIp) userData.client_ip_address = input.clientIp;
   if (input.userAgent) userData.client_user_agent = input.userAgent;
 
-  const body = {
+  const testCode = input.debug
+    ? (input.metaTestEventCode || Deno.env.get("META_TEST_EVENT_CODE") || "TEST12345")
+    : null;
+  const body: Record<string, unknown> = {
     data: [
       {
         event_name: "Purchase",
@@ -135,6 +154,7 @@ async function sendMetaCapi(input: ConversionInput): Promise<{ ok: boolean; skip
         },
       },
     ],
+    ...(testCode ? { test_event_code: testCode } : {}),
   };
 
   try {
@@ -143,19 +163,21 @@ async function sendMetaCapi(input: ConversionInput): Promise<{ ok: boolean; skip
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    const t = await r.text().catch(() => "");
+    let parsed: any = t;
+    try { parsed = JSON.parse(t); } catch { /* keep text */ }
     if (!r.ok) {
-      const t = await r.text().catch(() => "");
-      return { ok: false, error: `Meta ${r.status} ${t.slice(0, 200)}` };
+      return { ok: false, error: `Meta ${r.status} ${t.slice(0, 200)}`, debug: input.debug ? parsed : undefined };
     }
-    return { ok: true };
+    return { ok: true, debug: input.debug ? { ...parsed, test_event_code: testCode } : undefined };
   } catch (e) {
     return { ok: false, error: `Meta ${String(e)}` };
   }
 }
 
 export async function forwardPurchaseConversion(input: ConversionInput): Promise<{
-  ga4: { ok: boolean; skipped?: boolean; error?: string };
-  meta: { ok: boolean; skipped?: boolean; error?: string };
+  ga4: { ok: boolean; skipped?: boolean; error?: string; debug?: any };
+  meta: { ok: boolean; skipped?: boolean; error?: string; debug?: any };
 }> {
   const [ga4, meta] = await Promise.all([sendGa4(input), sendMetaCapi(input)]);
   return { ga4, meta };

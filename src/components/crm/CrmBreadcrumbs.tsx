@@ -39,7 +39,8 @@ export function CrmBreadcrumbs() {
       className="flex items-center gap-1 text-xs text-muted-foreground min-w-0"
     >
       <Link
-        to="/crm"
+        to="/crm/admin"
+        aria-label="Admin home"
         className="flex items-center gap-1 hover:text-foreground transition-colors"
       >
         <Home className="h-3.5 w-3.5" />

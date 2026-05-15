@@ -24,24 +24,81 @@ export default function PoliciesPage() {
         path="/policies"
         jsonLd={{
           "@context": "https://schema.org",
-          "@type": "WebPage",
-          name: "Our Policies",
-          description:
-            "Privacy, shipping, returns, membership, accessibility, and terms & conditions for Rescue Dog Wines.",
-          url: "https://rescuedogwines.com/policies",
-          inLanguage: "en-US",
-          isPartOf: {
-            "@type": "WebSite",
-            name: "Rescue Dog Wines",
-            url: "https://rescuedogwines.com",
-          },
-          hasPart: [
-            { "@type": "WebPageElement", name: "Privacy Policy", url: "https://rescuedogwines.com/policies#privacy" },
-            { "@type": "WebPageElement", name: "Membership", url: "https://rescuedogwines.com/policies#membership" },
-            { "@type": "WebPageElement", name: "Shipping Policy", url: "https://rescuedogwines.com/policies#shipping" },
-            { "@type": "WebPageElement", name: "Refund & Return Policy", url: "https://rescuedogwines.com/policies#refund" },
-            { "@type": "WebPageElement", name: "Accessibility", url: "https://rescuedogwines.com/policies#accessibility" },
-            { "@type": "WebPageElement", name: "Terms & Conditions", url: "https://rescuedogwines.com/policies#terms" },
+          "@graph": [
+            {
+              "@type": "WebPage",
+              name: "Our Policies",
+              description:
+                "Privacy, shipping, returns, membership, accessibility, and terms & conditions for Rescue Dog Wines.",
+              url: "https://rescuedogwines.com/policies",
+              inLanguage: "en-US",
+              isPartOf: {
+                "@type": "WebSite",
+                name: "Rescue Dog Wines",
+                url: "https://rescuedogwines.com",
+              },
+              hasPart: [
+                { "@type": "WebPageElement", name: "Privacy Policy", url: "https://rescuedogwines.com/policies#privacy" },
+                { "@type": "WebPageElement", name: "Membership", url: "https://rescuedogwines.com/policies#membership" },
+                { "@type": "WebPageElement", name: "Shipping Policy", url: "https://rescuedogwines.com/policies#shipping" },
+                { "@type": "WebPageElement", name: "Refund & Return Policy", url: "https://rescuedogwines.com/policies#refund" },
+                { "@type": "WebPageElement", name: "Accessibility", url: "https://rescuedogwines.com/policies#accessibility" },
+                { "@type": "WebPageElement", name: "Terms & Conditions", url: "https://rescuedogwines.com/policies#terms" },
+              ],
+            },
+            {
+              "@type": "FAQPage",
+              mainEntity: [
+                {
+                  "@type": "Question",
+                  name: "Do you ship wine to my state?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Rescue Dog Wines ships direct-to-consumer to U.S. states where we are licensed under that state's DTC wine rules. Available states are shown at checkout; if your state is not listed, we cannot ship wine there.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Is shipping included?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Yes — shipping is included on orders of six or more bottles. Smaller orders are charged shipping at checkout.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Do I have to be 21 to order?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Yes. All wine purchases require the buyer and the recipient to be 21 or older. An adult signature is required at delivery.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "What is The Pack?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "The Pack is the Rescue Dog Wines membership program. It is access-based — members get early releases, member-only allocations, and curated club shipments. It is not a percentage-discount program.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "How does buying wine help dog rescue?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "A portion of every bottle sold is contributed to companion-animal welfare organizations and rescue partners we work with directly, supporting our mission of helping dogs find their forever home.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "What is your return policy?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "If a bottle arrives damaged or flawed, contact us within 30 days of delivery and we will replace it or issue a refund. Federal and state law restricts the return of alcohol once accepted.",
+                  },
+                },
+              ],
+            },
           ],
         }}
       />

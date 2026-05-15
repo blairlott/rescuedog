@@ -1,0 +1,56 @@
+# Rescue Dog Wines
+
+> Family-owned, sustainably-farmed Lodi, California winery. A portion of every bottle sold helps companion-animal rescues find dogs their forever home. Award-winning Cabernet Sauvignon, Red Blend, Sauvignon Blanc, Chardonnay, Rosé, and Méthode Champenoise sparkling wines.
+
+Rescue Dog Wines (RDW) is a direct-to-consumer winery based in Lodi, California (Lodi AVA). Wines are produced from estate and Lodi-area sustainably-farmed vineyards. The brand's mission is to support dog rescue: a portion of profits from every bottle is donated to companion-animal welfare organizations and rescue partners. Wine shipping is included on orders of 6+ bottles, subject to state-by-state direct-to-consumer compliance. Wine purchases are processed through our compliance partner; merchandise is sold separately on our headless storefront.
+
+## Key facts
+
+- Location: Lodi, California (Lodi AVA)
+- Founded by: Laura Blair-Lott (founder)
+- Farming: Lodi Rules certified sustainable
+- Mission: Helping dogs find their forever home — a portion of every bottle supports rescue
+- Loyalty: "The Pack" — access-based wine club, not a discount program
+- Affiliate program: Rescue Ambassadors, powered by impact.com (handles W-9, payouts, 1099)
+
+## Shop
+
+- [All Wines](https://shopify-buddy-b2b.lovable.app/wines): Full wine catalog — reds, whites, rosé, sparkling, sampler bundles
+- [6-Bottle Sampler](https://shopify-buddy-b2b.lovable.app/wines): Curated introduction to the lineup; shipping included
+- [Mix Six](https://shopify-buddy-b2b.lovable.app/mix-six): Build your own 6-bottle case
+- [Wine Club / The Pack](https://shopify-buddy-b2b.lovable.app/wine-club): Quarterly curated shipments with member-only access and pricing
+- [Subscribe & Save](https://shopify-buddy-b2b.lovable.app/subscribe): Set-and-forget recurring shipments of your favorites
+- [Merchandise](https://shopify-buddy-b2b.lovable.app/merch): Branded apparel and accessories (Rescue Dog merch line)
+
+## Brand & mission
+
+- [About](https://shopify-buddy-b2b.lovable.app/about): Founder story, family-owned history, why we pour for a purpose
+- [Mission](https://shopify-buddy-b2b.lovable.app/mission): How wine sales translate into rescue support
+- [Vineyard](https://shopify-buddy-b2b.lovable.app/vineyard): Lodi AVA estate, sustainable farming practices, Lodi Rules certification
+- [Pairings](https://shopify-buddy-b2b.lovable.app/pairings): Food and wine pairing guide
+- [Blog](https://shopify-buddy-b2b.lovable.app/blog): Stories, recipes, rescue partner spotlights
+
+## Programs
+
+- [Rescue Ambassadors](https://shopify-buddy-b2b.lovable.app/ambassadors): Affiliate program for rescues, individuals, and influencers — percentage-based commission via impact.com
+- [Find an Ambassador](https://shopify-buddy-b2b.lovable.app/ambassadors/find): Directory of active Rescue Ambassadors
+- [Wholesale](https://shopify-buddy-b2b.lovable.app/wholesale): For licensed retailers, restaurants, and distributors
+- [Store Locator](https://shopify-buddy-b2b.lovable.app/store-locator): Find Rescue Dog Wines at retailers near you
+- [Donate](https://shopify-buddy-b2b.lovable.app/donate): Direct donations to rescue partners (501(c) form)
+
+## Customer
+
+- [Account](https://shopify-buddy-b2b.lovable.app/account): Order history, subscriptions, gift certificates, club membership
+- [Contact](https://shopify-buddy-b2b.lovable.app/contact): Support and general inquiries
+- [Policies](https://shopify-buddy-b2b.lovable.app/policies): Privacy, shipping, returns, membership, accessibility, terms
+
+## Compliance
+
+- Wine sales require buyers to be 21+. An age gate is presented before any wine route loads.
+- Wine shipping is regulated state-by-state under U.S. direct-to-consumer rules; not all states are eligible.
+- Wine and merchandise checkouts are handled separately due to compliance requirements.
+
+## Optional
+
+- [FTC Disclosure](https://shopify-buddy-b2b.lovable.app/ambassadors/disclosure): Required reading for ambassadors before promoting
+- [Rewards Terms](https://shopify-buddy-b2b.lovable.app/rewards-terms): Terms of the access-based loyalty program

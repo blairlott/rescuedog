@@ -241,39 +241,17 @@ export default function CrmAdminPage() {
         </Tabs>
       )}
 
-      {/* Create User Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreateUser} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Full Name</Label>
-              <Input value={createForm.full_name} onChange={(e) => setCreateForm(f => ({ ...f, full_name: e.target.value }))} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input type="email" value={createForm.email} onChange={(e) => setCreateForm(f => ({ ...f, email: e.target.value }))} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <Select value={createForm.role} onValueChange={(v) => setCreateForm(f => ({ ...f, role: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
-                <SelectContent>
-                  {ALL_ROLES.filter(r => roleInfo?.isOwner || r.value !== "owner").map((r) => (
-                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={creating}>{creating ? "Creating..." : "Create & Approve"}</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <TeamInviteDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        defaultRoles={["crm_user"]}
+        isOwner={!!roleInfo?.isOwner}
+        title="Invite a CRM team member"
+        onInvited={() => {
+          fetchUsers();
+          queryClient.invalidateQueries({ queryKey: ["user_role"] });
+        }}
+      />
     </div>
   );
 }

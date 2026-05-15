@@ -41,9 +41,7 @@ export function Footer() {
               <li><a href="#" className="hover:text-primary transition-colors"><T>Refund Policy</T></a></li>
               <li><a href="#" className="hover:text-primary transition-colors"><T>Shipping Policy</T></a></li>
               <li><a href="#" className="hover:text-primary transition-colors"><T>Terms of Service</T></a></li>
-              <li><Link to="/crm/login" className="hover:text-primary transition-colors"><T>Sales CRM</T></Link></li>
-              <li><Link to="/cms/login" className="hover:text-primary transition-colors"><T>Content Manager</T></Link></li>
-              <li><Link to="/club/login" className="hover:text-primary transition-colors"><T>Wine Club Manager</T></Link></li>
+              <li><Link to="/admin" className="hover:text-primary transition-colors"><T>Admin</T></Link></li>
             </ul>
           </div>
 

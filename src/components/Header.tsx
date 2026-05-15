@@ -10,6 +10,7 @@ import { isRescueDogDomain } from "@/lib/productUtils";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "./cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "./cms/CmsEditDialog";
+import { InlineBannerEditor } from "./cms/InlineBannerEditor";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 
@@ -55,6 +56,22 @@ export function Header() {
     });
   };
 
+  const wineBannerText = getVal("banner", "wine_banner", "Shipping included on 6+ btls · Use STOCKUP for 20% off 12+ btls");
+  const merchBannerText = getVal("banner", "merch_banner", "50% of our profits supports rescue organizations.");
+  const activeBannerText = isMerch ? merchBannerText : wineBannerText;
+  const activeBannerKey = isMerch ? "merch_banner" : "wine_banner";
+
+  const saveBannerInline = (next: string) => {
+    upsert.mutate({
+      sectionKey: "banner",
+      content: {
+        wine_banner: wineBannerText,
+        merch_banner: merchBannerText,
+        [activeBannerKey]: next,
+      },
+    });
+  };
+
   const sectionFields: Record<string, { title: string; fields: CmsField[] }> = {
     logos: {
       title: "Site Logos",
@@ -77,11 +94,12 @@ export function Header() {
       {/* Announcement Bar */}
       <div className="bg-primary text-primary-foreground text-center py-2.5 px-4 relative">
         <CmsEditButton onClick={() => setEditSection("banner")} label="Edit Banner" scope="branding" />
-        <p className="text-sm tracking-wide">
-          {isMerch
-            ? getVal("banner", "merch_banner", "50% of our profits supports rescue organizations.")
-            : getVal("banner", "wine_banner", "Shipping included on 6+ btls · Use STOCKUP for 20% off 12+ btls")}
-        </p>
+        <InlineBannerEditor
+          value={activeBannerText}
+          onSave={saveBannerInline}
+          isSaving={upsert.isPending}
+          ariaLabel={isMerch ? "Merch banner text" : "Wine banner text"}
+        />
       </div>
 
       {/* Main Header */}

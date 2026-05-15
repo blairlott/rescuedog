@@ -58,6 +58,7 @@ import Pairings from "./pages/Pairings";
 import PairingDetail from "./pages/PairingDetail";
 import DropshipDashboard from "./pages/DropshipDashboard";
 import AdminFlagsPage from "./pages/AdminFlagsPage";
+import AdminPortalPage from "./pages/AdminPortalPage";
 import SellOnSitePage from "./pages/SellOnSitePage";
 import AmbassadorsLandingPage from "./pages/AmbassadorsLandingPage";
 import AmbassadorSignupPage from "./pages/AmbassadorSignupPage";
@@ -110,6 +111,8 @@ function AppContent() {
       <Route path="/store-locator" element={<StoreLocatorPage />} />
       <Route path="/where-to-buy" element={<Navigate to="/store-locator" replace />} />
       <Route path="/admin/flags" element={<AdminFlagsPage />} />
+      <Route path="/admin" element={<AdminPortalPage />} />
+      <Route path="/admin/login" element={<Navigate to="/admin" replace />} />
       <Route path="/wholesale" element={<WholesalePage />} />
       <Route path="/trade-and-media" element={<WholesalePage />} />
       <Route path="/about" element={<AboutPage />} />

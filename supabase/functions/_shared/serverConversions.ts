@@ -70,7 +70,6 @@ async function sendGa4(input: ConversionInput): Promise<{ ok: boolean; skipped?:
   const body = {
     client_id: clientId,
     non_personalized_ads: false,
-    ...(input.debug ? { debug_mode: true } : {}),
     events: [
       {
         name: "purchase",

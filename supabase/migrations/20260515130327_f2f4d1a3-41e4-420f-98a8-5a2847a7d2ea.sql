@@ -1,0 +1,1 @@
+UPDATE public.wine_products SET in_stock = false, updated_at = now() WHERE id = '216879bf-c210-4f83-ab92-efc194456102';

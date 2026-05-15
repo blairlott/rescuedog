@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useState, useMemo } from "react";
 import { Seo } from "@/components/Seo";
+import vineyardHero from "@/assets/migrated/vineyard-grapes.jpg";
 
 const WINE_SORT_ORDER = [
   "6bottle-sampler",
@@ -69,7 +70,7 @@ const WinesPage = () => {
       <PageHero
         title="Our Wines"
         subtitle="Award-winning, sustainably crafted wines — every bottle supports dog rescue."
-        backgroundImage="https://rescuedogwines.com/wp-content/uploads/2025/03/rdw-estate-vineyard-3.webp"
+        backgroundImage={vineyardHero}
       />
 
       {/* Featured product spotlight */}

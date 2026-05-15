@@ -5,20 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, PenLine, Users, Wine, Truck, LogOut } from "lucide-react";
+import { Shield, Lock } from "lucide-react";
+import { ADMIN_AREAS, hasAreaAccess } from "@/lib/adminAreas";
+import { AdminTopNav } from "@/components/admin/AdminTopNav";
 
 type RoleRow = { role: string };
-
-const TILES = [
-  { key: "cms", to: "/cms", title: "Content (CMS)", desc: "Edit marketing copy, partners, branding.", icon: PenLine,
-    roles: ["owner", "admin", "cms_editor"] },
-  { key: "crm", to: "/crm", title: "Sales (CRM)", desc: "Accounts, routes, ambassadors, compliance.", icon: Users,
-    roles: ["owner", "admin", "national_manager", "regional_manager", "state_manager", "brand_ambassador", "ambassador_manager", "crm_user"] },
-  { key: "club", to: "/club/admin", title: "Wine Club", desc: "Members, shipments, curations.", icon: Wine,
-    roles: ["owner", "admin", "wine_club_manager"] },
-  { key: "dropship", to: "/crm/dropship", title: "Dropship", desc: "Partners, orders, payouts.", icon: Truck,
-    roles: ["owner", "admin", "dropship_manager"] },
-];
 
 const AdminPortalPage = () => {
   const navigate = useNavigate();
@@ -84,12 +75,6 @@ const AdminPortalPage = () => {
     else toast({ title: "Check your email for a reset link." });
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setRoles(null);
-    navigate("/admin");
-  };
-
   if (checking) {
     return <div className="min-h-screen flex items-center justify-center bg-secondary text-muted-foreground text-sm">Loading…</div>;
   }
@@ -130,45 +115,39 @@ const AdminPortalPage = () => {
   }
 
   // Logged in → portal landing
-  const visibleTiles = TILES.filter((t) => t.roles.some((r) => roles.includes(r)));
-
   return (
     <div className="min-h-screen bg-secondary">
-      <header className="border-b border-border bg-background">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <span className="font-bold uppercase tracking-brand text-sm">Admin Portal</span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-1.5">
-            <LogOut className="h-4 w-4" /> Sign out
-          </Button>
-        </div>
-      </header>
+      <AdminTopNav roles={roles} />
       <main className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-2xl font-bold text-foreground mb-2">Choose a workspace</h1>
         <p className="text-sm text-muted-foreground mb-8">
-          You have access to the workspaces below based on your roles ({roles.join(", ")}).
+          You have access to the workspaces below based on your roles ({roles.length ? roles.join(", ") : "none yet"}).
+          Locked areas can be requested.
         </p>
-        {visibleTiles.length === 0 ? (
-          <div className="border border-border bg-background p-8 text-center text-sm text-muted-foreground">
-            Your account has no admin roles assigned. Ask an owner to grant access.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {visibleTiles.map((t) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {ADMIN_AREAS.map((t) => {
+            const allowed = hasAreaAccess(t, roles);
+            const to = allowed ? t.to : `/admin/request-access?area=${t.key}`;
+            return (
               <Link
                 key={t.key}
-                to={t.to}
-                className="group block border border-border bg-background p-6 hover:border-primary transition-colors"
+                to={to}
+                className={`group block border border-border bg-background p-6 hover:border-primary transition-colors relative ${
+                  !allowed ? "opacity-75" : ""
+                }`}
               >
                 <t.icon className="h-6 w-6 text-primary mb-3" />
-                <h3 className="font-bold text-foreground mb-1">{t.title}</h3>
-                <p className="text-sm text-muted-foreground">{t.desc}</p>
+                <h3 className="font-bold text-foreground mb-1 flex items-center gap-2">
+                  {t.title}
+                  {!allowed && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {allowed ? t.desc : "You don't have access — click to request."}
+                </p>
               </Link>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </main>
     </div>
   );

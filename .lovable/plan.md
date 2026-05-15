@@ -1,56 +1,71 @@
-# Full Sitewide Translation
+# Migrate off rescuedogwines.com (legacy WP site)
 
-Combine **manual i18n keys** (fast, reliable) with an **AI auto-translate fallback** (covers everything else, including dynamic CMS/product copy) so every visible English string renders in FR/ES.
+A repo-wide sweep found ~40 references to `rescuedogwines.com`. They split into 4 buckets, each needing a different strategy. None of these have been changed yet — flagging trade-offs so you can pick.
 
-## What gets built
+## Bucket 1 — Hard-coded WP images on public pages
 
-### 1. AI auto-translate fallback (the "covers everything" piece)
-- New edge function `translate` (Lovable AI Gateway, model `google/gemini-2.5-flash-lite` — cheap, fast, great for short copy). Accepts `{ texts: string[], target: "fr"|"es" }`, returns translated array.
-- New Supabase table `auto_translations` (key: source_text + lang) so each phrase is translated once and cached forever. Public read, service-role write.
-- New `<T>English text</T>` component + `useAutoT()` hook:
-  - If language === `en` → render as-is, zero cost.
-  - Else look up cache (React Query), batch-fetch missing strings via the edge function, render translation when ready (English shown as fallback while loading — never blank).
-- Batches requests in 250 ms windows so a page render with 40 strings = 1 API call, not 40.
+These currently load JPGs/PNGs/WEBPs directly from the old WordPress media library. If the old site goes down (or DNS flips), every one of these breaks.
 
-### 2. Expand manual translations (high-traffic surfaces)
-Wrap with existing `t()` and add keys to `en.json` / `fr.json` / `es.json`:
-- **Footer** (newsletter CTA, link groups, legal)
-- **Homepage `Index.tsx`** (hero headline/subhead, section titles, CTAs)
-- **About / Mission** page section headings + lead paragraphs
-- **CartDrawer** remaining strings (subtotal label, empty-cart copy)
-- **AgeGate** modal
+Files affected:
+- `src/pages/Index.tsx` — mission image + 6 Instagram feed images + sustainability badge
+- `src/pages/AboutPage.tsx` — hero, story, sustainability images (3)
+- `src/pages/VineyardPage.tsx` — hero + 3 vineyard tiles + Lodi badge
+- `src/pages/WinesPage.tsx` — hero
+- `src/pages/ContactPage.tsx` — hero
+- `src/components/Seo.tsx` `DEFAULT_IMG` — sitewide OG fallback
+- `index.html` — `og:image` and `twitter:image`
 
-Manual keys stay free + instant; AI fallback handles everything else (product descriptions, blog posts, CMS-edited banners, ambassador bios, etc.).
+**Options (pick one):**
+- **A.** Download each image, commit to `src/assets/migrated/`, import as ES modules. Pros: bundled, instant, no infra. Cons: ~12 image downloads, repo size grows.
+- **B.** Upload to Supabase storage bucket `site-media`, reference by public URL. Pros: editable via CMS, lighter repo. Cons: needs bucket + RLS migration first.
+- **C.** Hybrid — A for hero/static, B for the Instagram feed (so it can be refreshed without code).
 
-### 3. Wire `<T>` into the noisy surfaces we won't manually translate
-- ProductCard description, blog post bodies, CMS banner overrides, vineyard copy, donation form labels.
+The 6 Instagram images on the homepage are an extra question: do you want a real IG feed integration eventually, or are these manually curated forever? That decides B vs hand-managed.
 
-## Technical notes
+## Bucket 2 — PDFs on the old site
 
-- Edge function is `verify_jwt = false` (public) — it only translates user-visible marketing copy, no PII.
-- Cache key is `sha256(source_text)` to keep rows compact and indexable.
-- `<T>` accepts only plain string children — no nested JSX (keeps translation atomic and avoids breaking layout).
-- React Query cache time = Infinity for translated strings (they don't change).
-- Failure mode: if the edge call errors, original English is shown — site never breaks.
+`src/pages/AmbassadorsLandingPage.tsx` links two affiliate PDFs:
+- `RDW_Affiliate-Program-Application-Walkthrough_2024-04.pdf`
+- `RDW_Affiliate-Program-Tips_2024-01.pdf`
 
-## Files
+**Plan:** download both, store in `public/docs/ambassadors/`, link with `/docs/ambassadors/<file>.pdf` (relative). DNS-flip-safe.
 
-**New**
-- `supabase/functions/translate/index.ts`
-- `supabase/migrations/<ts>_auto_translations.sql`
-- `src/components/T.tsx` (component + `useAutoT` hook + batching queue)
+Open question: are these PDFs still current, or should they be regenerated/replaced before relaunch?
 
-**Edited**
-- `src/i18n/locales/{en,fr,es}.json` — add ~40 new keys
-- `src/components/Footer.tsx`
-- `src/pages/Index.tsx`
-- `src/pages/AboutPage.tsx`
-- `src/pages/MissionPage.tsx`
-- `src/components/CartDrawer.tsx`
-- `src/components/AgeGate.tsx`
-- `src/components/ProductCard.tsx` (wrap description in `<T>`)
+## Bucket 3 — Absolute URLs in email templates & edge functions
 
-## Out of scope
-- Translating user-generated content (reviews, ambassador free-text bios) on write — only on display.
-- RTL languages (FR/ES are LTR).
-- SEO `hreflang` tags — can add later if you want indexed FR/ES URLs.
+Emails and server-side code have to use absolute URLs (no `/path` in inboxes). Today they hard-code `https://rescuedogwines.com`:
+- `supabase/functions/create-gift-certificate/index.ts` — gift redemption link
+- `supabase/functions/provision-reviewer/index.ts` — login + site URLs
+- `supabase/functions/_shared/transactional-email-templates/ambassador-welcome.tsx`
+- `supabase/functions/_shared/transactional-email-templates/reviewer-invite.tsx`
+- `supabase/functions/_shared/transactional-email-templates/stale-accounts-{rep-alert,summary}.tsx`
+- `supabase/functions/_shared/serverConversions.ts` — Meta CAPI `event_source_url`
+- `supabase/functions/impact-health-check/index.ts` — pixel probe URL
+
+**Plan:** introduce a single `PUBLIC_SITE_URL` secret (defaults to `https://shopify-buddy-b2b.lovable.app` until DNS flips, then update once to `https://rescuedogwines.com`). All templates/functions read `Deno.env.get("PUBLIC_SITE_URL")`. One source of truth, one switch on go-live.
+
+## Bucket 4 — Rescue partner event links
+
+`src/data/rescuePartners.ts` has 5 partner entries pointing at old `rescuedogwines.com/event/...` slugs. We don't have an `/event/<slug>` route in the new app yet.
+
+**Options:**
+- **A.** Drop the `url` field on those entries (no link until events are migrated).
+- **B.** Build a minimal `/events/:slug` route + Supabase `events` table, then wire links to `/events/<slug>`.
+- **C.** Leave as-is until events CMS lands (do nothing now).
+
+Recommend A as the safe interim — no broken links, no scope creep. B can come with the events CMS work.
+
+## Bucket 5 — SEO canonicals & JSON-LD
+
+`Seo.tsx` (`SITE = "https://rescuedogwines.com"`), `jsonLd.tsx`, `index.html` canonical, and `PoliciesPage` JSON-LD all use `rescuedogwines.com`. **These should stay absolute and pointed at the future production domain** — that's exactly what canonicals are for. Nothing to migrate here. (If you'd rather they point at `shopify-buddy-b2b.lovable.app` until DNS flips, say so and I'll switch them.)
+
+## What I need from you
+
+1. **Bucket 1**: A, B, or C? (And: keep IG strip as static or wire a real feed?)
+2. **Bucket 2**: confirm PDFs are still current, or supply replacements.
+3. **Bucket 3**: OK to add a `PUBLIC_SITE_URL` secret? (Yes = I'll wire it.)
+4. **Bucket 4**: A, B, or C?
+5. **Bucket 5**: keep canonicals pointing to `rescuedogwines.com` (recommended), or switch to lovable.app for now?
+
+Once you answer, I'll execute in one pass — Bucket 3 + 4 are quick, Bucket 1 + 2 are the bulk of the work.

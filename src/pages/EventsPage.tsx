@@ -73,7 +73,7 @@ const EventsPage = () => {
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
           <div className="relative mb-8">
-            <CmsEditButton onClick={() => setEditSection("header")} />
+            <CmsEditButton onClick={() => setEditSection("header")} scope="events" />
             <h1 className="text-3xl font-bold text-foreground mb-2">
               {getVal("header", "title", "Upcoming Events")}
             </h1>
@@ -88,7 +88,7 @@ const EventsPage = () => {
             <div className="space-y-6">
               {events.map((event: any, idx: number) => (
                 <div key={`${event.title}-${idx}`} className="border border-border p-6 md:p-8 relative">
-                  <CmsEditButton onClick={() => setEditEventIdx(idx)} label="Edit Event" />
+                  <CmsEditButton onClick={() => setEditEventIdx(idx)} label="Edit Event" scope="events" />
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div className="flex-1">
                       <h2 className="text-xl font-bold text-foreground mb-3">{event.title}</h2>

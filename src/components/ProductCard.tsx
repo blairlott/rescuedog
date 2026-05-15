@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
 import { useCartSettings } from "@/hooks/useCartSettings";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Button } from "@/components/ui/button";
-import { Loader2, Award, ShoppingBag, Heart, Lock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Award, ShoppingBag, Heart, Lock, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { isWineProduct } from "@/lib/productUtils";
 import { useGeo } from "@/hooks/useGeo";
@@ -38,6 +40,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const { isMember, discountPercent } = useIsMember();
   const { purchaseAllowed } = useGeo();
   const { t } = useTranslation();
+  const [quantity, setQuantity] = useState(1);
   const { node } = product;
   const image = node.images.edges[0]?.node;
   const price = node.priceRange.minVariantPrice;
@@ -55,7 +58,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const cents = Math.round((priceNum - dollars) * 100).toString().padStart(2, '0');
   const memberPrice = priceNum * (1 - (discountPercent || 20) / 100);
 
-  const handleAddToCart = async (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent, opts: { buyNow?: boolean } = {}) => {
     e.preventDefault();
     e.stopPropagation();
     if (locked) return;
@@ -69,9 +72,13 @@ export function ProductCard({ product }: ProductCardProps) {
       variantId: firstVariant.id,
       variantTitle: firstVariant.title,
       price: firstVariant.price,
-      quantity: 1,
+      quantity,
       selectedOptions: firstVariant.selectedOptions || [],
     });
+    if (opts.buyNow) {
+      window.dispatchEvent(new CustomEvent("rdw:open-cart"));
+      return;
+    }
     if (isWine) {
       const currentBottles = useCartStore.getState().items
         .filter(i => i.product.node.productKind === "wine")
@@ -157,13 +164,26 @@ export function ProductCard({ product }: ProductCardProps) {
           <Heart className={`w-4 h-4 transition-colors ${faved ? 'fill-destructive text-destructive' : 'text-muted-foreground hover:text-destructive'}`} />
         </button>
 
-        {/* Hover overlay with add-to-cart button */}
-        <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out p-3">
+        {/* Hover overlay with quantity + add-to-cart + buy-now */}
+        <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 focus-within:translate-y-0 transition-transform duration-300 ease-out p-2 bg-background/95 backdrop-blur-sm space-y-1.5">
+          <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+            <Select value={String(quantity)} onValueChange={(v) => setQuantity(Number(v))}>
+              <SelectTrigger className="h-8 text-xs uppercase tracking-brand">
+                <SelectValue>Qty: {quantity}{quantity === 12 ? ' (case)' : ''}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                ))}
+                <SelectItem value="12">12 (case)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button
-            onClick={handleAddToCart}
+            onClick={(e) => handleAddToCart(e)}
             disabled={isLoading || !firstVariant?.availableForSale || !purchaseAllowed}
             title={!purchaseAllowed ? t("geo.purchase_disabled_tooltip") : undefined}
-            className="w-full uppercase tracking-brand text-xs font-bold bg-foreground text-background hover:bg-foreground/90 h-10"
+            className="w-full uppercase tracking-brand text-[11px] font-bold bg-foreground text-background hover:bg-foreground/90 h-9"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -178,6 +198,16 @@ export function ProductCard({ product }: ProductCardProps) {
               </>
             )}
           </Button>
+          {firstVariant?.availableForSale && purchaseAllowed && (
+            <Button
+              onClick={(e) => handleAddToCart(e, { buyNow: true })}
+              disabled={isLoading}
+              className="w-full uppercase tracking-brand text-[11px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 h-9"
+            >
+              <Zap className="w-3.5 h-3.5 mr-1.5" />
+              Buy Now
+            </Button>
+          )}
         </div>
       </div>
 

@@ -108,7 +108,7 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Link to={`/product/${node.handle}`} className="group block">
+    <Link to={`/product/${node.handle}`} className="group flex flex-col h-full">
       {/* Image container with overlay add-to-cart */}
       <div className="relative overflow-hidden mb-3">
         <div className={`aspect-[3/4] overflow-hidden ${isWine ? 'bg-secondary' : 'bg-background'}`}>
@@ -167,12 +167,12 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
 
       {/* Product info */}
-      <div className="space-y-1 text-center">
-        <h3 className="text-sm font-medium text-foreground tracking-brand leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-200">
+      <div className="flex flex-col flex-1 space-y-1 text-center">
+        <h3 className="text-sm font-medium text-foreground tracking-brand leading-snug line-clamp-2 min-h-[2.5rem] group-hover:text-primary transition-colors duration-200">
           <T>{node.title}</T>
         </h3>
         {isMember && !isSampler && isWine ? (
-          <div>
+          <div className="min-h-[2.75rem]">
             <p className="text-foreground">
               <span className="text-[10px] align-top leading-none">$</span>
               <span className="text-base font-semibold">{Math.floor(memberPrice)}</span>
@@ -182,24 +182,26 @@ export function ProductCard({ product }: ProductCardProps) {
             <p className="text-[10px] uppercase tracking-brand text-primary font-bold">Your Member Price</p>
           </div>
         ) : (
-          <p className="text-foreground">
+          <p className="text-foreground min-h-[1.5rem]">
             <span className="text-[10px] align-top leading-none">$</span>
             <span className="text-base font-semibold">{dollars}</span>
             <span className="text-[10px] align-top leading-none">.{cents}</span>
           </p>
         )}
-        {isSampler ? (
-          <p className="text-[10px] text-muted-foreground italic">Not valid with any other offer</p>
-        ) : !isMember && isWine ? (
-          <p className="text-[11px] text-muted-foreground">
-            <Link to="/club" onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">
-              Club Price: ${(priceNum * 0.8).toFixed(2)}
-            </Link>
-          </p>
-        ) : null}
+        <div className="min-h-[1.25rem]">
+          {isSampler ? (
+            <p className="text-[10px] text-muted-foreground italic">Not valid with any other offer</p>
+          ) : !isMember && isWine ? (
+            <p className="text-[11px] text-muted-foreground">
+              <Link to="/club" onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">
+                Club Price: ${(priceNum * 0.8).toFixed(2)}
+              </Link>
+            </p>
+          ) : null}
+        </div>
 
         {/* Always-visible quantity + add-to-cart + buy-now */}
-        <div className="pt-2 space-y-1.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+        <div className="mt-auto pt-2 space-y-1.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
           <Select value={String(quantity)} onValueChange={(v) => setQuantity(Number(v))}>
             <SelectTrigger className="h-8 text-xs uppercase tracking-brand">
               <SelectValue>Qty: {quantity}{quantity === 12 ? ' (case)' : ''}</SelectValue>
@@ -230,16 +232,14 @@ export function ProductCard({ product }: ProductCardProps) {
               </>
             )}
           </Button>
-          {firstVariant?.availableForSale && purchaseAllowed && (
-            <Button
-              onClick={(e) => handleAddToCart(e, { buyNow: true })}
-              disabled={isLoading}
-              className="w-full uppercase tracking-brand text-[11px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 h-9"
-            >
-              <Zap className="w-3.5 h-3.5 mr-1.5" />
-              Buy Now
-            </Button>
-          )}
+          <Button
+            onClick={(e) => handleAddToCart(e, { buyNow: true })}
+            disabled={isLoading || !firstVariant?.availableForSale || !purchaseAllowed}
+            className="w-full uppercase tracking-brand text-[11px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 h-9 disabled:opacity-40"
+          >
+            <Zap className="w-3.5 h-3.5 mr-1.5" />
+            Buy Now
+          </Button>
         </div>
       </div>
     </Link>

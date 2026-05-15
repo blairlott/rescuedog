@@ -574,51 +574,14 @@ const CmsDashboard = () => {
       </main>
 
       {/* ── Invite Dialog ─────────────────────────────────── */}
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Invite CMS Editor</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleInvite();
-            }}
-            className="space-y-4"
-          >
-            <div>
-              <Label htmlFor="inv-email">Email *</Label>
-              <Input
-                id="inv-email"
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="inv-name">Full Name</Label>
-              <Input
-                id="inv-name"
-                value={inviteName}
-                onChange={(e) => setInviteName(e.target.value)}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setInviteOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={inviting || !inviteEmail.trim()}>
-                {inviting ? "Inviting..." : "Invite"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <TeamInviteDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        defaultRoles={["cms_editor"]}
+        isOwner={!!roleInfo?.isOwner}
+        title="Invite a CMS team member"
+        onInvited={() => queryClient.invalidateQueries({ queryKey: ["cms-users"] })}
+      />
 
       {/* ── Remove User Confirm ───────────────────────────── */}
       <AlertDialog

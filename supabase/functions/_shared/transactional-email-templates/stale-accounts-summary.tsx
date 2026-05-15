@@ -5,7 +5,7 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const CRM_BASE_URL = 'https://rescuedogwines.com/crm/account'
+const CRM_BASE_URL = `${(Deno.env.get('PUBLIC_SITE_URL') ?? 'https://shopify-buddy-b2b.lovable.app')}/crm/account`
 
 interface SummaryRow {
   id: string

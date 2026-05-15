@@ -21,6 +21,29 @@ export default function PoliciesPage() {
       <Seo
         title="Our Policies | Rescue Dog Wines"
         description="Privacy, shipping, returns, membership, accessibility, and terms & conditions for Rescue Dog Wines."
+        path="/policies"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: "Our Policies",
+          description:
+            "Privacy, shipping, returns, membership, accessibility, and terms & conditions for Rescue Dog Wines.",
+          url: "https://rescuedogwines.com/policies",
+          inLanguage: "en-US",
+          isPartOf: {
+            "@type": "WebSite",
+            name: "Rescue Dog Wines",
+            url: "https://rescuedogwines.com",
+          },
+          hasPart: [
+            { "@type": "WebPageElement", name: "Privacy Policy", url: "https://rescuedogwines.com/policies#privacy" },
+            { "@type": "WebPageElement", name: "Membership", url: "https://rescuedogwines.com/policies#membership" },
+            { "@type": "WebPageElement", name: "Shipping Policy", url: "https://rescuedogwines.com/policies#shipping" },
+            { "@type": "WebPageElement", name: "Refund & Return Policy", url: "https://rescuedogwines.com/policies#refund" },
+            { "@type": "WebPageElement", name: "Accessibility", url: "https://rescuedogwines.com/policies#accessibility" },
+            { "@type": "WebPageElement", name: "Terms & Conditions", url: "https://rescuedogwines.com/policies#terms" },
+          ],
+        }}
       />
       <Header />
       <main className="max-w-3xl mx-auto px-4 py-12 space-y-12">

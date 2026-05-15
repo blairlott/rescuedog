@@ -8,9 +8,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const supabaseAdmin = createClient(
@@ -18,46 +16,114 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify caller is admin/owner
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Not authenticated");
-
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
     if (!caller) throw new Error("Invalid token");
 
     const { data: isAdmin } = await supabaseAdmin.rpc("is_admin_or_owner", { _user_id: caller.id });
-    if (!isAdmin) throw new Error("Not authorized");
+    if (!isAdmin) throw new Error("Not authorized — only admins and owners can invite team members");
 
-    const { email, full_name, role } = await req.json();
+    const body = await req.json();
+    const email: string = String(body.email || "").trim().toLowerCase();
+    const full_name: string = String(body.full_name || "").trim();
+    // Accept both single role (legacy) and roles[]
+    const rawRoles: string[] = Array.isArray(body.roles)
+      ? body.roles
+      : body.role
+      ? [body.role]
+      : [];
+    const roles = Array.from(new Set(rawRoles.filter(Boolean)));
+    const redirectTo: string =
+      body.redirect_to || `${req.headers.get("origin") || ""}/reset-password`;
+
     if (!email) throw new Error("Email is required");
+    if (roles.length === 0) throw new Error("At least one role is required");
 
-    // Create the user with a random password (they'll reset it)
-    const tempPassword = crypto.randomUUID();
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: { full_name: full_name || "" },
-    });
+    // Owner-only check
+    if (roles.includes("owner")) {
+      const { data: isOwner } = await supabaseAdmin
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", caller.id)
+        .eq("role", "owner")
+        .maybeSingle();
+      if (!isOwner) throw new Error("Only an owner can grant the owner role");
+    }
 
-    if (createError) throw createError;
+    // Find or create user
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existing = existingUsers?.users?.find(
+      (u) => u.email?.toLowerCase() === email
+    );
 
-    // Approve the profile
+    let userId: string;
+    let alreadyExisted = false;
+
+    if (existing) {
+      userId = existing.id;
+      alreadyExisted = true;
+    } else {
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: crypto.randomUUID(),
+        email_confirm: true,
+        user_metadata: { full_name },
+      });
+      if (createError) throw createError;
+      userId = newUser.user.id;
+    }
+
+    // Approve profile
     await supabaseAdmin
       .from("profiles")
-      .update({ approved: true, full_name: full_name || "" })
-      .eq("id", newUser.user.id);
+      .update({ approved: true, ...(full_name ? { full_name } : {}) })
+      .eq("id", userId);
 
-    // Assign role if provided
-    if (role) {
-      await supabaseAdmin
+    // Insert all requested roles (idempotent)
+    const added: string[] = [];
+    const skipped: string[] = [];
+    for (const role of roles) {
+      const { data: exists } = await supabaseAdmin
         .from("user_roles")
-        .insert({ user_id: newUser.user.id, role });
+        .select("id")
+        .eq("user_id", userId)
+        .eq("role", role as any)
+        .maybeSingle();
+      if (exists) {
+        skipped.push(role);
+        continue;
+      }
+      const { error: insErr } = await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: userId, role: role as any });
+      if (insErr) throw insErr;
+      added.push(role);
+    }
+
+    // Generate a recovery link so the new user can set their password
+    let recovery_link: string | null = null;
+    try {
+      const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
+        type: alreadyExisted ? "recovery" : "recovery",
+        email,
+        options: { redirectTo },
+      });
+      recovery_link = linkData?.properties?.action_link ?? null;
+    } catch (_) {
+      recovery_link = null;
     }
 
     return new Response(
-      JSON.stringify({ success: true, user_id: newUser.user.id }),
+      JSON.stringify({
+        success: true,
+        user_id: userId,
+        already_existed: alreadyExisted,
+        roles_added: added,
+        roles_skipped: skipped,
+        recovery_link,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {

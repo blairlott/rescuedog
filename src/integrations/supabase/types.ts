@@ -3614,6 +3614,8 @@ export type Database = {
         | "wine_club_manager"
         | "dropship_manager"
         | "ambassador_manager"
+        | "cms_editor"
+        | "crm_user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3752,6 +3754,8 @@ export const Constants = {
         "wine_club_manager",
         "dropship_manager",
         "ambassador_manager",
+        "cms_editor",
+        "crm_user",
       ],
     },
   },

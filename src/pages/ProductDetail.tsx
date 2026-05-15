@@ -389,32 +389,43 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              <Button
-                onClick={handleAddToCart}
-                disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
-                size="lg"
-                className="w-full md:min-w-[320px] bg-foreground text-background hover:bg-primary hover:text-primary-foreground px-12 py-7 text-[11px] tracking-[0.4em] uppercase font-bold border-0 transition-all duration-500 hidden md:flex"
-              >
-                {cartLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : !selectedVariant?.availableForSale ? (
-                  "Sold Out"
-                ) : locked ? (
-                  <><Lock className="w-4 h-4 mr-2" /> Members only</>
-                ) : blockedByState ? (
-                  "Not available in your state"
-                ) : subscribeMode ? (
-                  <>
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Subscribe — ${(parseFloat(selectedVariant.price.amount) * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}/shipment
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Cellar — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}
-                  </>
-                )}
-              </Button>
+              <div className="hidden md:flex flex-col gap-2 md:min-w-[320px]">
+                <Button
+                  onClick={() => handleAddToCart()}
+                  disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
+                  size="lg"
+                  className="w-full bg-foreground text-background hover:bg-primary hover:text-primary-foreground px-12 py-6 text-[11px] tracking-[0.4em] uppercase font-bold border-0 transition-all duration-500"
+                >
+                  {cartLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : !selectedVariant?.availableForSale ? (
+                    "Sold Out"
+                  ) : locked ? (
+                    <><Lock className="w-4 h-4 mr-2" /> Members only</>
+                  ) : blockedByState ? (
+                    "Not available in your state"
+                  ) : subscribeMode ? (
+                    <>
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      Subscribe — ${(parseFloat(selectedVariant.price.amount) * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}/shipment
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      Add to Cart — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => handleAddToCart({ buyNow: true })}
+                  disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch) || subscribeMode}
+                  size="lg"
+                  variant="outline"
+                  className="w-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground px-12 py-6 text-[11px] tracking-[0.4em] uppercase font-bold transition-all duration-300"
+                >
+                  <Zap className="w-4 h-4 mr-2" /> Buy Now
+                </Button>
+              </div>
             </div>
           </div>
 

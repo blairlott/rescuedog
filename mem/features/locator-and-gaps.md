@@ -23,7 +23,7 @@ Replace Grappos iframe with native locator tied to CRM. Goal: own the data, surf
 - Retailer Discovery AI (`/crm/gaps/discover`) — Lovable AI Gateway + web search; returns ranked candidate retailers (independent wine/bottle shops, premium-leaning, dog/rescue angle); one click → prospect account assigned to territory rep; can run on schedule for top 10 zips
 
 **Phase 3 (June/July)**
-- Depletion Report Reformatter (`/crm/depletions`) — drag-drop distributor reports (PDF, Excel, CSV); Lovable AI normalizes to standard schema (distributor, account, address, SKU, cases, period); fuzzy-matches to `sales_accounts`, flags unmatched; updates `last_order_date` → feeds staleness; new tables `depletion_reports` + `depletion_report_lines` for trending
+- ~~Depletion Report Reformatter~~ — **MVP shipped pre-launch (May 2026)** as `DepletionUploadCard` on `/crm/admin` + `parse-depletion-report` edge fn. CSV/TSV/text only (no PDF/Excel yet). AI confidence ≥0.85 + valid geocode → auto `is_public=true`. Tables `depletion_reports` + `depletion_report_lines` live. Phase 3 remaining: PDF/Excel parsers, `/crm/depletions` browse/edit UI, line-level rep approval queue for low-confidence rows, distributor-specific column adapters, trending charts.
 
 ## Tech
 - Lovable AI Gateway for both AI features (no extra keys; LOVABLE_API_KEY already provisioned)

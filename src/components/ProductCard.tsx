@@ -52,6 +52,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const isClubExclusive = tagSet.has('club-exclusive') || tagSet.has('club exclusive');
   const locked = isClubExclusive && !isMember;
   const isWine = isWineProduct(product);
+  const soldOut = !firstVariant?.availableForSale;
 
   const priceNum = parseFloat(price.amount);
   const dollars = Math.floor(priceNum);
@@ -164,6 +165,13 @@ export function ProductCard({ product }: ProductCardProps) {
           <Heart className={`w-4 h-4 transition-colors ${faved ? 'fill-destructive text-destructive' : 'text-muted-foreground hover:text-destructive'}`} />
         </button>
 
+        {/* Sold out ribbon */}
+        {soldOut && !locked && (
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 bg-foreground/85 text-background text-center py-2 text-[11px] font-bold uppercase tracking-brand z-10">
+            {t("common.sold_out")}
+          </div>
+        )}
+
       </div>
 
       {/* Product info */}
@@ -202,8 +210,8 @@ export function ProductCard({ product }: ProductCardProps) {
 
         {/* Always-visible quantity + add-to-cart + buy-now */}
         <div className="mt-auto pt-2 space-y-1.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-          <Select value={String(quantity)} onValueChange={(v) => setQuantity(Number(v))}>
-            <SelectTrigger className="h-8 text-xs uppercase tracking-brand">
+          <Select value={String(quantity)} onValueChange={(v) => setQuantity(Number(v))} disabled={soldOut}>
+            <SelectTrigger className="h-8 text-xs uppercase tracking-brand disabled:opacity-40">
               <SelectValue>Qty: {quantity}{quantity === 12 ? ' (case)' : ''}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -215,13 +223,13 @@ export function ProductCard({ product }: ProductCardProps) {
           </Select>
           <Button
             onClick={(e) => handleAddToCart(e)}
-            disabled={isLoading || !firstVariant?.availableForSale || !purchaseAllowed}
+            disabled={isLoading || soldOut || !purchaseAllowed}
             title={!purchaseAllowed ? t("geo.purchase_disabled_tooltip") : undefined}
-            className="w-full uppercase tracking-brand text-[11px] font-bold bg-foreground text-background hover:bg-foreground/90 h-9"
+            className="w-full uppercase tracking-brand text-[11px] font-bold bg-foreground text-background hover:bg-foreground/90 h-9 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
-            ) : !firstVariant?.availableForSale ? (
+            ) : soldOut ? (
               t("common.sold_out")
             ) : !purchaseAllowed ? (
               t("geo.checkout_disabled_label")
@@ -234,11 +242,11 @@ export function ProductCard({ product }: ProductCardProps) {
           </Button>
           <Button
             onClick={(e) => handleAddToCart(e, { buyNow: true })}
-            disabled={isLoading || !firstVariant?.availableForSale || !purchaseAllowed}
-            className="w-full uppercase tracking-brand text-[11px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 h-9 disabled:opacity-40"
+            disabled={isLoading || soldOut || !purchaseAllowed}
+            className="w-full uppercase tracking-brand text-[11px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 h-9 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Zap className="w-3.5 h-3.5 mr-1.5" />
-            Buy Now
+            {soldOut ? t("common.sold_out") : "Buy Now"}
           </Button>
         </div>
       </div>

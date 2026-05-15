@@ -1,15 +1,21 @@
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCmsAuth } from "@/hooks/useCmsAuth";
+import { useCmsAuth, type CmsEditScope } from "@/hooks/useCmsAuth";
 
 interface Props {
   onClick: () => void;
   label?: string;
+  /**
+   * Permission scope this edit button belongs to. Only users whose roles
+   * include the scope (or who are owner/admin/cms_editor) will see it.
+   * Defaults to "marketing".
+   */
+  scope?: CmsEditScope;
 }
 
-export const CmsEditButton = ({ onClick, label = "Edit" }: Props) => {
-  const { isCmsEditor } = useCmsAuth();
-  if (!isCmsEditor) return null;
+export const CmsEditButton = ({ onClick, label = "Edit", scope = "marketing" }: Props) => {
+  const { canEdit } = useCmsAuth();
+  if (!canEdit(scope)) return null;
 
   return (
     <Button

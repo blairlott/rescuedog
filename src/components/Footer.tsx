@@ -37,10 +37,10 @@ export function Footer() {
               <li><Link to="/donation" className="hover:text-primary transition-colors"><T>Donation Request</T></Link></li>
               <li><Link to="/ambassadors" className="hover:text-primary transition-colors"><T>Become an Ambassador</T></Link></li>
               <li><Link to="/sell" className="hover:text-primary transition-colors"><T>Sell on Rescue Dog</T></Link></li>
-              <li><a href="https://www.rescuedogwines.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors"><T>Privacy Policy</T></a></li>
-              <li><a href="https://www.rescuedogwines.com/policies/refund-policy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors"><T>Refund Policy</T></a></li>
-              <li><a href="https://www.rescuedogwines.com/policies/shipping-policy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors"><T>Shipping Policy</T></a></li>
-              <li><a href="https://www.rescuedogwines.com/policies/terms-of-service" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors"><T>Terms of Service</T></a></li>
+              <li><Link to="/privacy" className="hover:text-primary transition-colors"><T>Privacy Policy</T></Link></li>
+              <li><Link to="/refund" className="hover:text-primary transition-colors"><T>Refund Policy</T></Link></li>
+              <li><Link to="/shipping" className="hover:text-primary transition-colors"><T>Shipping Policy</T></Link></li>
+              <li><Link to="/terms" className="hover:text-primary transition-colors"><T>Terms of Service</T></Link></li>
               <li><Link to="/admin" className="hover:text-primary transition-colors"><T>Admin</T></Link></li>
             </ul>
           </div>

@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { T } from "@/components/T";
+import { useIsMember } from "@/hooks/useIsMember";
 
 export function Footer() {
+  const { isMember } = useIsMember();
   return (
     <footer className="border-t border-border py-14 mt-20 bg-secondary/30">
       <div className="container mx-auto px-4">
@@ -37,6 +39,9 @@ export function Footer() {
               <li><Link to="/donation" className="hover:text-primary transition-colors"><T>Donation Request</T></Link></li>
               <li><Link to="/ambassadors" className="hover:text-primary transition-colors"><T>Become an Ambassador</T></Link></li>
               <li><Link to="/sell" className="hover:text-primary transition-colors"><T>Sell on Rescue Dog</T></Link></li>
+              {isMember && (
+                <li><Link to="/policies#membership" className="hover:text-primary transition-colors"><T>Membership Policy</T></Link></li>
+              )}
               <li><Link to="/policies#privacy" className="hover:text-primary transition-colors"><T>Privacy Policy</T></Link></li>
               <li><Link to="/policies#refund" className="hover:text-primary transition-colors"><T>Refund Policy</T></Link></li>
               <li><Link to="/policies#shipping" className="hover:text-primary transition-colors"><T>Shipping Policy</T></Link></li>

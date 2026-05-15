@@ -59,7 +59,7 @@ export const useCartStore = create<CartStore>()(
           item_name: item.product.node.title,
           item_category: (item.product.node.productKind ?? "wine") as "wine" | "merch",
           item_variant: item.variantTitle,
-          price: Number(item.price ?? 0),
+          price: Number(item.price?.amount ?? 0),
           quantity: item.quantity,
         });
 
@@ -169,7 +169,7 @@ export const useCartStore = create<CartStore>()(
           item_name: item.product.node.title,
           item_category: (item.product.node.productKind ?? "wine") as "wine" | "merch",
           item_variant: item.variantTitle,
-          price: Number(item.price ?? 0),
+          price: Number(item.price?.amount ?? 0),
           quantity: item.quantity,
         });
 

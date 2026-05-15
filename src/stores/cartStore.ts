@@ -10,6 +10,7 @@ import {
   shopifyCartLineRemove,
   shopifyCartFetch,
 } from "@/lib/shopify";
+import { analytics } from "@/lib/analytics";
 
 export type { CartItem, ShopifyProduct };
 
@@ -51,6 +52,16 @@ export const useCartStore = create<CartStore>()(
 
       addItem: async (item) => {
         const existing = get().items.find(i => i.variantId === item.variantId);
+
+        // Analytics: GA4 add_to_cart (fans out via GTM to Meta/TikTok/Pinterest).
+        analytics.addToCart({
+          item_id: item.variantId,
+          item_name: item.product.node.title,
+          item_category: (item.product.node.productKind ?? "wine") as "wine" | "merch",
+          item_variant: item.variantTitle,
+          price: Number(item.price?.amount ?? 0),
+          quantity: item.quantity,
+        });
 
         // Wine: local only.
         if (isWine(item)) {
@@ -152,6 +163,15 @@ export const useCartStore = create<CartStore>()(
       removeItem: async (variantId) => {
         const item = get().items.find(i => i.variantId === variantId);
         if (!item) return;
+
+        analytics.removeFromCart({
+          item_id: item.variantId,
+          item_name: item.product.node.title,
+          item_category: (item.product.node.productKind ?? "wine") as "wine" | "merch",
+          item_variant: item.variantTitle,
+          price: Number(item.price?.amount ?? 0),
+          quantity: item.quantity,
+        });
 
         if (isWine(item)) {
           const next = get().items.filter(i => i.variantId !== variantId);

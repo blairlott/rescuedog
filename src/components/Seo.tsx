@@ -11,7 +11,7 @@ interface Props {
 
 const SITE = "https://rescuedogwines.com";
 const DEFAULT_DESC = "Award-winning, sustainable wines from Lodi. 50% of profits support animal rescue.";
-const DEFAULT_IMG = "https://rescuedogwines.com/wp-content/uploads/2023/09/rescue-dog-wines-1.jpg";
+const DEFAULT_IMG = `${SITE}/og-default.jpg`;
 
 export function Seo({ title, description = DEFAULT_DESC, image = DEFAULT_IMG, path, noindex, jsonLd }: Props) {
   const url = path ? `${SITE}${path}` : SITE;

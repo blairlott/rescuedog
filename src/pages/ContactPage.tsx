@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { MapPin, Mail, Phone, Truck } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import rdwHero from "@/assets/migrated/rdw-hero.jpg";
 
 const ContactPage = () => {
   const { toast } = useToast();
@@ -52,7 +53,10 @@ const ContactPage = () => {
       <main className="flex-1">
         {/* Hero */}
         <section className="relative h-[50vh] min-h-[400px] flex items-center bg-foreground">
-          <div className="absolute inset-0 bg-[url('https://rescuedogwines.com/wp-content/uploads/2023/09/rescue-dog-wines-1.jpg')] bg-cover bg-center opacity-50" />
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-50"
+            style={{ backgroundImage: `url(${rdwHero})` }}
+          />
           <div className="relative container mx-auto px-4 text-center">
             <p className="text-primary-foreground/80 text-sm tracking-brand uppercase mb-2">Contact Us</p>
             <h1 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">Questions & Support</h1>

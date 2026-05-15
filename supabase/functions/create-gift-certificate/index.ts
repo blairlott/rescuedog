@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
             <p>${escapeHtml(user.email || "A friend")} sent you a gift: <strong>${escapeHtml(body.tier)}</strong> tier — ${body.shipments_count} shipment(s).</p>
             ${body.personal_note ? `<blockquote style="border-left:3px solid #c30017;padding-left:12px;color:#555">${escapeHtml(body.personal_note)}</blockquote>` : ""}
             <p>Redeem with code: <strong style="font-size:20px;letter-spacing:2px">${gift.code}</strong></p>
-            <p><a href="https://rescuedogwines.com/club?code=${gift.code}" style="background:#c30017;color:#fff;padding:12px 20px;text-decoration:none;display:inline-block">Redeem your gift</a></p>
+            <p><a href="${(Deno.env.get("PUBLIC_SITE_URL") ?? "https://shopify-buddy-b2b.lovable.app")}/club?code=${gift.code}" style="background:#c30017;color:#fff;padding:12px 20px;text-decoration:none;display:inline-block">Redeem your gift</a></p>
           </div>`;
         const r = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
           method: "POST",

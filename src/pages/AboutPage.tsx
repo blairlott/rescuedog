@@ -8,6 +8,8 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 import { CmsToolbar } from "@/components/cms/CmsToolbar";
 import { T } from "@/components/T";
+import lauraBlair from "@/assets/migrated/laura-blair-lott.jpg";
+import vineyard5 from "@/assets/migrated/vineyard-5.jpg";
 
 const defaultTeamMembers = [
   {
@@ -75,7 +77,7 @@ const AboutPage = () => {
       fields: [
         { key: "title", label: "Title", type: "text", value: getVal("hero", "title", "About Rescue Dog Wines") },
         { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("hero", "subtitle", "Through wine sales and donations, our mission is to support the placement of as many rescue dogs as possible into loving homes.") },
-        { key: "image", label: "Background Image URL", type: "url", value: getVal("hero", "image", "https://rescuedogwines.com/wp-content/uploads/2023/09/laura-blair-lott.jpeg") },
+        { key: "image", label: "Background Image URL", type: "url", value: getVal("hero", "image", lauraBlair) },
       ],
     },
     story: {
@@ -85,7 +87,7 @@ const AboutPage = () => {
         { key: "paragraph1", label: "Paragraph 1", type: "textarea", value: getVal("story", "paragraph1", "Rescue Dog Wines Cofounders Blair and Laura Lott started planning their new life in wine country in 2015. They knew that they wanted to embrace sustainable growing practices and create a new, more rewarding lifestyle for themselves. In addition, the Lotts knew that they wanted enough land to grow wine grapes AND foster dogs.") },
         { key: "paragraph2", label: "Paragraph 2", type: "textarea", value: getVal("story", "paragraph2", "During this period of exploring many of California's wine regions, it dawned on the Lotts that they could combine their two passions—and Rescue Dog Wines was born!") },
         { key: "paragraph3", label: "Paragraph 3", type: "textarea", value: getVal("story", "paragraph3", "Fast forward several years and Rescue Dog Wines is pleased to offer a full portfolio of wines, many from our neighbors' sustainable vineyards or our Lodi Rules Certified Green vineyard in Acampo, California. We're proud that 50% of our profits support rescue organizations.") },
-        { key: "image", label: "Image URL", type: "url", value: getVal("story", "image", "https://rescuedogwines.com/wp-content/uploads/2023/09/laura-blair-lott.jpeg") },
+        { key: "image", label: "Image URL", type: "url", value: getVal("story", "image", lauraBlair) },
       ],
     },
     how_we_give: {
@@ -102,7 +104,7 @@ const AboutPage = () => {
         { key: "heading", label: "Heading", type: "text", value: getVal("sustainability", "heading", "Lodi Rules Certified") },
         { key: "paragraph1", label: "Paragraph 1", type: "textarea", value: getVal("sustainability", "paragraph1", "Our grapes are grown under the Lodi Rules Sustainable Winegrowing Program, one of the most rigorous third-party sustainability certifications in the wine industry.") },
         { key: "paragraph2", label: "Paragraph 2", type: "textarea", value: getVal("sustainability", "paragraph2", "This means our vineyards follow strict standards for pest management, soil health, water conservation, and habitat preservation — ensuring every bottle is as responsible as it is delicious.") },
-        { key: "image", label: "Image URL", type: "url", value: getVal("sustainability", "image", "https://rescuedogwines.com/wp-content/uploads/2023/12/rdw-vineyard-5.jpg") },
+        { key: "image", label: "Image URL", type: "url", value: getVal("sustainability", "image", vineyard5) },
       ],
     },
     partner_cta: {
@@ -128,7 +130,7 @@ const AboutPage = () => {
         {/* Hero */}
         <section className="relative h-[50vh] min-h-[400px] flex items-center bg-foreground">
           <CmsEditButton onClick={() => setEditSection("hero")} />
-          <div className="absolute inset-0 bg-cover bg-center opacity-50" style={{ backgroundImage: `url('${getVal("hero", "image", "https://rescuedogwines.com/wp-content/uploads/2023/09/laura-blair-lott.jpeg")}')` }} />
+          <div className="absolute inset-0 bg-cover bg-center opacity-50" style={{ backgroundImage: `url('${getVal("hero", "image", lauraBlair)}')` }} />
           <div className="relative container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">
               {getVal("hero", "title", "About Rescue Dog Wines")}
@@ -161,7 +163,7 @@ const AboutPage = () => {
               </div>
               <div className="aspect-[4/3] bg-secondary overflow-hidden">
                 <img
-                  src={getVal("story", "image", "https://rescuedogwines.com/wp-content/uploads/2023/09/laura-blair-lott.jpeg")}
+                  src={getVal("story", "image", lauraBlair)}
                   alt="Blair and Laura Lott, Owners of Rescue Dog Wines"
                   className="w-full h-full object-cover"
                 />
@@ -231,7 +233,7 @@ const AboutPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
               <div className="aspect-[4/3] bg-secondary overflow-hidden">
                 <img
-                  src={getVal("sustainability", "image", "https://rescuedogwines.com/wp-content/uploads/2023/12/rdw-vineyard-5.jpg")}
+                  src={getVal("sustainability", "image", vineyard5)}
                   alt="Sustainable vineyard"
                   className="w-full h-full object-cover"
                 />

@@ -7,7 +7,7 @@ import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Rescue Dog Wines'
 const IMPACT_SIGNUP_URL = 'https://app.impact.com/signup/none/create-new-mediapartner-account-flow.ihtml?execution=e1s1#/?viewkey=signUpPreStart'
-const DASHBOARD_URL = 'https://rescuedogwines.com/ambassador/dashboard'
+const DASHBOARD_URL = `${(Deno.env.get('PUBLIC_SITE_URL') ?? 'https://shopify-buddy-b2b.lovable.app')}/ambassador/dashboard`
 
 interface Props {
   name?: string

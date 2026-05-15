@@ -102,7 +102,7 @@ export default function AmbassadorsLandingPage() {
           <div className="max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold uppercase mb-6 text-center">Resources</h2>
             <div className="grid sm:grid-cols-2 gap-4">
-              <a href="https://rescuedogwines.com/wp-content/uploads/2024/04/RDW_Affiliate-Program-Application-Walkthrough_2024-04.pdf"
+              <a href="/docs/ambassadors/affiliate-walkthrough.pdf"
                  target="_blank" rel="noopener" className="border border-border p-5 hover:bg-muted transition flex items-start gap-3">
                 <Download className="w-5 h-5 mt-0.5 flex-shrink-0" />
                 <div>
@@ -110,7 +110,7 @@ export default function AmbassadorsLandingPage() {
                   <div className="text-xs text-muted-foreground mt-1">Step-by-step guide to applying through impact.com (PDF)</div>
                 </div>
               </a>
-              <a href="https://rescuedogwines.com/wp-content/uploads/2024/04/RDW_Affiliate-Program-Tips_2024-01.pdf"
+              <a href="/docs/ambassadors/affiliate-tips.pdf"
                  target="_blank" rel="noopener" className="border border-border p-5 hover:bg-muted transition flex items-start gap-3">
                 <Download className="w-5 h-5 mt-0.5 flex-shrink-0" />
                 <div>

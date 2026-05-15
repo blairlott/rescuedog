@@ -6,7 +6,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Rescue Dog Wines CRM'
-const CRM_BASE_URL = 'https://rescuedogwines.com/crm/account'
+const CRM_BASE_URL = `${(Deno.env.get('PUBLIC_SITE_URL') ?? 'https://shopify-buddy-b2b.lovable.app')}/crm/account`
 
 interface StaleRow {
   id: string

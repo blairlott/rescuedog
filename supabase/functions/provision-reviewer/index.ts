@@ -167,8 +167,8 @@ Deno.serve(async (req) => {
       recipientName: reviewerName,
       loginEmail: reviewerEmail,
       tempPassword,
-      loginUrl: 'https://rescuedogwines.com/crm/login',
-      siteUrl: 'https://rescuedogwines.com',
+      loginUrl: `${(Deno.env.get('PUBLIC_SITE_URL') ?? 'https://shopify-buddy-b2b.lovable.app')}/crm/login`,
+      siteUrl: Deno.env.get('PUBLIC_SITE_URL') ?? 'https://shopify-buddy-b2b.lovable.app',
       fromBlair: true,
     }
 

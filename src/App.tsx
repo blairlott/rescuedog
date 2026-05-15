@@ -12,6 +12,7 @@ import { CmsAuthProvider } from "@/hooks/useCmsAuth";
 import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
 import { GeoProvider } from "@/hooks/useGeo";
 import { GeoNotice } from "@/components/GeoNotice";
+import { SitePasswordGate } from "@/components/SitePasswordGate";
 import Index from "./pages/Index";
 import MerchHomePage from "./pages/MerchHomePage";
 import ProductDetail from "./pages/ProductDetail";
@@ -180,17 +181,19 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <CustomerAuthProvider>
-          <CmsAuthProvider>
-            <GeoProvider>
-              <AgeGate>
-                <GeoNotice />
-                <AppContent />
-                <ExitIntentOffer />
-              </AgeGate>
-            </GeoProvider>
-          </CmsAuthProvider>
-        </CustomerAuthProvider>
+        <SitePasswordGate>
+          <CustomerAuthProvider>
+            <CmsAuthProvider>
+              <GeoProvider>
+                <AgeGate>
+                  <GeoNotice />
+                  <AppContent />
+                  <ExitIntentOffer />
+                </AgeGate>
+              </GeoProvider>
+            </CmsAuthProvider>
+          </CustomerAuthProvider>
+        </SitePasswordGate>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

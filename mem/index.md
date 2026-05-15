@@ -67,3 +67,4 @@
 - [Live Split Architecture](mem://plans/live-split-architecture) — Wine + Merch as two separate Lovable projects with separate DBs; DNS transfers at cutover
 - [VS Go-Live Checklist](mem://plans/vs-golive-checklist) — Steps to flip from simulation to live Vinoshipper when laptop is available
 - [Age-gated wine cross-sell](mem://features/age-gated-cross-sell) — Wine suggestions/recommendations require isAgeVerified() (21+ confirmation)
+- [Vinoshipper Architecture](mem://tech/vinoshipper-architecture) — Injector owns checkout; REST API is UX-enrichment only. Account ID 2212, live mode on as of 2026-05-15.

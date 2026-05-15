@@ -1,19 +1,14 @@
 /**
  * Vinoshipper Injector configuration.
  *
- * Until the real Account ID + Injector script are in place, the wine cart and
- * club signup operate in SIMULATION mode — fake checkout overlay, fake card,
- * fake "webhook" written to vinoshipper_webhook_logs so the rest of the
- * pipeline (membership row, discount sync) can be exercised end-to-end.
- *
- * To go live (after May 18 once Account ID + API keys are in hand):
- *   1. Set VS_SIMULATION = false
- *   2. Set VS_ACCOUNT_ID to the real numeric ID
- *   3. Add `vinoshipper_product_id` metafield on each Shopify wine product
- *   4. Drop <script src={VS_INJECTOR_SRC}> into index.html
+ * Architecture:
+ *   - Injector = canonical checkout (PCI, payment, age verify, tax, shipping,
+ *     recurring club billing). We never POST orders from our backend.
+ *   - REST API (server-side, edge functions) = UX enrichment ONLY:
+ *     live stock, customer linking, webhook ingestion, club reads.
  */
-export const VS_SIMULATION = true;
-export const VS_ACCOUNT_ID = "REPLACE_ME";
+export const VS_SIMULATION = false;
+export const VS_ACCOUNT_ID = "2212";
 export const VS_INJECTOR_SRC = "https://vinoshipper.com/injector/index.js";
 
 /** Flat shipping for orders under the threshold; included at/above. */

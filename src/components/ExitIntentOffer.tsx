@@ -5,9 +5,10 @@ import { Heart, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { saveSignupPromo, SIGNUP_PROMO_CODE } from "@/lib/signupPromo";
 
 const KEY = "rdw_exit_intent_seen";
-const CODE = "RDWNEWS";
+const CODE = SIGNUP_PROMO_CODE;
 
 /**
  * Exit-intent recovery offer. Fires once per session when the user moves
@@ -93,9 +94,10 @@ export function ExitIntentOffer() {
         status: "email_captured",
         source: "exit_intent_newsletter",
       });
+      saveSignupPromo(email);
       setRevealed(true);
       copyCode();
-      toast.success("You're on the list — code copied!");
+      toast.success("You're on the list — code copied & saved for checkout!");
     } catch (err: any) {
       toast.error("Couldn't sign you up", { description: err?.message });
     } finally {

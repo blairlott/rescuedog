@@ -24,6 +24,7 @@ import {
 } from "@/lib/vinoshipperConfig";
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
 import { useCartSettings } from "@/hooks/useCartSettings";
+import { getSignupPromo, markSignupPromoUsed } from "@/lib/signupPromo";
 
 interface Props {
   open: boolean;
@@ -99,10 +100,14 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
   // Guest case discount code is only valid when the customer is NOT a member
   // (members get the higher 20% via Vinoshipper customer-group discount,
   // applied automatically at checkout — no code needed).
-  const activePromoCode =
-    !isMember && !joiningClub && totalBottles >= fullCaseCount && caseDiscountCode
-      ? caseDiscountCode
-      : null;
+  // Case discount (20%) wins over the signup code (10%) when both could apply.
+  const signupPromo = !isMember && !joiningClub ? getSignupPromo() : null;
+  const caseEligible =
+    !isMember && !joiningClub && totalBottles >= fullCaseCount && caseDiscountCode;
+  const activePromoCode = caseEligible
+    ? caseDiscountCode
+    : signupPromo?.code ?? null;
+  const isSignupPromoActive = !!signupPromo && activePromoCode === signupPromo.code;
   // Joining the club applies the same 20% member discount on this order.
   const discountActive = isMember || joiningClub;
   // Bundles are excluded from member discount (matches Vinoshipper rule).
@@ -276,6 +281,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
       });
       if (error) throw error;
       await markAbandonment("converted");
+      if (isSignupPromoActive) markSignupPromoUsed();
       toast.success("Order placed (simulated)", {
         description: `Order ${fakeOrderId} — total $${total.toFixed(2)}`,
       });
@@ -363,7 +369,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
           )}
           {activePromoCode && (
             <div className="flex justify-between text-[11px] uppercase tracking-brand text-green-700 dark:text-green-400">
-              <span>Promo code applied</span>
+              <span>{isSignupPromoActive ? "Newsletter code applied" : "Promo code applied"}</span>
               <span className="font-mono font-bold">{activePromoCode}</span>
             </div>
           )}

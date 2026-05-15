@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, Eye, Pencil, Trash2, Upload, Clock, Info } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Trash2, Upload, Clock, Info, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -95,6 +95,13 @@ export default function CrmDashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Accounts</h1>
         <div className="flex gap-2">
+          {roleInfo?.isAdminOrOwner && (
+            <Button variant="outline" asChild>
+              <Link to="/crm/admin#depletion-uploader">
+                <FileText className="h-4 w-4 mr-1" /> Depletion Upload
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4 mr-1" /> Import CSV
           </Button>

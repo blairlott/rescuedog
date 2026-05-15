@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
           if (vsCustomerId && subtotalCents && subtotalCents > 0) {
             const { data: profile } = await supabase
               .from("customer_profiles")
-              .select("id, email, phone, first_name, last_name, city, state, zip, country, fbc, fbp, gclid")
+              .select("id, email, phone")
               .eq("vinoshipper_customer_id", String(vsCustomerId))
               .maybeSingle();
             if (profile?.id) {
@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
             if (vsCustomerId) {
               const { data } = await supabase
                 .from("customer_profiles")
-                .select("email, phone, first_name, last_name, city, state, zip, country, fbc, fbp, gclid")
+                .select("email, phone")
                 .eq("vinoshipper_customer_id", String(vsCustomerId))
                 .maybeSingle();
               prof = data;
@@ -203,15 +203,15 @@ Deno.serve(async (req) => {
               currency: (p?.currency as string) || "USD",
               email: prof?.email ?? p?.email ?? null,
               phone: prof?.phone ?? p?.phone ?? null,
-              firstName: prof?.first_name ?? p?.firstName ?? null,
-              lastName: prof?.last_name ?? p?.lastName ?? null,
-              city: prof?.city ?? p?.city ?? null,
-              state: prof?.state ?? p?.state ?? null,
-              zip: prof?.zip ?? p?.zip ?? null,
-              country: prof?.country ?? "US",
-              fbc: prof?.fbc ?? null,
-              fbp: prof?.fbp ?? null,
-              gclid: prof?.gclid ?? null,
+              firstName: p?.firstName ?? p?.first_name ?? null,
+              lastName: p?.lastName ?? p?.last_name ?? null,
+              city: p?.city ?? p?.shippingCity ?? null,
+              state: p?.state ?? p?.shippingState ?? null,
+              zip: p?.zip ?? p?.shippingZip ?? null,
+              country: p?.country ?? "US",
+              fbc: null,
+              fbp: null,
+              gclid: null,
             });
             notes += ` | conv ga4=${result.ga4.skipped ? "skip" : result.ga4.ok ? "ok" : "err"} meta=${result.meta.skipped ? "skip" : result.meta.ok ? "ok" : "err"}`;
             if (result.ga4.error) console.error("[conv-ga4]", result.ga4.error);

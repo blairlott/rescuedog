@@ -14,6 +14,7 @@ import { Shield, ShieldCheck, UserCog, CheckCircle, XCircle, Clock, UserPlus, Gl
 import { toast } from "sonner";
 import { ReferralAdminTab } from "@/components/crm/ReferralAdminTab";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
+import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
 
 interface UserWithRoles {
   id: string;
@@ -241,12 +242,17 @@ export default function CrmAdminPage() {
         </Tabs>
       )}
 
+      <div className="mt-8 border border-border bg-background p-6">
+        <TeamInvitationsList surface="crm" />
+      </div>
+
       <TeamInviteDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
         defaultRoles={["crm_user"]}
         isOwner={!!roleInfo?.isOwner}
         title="Invite a CRM team member"
+        surface="crm"
         onInvited={() => {
           fetchUsers();
           queryClient.invalidateQueries({ queryKey: ["user_role"] });

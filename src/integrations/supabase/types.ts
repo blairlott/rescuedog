@@ -2681,6 +2681,54 @@ export type Database = {
         }
         Relationships: []
       }
+      team_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          full_name: string | null
+          id: string
+          invited_by: string | null
+          invited_user_id: string | null
+          recovery_link: string | null
+          revoked_at: string | null
+          roles: string[]
+          surface: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          full_name?: string | null
+          id?: string
+          invited_by?: string | null
+          invited_user_id?: string | null
+          recovery_link?: string | null
+          revoked_at?: string | null
+          roles?: string[]
+          surface?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          full_name?: string | null
+          id?: string
+          invited_by?: string | null
+          invited_user_id?: string | null
+          recovery_link?: string | null
+          revoked_at?: string | null
+          roles?: string[]
+          surface?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

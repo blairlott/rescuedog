@@ -59,11 +59,13 @@ interface Props {
   /** Hide owner option for non-owners */
   isOwner?: boolean;
   title?: string;
+  /** Which surface this invite originates from (drives status grouping) */
+  surface?: "cms" | "crm" | "admin";
 }
 
 export function TeamInviteDialog({
   open, onOpenChange, onInvited, defaultRoles = [], allowedRoles, isOwner = false,
-  title = "Invite a team member",
+  title = "Invite a team member", surface = "admin",
 }: Props) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState("");
@@ -97,6 +99,7 @@ export function TeamInviteDialog({
           email: email.trim(),
           full_name: fullName.trim(),
           roles,
+          surface,
           redirect_to: `${window.location.origin}/reset-password`,
         },
       });

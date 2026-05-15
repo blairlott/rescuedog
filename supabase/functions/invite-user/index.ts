@@ -37,6 +37,10 @@ serve(async (req) => {
     const roles = Array.from(new Set(rawRoles.filter(Boolean)));
     const redirectTo: string =
       body.redirect_to || `${req.headers.get("origin") || ""}/reset-password`;
+    const surface: string = ["cms", "crm", "admin"].includes(String(body.surface))
+      ? String(body.surface)
+      : "admin";
+    const expiresInDays: number = Number(body.expires_in_days) > 0 ? Number(body.expires_in_days) : 7;
 
     if (!email) throw new Error("Email is required");
     if (roles.length === 0) throw new Error("At least one role is required");
@@ -115,14 +119,41 @@ serve(async (req) => {
       recovery_link = null;
     }
 
+    // Record the invitation so we can show pending/accepted/expired status.
+    const expires_at = new Date(Date.now() + expiresInDays * 86400 * 1000).toISOString();
+    let invitation_id: string | null = null;
+    try {
+      const { data: invRow } = await supabaseAdmin
+        .from("team_invitations")
+        .insert({
+          email,
+          full_name: full_name || null,
+          roles,
+          surface,
+          invited_by: caller.id,
+          invited_user_id: userId,
+          recovery_link,
+          expires_at,
+          // If user already had a password & has signed in, mark accepted immediately.
+          accepted_at: alreadyExisted && existing?.last_sign_in_at ? new Date().toISOString() : null,
+        })
+        .select("id")
+        .single();
+      invitation_id = invRow?.id ?? null;
+    } catch (_) {
+      invitation_id = null;
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         user_id: userId,
+        invitation_id,
         already_existed: alreadyExisted,
         roles_added: added,
         roles_skipped: skipped,
         recovery_link,
+        expires_at,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

@@ -49,6 +49,7 @@ import { RescueSpotlightPanel } from "@/components/cms/RescueSpotlightPanel";
 import { IntegrationsPanel } from "@/components/cms/IntegrationsPanel";
 import { Plug } from "lucide-react";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
+import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
 import { useUserRole } from "@/hooks/useUserRole";
 
 // ─── Types ───────────────────────────────────────────────────
@@ -542,6 +543,10 @@ const CmsDashboard = () => {
                 </p>
               </div>
             </div>
+
+            <div className="bg-background border border-border mt-6 p-6">
+              <TeamInvitationsList surface="cms" />
+            </div>
           </TabsContent>
 
           {/* ── Settings Tab ──────────────────────────────── */}
@@ -580,7 +585,11 @@ const CmsDashboard = () => {
         defaultRoles={["cms_editor"]}
         isOwner={!!roleInfo?.isOwner}
         title="Invite a CMS team member"
-        onInvited={() => queryClient.invalidateQueries({ queryKey: ["cms-users"] })}
+        surface="cms"
+        onInvited={() => {
+          queryClient.invalidateQueries({ queryKey: ["cms-users"] });
+          queryClient.invalidateQueries({ queryKey: ["team-invitations"] });
+        }}
       />
 
       {/* ── Remove User Confirm ───────────────────────────── */}

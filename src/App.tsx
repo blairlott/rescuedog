@@ -74,6 +74,7 @@ import CrmAmbassadorsPage from "./pages/CrmAmbassadorsPage";
 import CrmCompliancePage from "./pages/crm/CrmCompliancePage";
 import RewardsTermsPage from "./pages/RewardsTermsPage";
 import RewardsPage from "./pages/RewardsPage";
+import PoliciesPage from "./pages/PoliciesPage";
 import { SommelierChat } from "./components/SommelierChat";
 import { EmailCapturePrompt } from "./components/cart/EmailCapturePrompt";
 import { useLocation } from "react-router-dom";
@@ -152,6 +153,11 @@ function AppContent() {
       <Route path="/account/gifts/:id/print" element={<GiftCertificatePrintPage />} />
       <Route path="/rewards" element={<RewardsPage />} />
       <Route path="/rewards/terms" element={<RewardsTermsPage />} />
+      <Route path="/policies" element={<PoliciesPage />} />
+      <Route path="/privacy" element={<Navigate to="/policies#privacy" replace />} />
+      <Route path="/shipping" element={<Navigate to="/policies#shipping" replace />} />
+      <Route path="/refund" element={<Navigate to="/policies#refund" replace />} />
+      <Route path="/terms" element={<Navigate to="/policies#terms" replace />} />
       <Route path="/thank-you" element={<ThankYouPage />} />
       <Route path="/checkout" element={<CheckoutPage />} />
       <Route path="/crm/login" element={<CrmLoginPage />} />

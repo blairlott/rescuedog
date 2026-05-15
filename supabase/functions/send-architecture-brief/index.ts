@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
+import { BRIEF_MD } from './brief.ts'
 
 const SITE_NAME = 'Rescue Dog Wines'
 const SENDER_DOMAIN = 'notify.rescuedog.com'
@@ -98,7 +99,7 @@ Deno.serve(async (req) => {
       ? body.recipients : DEFAULT_RECIPIENTS
     const subject: string = body.subject || 'Rescue Dog Wines — Architecture & Functionality Brief (Pre-QA)'
 
-    const md = await Deno.readTextFile(new URL('./brief.md', import.meta.url))
+    const md = BRIEF_MD
     const html = mdToHtml(md)
     const text = md
 

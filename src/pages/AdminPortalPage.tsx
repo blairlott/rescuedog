@@ -52,15 +52,12 @@ const AdminPortalPage = () => {
       return;
     }
     const userRoles = await loadRoles(data.user.id);
-    if (userRoles.length === 0) {
-      await supabase.auth.signOut();
-      toast({ title: "Access denied", description: "Your account has no admin roles assigned.", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
     setRoles(userRoles);
     setLoading(false);
-    toast({ title: "Welcome back" });
+    toast({
+      title: "Welcome back",
+      description: userRoles.length === 0 ? "No roles assigned yet — you can request access below." : undefined,
+    });
   };
 
   const handleForgot = async () => {

@@ -305,6 +305,14 @@ const ProductDetail = () => {
               {/* Ships-to-your-state compliance check (wine only) */}
               {!isMerch && <ShipsToStateCheck />}
 
+              {/* Out-of-stock banner */}
+              {!selectedVariant?.availableForSale && (
+                <div role="status" aria-live="polite" className="border border-destructive/40 bg-destructive/10 text-destructive p-3 text-sm font-bold uppercase tracking-brand flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  Sold Out — currently unavailable
+                </div>
+              )}
+
               {/* Food pairing chips for wine; Pair-It cross-sell for merch */}
               {isMerch ? (
                 <PairItPicker
@@ -347,8 +355,8 @@ const ProductDetail = () => {
               {/* Quantity */}
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-[0.25em] font-bold text-muted-foreground">Quantity</label>
-                <Select value={String(quantity)} onValueChange={(v) => setQuantity(Number(v))}>
-                  <SelectTrigger className="w-32 rounded-none border-foreground font-bold uppercase tracking-brand text-sm">
+                <Select value={String(quantity)} onValueChange={(v) => setQuantity(Number(v))} disabled={!selectedVariant?.availableForSale}>
+                  <SelectTrigger className="w-32 rounded-none border-foreground font-bold uppercase tracking-brand text-sm disabled:opacity-40 disabled:cursor-not-allowed">
                     <SelectValue>Qty: {quantity}</SelectValue>
                   </SelectTrigger>
                   <SelectContent className="rounded-none">

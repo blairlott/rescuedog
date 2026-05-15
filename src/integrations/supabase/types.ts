@@ -621,6 +621,163 @@ export type Database = {
           },
         ]
       }
+      depletion_report_lines: {
+        Row: {
+          account_name: string | null
+          ai_confidence: number | null
+          auto_published: boolean
+          cases: number | null
+          city: string | null
+          created_account_id: string | null
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          match_status: string
+          matched_account_id: string | null
+          notes: string | null
+          period_end: string | null
+          period_start: string | null
+          phone: string | null
+          premise_type: string | null
+          raw_row: Json | null
+          report_id: string
+          sku: string | null
+          state: string | null
+          street_address: string | null
+          units: number | null
+          zip: string | null
+        }
+        Insert: {
+          account_name?: string | null
+          ai_confidence?: number | null
+          auto_published?: boolean
+          cases?: number | null
+          city?: string | null
+          created_account_id?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          match_status?: string
+          matched_account_id?: string | null
+          notes?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          phone?: string | null
+          premise_type?: string | null
+          raw_row?: Json | null
+          report_id: string
+          sku?: string | null
+          state?: string | null
+          street_address?: string | null
+          units?: number | null
+          zip?: string | null
+        }
+        Update: {
+          account_name?: string | null
+          ai_confidence?: number | null
+          auto_published?: boolean
+          cases?: number | null
+          city?: string | null
+          created_account_id?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          match_status?: string
+          matched_account_id?: string | null
+          notes?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          phone?: string | null
+          premise_type?: string | null
+          raw_row?: Json | null
+          report_id?: string
+          sku?: string | null
+          state?: string | null
+          street_address?: string | null
+          units?: number | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "depletion_report_lines_created_account_id_fkey"
+            columns: ["created_account_id"]
+            isOneToOne: false
+            referencedRelation: "sales_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "depletion_report_lines_matched_account_id_fkey"
+            columns: ["matched_account_id"]
+            isOneToOne: false
+            referencedRelation: "sales_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "depletion_report_lines_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "depletion_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      depletion_reports: {
+        Row: {
+          ai_summary: string | null
+          auto_published_count: number
+          created_at: string
+          distributor: string | null
+          filename: string
+          id: string
+          matched_lines: number
+          new_account_lines: number
+          period_label: string | null
+          raw_preview: string | null
+          status: string
+          total_lines: number
+          unmatched_lines: number
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          auto_published_count?: number
+          created_at?: string
+          distributor?: string | null
+          filename: string
+          id?: string
+          matched_lines?: number
+          new_account_lines?: number
+          period_label?: string | null
+          raw_preview?: string | null
+          status?: string
+          total_lines?: number
+          unmatched_lines?: number
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          auto_published_count?: number
+          created_at?: string
+          distributor?: string | null
+          filename?: string
+          id?: string
+          matched_lines?: number
+          new_account_lines?: number
+          period_label?: string | null
+          raw_preview?: string | null
+          status?: string
+          total_lines?: number
+          unmatched_lines?: number
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       donation_requests: {
         Row: {
           affiliate_interest: string | null
@@ -3606,6 +3763,7 @@ export type Database = {
       is_brand_ambassador: { Args: { _user_id: string }; Returns: boolean }
       is_cms_editor: { Args: { _user_id: string }; Returns: boolean }
       is_dropship_manager: { Args: { _user_id: string }; Returns: boolean }
+      is_sales_team: { Args: { _user_id: string }; Returns: boolean }
       is_wine_club_manager: { Args: { _user_id: string }; Returns: boolean }
       move_to_dlq: {
         Args: {

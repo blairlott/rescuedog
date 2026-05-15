@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Shield, ShieldCheck, UserCog, CheckCircle, XCircle, Clock, UserPlus, Globe, MapPin, Map, Gift, Heart, Wine, Truck, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { ReferralAdminTab } from "@/components/crm/ReferralAdminTab";
+import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 
 interface UserWithRoles {
   id: string;
@@ -53,8 +54,6 @@ export default function CrmAdminPage() {
   const [users, setUsers] = useState<UserWithRoles[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState({ email: "", full_name: "", role: "" });
-  const [creating, setCreating] = useState(false);
   const queryClient = useQueryClient();
 
   const fetchUsers = async () => {
@@ -111,25 +110,7 @@ export default function CrmAdminPage() {
     queryClient.invalidateQueries({ queryKey: ["user_role"] });
   };
 
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("invite-user", {
-        body: createForm,
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success(`User ${createForm.email} created and approved`);
-      setCreateOpen(false);
-      setCreateForm({ email: "", full_name: "", role: "" });
-      fetchUsers();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setCreating(false);
-    }
-  };
+  // Invites handled by the shared <TeamInviteDialog />.
 
   if (!roleInfo?.isAdminOrOwner) {
     return (
@@ -260,39 +241,17 @@ export default function CrmAdminPage() {
         </Tabs>
       )}
 
-      {/* Create User Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreateUser} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Full Name</Label>
-              <Input value={createForm.full_name} onChange={(e) => setCreateForm(f => ({ ...f, full_name: e.target.value }))} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input type="email" value={createForm.email} onChange={(e) => setCreateForm(f => ({ ...f, email: e.target.value }))} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <Select value={createForm.role} onValueChange={(v) => setCreateForm(f => ({ ...f, role: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
-                <SelectContent>
-                  {ALL_ROLES.filter(r => roleInfo?.isOwner || r.value !== "owner").map((r) => (
-                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={creating}>{creating ? "Creating..." : "Create & Approve"}</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <TeamInviteDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        defaultRoles={["crm_user"]}
+        isOwner={!!roleInfo?.isOwner}
+        title="Invite a CRM team member"
+        onInvited={() => {
+          fetchUsers();
+          queryClient.invalidateQueries({ queryKey: ["user_role"] });
+        }}
+      />
     </div>
   );
 }

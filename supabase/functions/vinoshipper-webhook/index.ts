@@ -6,6 +6,7 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import type { VsWebhookPayload } from "../_shared/vinoshipper.ts";
+import { forwardPurchaseConversion } from "../_shared/serverConversions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -132,7 +133,7 @@ Deno.serve(async (req) => {
           if (vsCustomerId && subtotalCents && subtotalCents > 0) {
             const { data: profile } = await supabase
               .from("customer_profiles")
-              .select("id")
+              .select("id, email, phone, first_name, last_name, city, state, zip, country, fbc, fbp, gclid")
               .eq("vinoshipper_customer_id", String(vsCustomerId))
               .maybeSingle();
             if (profile?.id) {
@@ -172,6 +173,53 @@ Deno.serve(async (req) => {
         } catch (e) {
           console.error("[loyalty-accrual] exception", e);
           notes += " | loyalty error: " + String(e);
+        }
+
+        // Server-side conversion forwarding (GA4 Measurement Protocol + Meta CAPI).
+        // Inert until GA4_*/META_* secrets are configured.
+        try {
+          const p = payload as unknown as Record<string, any>;
+          const vsCustomerId =
+            p?.customerId ?? p?.customer_id ?? p?.data?.customerId ?? null;
+          const subtotalCents =
+            typeof p?.subtotalCents === "number" ? p.subtotalCents
+            : typeof p?.subtotal_cents === "number" ? p.subtotal_cents
+            : typeof p?.subtotal === "number" ? Math.round(p.subtotal * 100)
+            : typeof p?.amount === "number" ? Math.round(p.amount * 100)
+            : null;
+          if (subtotalCents && subtotalCents > 0) {
+            let prof: any = null;
+            if (vsCustomerId) {
+              const { data } = await supabase
+                .from("customer_profiles")
+                .select("email, phone, first_name, last_name, city, state, zip, country, fbc, fbp, gclid")
+                .eq("vinoshipper_customer_id", String(vsCustomerId))
+                .maybeSingle();
+              prof = data;
+            }
+            const result = await forwardPurchaseConversion({
+              orderId: payload.identifier,
+              valueCents: subtotalCents,
+              currency: (p?.currency as string) || "USD",
+              email: prof?.email ?? p?.email ?? null,
+              phone: prof?.phone ?? p?.phone ?? null,
+              firstName: prof?.first_name ?? p?.firstName ?? null,
+              lastName: prof?.last_name ?? p?.lastName ?? null,
+              city: prof?.city ?? p?.city ?? null,
+              state: prof?.state ?? p?.state ?? null,
+              zip: prof?.zip ?? p?.zip ?? null,
+              country: prof?.country ?? "US",
+              fbc: prof?.fbc ?? null,
+              fbp: prof?.fbp ?? null,
+              gclid: prof?.gclid ?? null,
+            });
+            notes += ` | conv ga4=${result.ga4.skipped ? "skip" : result.ga4.ok ? "ok" : "err"} meta=${result.meta.skipped ? "skip" : result.meta.ok ? "ok" : "err"}`;
+            if (result.ga4.error) console.error("[conv-ga4]", result.ga4.error);
+            if (result.meta.error) console.error("[conv-meta]", result.meta.error);
+          }
+        } catch (e) {
+          console.error("[server-conversions] exception", e);
+          notes += " | conv error: " + String(e);
         }
         break;
       case "CLUB_MEMBERSHIP":

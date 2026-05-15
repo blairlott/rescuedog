@@ -1,5 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { Seo } from "@/components/Seo";
+import { winerySchema } from "@/lib/jsonLd";
 import { Button } from "@/components/ui/button";
 import { Leaf, Grape, TreePine, Sprout } from "lucide-react";
 import { useState } from "react";
@@ -58,6 +60,12 @@ const VineyardPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo
+        title="Our Vineyard"
+        description="Lodi, California estate — sustainably farmed under Lodi Rules. Meet the vines behind every bottle of Rescue Dog Wines."
+        path="/vineyard"
+        jsonLd={winerySchema()}
+      />
       <Header />
       <main className="flex-1">
         {/* Hero */}

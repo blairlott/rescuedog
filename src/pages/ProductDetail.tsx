@@ -4,7 +4,8 @@ import { useCartStore } from "@/stores/cartStore";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Loader2, ArrowLeft, Minus, Plus, Heart, Lock } from "lucide-react";
+import { ShoppingCart, Loader2, ArrowLeft, Heart, Lock, Zap } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { SubscribeAndSave, DISCOUNT_PERCENT } from "@/components/SubscribeAndSave";
@@ -102,7 +103,7 @@ const ProductDetail = () => {
   const lineTotal = variantPrice * quantity;
   const memberLineTotal = memberUnitPrice * quantity;
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (opts?: { buyNow?: boolean }) => {
     if (!selectedVariant) return;
     if (blockedByState && !isMerch) {
       toast.error("We can't ship wine to your state yet. Use the store locator to find us nearby.", { position: "top-center" });
@@ -117,6 +118,10 @@ const ProductDetail = () => {
       quantity,
       selectedOptions: selectedVariant.selectedOptions || [],
     });
+    if (opts?.buyNow) {
+      window.dispatchEvent(new CustomEvent("rdw:open-cart"));
+      return;
+    }
     if (isMerch) {
       toast.success(`${product.title} added to cart`, { position: "top-center" });
     } else {
@@ -342,11 +347,17 @@ const ProductDetail = () => {
               {/* Quantity */}
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-[0.25em] font-bold text-muted-foreground">Quantity</label>
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))}><Minus className="h-4 w-4" /></Button>
-                  <span className="w-12 text-center font-medium text-lg">{quantity}</span>
-                  <Button variant="outline" size="icon" onClick={() => setQuantity(quantity + 1)}><Plus className="h-4 w-4" /></Button>
-                </div>
+                <Select value={String(quantity)} onValueChange={(v) => setQuantity(Number(v))}>
+                  <SelectTrigger className="w-32 rounded-none border-foreground font-bold uppercase tracking-brand text-sm">
+                    <SelectValue>Qty: {quantity}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none">
+                    {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                    <SelectItem value="12">12 (case)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Subscribe & Save */}
@@ -378,32 +389,43 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              <Button
-                onClick={handleAddToCart}
-                disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
-                size="lg"
-                className="w-full md:min-w-[320px] bg-foreground text-background hover:bg-primary hover:text-primary-foreground px-12 py-7 text-[11px] tracking-[0.4em] uppercase font-bold border-0 transition-all duration-500 hidden md:flex"
-              >
-                {cartLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : !selectedVariant?.availableForSale ? (
-                  "Sold Out"
-                ) : locked ? (
-                  <><Lock className="w-4 h-4 mr-2" /> Members only</>
-                ) : blockedByState ? (
-                  "Not available in your state"
-                ) : subscribeMode ? (
-                  <>
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Subscribe — ${(parseFloat(selectedVariant.price.amount) * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}/shipment
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Cellar — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}
-                  </>
-                )}
-              </Button>
+              <div className="hidden md:flex flex-col gap-2 md:min-w-[320px]">
+                <Button
+                  onClick={() => handleAddToCart()}
+                  disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
+                  size="lg"
+                  className="w-full bg-foreground text-background hover:bg-primary hover:text-primary-foreground px-12 py-6 text-[11px] tracking-[0.4em] uppercase font-bold border-0 transition-all duration-500"
+                >
+                  {cartLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : !selectedVariant?.availableForSale ? (
+                    "Sold Out"
+                  ) : locked ? (
+                    <><Lock className="w-4 h-4 mr-2" /> Members only</>
+                  ) : blockedByState ? (
+                    "Not available in your state"
+                  ) : subscribeMode ? (
+                    <>
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      Subscribe — ${(parseFloat(selectedVariant.price.amount) * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}/shipment
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      Add to Cart — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => handleAddToCart({ buyNow: true })}
+                  disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch) || subscribeMode}
+                  size="lg"
+                  variant="outline"
+                  className="w-full border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground px-12 py-6 text-[11px] tracking-[0.4em] uppercase font-bold transition-all duration-300"
+                >
+                  <Zap className="w-4 h-4 mr-2" /> Buy Now
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -436,20 +458,30 @@ const ProductDetail = () => {
             </span>
           )}
         </div>
-        <Button
-          onClick={handleAddToCart}
-          disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
-          size="lg"
-          className="w-full bg-primary hover:bg-primary/90"
-        >
-          {cartLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : !selectedVariant?.availableForSale ? "Sold Out"
-          : locked ? <><Lock className="w-4 h-4 mr-2" /> Members only</>
-          : blockedByState && !isMerch ? "Not available in your state"
-          : subscribeMode ? `Subscribe ${quantity} ${isMerch ? 'unit' : 'btl'} — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
-          : <><ShoppingCart className="w-4 h-4 mr-2" /> Add {quantity} {isMerch ? 'unit' : 'btl'} — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}</>}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => handleAddToCart()}
+            disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch)}
+            size="lg"
+            className="flex-1 bg-foreground text-background hover:bg-foreground/90"
+          >
+            {cartLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : !selectedVariant?.availableForSale ? "Sold Out"
+            : locked ? <><Lock className="w-4 h-4 mr-2" /> Members only</>
+            : blockedByState && !isMerch ? "Not available in your state"
+            : subscribeMode ? `Subscribe — $${(variantPrice * quantity * (1 - DISCOUNT_PERCENT / 100)).toFixed(2)}`
+            : <><ShoppingCart className="w-4 h-4 mr-2" /> Add to Cart</>}
+          </Button>
+          <Button
+            onClick={() => handleAddToCart({ buyNow: true })}
+            disabled={cartLoading || !selectedVariant?.availableForSale || locked || (blockedByState && !isMerch) || subscribeMode}
+            size="lg"
+            className="flex-1 bg-primary hover:bg-primary/90"
+          >
+            <Zap className="w-4 h-4 mr-2" /> Buy Now
+          </Button>
+        </div>
       </div>
       <Footer />
     </div>

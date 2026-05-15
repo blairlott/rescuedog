@@ -3,9 +3,10 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Truck, Heart, TrendingUp, ShieldCheck } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Truck, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
+import { CrmBreadcrumbs } from "@/components/crm/CrmBreadcrumbs";
 import { Link, useLocation } from "react-router-dom";
 
 export default function CrmLayout() {
@@ -94,6 +95,19 @@ export default function CrmLayout() {
           })}
         </nav>
         <div className="p-2 border-t border-border space-y-1">
+          {roleInfo?.isAdminOrOwner && (
+            <Button variant="ghost" size="sm" className="w-full justify-start gap-2" asChild>
+              <Link to="/cms" target="_blank" rel="noopener noreferrer">
+                <PenLine className="h-4 w-4" /> Content Manager
+                <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
+              </Link>
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2" asChild>
+            <Link to="/" target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4" /> View Site
+            </Link>
+          </Button>
           <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={() => setProfileOpen(true)}>
             <UserCircle className="h-4 w-4" /> My Contact Info
           </Button>
@@ -104,7 +118,10 @@ export default function CrmLayout() {
       </aside>
       <main className="flex-1 overflow-auto flex flex-col">
         <header className="h-12 border-b border-border bg-card flex items-center px-4 gap-3 shrink-0">
-          <CrmCommandPalette />
+          <CrmBreadcrumbs />
+          <div className="ml-auto flex items-center gap-2">
+            <CrmCommandPalette />
+          </div>
         </header>
         <div className="flex-1 overflow-auto">
           <Outlet />

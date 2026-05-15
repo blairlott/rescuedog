@@ -4,7 +4,8 @@ import { useCartStore } from "@/stores/cartStore";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Loader2, ArrowLeft, Minus, Plus, Heart, Lock } from "lucide-react";
+import { ShoppingCart, Loader2, ArrowLeft, Heart, Lock, Zap } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { SubscribeAndSave, DISCOUNT_PERCENT } from "@/components/SubscribeAndSave";
@@ -102,7 +103,7 @@ const ProductDetail = () => {
   const lineTotal = variantPrice * quantity;
   const memberLineTotal = memberUnitPrice * quantity;
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (opts?: { buyNow?: boolean }) => {
     if (!selectedVariant) return;
     if (blockedByState && !isMerch) {
       toast.error("We can't ship wine to your state yet. Use the store locator to find us nearby.", { position: "top-center" });
@@ -117,6 +118,10 @@ const ProductDetail = () => {
       quantity,
       selectedOptions: selectedVariant.selectedOptions || [],
     });
+    if (opts?.buyNow) {
+      window.dispatchEvent(new CustomEvent("rdw:open-cart"));
+      return;
+    }
     if (isMerch) {
       toast.success(`${product.title} added to cart`, { position: "top-center" });
     } else {

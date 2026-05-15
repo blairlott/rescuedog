@@ -214,7 +214,7 @@ const AboutPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {teamMembers.map((member: any, idx: number) => (
                 <div key={`${member.name}-${idx}`} className="bg-background border border-border p-6 relative">
-                  <CmsEditButton onClick={() => setEditTeamIdx(idx)} label="Edit" />
+                  <CmsEditButton onClick={() => setEditTeamIdx(idx)} label="Edit" scope="team" />
                   <h4 className="text-lg font-bold text-foreground mb-1">{member.name}</h4>
                   <p className="text-sm text-primary font-medium mb-3">{member.title}</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">{member.bio}</p>

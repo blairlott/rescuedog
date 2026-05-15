@@ -76,7 +76,7 @@ export function Header() {
     <header className="sticky top-0 z-50 bg-background">
       {/* Announcement Bar */}
       <div className="bg-primary text-primary-foreground text-center py-2.5 px-4 relative">
-        <CmsEditButton onClick={() => setEditSection("banner")} label="Edit Banner" />
+        <CmsEditButton onClick={() => setEditSection("banner")} label="Edit Banner" scope="branding" />
         <p className="text-sm tracking-wide">
           {isMerch
             ? getVal("banner", "merch_banner", "50% of our profits supports rescue organizations.")
@@ -97,7 +97,7 @@ export function Header() {
 
           {/* Center: Logo */}
           <div className="relative flex justify-center px-1 md:px-2 min-w-0">
-            <CmsEditButton onClick={() => setEditSection("logos")} label="Edit Logo" />
+            <CmsEditButton onClick={() => setEditSection("logos")} label="Edit Logo" scope="branding" />
             <Link to={isMerch ? "/merch" : "/"} className="flex justify-center min-w-0">
               <span className={`relative inline-flex items-center overflow-visible leading-none ${isMerch ? "pb-3 md:pb-4" : "pb-1"}`}>
                 <img

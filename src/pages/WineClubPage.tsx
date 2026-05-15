@@ -104,7 +104,7 @@ const WineClubPage = () => {
       <main className="flex-1">
         {/* Hero */}
         <section className="relative h-[50vh] min-h-[400px] flex items-center bg-foreground">
-          <CmsEditButton onClick={() => setEditSection("hero")} />
+          <CmsEditButton onClick={() => setEditSection("hero")} scope="wine_club" />
           <div className="absolute inset-0 bg-cover bg-center opacity-50" style={{ backgroundImage: `url('${getVal("hero", "image", "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1920")}')` }} />
           <div className="relative container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">
@@ -150,7 +150,7 @@ const WineClubPage = () => {
 
             {/* Tier Selection or Signup Form */}
             <section className="py-16 bg-secondary relative" id="tiers">
-              <CmsEditButton onClick={() => setEditSection("membership")} />
+              <CmsEditButton onClick={() => setEditSection("membership")} scope="wine_club" />
               <div className="container mx-auto px-4">
                 {selectedTier ? (
                   <ClubSignupForm
@@ -219,7 +219,7 @@ const WineClubPage = () => {
               <div className="space-y-6">
                 {faqs.map((faq: any, idx: number) => (
                   <div key={`faq-${idx}`} className="border-b border-border pb-6 relative">
-                    <CmsEditButton onClick={() => setEditFaqIdx(idx)} label="Edit FAQ" />
+                    <CmsEditButton onClick={() => setEditFaqIdx(idx)} label="Edit FAQ" scope="wine_club" />
                     <h4 className="font-bold text-foreground mb-2">{faq.q}</h4>
                     <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
                   </div>

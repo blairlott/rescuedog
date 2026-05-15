@@ -319,6 +319,14 @@ const CmsDashboard = () => {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => navigate("/crm")}
+              className="gap-1 text-muted-foreground"
+            >
+              Sales CRM
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigate("/about")}
               className="gap-1 text-muted-foreground"
             >

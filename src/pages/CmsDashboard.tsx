@@ -48,6 +48,8 @@ import { Image as ImageIcon, Heart } from "lucide-react";
 import { RescueSpotlightPanel } from "@/components/cms/RescueSpotlightPanel";
 import { IntegrationsPanel } from "@/components/cms/IntegrationsPanel";
 import { Plug } from "lucide-react";
+import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
+import { useUserRole } from "@/hooks/useUserRole";
 
 // ─── Types ───────────────────────────────────────────────────
 type CmsUser = {
@@ -151,9 +153,7 @@ const CmsDashboard = () => {
   const queryClient = useQueryClient();
 
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteName, setInviteName] = useState("");
-  const [inviting, setInviting] = useState(false);
+  const { data: roleInfo } = useUserRole();
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
 
   // Redirect if not CMS editor
@@ -217,37 +217,7 @@ const CmsDashboard = () => {
     enabled: isCmsEditor,
   });
 
-  // ─── Invite CMS user ──────────────────────────────────────
-  const handleInvite = async () => {
-    if (!inviteEmail.trim()) return;
-    setInviting(true);
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("invite-cms-user", {
-        body: { email: inviteEmail.trim(), full_name: inviteName.trim() },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-      });
-      if (res.error) throw new Error(res.error.message);
-      if (res.data?.error) throw new Error(res.data.error);
-      toast({ title: "CMS user invited", description: inviteEmail });
-      setInviteOpen(false);
-      setInviteEmail("");
-      setInviteName("");
-      queryClient.invalidateQueries({ queryKey: ["cms-users"] });
-    } catch (err: any) {
-      toast({
-        title: "Error inviting user",
-        description: err.message,
-        variant: "destructive",
-      });
-    } finally {
-      setInviting(false);
-    }
-  };
+  // CMS invites are handled by the shared <TeamInviteDialog />
 
   // ─── Remove CMS role ──────────────────────────────────────
   const removeRole = useMutation({

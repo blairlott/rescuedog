@@ -60,7 +60,7 @@ export function DepletionUploadCard() {
   };
 
   return (
-    <div className="border border-border bg-background p-6 space-y-5">
+    <div id="depletion-uploader" className="border border-border bg-background p-6 space-y-5 scroll-mt-20">
       <div>
         <h2 className="text-lg font-bold flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" /> Depletion Report Uploader

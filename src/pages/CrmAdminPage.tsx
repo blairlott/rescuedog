@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { ReferralAdminTab } from "@/components/crm/ReferralAdminTab";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
+import { TestEmailsCard } from "@/components/crm/TestEmailsCard";
 
 interface UserWithRoles {
   id: string;

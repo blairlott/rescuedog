@@ -19,7 +19,7 @@ const AMBASSADOR_FAQS = [
   },
   {
     question: "How much commission do ambassadors earn?",
-    answer: "Ambassadors earn percentage-based commission on every bottle sold through their unique link. Commission rates and payouts are tracked and paid automatically through impact.com.",
+    answer: "Ambassadors earn a flat 12% commission on every bottle sold through their unique tracking link. Commission is tracked and paid automatically through impact.com.",
   },
   {
     question: "How are commissions tracked and paid?",
@@ -44,7 +44,7 @@ export default function AmbassadorsLandingPage() {
     <div className="min-h-screen flex flex-col">
       <Seo
         title="Rescue Ambassadors"
-        description="Earn commission helping dogs find their forever home. Free affiliate program for nonprofits, enthusiasts, and influencers — tracked and paid through impact.com."
+        description="Earn 12% commission helping dogs find their forever home. Free single-tier affiliate program for nonprofits, enthusiasts, and influencers — tracked and paid through impact.com."
         path="/ambassadors"
         breadcrumbs={[
           { name: "Home", path: "/" },
@@ -56,12 +56,12 @@ export default function AmbassadorsLandingPage() {
       <main className="flex-1">
         <section className="bg-foreground text-background py-20 px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <p className="text-xs uppercase tracking-[0.2em] opacity-70 mb-4">Affiliate Program · Powered by impact.com</p>
+            <p className="text-xs uppercase tracking-[0.2em] opacity-70 mb-4">Affiliate Program · 12% Commission · Powered by impact.com</p>
             <h1 className="text-4xl md:text-6xl font-bold uppercase tracking-tight mb-6">
               Become an Online Brand Ambassador
             </h1>
             <p className="text-lg md:text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-              Nonprofits, enthusiasts, and influencers — earn percentage-based commission on every bottle you help sell, with automatic tracking and payment through impact.com.
+              Nonprofits, enthusiasts, and influencers — earn a flat <strong>12% commission</strong> on every bottle you help sell, with automatic tracking and payment through impact.com.
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <Button asChild size="lg" variant="secondary">
@@ -88,17 +88,17 @@ export default function AmbassadorsLandingPage() {
                 {
                   icon: Heart,
                   title: "Nonprofit Rescues",
-                  text: "Companion-animal rescue and welfare organizations who actively promote Rescue Dog Wines and earn percentage-based commission on online sales — fueling your mission with every bottle.",
+                  text: "Companion-animal rescue and welfare organizations who actively promote Rescue Dog Wines and earn 12% commission on online sales — fueling your mission with every bottle.",
                 },
                 {
                   icon: Sparkles,
                   title: "Enthusiastic Individuals",
-                  text: "You love our wines and our story. Get rewarded with commissions for spreading the word to friends, family, and your community.",
+                  text: "You love our wines and our story. Earn a flat 12% commission for spreading the word to friends, family, and your community.",
                 },
                 {
                   icon: Megaphone,
                   title: "Influencers & Creators",
-                  text: "Use your audience for good. Earn percentage-based commission on every sale you generate while raising awareness for rescue dogs.",
+                  text: "Use your audience for good. Earn a flat 12% commission on every sale you generate while raising awareness for rescue dogs.",
                 },
               ].map(({ icon: Icon, title, text }) => (
                 <div key={title} className="border border-border p-6">
@@ -125,7 +125,7 @@ export default function AmbassadorsLandingPage() {
                   <Check className="w-4 h-4" /> What we do
                 </h3>
                 <ul className="space-y-2 text-sm opacity-90">
-                  <li className="flex gap-2"><Check className="w-4 h-4 mt-0.5 flex-shrink-0" />Single-tier commission on your own sales</li>
+                  <li className="flex gap-2"><Check className="w-4 h-4 mt-0.5 flex-shrink-0" />Flat 12% commission on your own sales</li>
                   <li className="flex gap-2"><Check className="w-4 h-4 mt-0.5 flex-shrink-0" />Free to join — no kit purchase, no annual fee</li>
                   <li className="flex gap-2"><Check className="w-4 h-4 mt-0.5 flex-shrink-0" />Tracked &amp; paid through impact.com (W-9, 1099 handled)</li>
                   <li className="flex gap-2"><Check className="w-4 h-4 mt-0.5 flex-shrink-0" />Your own storefront page at <code className="bg-background/10 px-1">/a/your-handle</code></li>

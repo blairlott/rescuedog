@@ -67,7 +67,7 @@ export function EmailCapturePrompt() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:max-w-sm z-[60] bg-background border border-foreground shadow-lg p-4">
-      <button onClick={dismiss} aria-label="Close" className="absolute top-2 right-2 text-muted-foreground hover:text-foreground">
+      <button type="button" onClick={dismiss} aria-label="Close" className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-foreground z-10">
         <X className="h-4 w-4" />
       </button>
       <p className="text-xs uppercase tracking-brand font-bold text-primary mb-1">Hold my cart</p>

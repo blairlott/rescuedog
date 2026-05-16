@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ExternalLink, Plus } from "lucide-react";
+import { Loader2, ExternalLink, Plus, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { toast } from "sonner";
+import { AvatarUploader } from "@/components/ambassador/AvatarUploader";
+import { CopyLinkButton } from "@/components/ambassador/CopyLinkButton";
 
 type Profile = any;
 type Event = any;
@@ -81,19 +83,45 @@ export default function AmbassadorDashboardPage() {
         <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <div>
             <h1 className="text-3xl font-bold uppercase">Ambassador Dashboard</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Status: <Badge variant={profile.status === "active" ? "default" : "secondary"}>{profile.status}</Badge>
+            <div className="text-muted-foreground text-sm mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>Status:</span>
+              <Badge variant={profile.status === "active" ? "default" : "secondary"}>{profile.status}</Badge>
               {profile.status === "active" && (
-                <>
-                  {" · "}
-                  <Link to={`/a/${profile.handle}`} className="underline inline-flex items-center gap-1">
-                    View public page <ExternalLink className="w-3 h-3" />
-                  </Link>
-                </>
+                <Link to={`/a/${profile.handle}`} className="underline inline-flex items-center gap-1">
+                  View public page <ExternalLink className="w-3 h-3" />
+                </Link>
               )}
-            </p>
+            </div>
           </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to={`/a/${profile.handle}`} target="_blank" rel="noopener">
+              <Eye className="w-4 h-4 mr-1" /> Preview my page
+            </Link>
+          </Button>
         </div>
+
+        {/* Quick share — primary daily action */}
+        <section className="mb-8 border border-border p-5 bg-muted/30">
+          <h2 className="text-sm font-bold uppercase tracking-wide mb-3">Your Share Links</h2>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Your storefront page</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Input readOnly value={`${window.location.origin}/a/${profile.handle}`} className="font-mono text-xs" />
+                <CopyLinkButton value={`${window.location.origin}/a/${profile.handle}`} />
+              </div>
+            </div>
+            {profile.impact_tracking_url && (
+              <div>
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">Your impact.com tracking link</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input readOnly value={profile.impact_tracking_url} className="font-mono text-xs" />
+                  <CopyLinkButton value={profile.impact_tracking_url} />
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
 
         {profile.status === "pending" && (
           <div className="border border-border bg-muted p-4 mb-8">
@@ -162,12 +190,21 @@ export default function AmbassadorDashboardPage() {
               <Input value={profile.display_name || ""} onChange={e => setProfile({ ...profile, display_name: e.target.value })} className="mt-1" />
             </div>
             <div>
-              <Label>Photo URL</Label>
-              <Input type="url" value={profile.photo_url || ""} onChange={e => setProfile({ ...profile, photo_url: e.target.value })} className="mt-1" />
+              <Label>Profile Photo</Label>
+              <div className="mt-2">
+                <AvatarUploader
+                  userId={user!.id}
+                  value={profile.photo_url || null}
+                  onChange={(url) => setProfile({ ...profile, photo_url: url })}
+                />
+              </div>
             </div>
             <div className="md:col-span-2">
-              <Label>Bio</Label>
-              <Textarea rows={4} value={profile.bio || ""} onChange={e => setProfile({ ...profile, bio: e.target.value })} className="mt-1" />
+              <div className="flex items-center justify-between">
+                <Label>Bio</Label>
+                <span className="text-xs text-muted-foreground">{(profile.bio || "").length}/500</span>
+              </div>
+              <Textarea rows={4} maxLength={500} value={profile.bio || ""} onChange={e => setProfile({ ...profile, bio: e.target.value })} className="mt-1" />
             </div>
             <div>
               <Label>Instagram</Label>

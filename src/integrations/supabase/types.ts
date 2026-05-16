@@ -1449,6 +1449,212 @@ export type Database = {
         }
         Relationships: []
       }
+      experiment_assignments: {
+        Row: {
+          assigned_at: string
+          experiment_id: string
+          id: string
+          user_id: string | null
+          variant_id: string
+          visitor_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          experiment_id: string
+          id?: string
+          user_id?: string | null
+          variant_id: string
+          visitor_id: string
+        }
+        Update: {
+          assigned_at?: string
+          experiment_id?: string
+          id?: string
+          user_id?: string | null
+          variant_id?: string
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experiment_assignments_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "experiment_assignments_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "experiment_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experiment_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          experiment_id: string
+          goal_key: string | null
+          id: string
+          metadata: Json
+          revenue_cents: number | null
+          user_id: string | null
+          variant_id: string
+          visitor_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          experiment_id: string
+          goal_key?: string | null
+          id?: string
+          metadata?: Json
+          revenue_cents?: number | null
+          user_id?: string | null
+          variant_id: string
+          visitor_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          experiment_id?: string
+          goal_key?: string | null
+          id?: string
+          metadata?: Json
+          revenue_cents?: number | null
+          user_id?: string | null
+          variant_id?: string
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experiment_events_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "experiment_events_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "experiment_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experiment_variants: {
+        Row: {
+          config: Json
+          conversions: number
+          created_at: string
+          experiment_id: string
+          exposures: number
+          id: string
+          is_control: boolean
+          key: string
+          name: string
+          revenue_cents: number
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          config?: Json
+          conversions?: number
+          created_at?: string
+          experiment_id: string
+          exposures?: number
+          id?: string
+          is_control?: boolean
+          key: string
+          name: string
+          revenue_cents?: number
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          config?: Json
+          conversions?: number
+          created_at?: string
+          experiment_id?: string
+          exposures?: number
+          id?: string
+          is_control?: boolean
+          key?: string
+          name?: string
+          revenue_cents?: number
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experiment_variants_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experiments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          key: string
+          name: string
+          primary_metric: Database["public"]["Enums"]["experiment_metric"]
+          segment: Json
+          slot_key: string
+          starts_at: string | null
+          status: Database["public"]["Enums"]["experiment_status"]
+          traffic_pct: number
+          updated_at: string
+          use_bandit: boolean
+          winner_variant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          key: string
+          name: string
+          primary_metric?: Database["public"]["Enums"]["experiment_metric"]
+          segment?: Json
+          slot_key: string
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["experiment_status"]
+          traffic_pct?: number
+          updated_at?: string
+          use_bandit?: boolean
+          winner_variant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          key?: string
+          name?: string
+          primary_metric?: Database["public"]["Enums"]["experiment_metric"]
+          segment?: Json
+          slot_key?: string
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["experiment_status"]
+          traffic_pct?: number
+          updated_at?: string
+          use_bandit?: boolean
+          winner_variant_id?: string | null
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           audience: string
@@ -2455,6 +2661,45 @@ export type Database = {
           vinoshipper_order_id?: string | null
           vinoshipper_status?: string
           wine_subtotal_cents?: number
+        }
+        Relationships: []
+      }
+      personalization_rules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          id: string
+          name: string
+          priority: number
+          segment: Json
+          slot_key: string
+          updated_at: string
+          variant_config: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          name: string
+          priority?: number
+          segment?: Json
+          slot_key: string
+          updated_at?: string
+          variant_config?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string
+          priority?: number
+          segment?: Json
+          slot_key?: string
+          updated_at?: string
+          variant_config?: Json
         }
         Relationships: []
       }
@@ -3905,6 +4150,33 @@ export type Database = {
             }
             Returns: undefined
           }
+      experiment_assign: {
+        Args: {
+          _experiment_key: string
+          _segment?: Json
+          _user_id?: string
+          _visitor_id: string
+        }
+        Returns: {
+          experiment_id: string
+          variant_config: Json
+          variant_id: string
+          variant_key: string
+        }[]
+      }
+      experiment_record: {
+        Args: {
+          _event_type: string
+          _experiment_id: string
+          _goal_key?: string
+          _metadata?: Json
+          _revenue_cents?: number
+          _user_id: string
+          _variant_id: string
+          _visitor_id: string
+        }
+        Returns: undefined
+      }
       get_public_impact_totals: {
         Args: never
         Returns: {
@@ -3985,6 +4257,13 @@ export type Database = {
         | "ambassador_manager"
         | "cms_editor"
         | "crm_user"
+      experiment_metric:
+        | "revenue_per_visitor"
+        | "conversion_rate"
+        | "club_signup"
+        | "ambassador_apply"
+        | "custom"
+      experiment_status: "draft" | "running" | "paused" | "ended"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4126,6 +4405,14 @@ export const Constants = {
         "cms_editor",
         "crm_user",
       ],
+      experiment_metric: [
+        "revenue_per_visitor",
+        "conversion_rate",
+        "club_signup",
+        "ambassador_apply",
+        "custom",
+      ],
+      experiment_status: ["draft", "running", "paused", "ended"],
     },
   },
 } as const

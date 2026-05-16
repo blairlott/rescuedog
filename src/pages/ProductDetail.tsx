@@ -4,7 +4,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Loader2, ArrowLeft, Heart, Lock, Zap } from "lucide-react";
+import { ShoppingCart, Loader2, ArrowLeft, Heart, Lock, Zap, Truck, Star, ShieldCheck, PawPrint } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
@@ -290,6 +290,38 @@ const ProductDetail = () => {
                   <p className="text-2xl font-semibold tracking-tight text-primary">${variantPrice.toFixed(2)}</p>
                   )}
                 </div>
+
+              {/* Trust stack — quick-scan reassurance directly under price */}
+              <ul className="flex flex-wrap gap-x-4 gap-y-2 text-[11px] uppercase tracking-[0.18em] font-bold text-foreground -mt-2">
+                {productRating && productRating.count > 0 && (
+                  <li className="flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 fill-brand-gold text-brand-gold" />
+                    {productRating.value.toFixed(1)} · {productRating.count} {productRating.count === 1 ? "review" : "reviews"}
+                  </li>
+                )}
+                {!isMerch && shipState && (
+                  <li className={`flex items-center gap-1.5 ${canShip ? "text-foreground" : "text-destructive"}`}>
+                    <Truck className="w-3.5 h-3.5" />
+                    {canShip ? `Ships to ${shipState}` : `Not shipped to ${shipState}`}
+                  </li>
+                )}
+                {!isMerch && (
+                  <li className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Shipping included on 6+
+                  </li>
+                )}
+                {isMerch && (
+                  <li className="flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5" />
+                    Ships in 3–7 days
+                  </li>
+                )}
+                <li className="flex items-center gap-1.5 text-primary">
+                  <PawPrint className="w-3.5 h-3.5" />
+                  Helps dogs find homes
+                </li>
+              </ul>
 
               {product.description && (
                 <p className="text-muted-foreground leading-relaxed text-base lg:text-lg font-light max-w-md">

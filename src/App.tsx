@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { captureFbclid, captureGclid } from "@/lib/metaAttribution";
 import { AgeGate } from "@/components/AgeGate";
 import { ExitIntentOffer } from "@/components/ExitIntentOffer";
+import { PackSignupPopup } from "@/components/PackSignupPopup";
 import { CmsAuthProvider } from "@/hooks/useCmsAuth";
 import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
 import { GeoProvider } from "@/hooks/useGeo";
@@ -202,6 +203,7 @@ const App = () => (
                   <GeoNotice />
                   <AppContent />
                   <ExitIntentOffer />
+                  <PackSignupPopup />
                 </AgeGate>
               </GeoProvider>
             </CmsAuthProvider>

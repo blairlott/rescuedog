@@ -331,12 +331,12 @@ export default function CmsExperimentsPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="experiments">
+        <Tabs defaultValue="media">
           <TabsList>
+            <TabsTrigger value="media">Media</TabsTrigger>
             <TabsTrigger value="experiments">Experiments</TabsTrigger>
             <TabsTrigger value="rules">Personalization Rules</TabsTrigger>
             <TabsTrigger value="slots">Slot Catalog</TabsTrigger>
-            <TabsTrigger value="media">Media</TabsTrigger>
             <TabsTrigger value="autopilot">Autopilot</TabsTrigger>
           </TabsList>
 

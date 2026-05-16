@@ -13,7 +13,7 @@ import { Seo } from "@/components/Seo";
 import vineyardHero from "@/assets/migrated/vineyard-grapes.jpg";
 
 const WINE_SORT_ORDER = [
-  "6bottle-sampler",
+  "mothers-day-6-pack",
   "cabernet-sauvignon",
   "red-wine-blend",
   "rescue-dog-wines-sauvignon-blanc",
@@ -25,29 +25,35 @@ const WINE_SORT_ORDER = [
   "mthode-champenoise-sparkling-ros",
 ];
 
-const FEATURED_HANDLE = "6bottle-sampler";
+const FEATURED_HANDLE = "mothers-day-6-pack";
 
 const categories = [
-  { label: "All", filter: "product_type:Wine" },
-  { label: "Red", filter: "product_type:Wine tag:Red" },
-  { label: "White", filter: "product_type:Wine tag:White" },
-  { label: "Sparkling", filter: "product_type:Wine tag:Sparkling" },
-  { label: "Rosé", filter: "product_type:Wine tag:Rose" },
-  { label: "Bundles", filter: "product_type:Wine tag:Bundle" },
+  { label: "All", tag: null as string | null },
+  { label: "Red", tag: "red" },
+  { label: "White", tag: "white" },
+  { label: "Sparkling", tag: "sparkling" },
+  { label: "Rosé", tag: "rose" },
+  { label: "Bundles", tag: "bundle" },
 ];
 
 const WinesPage = () => {
   const [activeCategory, setActiveCategory] = useState(0);
-  const { data: products, isLoading } = useProducts(50, categories[activeCategory].filter);
+  const { data: products, isLoading } = useProducts(50, "tag:wine");
 
   const { featured, sortedProducts } = useMemo(() => {
     if (!products) return { featured: null, sortedProducts: [] };
+    const activeTag = categories[activeCategory].tag;
+    const filtered = activeTag
+      ? products.filter((p) =>
+          (p.node.tags || []).some((t) => t.toLowerCase() === activeTag),
+        )
+      : products;
     const feat = activeCategory === 0
-      ? products.find((p) => p.node.handle === FEATURED_HANDLE) || null
+      ? filtered.find((p) => p.node.handle === FEATURED_HANDLE) || null
       : null;
     const rest = feat
-      ? products.filter((p) => p.node.handle !== FEATURED_HANDLE)
-      : [...products];
+      ? filtered.filter((p) => p.node.handle !== FEATURED_HANDLE)
+      : [...filtered];
     rest.sort((a, b) => {
       const idxA = WINE_SORT_ORDER.indexOf(a.node.handle);
       const idxB = WINE_SORT_ORDER.indexOf(b.node.handle);

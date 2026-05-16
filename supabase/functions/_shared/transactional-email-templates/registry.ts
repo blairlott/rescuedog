@@ -18,6 +18,11 @@ import { template as staleAccountsRepAlert } from './stale-accounts-rep-alert.ts
 import { template as staleAccountsSummary } from './stale-accounts-summary.tsx'
 import { template as dropshipPartnerPo } from './dropship-partner-po.tsx'
 import { template as reviewerInvite } from './reviewer-invite.tsx'
+import { template as welcome1Story } from './welcome-1-story.tsx'
+import { template as welcome2Sampler } from './welcome-2-sampler.tsx'
+import { template as welcome3Reviews } from './welcome-3-reviews.tsx'
+import { template as welcome4Mission } from './welcome-4-mission.tsx'
+import { template as welcome5Nudge } from './welcome-5-nudge.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'ambassador-welcome': ambassadorWelcome,
@@ -29,4 +34,9 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'stale-accounts-summary': staleAccountsSummary,
   'dropship-partner-po': dropshipPartnerPo,
   'reviewer-invite': reviewerInvite,
+  'welcome-1-story': welcome1Story,
+  'welcome-2-sampler': welcome2Sampler,
+  'welcome-3-reviews': welcome3Reviews,
+  'welcome-4-mission': welcome4Mission,
+  'welcome-5-nudge': welcome5Nudge,
 }

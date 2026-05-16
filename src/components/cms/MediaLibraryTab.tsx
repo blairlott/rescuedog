@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, X, RefreshCw, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Loader2, Check, X, RefreshCw, Image as ImageIcon, Sparkles, Maximize2, ChevronDown, ChevronRight, Globe, Instagram, Wand2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,6 +44,8 @@ export default function MediaLibraryTab() {
   const [enhanceVariants, setEnhanceVariants] = useState<number>(1);
   const [enhancePrompt, setEnhancePrompt] = useState<string>("");
   const [enhancing, setEnhancing] = useState(false);
+  const [lightbox, setLightbox] = useState<MediaAsset | null>(null);
+  const [jobsOpen, setJobsOpen] = useState(false);
 
   const assetsQuery = useQuery({
     queryKey: ["cms-media-assets", filter],
@@ -56,6 +58,18 @@ export default function MediaLibraryTab() {
         .limit(200);
       if (error) throw error;
       return (data ?? []) as MediaAsset[];
+    },
+  });
+
+  const countsQuery = useQuery({
+    queryKey: ["cms-media-counts"],
+    queryFn: async () => {
+      const statuses = ["pending", "approved", "rejected"] as const;
+      const results = await Promise.all(statuses.map(async (s) => {
+        const { count } = await supabase.from("media_assets").select("id", { count: "exact", head: true }).eq("status", s);
+        return [s, count ?? 0] as const;
+      }));
+      return Object.fromEntries(results) as Record<typeof statuses[number], number>;
     },
   });
 
@@ -99,6 +113,7 @@ export default function MediaLibraryTab() {
       return;
     }
     qc.invalidateQueries({ queryKey: ["cms-media-assets"] });
+    qc.invalidateQueries({ queryKey: ["cms-media-counts"] });
   }
 
   async function runEnhance() {
@@ -120,6 +135,7 @@ export default function MediaLibraryTab() {
       setEnhancePrompt("");
       setFilter("pending");
       qc.invalidateQueries({ queryKey: ["cms-media-assets"] });
+      qc.invalidateQueries({ queryKey: ["cms-media-counts"] });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast({ title: "Enhance failed", description: msg, variant: "destructive" });
@@ -128,50 +144,84 @@ export default function MediaLibraryTab() {
     }
   }
 
+  const counts = countsQuery.data ?? { pending: 0, approved: 0, rejected: 0 };
+  const filterLabels: Record<typeof filter, { label: string; help: string }> = {
+    pending: { label: "Needs review", help: "New images waiting for your approval. Approve to use, reject to discard." },
+    approved: { label: "Approved", help: "Ready to use across the site. Click Enhance to generate AI variants." },
+    rejected: { label: "Rejected", help: "Hidden from use. Restore to send back to review." },
+  };
+
+  function sourceBadge(source: string) {
+    if (source === "legacy_site") return { icon: Globe, label: "Website" };
+    if (source === "instagram") return { icon: Instagram, label: "Instagram" };
+    if (source === "ai_enhanced") return { icon: Wand2, label: "AI variant" };
+    return { icon: ImageIcon, label: source };
+  }
+
   return (
     <div className="space-y-6">
+      {/* Step 1: Pull images in */}
       <Card>
         <CardContent className="pt-6 space-y-4">
+          <div>
+            <h3 className="font-semibold text-sm">1. Pull in new images</h3>
+            <p className="text-xs text-muted-foreground mt-1">Scan your website and Instagram. New finds appear in <strong>Needs review</strong> below.</p>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={() => runScan("legacy")} disabled={!!scanning} size="sm">
-              {scanning === "legacy" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-              Scan rescuedogwines.com
+            <Button onClick={() => runScan("legacy")} disabled={!!scanning} size="sm" variant="outline">
+              {scanning === "legacy" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Globe className="h-4 w-4 mr-2" />}
+              rescuedogwines.com
             </Button>
             <Button onClick={() => runScan("instagram")} disabled={!!scanning} size="sm" variant="outline">
-              {scanning === "instagram" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-              Scan Instagram (public)
+              {scanning === "instagram" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Instagram className="h-4 w-4 mr-2" />}
+              Instagram
             </Button>
-            <Button onClick={() => runScan("all")} disabled={!!scanning} size="sm" variant="secondary">
+            <Button onClick={() => runScan("all")} disabled={!!scanning} size="sm">
               {scanning === "all" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-              Scan all sources
+              Scan all
             </Button>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Recent harvest jobs:
-            <ul className="mt-1 space-y-1">
+
+          <button onClick={() => setJobsOpen((v) => !v)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+            {jobsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            Recent scans ({(jobsQuery.data ?? []).length})
+          </button>
+          {jobsOpen && (
+            <ul className="space-y-1 text-xs text-muted-foreground pl-4">
               {(jobsQuery.data ?? []).map((j) => (
-                <li key={j.id}>
-                  <span className="font-mono">{new Date(j.started_at).toLocaleString()}</span>
-                  {" — "}
+                <li key={j.id} className="flex items-center gap-2 flex-wrap">
+                  <span>{new Date(j.started_at).toLocaleString()}</span>
+                  <span>·</span>
                   <span>{j.source}</span>
-                  {" — "}
                   <Badge variant={j.status === "completed" ? "default" : j.status === "failed" ? "destructive" : "secondary"} className="text-[10px]">{j.status}</Badge>
-                  {" "}found {j.items_found}, new {j.items_new}
-                  {j.error && <span className="text-destructive ml-2">{j.error.slice(0, 100)}</span>}
+                  <span>{j.items_new} new / {j.items_found} found</span>
+                  {j.error && <span className="text-destructive">— {j.error.slice(0, 80)}</span>}
                 </li>
               ))}
-              {(jobsQuery.data ?? []).length === 0 && <li className="italic">No runs yet.</li>}
+              {(jobsQuery.data ?? []).length === 0 && <li className="italic">No scans yet.</li>}
             </ul>
-          </div>
+          )}
         </CardContent>
       </Card>
 
-      <div className="flex gap-2">
-        {(["pending", "approved", "rejected"] as const).map((s) => (
-          <Button key={s} size="sm" variant={filter === s ? "default" : "outline"} onClick={() => setFilter(s)}>
-            {s.charAt(0).toUpperCase() + s.slice(1)}
-          </Button>
-        ))}
+      {/* Step 2: Review */}
+      <div>
+        <h3 className="font-semibold text-sm mb-2">2. Review & approve</h3>
+        <div className="flex gap-2 border-b">
+          {(["pending", "approved", "rejected"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-2 ${
+                filter === s ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {filterLabels[s].label}
+              <Badge variant={filter === s ? "default" : "secondary"} className="text-[10px]">{counts[s]}</Badge>
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">{filterLabels[filter].help}</p>
       </div>
 
       {assetsQuery.isLoading ? (
@@ -179,66 +229,118 @@ export default function MediaLibraryTab() {
       ) : (assetsQuery.data ?? []).length === 0 ? (
         <Card><CardContent className="py-12 text-center text-muted-foreground">
           <ImageIcon className="h-10 w-10 mx-auto mb-2 opacity-40" />
-          No {filter} images. {filter === "pending" && "Run a scan above."}
+          <p className="text-sm">No images in <strong>{filterLabels[filter].label.toLowerCase()}</strong>.</p>
+          {filter === "pending" && <p className="text-xs mt-1">Run a scan above to harvest new images.</p>}
         </CardContent></Card>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {(assetsQuery.data ?? []).map((a) => (
-            <Card key={a.id} className="overflow-hidden">
-              <div className="aspect-square bg-muted overflow-hidden">
-                <img src={a.image_url} alt={a.alt_text ?? ""} loading="lazy"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }}
-                />
-              </div>
-              <CardContent className="p-3 space-y-2">
-                <div className="flex flex-wrap gap-1 text-[10px]">
-                  <Badge variant="outline">{a.source}</Badge>
-                  {a.ai_subject && <Badge variant="secondary">{a.ai_subject}</Badge>}
-                  {a.ai_score !== null && <Badge>{Math.round(a.ai_score)}</Badge>}
-                </div>
-                {a.alt_text && <p className="text-xs line-clamp-2 text-muted-foreground">{a.alt_text}</p>}
-                {filter === "pending" && (
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="default" className="flex-1" onClick={() => setStatus(a.id, "approved")}>
-                      <Check className="h-3 w-3 mr-1" /> Approve
-                    </Button>
-                    <Button size="sm" variant="outline" className="flex-1" onClick={() => setStatus(a.id, "rejected")}>
-                      <X className="h-3 w-3 mr-1" /> Reject
-                    </Button>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {(assetsQuery.data ?? []).map((a) => {
+            const src = sourceBadge(a.source);
+            const SrcIcon = src.icon;
+            return (
+              <Card key={a.id} className="overflow-hidden group flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => setLightbox(a)}
+                  className="relative aspect-square bg-muted overflow-hidden block w-full"
+                  aria-label="View larger"
+                >
+                  <img
+                    src={a.image_url}
+                    alt={a.alt_text ?? ""}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }}
+                  />
+                  <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-background/80 backdrop-blur-sm px-1.5 py-0.5 text-[10px] font-medium">
+                    <SrcIcon className="h-3 w-3" />
+                    {src.label}
                   </div>
-                )}
-                {filter === "approved" && (
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="default" className="flex-1" onClick={() => { setEnhanceFor(a); setEnhancePrompt(""); setEnhancePreset("enhance"); setEnhanceVariants(1); }}>
-                      <Sparkles className="h-3 w-3 mr-1" /> Enhance
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setStatus(a.id, "archived")}>
-                      Archive
-                    </Button>
+                  {a.ai_score !== null && (
+                    <div className="absolute top-1.5 right-1.5 bg-background/80 backdrop-blur-sm px-1.5 py-0.5 text-[10px] font-mono font-semibold">
+                      {Math.round(a.ai_score)}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <Maximize2 className="h-5 w-5 text-background" />
                   </div>
-                )}
-                {filter === "rejected" && (
-                  <Button size="sm" variant="outline" className="w-full" onClick={() => setStatus(a.id, "pending")}>
-                    Restore to pending
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                </button>
+                <CardContent className="p-2 space-y-2 flex-1 flex flex-col">
+                  {a.alt_text && <p className="text-[11px] line-clamp-2 text-muted-foreground flex-1">{a.alt_text}</p>}
+                  {filter === "pending" && (
+                    <div className="flex gap-1">
+                      <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => setStatus(a.id, "approved")} title="Approve">
+                        <Check className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => setStatus(a.id, "rejected")} title="Reject">
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {filter === "approved" && (
+                    <div className="flex gap-1">
+                      <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => { setEnhanceFor(a); setEnhancePrompt(""); setEnhancePreset("enhance"); setEnhanceVariants(1); }}>
+                        <Sparkles className="h-3 w-3 mr-1" /> Enhance
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setStatus(a.id, "archived")} title="Archive">
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {filter === "rejected" && (
+                    <Button size="sm" variant="outline" className="w-full h-7 text-xs" onClick={() => setStatus(a.id, "pending")}>
+                      Restore
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
+      {/* Lightbox */}
+      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden">
+          {lightbox && (
+            <div className="bg-black flex items-center justify-center">
+              <img src={lightbox.image_url} alt={lightbox.alt_text ?? ""} className="max-h-[80vh] w-auto object-contain" />
+            </div>
+          )}
+          {lightbox && (
+            <div className="p-4 space-y-2">
+              <div className="flex flex-wrap gap-1">
+                <Badge variant="outline">{sourceBadge(lightbox.source).label}</Badge>
+                {lightbox.ai_subject && <Badge variant="secondary">{lightbox.ai_subject}</Badge>}
+                {lightbox.ai_score !== null && <Badge>Score {Math.round(lightbox.ai_score)}</Badge>}
+                {lightbox.ai_tags?.slice(0, 6).map((t) => <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>)}
+              </div>
+              {lightbox.alt_text && <p className="text-sm text-muted-foreground">{lightbox.alt_text}</p>}
+              {lightbox.source_url && (
+                <a href={lightbox.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline break-all">
+                  Source: {lightbox.source_url}
+                </a>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!enhanceFor} onOpenChange={(o) => !o && setEnhanceFor(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> Enhance / Iterate</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> Enhance with AI</DialogTitle>
           </DialogHeader>
           {enhanceFor && (
             <div className="space-y-4">
-              <img src={enhanceFor.image_url} alt="" className="w-full h-40 object-cover" />
+              <div className="grid grid-cols-[120px_1fr] gap-3 items-start">
+                <img src={enhanceFor.image_url} alt="" className="w-full aspect-square object-cover bg-muted" />
+                <p className="text-xs text-muted-foreground">
+                  AI will generate new variants based on this image. Variants land back in <strong>Needs review</strong> for approval.
+                </p>
+              </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium">Preset</label>
+                <label className="text-xs font-medium">What kind of edit?</label>
                 <Select value={enhancePreset} onValueChange={setEnhancePreset} disabled={!!enhancePrompt.trim()}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -250,16 +352,19 @@ export default function MediaLibraryTab() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium">Custom prompt (overrides preset)</label>
-                <Textarea rows={3} placeholder="e.g. make the lighting warmer, add a vineyard background"
+                <label className="text-xs font-medium">Or describe your own edit (overrides preset)</label>
+                <Textarea rows={3} placeholder="e.g. warmer lighting, vineyard background, more rustic feel"
                   value={enhancePrompt} onChange={(e) => setEnhancePrompt(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium">Variants</label>
+                <label className="text-xs font-medium">How many variants?</label>
                 <Select value={String(enhanceVariants)} onValueChange={(v) => setEnhanceVariants(Number(v))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {[1, 2, 3, 4].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                    <SelectItem value="1">1 variant (fastest)</SelectItem>
+                    <SelectItem value="2">2 variants</SelectItem>
+                    <SelectItem value="3">3 variants</SelectItem>
+                    <SelectItem value="4">4 variants (most options)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -269,7 +374,7 @@ export default function MediaLibraryTab() {
             <Button variant="outline" onClick={() => setEnhanceFor(null)} disabled={enhancing}>Cancel</Button>
             <Button onClick={runEnhance} disabled={enhancing}>
               {enhancing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              Generate
+              Generate variants
             </Button>
           </DialogFooter>
         </DialogContent>

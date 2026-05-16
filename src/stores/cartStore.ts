@@ -9,6 +9,7 @@ import {
   shopifyCartLineUpdate,
   shopifyCartLineRemove,
   shopifyCartFetch,
+  shopifyCartDiscountCodesUpdate,
 } from "@/lib/shopify";
 import { analytics } from "@/lib/analytics";
 
@@ -20,6 +21,8 @@ interface CartStore {
   shopifyCartId: string | null;
   /** Shopify hosted checkout URL for merch lines. */
   shopifyCheckoutUrl: string | null;
+  /** Discount codes currently attached to the Shopify cart (server-confirmed applicable). */
+  discountCodes: string[];
   isLoading: boolean;
   isSyncing: boolean;
   addItem: (item: Omit<CartItem, "lineId">) => Promise<void>;
@@ -27,6 +30,10 @@ interface CartStore {
   removeItem: (variantId: string) => Promise<void>;
   clearCart: () => void;
   syncCart: () => Promise<void>;
+  /** Apply a Shopify discount code (e.g. "PAIRIT10"). No-op if no Shopify cart yet. */
+  applyDiscountCode: (code: string) => Promise<boolean>;
+  /** Strip all discount codes from the Shopify cart. */
+  clearDiscountCodes: () => Promise<void>;
   /** Vinoshipper deep-link for wine items (legacy compat). */
   getCheckoutUrl: () => string | null;
   /** Shopify hosted checkout URL for merch items. */
@@ -47,6 +54,7 @@ export const useCartStore = create<CartStore>()(
       items: [],
       shopifyCartId: null,
       shopifyCheckoutUrl: null,
+      discountCodes: [],
       isLoading: false,
       isSyncing: false,
 
@@ -206,10 +214,44 @@ export const useCartStore = create<CartStore>()(
       },
 
       clearCart: () =>
-        set({ items: [], shopifyCartId: null, shopifyCheckoutUrl: null }),
+        set({ items: [], shopifyCartId: null, shopifyCheckoutUrl: null, discountCodes: [] }),
 
       getCheckoutUrl: () => buildVinoshipperCheckoutUrl(get().items),
       getShopifyCheckoutUrl: () => get().shopifyCheckoutUrl,
+
+      applyDiscountCode: async (code) => {
+        const { shopifyCartId, discountCodes } = get();
+        if (!shopifyCartId) return false;
+        if (discountCodes.includes(code)) return true;
+        const next = Array.from(new Set([...discountCodes, code]));
+        try {
+          const r = await shopifyCartDiscountCodesUpdate(shopifyCartId, next);
+          if (r.cartNotFound) {
+            get().clearCart();
+            return false;
+          }
+          if (!r.success) return false;
+          set({ discountCodes: r.applicable });
+          return r.applicable.includes(code);
+        } catch (err) {
+          console.error("[cart] applyDiscountCode failed:", err);
+          return false;
+        }
+      },
+
+      clearDiscountCodes: async () => {
+        const { shopifyCartId, discountCodes } = get();
+        if (!shopifyCartId || discountCodes.length === 0) {
+          set({ discountCodes: [] });
+          return;
+        }
+        try {
+          await shopifyCartDiscountCodesUpdate(shopifyCartId, []);
+        } catch (err) {
+          console.error("[cart] clearDiscountCodes failed:", err);
+        }
+        set({ discountCodes: [] });
+      },
 
       syncCart: async () => {
         const { shopifyCartId, isSyncing } = get();
@@ -224,6 +266,7 @@ export const useCartStore = create<CartStore>()(
               items: wineOnly,
               shopifyCartId: null,
               shopifyCheckoutUrl: null,
+              discountCodes: [],
             });
           } else {
             // Refresh checkout URL in case Shopify rotated it.
@@ -243,8 +286,9 @@ export const useCartStore = create<CartStore>()(
         items: s.items,
         shopifyCartId: s.shopifyCartId,
         shopifyCheckoutUrl: s.shopifyCheckoutUrl,
+        discountCodes: s.discountCodes,
       }),
-      version: 2,
+      version: 3,
       // Migrate from v1 (which used cartId/checkoutUrl naming) — drop stale state safely.
       migrate: (persisted: any, _version) => {
         if (!persisted) return persisted;
@@ -252,6 +296,7 @@ export const useCartStore = create<CartStore>()(
           items: persisted.items ?? [],
           shopifyCartId: persisted.shopifyCartId ?? null,
           shopifyCheckoutUrl: persisted.shopifyCheckoutUrl ?? null,
+          discountCodes: persisted.discountCodes ?? [],
         };
       },
     },

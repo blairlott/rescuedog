@@ -28,6 +28,7 @@ import { PairingFinder } from "@/components/PairingFinder";
 import { LazyYouTube } from "@/components/LazyYouTube";
 import { Seo } from "@/components/Seo";
 import { T } from "@/components/T";
+import { useExperiment } from "@/hooks/useExperiment";
 
 const instagramPosts = [
   {
@@ -71,6 +72,21 @@ const Index = () => {
   const { content, upsert } = useCmsContent("homepage");
   const [editSection, setEditSection] = useState<EditSection>(null);
   const showImpact = useFeatureFlag("impact_counter", false);
+
+  // Self-optimizing hero. Overrides apply on top of CMS values.
+  const hero = useExperiment<{
+    imageUrl?: string;
+    headlineOverride?: string;
+    subtitleOverride?: string;
+    ctaLabel?: string;
+    ctaHref?: string;
+  }>("homepage_hero", {});
+
+  // Self-optimizing ambassador strip placement on homepage.
+  const ambassadorStrip = useExperiment<{ show?: boolean; headline?: string; ctaLabel?: string }>(
+    "homepage_ambassador_strip",
+    { show: false },
+  );
 
   const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
 
@@ -166,7 +182,7 @@ const Index = () => {
       <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden">
         <CmsEditButton onClick={() => setEditSection("hero")} />
         <img
-          src={heroRedBlend}
+          src={hero.config.imageUrl || heroRedBlend}
           alt="Friends enjoying Rescue Dog Wines with the 2023 Red Blend"
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -175,20 +191,27 @@ const Index = () => {
         <div className="relative container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="max-w-xl">
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-primary-foreground mb-6 leading-[0.9] uppercase">
-              <T>{getVal("hero", "headline", "Our Wine")}</T><br />
-              <T>{getVal("hero", "headline2", "Is For The")}</T><br />
-              <T>{getVal("hero", "headline3", "Dogs")}</T>
+              {hero.config.headlineOverride ? (
+                <T>{hero.config.headlineOverride}</T>
+              ) : (
+                <>
+                  <T>{getVal("hero", "headline", "Our Wine")}</T><br />
+                  <T>{getVal("hero", "headline2", "Is For The")}</T><br />
+                  <T>{getVal("hero", "headline3", "Dogs")}</T>
+                </>
+              )}
             </h1>
             <p className="text-primary-foreground/80 text-lg mb-8 max-w-md">
-              <T>{getVal("hero", "subtitle", "Award-winning, sustainable wines. 50% of our profits support animal rescue organizations.")}</T>
+              <T>{hero.config.subtitleOverride || getVal("hero", "subtitle", "Award-winning, sustainable wines. 50% of our profits support animal rescue organizations.")}</T>
             </p>
             <div className="flex flex-wrap gap-4">
               <Button
                 asChild
                 size="lg"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
+                onClick={() => hero.recordConversion("hero_cta_click")}
               >
-                <Link to="/wines"><T>Shop Wines</T></Link>
+                <Link to={hero.config.ctaHref || "/wines"}><T>{hero.config.ctaLabel || "Shop Wines"}</T></Link>
               </Button>
               <Button
                 asChild

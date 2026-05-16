@@ -31,6 +31,8 @@ import WineClubPage from "./pages/WineClubPage";
 import DonationPage from "./pages/DonationPage";
 import WineThatGivesBackPage from "./pages/WineThatGivesBackPage";
 import PressPage from "./pages/PressPage";
+import CompareHubPage from "./pages/CompareHubPage";
+import BrandComparePage from "./pages/BrandComparePage";
 import SubscribePage from "./pages/SubscribePage";
 import CustomerLoginPage from "./pages/CustomerLoginPage";
 import CustomerSignupPage from "./pages/CustomerSignupPage";

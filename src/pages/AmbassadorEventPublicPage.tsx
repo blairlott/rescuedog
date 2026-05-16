@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, MapPin, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+const SITE_URL = "https://rescuedog.lovable.app";
 
 export default function AmbassadorEventPublicPage() {
   const { slug } = useParams();
@@ -66,8 +69,77 @@ export default function AmbassadorEventPublicPage() {
   const shopLink = host?.impact_tracking_url || "/wines";
   const isExternal = !!host?.impact_tracking_url;
 
+  const canonical = `${SITE_URL}/e/${event.slug}`;
+  const locationParts = [event.venue_name, event.city, event.state].filter(Boolean).join(", ");
+  const seoTitle = `${event.title} — Rescue Dog Wines Tasting${event.city ? ` in ${event.city}` : ""}`;
+  // GEO: lead with who/what/where/when in one factual sentence for LLM citation.
+  const seoDescription = `${event.title}: a Rescue Dog Wines tasting event${host ? ` hosted by ${host.display_name}` : ""}${locationParts ? ` at ${locationParts}` : ""} on ${new Date(event.starts_at).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}. RSVP free — every bottle ordered supports rescue dogs.`;
+
+  const eventSchema: any = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    description: event.description || seoDescription,
+    startDate: event.starts_at,
+    endDate: event.ends_at || undefined,
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    url: canonical,
+    image: event.cover_image_url || host?.photo_url || undefined,
+    location: {
+      "@type": "Place",
+      name: event.venue_name || event.city || "Tasting Venue",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: event.street_address || undefined,
+        addressLocality: event.city || undefined,
+        addressRegion: event.state || undefined,
+        addressCountry: "US",
+      },
+    },
+    organizer: host ? {
+      "@type": "Person",
+      name: host.display_name,
+      url: `${SITE_URL}/a/${host.handle}`,
+    } : { "@type": "Organization", name: "Rescue Dog Wines", url: SITE_URL },
+    offers: {
+      "@type": "Offer",
+      url: canonical,
+      price: "0",
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+    },
+  };
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Ambassadors", item: `${SITE_URL}/ambassadors/find` },
+      host ? { "@type": "ListItem", position: 2, name: host.display_name, item: `${SITE_URL}/a/${host.handle}` } : null,
+      { "@type": "ListItem", position: host ? 3 : 2, name: event.title, item: canonical },
+    ].filter(Boolean),
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <link rel="canonical" href={canonical} />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:url" content={canonical} />
+        {event.cover_image_url && <meta property="og:image" content={event.cover_image_url} />}
+        <meta name="twitter:card" content={event.cover_image_url ? "summary_large_image" : "summary"} />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
+        {event.cover_image_url && <meta name="twitter:image" content={event.cover_image_url} />}
+        {event.city && <meta name="geo.placename" content={`${event.city}${event.state ? `, ${event.state}` : ""}`} />}
+        {event.state && <meta name="geo.region" content={`US-${event.state}`} />}
+        <script type="application/ld+json">{JSON.stringify(eventSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
+      </Helmet>
       <Header />
       <main className="flex-1 max-w-3xl mx-auto py-10 px-4 w-full">
         {event.cover_image_url && <img src={event.cover_image_url} alt={event.title} className="w-full h-64 object-cover mb-8" />}

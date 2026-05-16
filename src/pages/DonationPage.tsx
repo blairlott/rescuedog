@@ -6,10 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Heart, Upload, X } from "lucide-react";
+import { Heart, Upload, X, HandHeart, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 const US_STATES = [
   "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia",
@@ -258,6 +259,25 @@ const DonationPage = () => {
                     <p className="text-sm text-muted-foreground leading-relaxed font-medium">
                       Please note: We can only donate to registered 501(c) organizations.
                     </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 501(c)(3) Ambassador cross-promo */}
+              <div className="border-2 border-primary p-6 mb-10 bg-background">
+                <div className="flex items-start gap-4">
+                  <HandHeart className="h-8 w-8 text-primary flex-shrink-0 mt-1" strokeWidth={1.5} />
+                  <div className="flex-1">
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">For 501(c)(3) Rescues</p>
+                    <h3 className="text-xl font-bold text-foreground mb-2">Turn every bottle into recurring funding</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                      Beyond one-time wine donations, your rescue can join our Ambassador Program and earn a <strong className="text-foreground">flat 12% commission</strong> on every bottle sold through your unique link — paid quarterly to your organization, not individuals. W-9 collected once, no per-staff 1099s. A sustainable revenue stream alongside our donation support.
+                    </p>
+                    <Button asChild>
+                      <Link to="/ambassador/signup" className="inline-flex items-center gap-2">
+                        Apply to the Nonprofit Track <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               </div>

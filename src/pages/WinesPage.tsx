@@ -64,6 +64,10 @@ const WinesPage = () => {
         title="Shop Wines"
         description="Award-winning Lodi wines — Cabernet, Red Blend, Sauvignon Blanc, Chardonnay, Rosé and Sparkling. Shipping included on 6+ bottles."
         path="/wines"
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "Wines", path: "/wines" },
+        ]}
       />
       <Header />
 

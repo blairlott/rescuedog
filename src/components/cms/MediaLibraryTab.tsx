@@ -7,8 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, X, RefreshCw, Image as ImageIcon, Sparkles, Maximize2, ChevronDown, ChevronRight, Globe, Instagram, Wand2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 type MediaAsset = {
   id: string;
@@ -42,7 +42,7 @@ export default function MediaLibraryTab() {
   const [enhanceFor, setEnhanceFor] = useState<MediaAsset | null>(null);
   const [enhancePreset, setEnhancePreset] = useState<string>("enhance");
   const [enhanceVariants, setEnhanceVariants] = useState<number>(1);
-  const [enhancePrompt, setEnhancePrompt] = useState<string>("");
+  const [enhanceVibes, setEnhanceVibes] = useState<string[]>([]);
   const [enhancing, setEnhancing] = useState(false);
   const [lightbox, setLightbox] = useState<MediaAsset | null>(null);
   const [jobsOpen, setJobsOpen] = useState(false);
@@ -120,11 +120,13 @@ export default function MediaLibraryTab() {
     if (!enhanceFor) return;
     setEnhancing(true);
     try {
+      const vibeText = enhanceVibes.length > 0 ? ` Make it feel: ${enhanceVibes.join(", ")}.` : "";
       const { data, error } = await supabase.functions.invoke("enhance-image", {
         body: {
           asset_id: enhanceFor.id,
-          preset: enhancePrompt.trim() ? undefined : enhancePreset,
-          custom_prompt: enhancePrompt.trim() || undefined,
+          preset: enhancePreset,
+          extra_vibes: enhanceVibes,
+          custom_prompt: vibeText ? undefined : undefined,
           variants: enhanceVariants,
         },
       });
@@ -132,7 +134,7 @@ export default function MediaLibraryTab() {
       const count = (data as { results?: unknown[] })?.results?.length ?? 0;
       toast({ title: "Enhanced", description: `${count} variant(s) queued in Pending.` });
       setEnhanceFor(null);
-      setEnhancePrompt("");
+      setEnhanceVibes([]);
       setFilter("pending");
       qc.invalidateQueries({ queryKey: ["cms-media-assets"] });
       qc.invalidateQueries({ queryKey: ["cms-media-counts"] });
@@ -142,6 +144,22 @@ export default function MediaLibraryTab() {
     } finally {
       setEnhancing(false);
     }
+  }
+
+  const STYLE_OPTIONS = [
+    { value: "enhance", label: "Make it sharper & cleaner", help: "Fix blur, noise, and dull colors. Keeps everything the same." },
+    { value: "hero", label: "Turn it into a hero banner", help: "Cinematic lighting, warm tones, wide framing." },
+    { value: "square", label: "Crop for social (square)", help: "Reframe to 1:1 for Instagram posts." },
+    { value: "background", label: "Swap the background", help: "Keep the subject, replace what's behind." },
+  ] as const;
+
+  const VIBE_WORDS = [
+    "warmer", "brighter", "moody", "cozy", "rustic",
+    "vineyard", "sunset", "golden hour", "minimal", "playful",
+  ];
+
+  function toggleVibe(word: string) {
+    setEnhanceVibes((prev) => prev.includes(word) ? prev.filter((w) => w !== word) : [...prev, word]);
   }
 
   const counts = countsQuery.data ?? { pending: 0, approved: 0, rejected: 0 };
@@ -332,7 +350,7 @@ export default function MediaLibraryTab() {
             <DialogTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> Enhance with AI</DialogTitle>
           </DialogHeader>
           {enhanceFor && (
-            <div className="space-y-4">
+            <div className="space-y-5 max-h-[70vh] overflow-y-auto">
               <div className="grid grid-cols-[120px_1fr] gap-3 items-start">
                 <img src={enhanceFor.image_url} alt="" className="w-full aspect-square object-cover bg-muted" />
                 <p className="text-xs text-muted-foreground">
@@ -340,33 +358,68 @@ export default function MediaLibraryTab() {
                 </p>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium">What kind of edit?</label>
-                <Select value={enhancePreset} onValueChange={setEnhancePreset} disabled={!!enhancePrompt.trim()}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="enhance">Enhance quality (sharpen, denoise)</SelectItem>
-                    <SelectItem value="hero">Restyle as cinematic hero</SelectItem>
-                    <SelectItem value="square">Reframe as 1:1 social square</SelectItem>
-                    <SelectItem value="background">Replace background</SelectItem>
-                  </SelectContent>
-                </Select>
+                <p className="text-sm font-semibold">What do you want to do?</p>
+                <RadioGroup value={enhancePreset} onValueChange={setEnhancePreset} className="space-y-2">
+                  {STYLE_OPTIONS.map((opt) => (
+                    <Label
+                      key={opt.value}
+                      htmlFor={`style-${opt.value}`}
+                      className={`flex items-start gap-3 border p-3 cursor-pointer transition-colors ${
+                        enhancePreset === opt.value ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <RadioGroupItem value={opt.value} id={`style-${opt.value}`} className="mt-0.5" />
+                      <div className="space-y-0.5">
+                        <div className="text-sm font-medium">{opt.label}</div>
+                        <div className="text-xs text-muted-foreground">{opt.help}</div>
+                      </div>
+                    </Label>
+                  ))}
+                </RadioGroup>
               </div>
+
               <div className="space-y-2">
-                <label className="text-xs font-medium">Or describe your own edit (overrides preset)</label>
-                <Textarea rows={3} placeholder="e.g. warmer lighting, vineyard background, more rustic feel"
-                  value={enhancePrompt} onChange={(e) => setEnhancePrompt(e.target.value)} />
+                <p className="text-sm font-semibold">Pick a vibe <span className="text-xs font-normal text-muted-foreground">(optional)</span></p>
+                <div className="flex flex-wrap gap-2">
+                  {VIBE_WORDS.map((w) => {
+                    const active = enhanceVibes.includes(w);
+                    return (
+                      <button
+                        key={w}
+                        type="button"
+                        onClick={() => toggleVibe(w)}
+                        className={`px-3 py-1.5 text-xs border transition-colors ${
+                          active ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"
+                        }`}
+                      >
+                        {w}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
               <div className="space-y-2">
-                <label className="text-xs font-medium">How many variants?</label>
-                <Select value={String(enhanceVariants)} onValueChange={(v) => setEnhanceVariants(Number(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 variant (fastest)</SelectItem>
-                    <SelectItem value="2">2 variants</SelectItem>
-                    <SelectItem value="3">3 variants</SelectItem>
-                    <SelectItem value="4">4 variants (most options)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <p className="text-sm font-semibold">How many options?</p>
+                <RadioGroup
+                  value={String(enhanceVariants)}
+                  onValueChange={(v) => setEnhanceVariants(Number(v))}
+                  className="grid grid-cols-4 gap-2"
+                >
+                  {[1, 2, 3, 4].map((n) => (
+                    <Label
+                      key={n}
+                      htmlFor={`var-${n}`}
+                      className={`flex flex-col items-center gap-1 border p-2 cursor-pointer transition-colors ${
+                        enhanceVariants === n ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <RadioGroupItem value={String(n)} id={`var-${n}`} className="sr-only" />
+                      <span className="text-lg font-bold">{n}</span>
+                      <span className="text-[10px] text-muted-foreground">{n === 1 ? "fastest" : n === 4 ? "most" : ""}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
               </div>
             </div>
           )}

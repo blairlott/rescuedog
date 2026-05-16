@@ -435,6 +435,40 @@ export async function shopifyCartFetch(cartId: string): Promise<{ totalQuantity:
   };
 }
 
+const CART_DISCOUNT_CODES_UPDATE_MUTATION = `
+  mutation cartDiscountCodesUpdate($cartId: ID!, $discountCodes: [String!]) {
+    cartDiscountCodesUpdate(cartId: $cartId, discountCodes: $discountCodes) {
+      cart { id discountCodes { code applicable } }
+      userErrors { field message }
+    }
+  }
+`;
+
+/**
+ * Apply (or replace) discount codes on the Shopify cart. Pass an empty array
+ * to clear all codes. Returns the codes Shopify confirmed as applicable.
+ */
+export async function shopifyCartDiscountCodesUpdate(
+  cartId: string,
+  discountCodes: string[],
+): Promise<{ success: boolean; applicable: string[]; cartNotFound?: boolean }> {
+  const result = await storefrontApiRequest<any>(CART_DISCOUNT_CODES_UPDATE_MUTATION, {
+    cartId,
+    discountCodes,
+  });
+  const errs = result?.data?.cartDiscountCodesUpdate?.userErrors ?? [];
+  if (isCartNotFoundError(errs)) return { success: false, applicable: [], cartNotFound: true };
+  if (errs.length) {
+    console.error("[Shopify] cartDiscountCodesUpdate errors:", errs);
+    return { success: false, applicable: [] };
+  }
+  const codes = result?.data?.cartDiscountCodesUpdate?.cart?.discountCodes ?? [];
+  return {
+    success: true,
+    applicable: codes.filter((c: any) => c.applicable).map((c: any) => c.code),
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Vinoshipper deep-link helper                                               */
 /* -------------------------------------------------------------------------- */

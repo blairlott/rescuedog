@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Wine } from "lucide-react";
+import { Wine, BadgePercent } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCartStore, CartItem } from "@/stores/cartStore";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
   const { data: allProducts } = useProducts(50);
   const addItem = useCartStore(state => state.addItem);
   const isLoading = useCartStore(state => state.isLoading);
+  const applyDiscountCode = useCartStore(state => state.applyDiscountCode);
+  const discountCodes = useCartStore(state => state.discountCodes);
   const { freeShippingBottleCount } = useCartSettings();
   // Local re-render trigger after the user confirms 21+ inline.
   const [ageOverride, setAgeOverride] = useState(false);
@@ -44,11 +46,13 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
 
   let pool = available;
   let heading = "You might also like";
+  let isPairItBundle = false;
   if (hasWine && !hasMerch) {
     const merchOnly = available.filter(p => p.node.productKind !== "wine");
     if (merchOnly.length > 0) {
       pool = merchOnly;
       heading = "Pair it with merch";
+      isPairItBundle = true;
     }
   } else if (hasMerch && !hasWine && ageOk) {
     const wineOnly = available.filter(p => p.node.productKind === "wine");
@@ -71,6 +75,13 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
       selectedOptions: variant.selectedOptions || [],
     });
     const isWineRec = product.node.productKind === "wine";
+    // Pair-It bundle: wine-only cart + adding a merch suggestion → 10% off merch.
+    if (isPairItBundle && !isWineRec && !discountCodes.includes("PAIRIT10")) {
+      const applied = await applyDiscountCode("PAIRIT10");
+      if (applied) {
+        toast.success("Pair-It bundle: 10% off merch applied", { position: "top-center" });
+      }
+    }
     if (!isWineRec) {
       toast.success(`${product.node.title} added to cart`, { position: "top-center" });
     } else {
@@ -116,11 +127,24 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{heading}</p>
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{heading}</p>
+        {isPairItBundle && (
+          <span className="text-[10px] font-bold uppercase tracking-wider text-primary flex items-center gap-1">
+            <BadgePercent className="w-3 h-3" /> 10% off
+          </span>
+        )}
+      </div>
+      {isPairItBundle && (
+        <p className="text-[11px] text-muted-foreground leading-snug">
+          Add any merch to your wine order and we'll take 10% off the merch at checkout.
+        </p>
+      )}
       <div className="space-y-2">
         {recommendations.map(product => {
           const image = product.node.images.edges[0]?.node;
           const price = parseFloat(product.node.priceRange.minVariantPrice.amount);
+          const discounted = isPairItBundle ? price * 0.9 : null;
           return (
             <div key={product.node.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/50 border border-border">
               <div className="w-10 h-10 rounded overflow-hidden bg-secondary flex-shrink-0">
@@ -128,7 +152,14 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium truncate">{product.node.title}</p>
-                <p className="text-xs text-muted-foreground">Add for +${price.toFixed(2)}</p>
+                {discounted !== null ? (
+                  <p className="text-xs text-muted-foreground">
+                    Add for <span className="line-through opacity-60">+${price.toFixed(2)}</span>{" "}
+                    <span className="text-primary font-semibold">+${discounted.toFixed(2)}</span>
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Add for +${price.toFixed(2)}</p>
+                )}
               </div>
               <Button
                 size="sm"

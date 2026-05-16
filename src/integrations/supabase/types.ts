@@ -219,6 +219,27 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -3875,7 +3896,7 @@ export type Database = {
         Returns: number
       }
       enqueue_welcome_series:
-        | { Args: { _email: string; _user_id: string }; Returns: undefined }
+        | { Args: { _email?: string; _user_id: string }; Returns: undefined }
         | {
             Args: {
               _email: string

@@ -309,6 +309,48 @@ export type Database = {
         }
         Relationships: []
       }
+      autopilot_state: {
+        Row: {
+          alert_email: string
+          cadence_hours: number
+          confidence_threshold: number
+          enabled: boolean
+          id: number
+          last_autopilot_run_at: string | null
+          last_harvest_instagram_at: string | null
+          last_harvest_legacy_at: string | null
+          min_exposures_per_arm: number
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          alert_email?: string
+          cadence_hours?: number
+          confidence_threshold?: number
+          enabled?: boolean
+          id?: number
+          last_autopilot_run_at?: string | null
+          last_harvest_instagram_at?: string | null
+          last_harvest_legacy_at?: string | null
+          min_exposures_per_arm?: number
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alert_email?: string
+          cadence_hours?: number
+          confidence_threshold?: number
+          enabled?: boolean
+          id?: number
+          last_autopilot_run_at?: string | null
+          last_harvest_instagram_at?: string | null
+          last_harvest_legacy_at?: string | null
+          min_exposures_per_arm?: number
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cart_abandonments: {
         Row: {
           created_at: string
@@ -1545,6 +1587,42 @@ export type Database = {
           },
         ]
       }
+      experiment_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          name: string
+          slot_key: string
+          updated_at: string
+          use_media_pool: boolean
+          variant_configs: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name: string
+          slot_key: string
+          updated_at?: string
+          use_media_pool?: boolean
+          variant_configs?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string
+          slot_key?: string
+          updated_at?: string
+          use_media_pool?: boolean
+          variant_configs?: Json
+        }
+        Relationships: []
+      }
       experiment_variants: {
         Row: {
           config: Json
@@ -1748,6 +1826,42 @@ export type Database = {
           total_cents?: number
           updated_at?: string
           vinoshipper_gift_id?: string | null
+        }
+        Relationships: []
+      }
+      harvest_jobs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          items_found: number
+          items_new: number
+          metadata: Json
+          source: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items_found?: number
+          items_new?: number
+          metadata?: Json
+          source: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items_found?: number
+          items_new?: number
+          metadata?: Json
+          source?: string
+          started_at?: string
+          status?: string
         }
         Relationships: []
       }
@@ -2271,6 +2385,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      media_assets: {
+        Row: {
+          ai_score: number | null
+          ai_subject: string | null
+          ai_tags: string[]
+          alt_text: string | null
+          approved_at: string | null
+          approved_by: string | null
+          caption: string | null
+          created_at: string
+          height: number | null
+          id: string
+          image_url: string
+          metadata: Json
+          rejected_reason: string | null
+          source: string
+          source_post_url: string | null
+          source_url: string | null
+          status: string
+          storage_path: string | null
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          ai_score?: number | null
+          ai_subject?: string | null
+          ai_tags?: string[]
+          alt_text?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          caption?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          image_url: string
+          metadata?: Json
+          rejected_reason?: string | null
+          source: string
+          source_post_url?: string | null
+          source_url?: string | null
+          status?: string
+          storage_path?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          ai_score?: number | null
+          ai_subject?: string | null
+          ai_tags?: string[]
+          alt_text?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          caption?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          image_url?: string
+          metadata?: Json
+          rejected_reason?: string | null
+          source?: string
+          source_post_url?: string | null
+          source_url?: string | null
+          status?: string
+          storage_path?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: []
       }
       merch_bundles: {
         Row: {

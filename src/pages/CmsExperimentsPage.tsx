@@ -16,6 +16,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { ArrowLeft, Plus, Trash2, Loader2, Play, Pause, Square, FlaskConical } from "lucide-react";
+import MediaLibraryTab from "@/components/cms/MediaLibraryTab";
+import AutopilotTab from "@/components/cms/AutopilotTab";
 
 /**
  * Catalog of slots wired into the app. New slots can be added in code and
@@ -334,6 +336,8 @@ export default function CmsExperimentsPage() {
             <TabsTrigger value="experiments">Experiments</TabsTrigger>
             <TabsTrigger value="rules">Personalization Rules</TabsTrigger>
             <TabsTrigger value="slots">Slot Catalog</TabsTrigger>
+            <TabsTrigger value="media">Media</TabsTrigger>
+            <TabsTrigger value="autopilot">Autopilot</TabsTrigger>
           </TabsList>
 
           <TabsContent value="experiments" className="mt-6 space-y-4">
@@ -456,6 +460,14 @@ export default function CmsExperimentsPage() {
                 </CardContent>
               </Card>
             ))}
+          </TabsContent>
+
+          <TabsContent value="media" className="mt-6">
+            <MediaLibraryTab />
+          </TabsContent>
+
+          <TabsContent value="autopilot" className="mt-6">
+            <AutopilotTab />
           </TabsContent>
         </Tabs>
       </main>

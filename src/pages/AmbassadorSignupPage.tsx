@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { toast } from "sonner";
+import { AvatarUploader } from "@/components/ambassador/AvatarUploader";
 
 export default function AmbassadorSignupPage() {
   const { user, loading } = useCustomerAuth();
@@ -18,6 +19,7 @@ export default function AmbassadorSignupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [handleStatus, setHandleStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
   const [form, setForm] = useState({
     handle: "",
     display_name: "",
@@ -27,6 +29,26 @@ export default function AmbassadorSignupPage() {
     tiktok: "",
     website: "",
   });
+
+  const cleanHandle = useMemo(
+    () => form.handle.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+    [form.handle]
+  );
+
+  useEffect(() => {
+    if (!cleanHandle) { setHandleStatus("idle"); return; }
+    if (cleanHandle.length < 3) { setHandleStatus("invalid"); return; }
+    setHandleStatus("checking");
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("ambassador_profiles")
+        .select("id")
+        .eq("handle", cleanHandle)
+        .maybeSingle();
+      setHandleStatus(data ? "taken" : "available");
+    }, 400);
+    return () => clearTimeout(t);
+  }, [cleanHandle]);
 
   useEffect(() => {
     if (loading) return;
@@ -62,14 +84,14 @@ export default function AmbassadorSignupPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreed) { toast.error("You must agree to the Ambassador Guidelines"); return; }
-    const handleClean = form.handle.toLowerCase().replace(/[^a-z0-9-]/g, "");
-    if (handleClean.length < 3) { toast.error("Handle must be at least 3 characters (letters, numbers, hyphens)"); return; }
+    if (cleanHandle.length < 3) { toast.error("Handle must be at least 3 characters (letters, numbers, hyphens)"); return; }
+    if (handleStatus === "taken") { toast.error("That handle is taken — try another"); return; }
     setSubmitting(true);
     const profileId = crypto.randomUUID();
     const { error } = await supabase.from("ambassador_profiles").insert({
       id: profileId,
       user_id: user.id,
-      handle: handleClean,
+      handle: cleanHandle,
       display_name: form.display_name,
       bio: form.bio || null,
       photo_url: form.photo_url || null,
@@ -91,7 +113,7 @@ export default function AmbassadorSignupPage() {
         idempotencyKey: `ambassador-welcome-${profileId}`,
         templateData: {
           name: form.display_name,
-          handle: handleClean,
+          handle: cleanHandle,
           dashboardUrl: `${window.location.origin}/ambassador/dashboard`,
         },
       },
@@ -115,19 +137,50 @@ export default function AmbassadorSignupPage() {
               <span className="text-sm text-muted-foreground">/a/</span>
               <Input id="handle" required value={form.handle} onChange={e => setForm(f => ({ ...f, handle: e.target.value }))} placeholder="jane-doe" />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Lowercase letters, numbers, hyphens. 3+ characters.</p>
+            <div className="text-xs mt-1 flex items-center gap-2 min-h-[1.25rem]">
+              {handleStatus === "idle" && (
+                <span className="text-muted-foreground">Lowercase letters, numbers, hyphens. 3+ characters.</span>
+              )}
+              {handleStatus === "invalid" && (
+                <span className="text-muted-foreground">Keep typing — at least 3 characters.</span>
+              )}
+              {handleStatus === "checking" && cleanHandle && (
+                <span className="text-muted-foreground inline-flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Checking <code className="bg-muted px-1">/a/{cleanHandle}</code>…
+                </span>
+              )}
+              {handleStatus === "available" && (
+                <span className="text-green-700 inline-flex items-center gap-1">
+                  <Check className="w-3 h-3" /> <code className="bg-muted px-1">/a/{cleanHandle}</code> is available
+                </span>
+              )}
+              {handleStatus === "taken" && (
+                <span className="text-destructive inline-flex items-center gap-1">
+                  <X className="w-3 h-3" /> <code className="bg-muted px-1">/a/{cleanHandle}</code> is taken
+                </span>
+              )}
+            </div>
           </div>
           <div>
             <Label htmlFor="display_name">Display Name *</Label>
             <Input id="display_name" required value={form.display_name} onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))} placeholder="Jane Doe" className="mt-1" />
           </div>
           <div>
-            <Label htmlFor="bio">Bio</Label>
-            <Textarea id="bio" rows={4} value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell visitors about yourself, why you love rescue dogs, and what wines you recommend." className="mt-1" />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="bio">Bio</Label>
+              <span className="text-xs text-muted-foreground">{form.bio.length}/500</span>
+            </div>
+            <Textarea id="bio" rows={4} maxLength={500} value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell visitors about yourself, why you love rescue dogs, and what wines you recommend." className="mt-1" />
           </div>
           <div>
-            <Label htmlFor="photo_url">Profile Photo URL</Label>
-            <Input id="photo_url" type="url" value={form.photo_url} onChange={e => setForm(f => ({ ...f, photo_url: e.target.value }))} placeholder="https://..." className="mt-1" />
+            <Label>Profile Photo</Label>
+            <div className="mt-2">
+              <AvatarUploader
+                userId={user.id}
+                value={form.photo_url || null}
+                onChange={(url) => setForm(f => ({ ...f, photo_url: url || "" }))}
+              />
+            </div>
           </div>
           <div className="grid sm:grid-cols-3 gap-3">
             <div>
@@ -147,8 +200,12 @@ export default function AmbassadorSignupPage() {
             <Checkbox checked={agreed} onCheckedChange={v => setAgreed(!!v)} className="mt-0.5" />
             <span className="text-sm">I am 21+, I have read and will follow the <Link to="/ambassadors/disclosure" target="_blank" className="underline">Ambassador Guidelines & FTC Disclosure</Link>, and I understand that all commission payouts are handled by impact.com.</span>
           </label>
-          <Button type="submit" disabled={submitting || !agreed} size="lg" className="w-full">
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Application"}
+          <Button type="submit" disabled={submitting || !agreed || handleStatus === "taken" || handleStatus === "invalid" || handleStatus === "checking"} size="lg" className="w-full">
+            {submitting ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Submitting…
+              </span>
+            ) : "Submit Application"}
           </Button>
         </form>
       </main>

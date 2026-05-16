@@ -65,6 +65,10 @@ const VineyardPage = () => {
         description="Lodi, California estate — sustainably farmed under Lodi Rules. Meet the vines behind every bottle of Rescue Dog Wines."
         path="/vineyard"
         jsonLd={winerySchema()}
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "Vineyard", path: "/vineyard" },
+        ]}
       />
       <Header />
       <main className="flex-1">

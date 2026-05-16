@@ -144,6 +144,11 @@ const ProductDetail = () => {
         description={product.description?.slice(0, 155) || `${product.title} — sustainable wine from Rescue Dog Wines. 50% of profits support animal rescue.`}
         image={product.images.edges[0]?.node?.url}
         path={`/product/${product.handle}`}
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: isMerch ? "Merch" : "Wines", path: isMerch ? "/merch" : "/wines" },
+          { name: product.title, path: `/product/${product.handle}` },
+        ]}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Product",

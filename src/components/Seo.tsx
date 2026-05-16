@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { breadcrumbListSchema } from "@/lib/jsonLd";
 
 interface Props {
   title: string;
@@ -6,16 +7,25 @@ interface Props {
   image?: string;
   path?: string;
   noindex?: boolean;
-  jsonLd?: Record<string, any>;
+  jsonLd?: Record<string, any> | Record<string, any>[];
+  /** Auto-emits a BreadcrumbList JSON-LD alongside jsonLd. URLs are resolved against the site origin. */
+  breadcrumbs?: Array<{ name: string; path: string }>;
 }
 
 const SITE = "https://rescuedogwines.com";
 const DEFAULT_DESC = "Award-winning, sustainable wines from Lodi. 50% of profits support animal rescue.";
 const DEFAULT_IMG = `${SITE}/og-default.jpg`;
 
-export function Seo({ title, description = DEFAULT_DESC, image = DEFAULT_IMG, path, noindex, jsonLd }: Props) {
+export function Seo({ title, description = DEFAULT_DESC, image = DEFAULT_IMG, path, noindex, jsonLd, breadcrumbs }: Props) {
   const url = path ? `${SITE}${path}` : SITE;
   const fullTitle = title.endsWith("Rescue Dog Wines") ? title : `${title} | Rescue Dog Wines`;
+  const schemas: Record<string, any>[] = [];
+  if (jsonLd) schemas.push(...(Array.isArray(jsonLd) ? jsonLd : [jsonLd]));
+  if (breadcrumbs && breadcrumbs.length > 0) {
+    schemas.push(
+      breadcrumbListSchema(breadcrumbs.map((b) => ({ name: b.name, url: `${SITE}${b.path}` }))),
+    );
+  }
   return (
     <Helmet>
       <title>{fullTitle}</title>
@@ -29,7 +39,9 @@ export function Seo({ title, description = DEFAULT_DESC, image = DEFAULT_IMG, pa
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image} />
-      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>}
+      {schemas.map((s, i) => (
+        <script key={i} type="application/ld+json">{JSON.stringify(s)}</script>
+      ))}
     </Helmet>
   );
 }

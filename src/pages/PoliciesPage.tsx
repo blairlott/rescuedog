@@ -22,6 +22,10 @@ export default function PoliciesPage() {
         title="Our Policies | Rescue Dog Wines"
         description="Privacy, shipping, returns, membership, accessibility, and terms & conditions for Rescue Dog Wines."
         path="/policies"
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "Policies", path: "/policies" },
+        ]}
         jsonLd={{
           "@context": "https://schema.org",
           "@graph": [

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Heart, Users, Gift } from "lucide-react";
 import { useIsMember } from "@/hooks/useIsMember";
 import { PostPurchaseUpsell } from "@/components/PostPurchaseUpsell";
+import { recordExperimentRevenueForVisitor } from "@/lib/experimentRevenue";
 
 export default function ThankYouPage() {
   const [params] = useSearchParams();
@@ -32,6 +33,16 @@ export default function ThankYouPage() {
         },
       });
     } catch {}
+    // Feed revenue back to every running experiment this visitor saw, so
+    // the bandit can optimize on actual revenue-per-visitor.
+    if (orderId) {
+      const cents = Math.round((Number(total) || 0) * 100);
+      const dedupeKey = `rdw_exp_rev_${orderId}`;
+      if (cents > 0 && !sessionStorage.getItem(dedupeKey)) {
+        sessionStorage.setItem(dedupeKey, "1");
+        recordExperimentRevenueForVisitor(cents, "purchase", { orderId, bottles }).catch(() => {});
+      }
+    }
   }, [orderId, total, bottles]);
 
   const dogsHelped = Math.max(1, Math.floor(bottles / 4));

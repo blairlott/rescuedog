@@ -52,6 +52,7 @@ import CrmMarginPage from "./pages/CrmMarginPage";
 import CrmResetPasswordPage from "./pages/CrmResetPasswordPage";
 import CmsLoginPage from "./pages/CmsLoginPage";
 import CmsDashboard from "./pages/CmsDashboard";
+import CmsExperimentsPage from "./pages/CmsExperimentsPage";
 import WineClubAdminPage from "./pages/WineClubAdminPage";
 import WineClubLoginPage from "./pages/WineClubLoginPage";
 import WineClubResetPasswordPage from "./pages/WineClubResetPasswordPage";
@@ -172,6 +173,7 @@ function AppContent() {
       <Route caseSensitive path="/CMS/*" element={<Navigate to="/cms" replace />} />
       <Route path="/cms/login" element={<CmsLoginPage />} />
       <Route path="/cms" element={<CmsDashboard />} />
+      <Route path="/cms/experiments" element={<CmsExperimentsPage />} />
       <Route path="/crm" element={<CrmLayout />}>
         <Route index element={<CrmDashboard />} />
         <Route path="account/:id" element={<CrmAccountDetail />} />

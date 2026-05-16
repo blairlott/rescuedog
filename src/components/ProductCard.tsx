@@ -7,7 +7,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Award, ShoppingBag, Heart, Lock, Zap } from "lucide-react";
+import { Award, ShoppingBag, Heart, Lock, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { isWineProduct } from "@/lib/productUtils";
 import { useGeo } from "@/hooks/useGeo";
@@ -223,13 +223,11 @@ export function ProductCard({ product }: ProductCardProps) {
           </Select>
           <Button
             onClick={(e) => handleAddToCart(e)}
-            disabled={isLoading || soldOut || !purchaseAllowed}
+            disabled={soldOut || !purchaseAllowed}
             title={!purchaseAllowed ? t("geo.purchase_disabled_tooltip") : undefined}
             className="w-full uppercase tracking-brand text-[11px] font-bold bg-foreground text-background hover:bg-foreground/90 h-9 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : soldOut ? (
+            {soldOut ? (
               t("common.sold_out")
             ) : !purchaseAllowed ? (
               t("geo.checkout_disabled_label")
@@ -242,7 +240,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </Button>
           <Button
             onClick={(e) => handleAddToCart(e, { buyNow: true })}
-            disabled={isLoading || soldOut || !purchaseAllowed}
+            disabled={soldOut || !purchaseAllowed}
             className="w-full uppercase tracking-brand text-[11px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 h-9 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Zap className="w-3.5 h-3.5 mr-1.5" />

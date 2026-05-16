@@ -29,6 +29,8 @@ import VineyardPage from "./pages/VineyardPage";
 import ContactPage from "./pages/ContactPage";
 import WineClubPage from "./pages/WineClubPage";
 import DonationPage from "./pages/DonationPage";
+import WineThatGivesBackPage from "./pages/WineThatGivesBackPage";
+import PressPage from "./pages/PressPage";
 import SubscribePage from "./pages/SubscribePage";
 import CustomerLoginPage from "./pages/CustomerLoginPage";
 import CustomerSignupPage from "./pages/CustomerSignupPage";
@@ -134,6 +136,8 @@ function AppContent() {
       <Route path="/club/login" element={<WineClubLoginPage />} />
       <Route path="/club/reset-password" element={<WineClubResetPasswordPage />} />
       <Route path="/donation" element={<DonationPage />} />
+      <Route path="/wine-that-gives-back" element={<WineThatGivesBackPage />} />
+      <Route path="/press" element={<PressPage />} />
       <Route path="/sell" element={<SellOnSitePage />} />
       <Route path="/marketplace/apply" element={<Navigate to="/sell" replace />} />
       <Route path="/ambassadors" element={<AmbassadorsLandingPage />} />

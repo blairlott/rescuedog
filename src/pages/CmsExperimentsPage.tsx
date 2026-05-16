@@ -236,7 +236,7 @@ export default function CmsExperimentsPage() {
             experiment_id: (exp as Experiment).id,
             key: v.key,
             name: v.name,
-            config: v.configParsed,
+            config: v.configParsed as never,
             is_control: v.is_control,
           })),
         );
@@ -284,7 +284,8 @@ export default function CmsExperimentsPage() {
         slot_key: ruleForm.slot_key,
         name: ruleForm.name || "Untitled rule",
         priority: ruleForm.priority,
-        segment, variant_config,
+        segment: segment as never,
+        variant_config: variant_config as never,
         enabled: ruleForm.enabled,
       });
       if (error) throw error;

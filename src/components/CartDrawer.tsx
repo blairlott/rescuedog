@@ -94,8 +94,7 @@ export const CartDrawer = () => {
   // the shipping-included threshold and are excluded from member discounts —
   // matches Vinoshipper's "Excluded from Discounts" rule.
   const totalBottlesEffective = isMerchRoute ? totalItems : effectiveBottleCount(items as any);
-  const { freeShippingBottleCount, merchFreeShippingThreshold, fullCaseCount } = useCartSettings();
-  const { fullCaseDiscount } = useCartSettings();
+  const { freeShippingBottleCount, merchFreeShippingThreshold, fullCaseCount, fullCaseDiscount } = useCartSettings();
   const shippingIncluded = isMerchRoute
     ? totalPrice >= merchFreeShippingThreshold
     : totalBottlesEffective >= freeShippingBottleCount;

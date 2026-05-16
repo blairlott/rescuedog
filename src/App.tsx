@@ -176,6 +176,7 @@ function AppContent() {
         <Route path="margin" element={<CrmMarginPage />} />
         <Route path="ambassadors" element={<CrmAmbassadorsPage />} />
         <Route path="compliance" element={<CrmCompliancePage />} />
+        <Route path="leads" element={<CrmLeadsPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

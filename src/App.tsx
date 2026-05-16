@@ -72,6 +72,7 @@ import AmbassadorDirectoryPage from "./pages/AmbassadorDirectoryPage";
 import AmbassadorDisclosurePage from "./pages/AmbassadorDisclosurePage";
 import CrmAmbassadorsPage from "./pages/CrmAmbassadorsPage";
 import CrmCompliancePage from "./pages/crm/CrmCompliancePage";
+import CrmLeadsPage from "./pages/crm/CrmLeadsPage";
 import RewardsTermsPage from "./pages/RewardsTermsPage";
 import RewardsPage from "./pages/RewardsPage";
 import PoliciesPage from "./pages/PoliciesPage";
@@ -176,6 +177,7 @@ function AppContent() {
         <Route path="margin" element={<CrmMarginPage />} />
         <Route path="ambassadors" element={<CrmAmbassadorsPage />} />
         <Route path="compliance" element={<CrmCompliancePage />} />
+        <Route path="leads" element={<CrmLeadsPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

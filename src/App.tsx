@@ -31,6 +31,8 @@ import WineClubPage from "./pages/WineClubPage";
 import DonationPage from "./pages/DonationPage";
 import WineThatGivesBackPage from "./pages/WineThatGivesBackPage";
 import PressPage from "./pages/PressPage";
+import CompareHubPage from "./pages/CompareHubPage";
+import BrandComparePage from "./pages/BrandComparePage";
 import SubscribePage from "./pages/SubscribePage";
 import CustomerLoginPage from "./pages/CustomerLoginPage";
 import CustomerSignupPage from "./pages/CustomerSignupPage";
@@ -139,6 +141,10 @@ function AppContent() {
       <Route path="/donation" element={<DonationPage />} />
       <Route path="/wine-that-gives-back" element={<WineThatGivesBackPage />} />
       <Route path="/press" element={<PressPage />} />
+      <Route path="/compare" element={<CompareHubPage />} />
+      <Route path="/compare/:slug" element={<BrandComparePage />} />
+      <Route path="/vs" element={<Navigate to="/compare" replace />} />
+      <Route path="/vs/:slug" element={<BrandComparePage />} />
       <Route path="/sell" element={<SellOnSitePage />} />
       <Route path="/marketplace/apply" element={<Navigate to="/sell" replace />} />
       <Route path="/ambassadors" element={<AmbassadorsLandingPage />} />

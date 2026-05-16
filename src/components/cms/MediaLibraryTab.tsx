@@ -81,7 +81,7 @@ export default function MediaLibraryTab() {
     }
   }
 
-  async function setStatus(id: string, status: "approved" | "rejected" | "archived") {
+  async function setStatus(id: string, status: "approved" | "rejected" | "archived" | "pending") {
     const { error } = await supabase
       .from("media_assets")
       .update({ status, approved_at: new Date().toISOString() })

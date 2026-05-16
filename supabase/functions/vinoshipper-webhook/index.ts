@@ -199,6 +199,25 @@ Deno.serve(async (req) => {
         // TODO: GET /orders/{id} from Vinoshipper, then update wine_club_shipments
         // (status, tracking_number, total_cents, etc.) where vinoshipper_order_id matches.
         notes = "ORDER event received; detail fetch pending Vinoshipper API key";
+        // Welcome series backup trigger: covers guest-checkout customers who
+        // never created a site account. enqueue_welcome_series is idempotent
+        // (per-email dedupe) so repeat orders won't re-trigger.
+        try {
+          const p = payload as unknown as Record<string, any>;
+          const vsCustomerId =
+            p?.customerId ?? p?.customer_id ?? p?.data?.customerId ?? null;
+          if (vsCustomerId) {
+            const note = await enqueueWelcomeForVsCustomer(supabase, vsCustomerId, {
+              email: p?.email ?? null,
+              firstName: p?.firstName ?? p?.first_name ?? null,
+              lastName: p?.lastName ?? p?.last_name ?? null,
+              createdAt: p?.customerCreatedAt ?? null,
+            });
+            notes += ` | ${note}`;
+          }
+        } catch (e) {
+          console.error("[welcome-from-order] exception", e);
+        }
         // Best-effort loyalty accrual: if the payload includes a linkable
         // customer + a subtotal, award 1 point per $1. Idempotent on order_id.
         try {
@@ -321,8 +340,24 @@ Deno.serve(async (req) => {
         notes = "CLUB_MEMBERSHIP event received; member identification + discount sync pending";
         break;
       case "CUSTOMER":
-        // TODO: GET /customers/{id} if we need to mirror profile changes.
-        notes = "CUSTOMER event received; profile mirror pending";
+        // Primary welcome-series trigger for guest-checkout customers.
+        notes = "CUSTOMER event received";
+        try {
+          const p = payload as unknown as Record<string, any>;
+          const vsCustomerId = payload.identifier ?? p?.customerId ?? p?.id ?? null;
+          if (vsCustomerId) {
+            const note = await enqueueWelcomeForVsCustomer(supabase, vsCustomerId, {
+              email: p?.email ?? null,
+              firstName: p?.firstName ?? p?.first_name ?? null,
+              lastName: p?.lastName ?? p?.last_name ?? null,
+              createdAt: p?.createdAt ?? p?.created_at ?? null,
+            });
+            notes += ` | ${note}`;
+          }
+        } catch (e) {
+          console.error("[welcome-from-customer] exception", e);
+          notes += ` | welcome error: ${String(e)}`;
+        }
         break;
     }
 

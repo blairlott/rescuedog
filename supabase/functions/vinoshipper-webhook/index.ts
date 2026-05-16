@@ -5,8 +5,85 @@
 // We verify the call by checking a shared secret header (VINOSHIPPER_WEBHOOK_SECRET).
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import type { VsWebhookPayload } from "../_shared/vinoshipper.ts";
+import { vsFetch, type VsWebhookPayload } from "../_shared/vinoshipper.ts";
 import { forwardPurchaseConversion } from "../_shared/serverConversions.ts";
+
+// Launch cutoff: any Vinoshipper customer created before this date is treated
+// as legacy and never enters the new-site welcome series.
+const LAUNCH_CUTOFF_ISO = "2026-07-01T00:00:00Z";
+
+/**
+ * Best-effort: fetch a Vinoshipper customer detail record and enqueue the
+ * welcome series + upsert a lead. Silently no-ops on any error so the
+ * webhook handler never fails because of an enrichment problem.
+ */
+async function enqueueWelcomeForVsCustomer(
+  supabase: ReturnType<typeof createClient>,
+  vsCustomerId: string | number,
+  fallback: { email?: string | null; firstName?: string | null; lastName?: string | null; createdAt?: string | null } = {},
+): Promise<string> {
+  try {
+    let email = fallback.email ?? null;
+    let firstName = fallback.firstName ?? null;
+    let lastName = fallback.lastName ?? null;
+    let createdAt = fallback.createdAt ?? null;
+
+    // Try to enrich from VS API. If unavailable, fall back to whatever the
+    // webhook payload gave us.
+    try {
+      const cust = await vsFetch<Record<string, any>>(`/customers/${vsCustomerId}`);
+      email = email ?? cust?.email ?? cust?.emailAddress ?? null;
+      firstName = firstName ?? cust?.firstName ?? cust?.first_name ?? null;
+      lastName = lastName ?? cust?.lastName ?? cust?.last_name ?? null;
+      createdAt = createdAt ?? cust?.createdAt ?? cust?.created_at ?? cust?.dateCreated ?? null;
+    } catch (e) {
+      console.warn(`[welcome-enqueue] vs customer fetch failed for ${vsCustomerId}: ${String(e)}`);
+    }
+
+    if (!email) return "welcome skipped: no email";
+
+    // Legacy guard
+    if (createdAt && new Date(createdAt).getTime() < new Date(LAUNCH_CUTOFF_ISO).getTime()) {
+      return "welcome skipped: legacy customer (pre-launch)";
+    }
+
+    // If they already have a site account, prefer that user_id linkage.
+    let userId: string | null = null;
+    const { data: linked } = await supabase
+      .from("customer_profiles")
+      .select("id")
+      .eq("vinoshipper_customer_id", String(vsCustomerId))
+      .maybeSingle();
+    if (linked?.id) userId = linked.id;
+
+    // Upsert lead row (idempotent on lower(email)).
+    await supabase.from("leads").upsert(
+      {
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        source: "vinoshipper_webhook",
+        vinoshipper_customer_id: String(vsCustomerId),
+        vinoshipper_created_at: createdAt,
+        welcome_series_started_at: new Date().toISOString(),
+        status: userId ? "converted" : "new",
+      },
+      { onConflict: "email", ignoreDuplicates: false },
+    );
+
+    // Enqueue series. enqueue_welcome_series handles dedupe + legacy cutoff.
+    const { error: rpcErr } = await supabase.rpc("enqueue_welcome_series", {
+      _user_id: userId,
+      _email: email,
+      _vinoshipper_created_at: createdAt,
+    });
+    if (rpcErr) return `welcome enqueue rpc err: ${rpcErr.message}`;
+    return userId ? "welcome enqueued (linked user)" : "welcome enqueued (lead)";
+  } catch (e) {
+    console.error("[welcome-enqueue] exception", e);
+    return `welcome error: ${String(e)}`;
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

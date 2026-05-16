@@ -3,7 +3,7 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Truck, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Truck, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
 import { CrmBreadcrumbs } from "@/components/crm/CrmBreadcrumbs";
@@ -27,6 +27,7 @@ export default function CrmLayout() {
     ...(roleInfo?.isAmbassadorManager ? [{ to: "/crm/ambassadors", label: "Ambassadors", icon: Heart }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/margin", label: "Margin", icon: TrendingUp }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/compliance", label: "Compliance", icon: ShieldCheck }] : []),
+    ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/leads", label: "Leads", icon: Mail }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin#depletion-uploader", label: "Depletion Upload", icon: FileText }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin", label: "Users", icon: Users }] : []),
   ];

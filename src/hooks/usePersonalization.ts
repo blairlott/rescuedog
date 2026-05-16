@@ -60,7 +60,7 @@ function getDevice(): VisitorSegment["device"] {
 export function useVisitorSegment(): VisitorSegment {
   const { country, isUS } = useGeo();
   const { user } = useCustomerAuth();
-  const isMember = useIsMember();
+  const { isMember } = useIsMember();
   const [device, setDevice] = useState<VisitorSegment["device"]>(() => getDevice());
   const [utm] = useState(() => readUtm());
   const [referrer] = useState(() => classifyReferrer());

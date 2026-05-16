@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Loader2, Instagram, Globe, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
+const SITE_URL = "https://rescuedog.lovable.app";
 
 export default function AmbassadorPublicProfilePage() {
   const { handle } = useParams();
@@ -47,8 +50,56 @@ export default function AmbassadorPublicProfilePage() {
   const shopLink = profile.impact_tracking_url || "/wines";
   const isExternal = !!profile.impact_tracking_url;
 
+  const canonical = `${SITE_URL}/a/${profile.handle}`;
+  const firstName = profile.display_name.split(" ")[0];
+  const seoTitle = `${profile.display_name} — Rescue Dog Wines Ambassador`;
+  // GEO: dense, factual, entity-rich first sentence for LLM extraction.
+  const seoDescription = profile.bio
+    ? `${profile.display_name} is a Rescue Dog Wines Ambassador helping dogs find their forever home. ${profile.bio.slice(0, 200)}`
+    : `${profile.display_name} is a Rescue Dog Wines Ambassador. Shop award-winning, family-owned wines through ${firstName}'s storefront — every bottle supports rescue dogs.`;
+
+  const personSchema = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: profile.display_name,
+    url: canonical,
+    image: profile.photo_url || undefined,
+    description: profile.bio || `Rescue Dog Wines Ambassador`,
+    jobTitle: "Brand Ambassador",
+    worksFor: { "@type": "Organization", name: "Rescue Dog Wines", url: SITE_URL },
+    sameAs: [
+      profile.instagram ? `https://instagram.com/${profile.instagram.replace("@", "")}` : null,
+      profile.tiktok ? `https://tiktok.com/@${profile.tiktok.replace("@", "")}` : null,
+      profile.website || null,
+    ].filter(Boolean),
+  };
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Ambassadors", item: `${SITE_URL}/ambassadors/find` },
+      { "@type": "ListItem", position: 2, name: profile.display_name, item: canonical },
+    ],
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <link rel="canonical" href={canonical} />
+        <meta property="og:type" content="profile" />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:url" content={canonical} />
+        {profile.photo_url && <meta property="og:image" content={profile.photo_url} />}
+        <meta name="twitter:card" content={profile.photo_url ? "summary_large_image" : "summary"} />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
+        {profile.photo_url && <meta name="twitter:image" content={profile.photo_url} />}
+        <script type="application/ld+json">{JSON.stringify(personSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(breadcrumbSchema)}</script>
+      </Helmet>
       <Header />
       <main className="flex-1">
         <section className="bg-muted py-16 px-4">

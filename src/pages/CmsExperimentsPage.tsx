@@ -461,6 +461,14 @@ export default function CmsExperimentsPage() {
               </Card>
             ))}
           </TabsContent>
+
+          <TabsContent value="media" className="mt-6">
+            <MediaLibraryTab />
+          </TabsContent>
+
+          <TabsContent value="autopilot" className="mt-6">
+            <AutopilotTab />
+          </TabsContent>
         </Tabs>
       </main>
 

@@ -344,6 +344,13 @@ const CmsDashboard = () => {
         </div>
       </header>
 
+      <div className="border-b border-border bg-muted/40">
+        <div className="max-w-5xl mx-auto px-4 py-2 flex items-center gap-3 text-xs">
+          <span className="text-muted-foreground">Quick links:</span>
+          <a href="/cms/experiments" className="text-primary hover:underline">Experiments &amp; Personalization →</a>
+        </div>
+      </div>
+
       {/* Main */}
       <main className="max-w-5xl mx-auto px-4 py-8">
         <Tabs defaultValue="content">

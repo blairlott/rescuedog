@@ -297,7 +297,7 @@ export default function MediaLibraryTab() {
                   )}
                   {filter === "approved" && (
                     <div className="flex gap-1">
-                      <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => { setEnhanceFor(a); setEnhancePrompt(""); setEnhancePreset("enhance"); setEnhanceVariants(1); }}>
+                      <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => { setEnhanceFor(a); setEnhanceVibes([]); setEnhancePreset("enhance"); setEnhanceVariants(1); }}>
                         <Sparkles className="h-3 w-3 mr-1" /> Enhance
                       </Button>
                       <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setStatus(a.id, "archived")} title="Archive">

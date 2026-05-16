@@ -99,7 +99,7 @@ export function useExperiment<T extends Record<string, unknown>>(
         _experiment_key: exps.key,
         _visitor_id: visitorId,
         _user_id: user?.id ?? null,
-        _segment: segment as unknown as Record<string, unknown>,
+        _segment: segment as never,
       });
       if (error || !data || !Array.isArray(data) || data.length === 0) return null;
       const row = data[0] as { variant_id: string; variant_key: string; variant_config: unknown; experiment_id: string };
@@ -153,7 +153,7 @@ export function useExperiment<T extends Record<string, unknown>>(
       _event_type: "exposure",
       _revenue_cents: null,
       _goal_key: null,
-      _metadata: {},
+      _metadata: {} as never,
     });
   }, [state.source, state.experimentId, state.variantId, user?.id]);
 
@@ -168,7 +168,7 @@ export function useExperiment<T extends Record<string, unknown>>(
         _event_type: "conversion",
         _revenue_cents: null,
         _goal_key: goalKey ?? null,
-        _metadata: metadata ?? {},
+        _metadata: (metadata ?? {}) as never,
       });
     },
     [state.experimentId, state.variantId, user?.id],
@@ -185,7 +185,7 @@ export function useExperiment<T extends Record<string, unknown>>(
         _event_type: "revenue",
         _revenue_cents: Math.max(0, Math.round(revenueCents)),
         _goal_key: goalKey ?? null,
-        _metadata: metadata ?? {},
+        _metadata: (metadata ?? {}) as never,
       });
     },
     [state.experimentId, state.variantId, user?.id],

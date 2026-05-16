@@ -141,6 +141,10 @@ function AppContent() {
       <Route path="/donation" element={<DonationPage />} />
       <Route path="/wine-that-gives-back" element={<WineThatGivesBackPage />} />
       <Route path="/press" element={<PressPage />} />
+      <Route path="/compare" element={<CompareHubPage />} />
+      <Route path="/compare/:slug" element={<BrandComparePage />} />
+      <Route path="/vs" element={<Navigate to="/compare" replace />} />
+      <Route path="/vs/:slug" element={<BrandComparePage />} />
       <Route path="/sell" element={<SellOnSitePage />} />
       <Route path="/marketplace/apply" element={<Navigate to="/sell" replace />} />
       <Route path="/ambassadors" element={<AmbassadorsLandingPage />} />

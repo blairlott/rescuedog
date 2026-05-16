@@ -2988,6 +2988,48 @@ export type Database = {
         }
         Relationships: []
       }
+      welcome_email_schedule: {
+        Row: {
+          attempts: number
+          created_at: string
+          email: string
+          id: string
+          last_error: string | null
+          send_at: string
+          sent_at: string | null
+          status: string
+          step_index: number
+          template_name: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          email: string
+          id?: string
+          last_error?: string | null
+          send_at: string
+          sent_at?: string | null
+          status?: string
+          step_index: number
+          template_name: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          email?: string
+          id?: string
+          last_error?: string | null
+          send_at?: string
+          sent_at?: string | null
+          status?: string
+          step_index?: number
+          template_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wholesale_inquiries: {
         Row: {
           business: string
@@ -3783,6 +3825,10 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      enqueue_welcome_series: {
+        Args: { _email: string; _user_id: string }
+        Returns: undefined
       }
       get_public_impact_totals: {
         Args: never

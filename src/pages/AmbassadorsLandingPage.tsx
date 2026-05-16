@@ -3,12 +3,47 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Heart, Megaphone, Sparkles, Download, ShieldCheck, ExternalLink } from "lucide-react";
+import { Seo } from "@/components/Seo";
+import { faqPageSchema } from "@/lib/jsonLd";
 
 const IMPACT_SIGNUP = "https://app.impact.com/signup/none/create-new-mediapartner-account-flow.ihtml?execution=e1s1#/?viewkey=signUpPreStart";
+
+const AMBASSADOR_FAQS = [
+  {
+    question: "Who can become a Rescue Dog Wines ambassador?",
+    answer: "Nonprofits, rescue organizations, enthusiasts, and influencers in the U.S. who can authentically share Rescue Dog Wines with their audience. You must be 21+ and live in a state where we can ship wine.",
+  },
+  {
+    question: "How much commission do ambassadors earn?",
+    answer: "Ambassadors earn percentage-based commission on every bottle sold through their unique link. Commission rates and payouts are tracked and paid automatically through impact.com.",
+  },
+  {
+    question: "How are commissions tracked and paid?",
+    answer: "All tracking, reporting, payments, and 1099 tax forms are handled by impact.com. You'll get a unique referral link plus a dashboard to monitor clicks, conversions, and earnings.",
+  },
+  {
+    question: "Is there a cost to join?",
+    answer: "No. The ambassador program is free to join. Apply through our signup form and we'll review your application before activating your impact.com account.",
+  },
+  {
+    question: "Can I host tasting events as an ambassador?",
+    answer: "Yes. Approved ambassadors can host in-person tasting events and get a dedicated vanity page to promote them. Reach out after approval for event support.",
+  },
+];
 
 export default function AmbassadorsLandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo
+        title="Rescue Ambassadors"
+        description="Earn commission helping dogs find their forever home. Free affiliate program for nonprofits, enthusiasts, and influencers — tracked and paid through impact.com."
+        path="/ambassadors"
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "Ambassadors", path: "/ambassadors" },
+        ]}
+        jsonLd={faqPageSchema(AMBASSADOR_FAQS)}
+      />
       <Header />
       <main className="flex-1">
         <section className="bg-foreground text-background py-20 px-4">

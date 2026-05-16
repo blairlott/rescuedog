@@ -13,6 +13,8 @@ import { ClubSignupForm } from "@/components/wine-club/ClubSignupForm";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useNavigate } from "react-router-dom";
+import { Seo } from "@/components/Seo";
+import { faqPageSchema } from "@/lib/jsonLd";
 
 
 const perks = [
@@ -100,6 +102,16 @@ const WineClubPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo
+        title="Wine Club"
+        description="Join the Rescue Dog Wines club — free to join, 20% off, shipping included on club shipments, cancel anytime. Every shipment supports rescue dogs."
+        path="/club"
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "Wine Club", path: "/club" },
+        ]}
+        jsonLd={faqPageSchema(faqs.map((f: any) => ({ question: f.q, answer: f.a })))}
+      />
       <Header />
       <main className="flex-1">
         {/* Hero */}

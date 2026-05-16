@@ -1621,6 +1621,54 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          metadata: Json
+          notes: string | null
+          source: string
+          status: string
+          updated_at: string
+          vinoshipper_created_at: string | null
+          vinoshipper_customer_id: string | null
+          welcome_series_started_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          metadata?: Json
+          notes?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          vinoshipper_created_at?: string | null
+          vinoshipper_customer_id?: string | null
+          welcome_series_started_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          metadata?: Json
+          notes?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          vinoshipper_created_at?: string | null
+          vinoshipper_customer_id?: string | null
+          welcome_series_started_at?: string | null
+        }
+        Relationships: []
+      }
       locator_searches: {
         Row: {
           created_at: string
@@ -3000,7 +3048,7 @@ export type Database = {
           status: string
           step_index: number
           template_name: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           attempts?: number
@@ -3013,7 +3061,7 @@ export type Database = {
           status?: string
           step_index: number
           template_name: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           attempts?: number
@@ -3026,7 +3074,7 @@ export type Database = {
           status?: string
           step_index?: number
           template_name?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -3826,10 +3874,16 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
-      enqueue_welcome_series: {
-        Args: { _email: string; _user_id: string }
-        Returns: undefined
-      }
+      enqueue_welcome_series:
+        | { Args: { _email: string; _user_id: string }; Returns: undefined }
+        | {
+            Args: {
+              _email: string
+              _user_id: string
+              _vinoshipper_created_at?: string
+            }
+            Returns: undefined
+          }
       get_public_impact_totals: {
         Args: never
         Returns: {

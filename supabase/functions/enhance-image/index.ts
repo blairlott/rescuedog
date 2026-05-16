@@ -80,18 +80,22 @@ Deno.serve(async (req) => {
       asset_id,
       preset,
       custom_prompt,
+      extra_vibes,
       variants = 1,
       model = "google/gemini-2.5-flash-image",
     }: {
       asset_id?: string;
       preset?: keyof typeof PRESETS;
       custom_prompt?: string;
+      extra_vibes?: string[];
       variants?: number;
       model?: string;
     } = body;
 
     if (!asset_id) throw new Error("asset_id required");
-    const prompt = custom_prompt?.trim() || (preset && PRESETS[preset]) || PRESETS.enhance;
+    const basePrompt = custom_prompt?.trim() || (preset && PRESETS[preset]) || PRESETS.enhance;
+    const vibes = Array.isArray(extra_vibes) ? extra_vibes.filter(Boolean) : [];
+    const prompt = vibes.length > 0 ? `${basePrompt} Overall mood/vibe: ${vibes.join(", ")}.` : basePrompt;
     const count = Math.max(1, Math.min(4, Number(variants) || 1));
 
     const { data: parent, error: pErr } = await supabase

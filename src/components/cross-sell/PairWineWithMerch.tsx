@@ -19,6 +19,8 @@ interface Props {
 export function PairWineWithMerch({ wineHandle, wineTitle }: Props) {
   const { data: products } = useProducts(200);
   const addItem = useCartStore((s) => s.addItem);
+  const applyDiscountCode = useCartStore((s) => s.applyDiscountCode);
+  const discountCodes = useCartStore((s) => s.discountCodes);
 
   const merchPick: ShopifyProduct | null = useMemo(() => {
     if (!products) return null;
@@ -40,7 +42,7 @@ export function PairWineWithMerch({ wineHandle, wineTitle }: Props) {
   const winePrice = parseFloat(wine.node.priceRange.minVariantPrice.amount);
   const merchPrice = parseFloat(merchNode.priceRange.minVariantPrice.amount);
   const pairTotal = winePrice + merchPrice;
-  const savings = Math.min(5, merchPrice * 0.1);
+  const savings = merchPrice * 0.1;
 
   const addPair = async () => {
     const wineVariant = wine.node.variants.edges[0]?.node;
@@ -58,13 +60,13 @@ export function PairWineWithMerch({ wineHandle, wineTitle }: Props) {
       product: merchPick,
       variantId: merchVariant.id,
       variantTitle: merchVariant.title,
-      price: {
-        amount: (merchPrice - savings).toFixed(2),
-        currencyCode: merchVariant.price.currencyCode,
-      },
+      price: merchVariant.price,
       quantity: 1,
       selectedOptions: merchVariant.selectedOptions ?? [],
     });
+    if (!discountCodes.includes("PAIRIT10")) {
+      await applyDiscountCode("PAIRIT10");
+    }
     toast.success(`Pair added — saved $${savings.toFixed(2)} on the merch`, {
       position: "top-center",
     });

@@ -15,64 +15,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Plus, Trash2, Loader2, Play, Pause, Square, FlaskConical } from "lucide-react";
 import MediaLibraryTab from "@/components/cms/MediaLibraryTab";
 import AutopilotTab from "@/components/cms/AutopilotTab";
+import SlotFieldsForm from "@/components/cms/SlotFieldsForm";
+import { SLOT_SCHEMAS, getSchema, cleanConfig, summarizeConfig, AUDIENCE_OPTIONS } from "@/components/cms/slotSchemas";
 
-/**
- * Catalog of slots wired into the app. New slots can be added in code and
- * will automatically show up as targetable here. Keep this in sync with
- * actual useExperiment("slot_key", …) calls.
- */
-const SLOT_CATALOG: { key: string; label: string; description: string; configHint: string }[] = [
-  {
-    key: "homepage_hero",
-    label: "Homepage Hero",
-    description: "Hero image, headline, subtitle, CTA label + destination.",
-    configHint: '{ "imageUrl": "https://…", "headlineOverride": "…", "subtitleOverride": "…", "ctaLabel": "Shop Wines", "ctaHref": "/wines" }',
-  },
-  {
-    key: "homepage_ambassador_strip",
-    label: "Homepage Ambassador Strip",
-    description: "Whether to show the ambassador program block on the homepage and how to frame it.",
-    configHint: '{ "show": true, "headline": "…", "ctaLabel": "Become an Ambassador" }',
-  },
-  {
-    key: "homepage_blocks_order",
-    label: "Homepage Block Order",
-    description: "Reserved for future Mission/Shop/Club/Ambassador reordering.",
-    configHint: '{ "order": ["mission","shop","club","ambassador"] }',
-  },
-  {
-    key: "cart_promo_banner",
-    label: "Cart Promo Banner",
-    description: "Cart promo framing (e.g. case discount vs shipping vs club).",
-    configHint: '{ "headline": "Shipping included on 12+", "accent": "primary" }',
-  },
-  {
-    key: "club_featured_tier",
-    label: "Wine Club Featured Tier",
-    description: "Which tier shows the 'Most Popular' badge.",
-    configHint: '{ "tierKey": "6" }',
-  },
-  {
-    key: "ambassador_placement",
-    label: "Ambassador CTA Placement",
-    description: "Where the apply CTA appears site-wide.",
-    configHint: '{ "footer": true, "sticky": false, "postPurchase": true }',
-  },
-  {
-    key: "pdp_layout",
-    label: "Product Detail Layout",
-    description: "Image-first vs story-first vs reviews-first.",
-    configHint: '{ "variant": "image_first" }',
-  },
-];
-
-const SEGMENT_KEYS = [
-  "geoCountry", "geoIsUS", "authState", "device", "referrer", "hasAmbassadorRef",
-  "utmSource", "utmMedium", "utmCampaign",
-];
+// Slot definitions moved to src/components/cms/slotSchemas.ts so the
+// Experiments + Rules forms can render plain-language inputs.
+const SLOT_CATALOG = SLOT_SCHEMAS;
 
 type Experiment = {
   id: string;
@@ -115,6 +67,43 @@ function fmtRpv(revenueCents: number, exposures: number) {
 function fmtCvr(conversions: number, exposures: number) {
   if (!exposures) return "—";
   return `${((conversions / exposures) * 100).toFixed(1)}%`;
+}
+
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "test";
+}
+
+function ChipPicker({
+  label, options, value, onChange,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  value: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const toggle = (v: string) =>
+    onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
+  return (
+    <div>
+      <Label className="text-xs">{label}</Label>
+      <div className="flex flex-wrap gap-2 mt-1">
+        {options.map((o) => {
+          const active = value.includes(o.value);
+          return (
+            <Badge
+              key={o.value}
+              variant={active ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() => toggle(o.value)}
+            >
+              {o.label}
+            </Badge>
+          );
+        })}
+        {value.length === 0 && <span className="text-xs text-muted-foreground self-center">Anyone</span>}
+      </div>
+    </div>
+  );
 }
 
 export default function CmsExperimentsPage() {
@@ -178,49 +167,38 @@ export default function CmsExperimentsPage() {
 
   // ── Create experiment dialog state ──
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({
-    key: "",
+  type FriendlyVariant = { name: string; config: Record<string, unknown>; is_control: boolean };
+  const blankForm = () => ({
     name: "",
     description: "",
     slot_key: SLOT_CATALOG[0].key,
     use_bandit: true,
     variants: [
-      { key: "control", name: "Control", config: "{}", is_control: true },
-      { key: "variant_a", name: "Variant A", config: "{}", is_control: false },
-    ],
+      { name: "Current (control)", config: {}, is_control: true },
+      { name: "Option B", config: {}, is_control: false },
+    ] as FriendlyVariant[],
   });
-
-  const resetForm = () =>
-    setForm({
-      key: "",
-      name: "",
-      description: "",
-      slot_key: SLOT_CATALOG[0].key,
-      use_bandit: true,
-      variants: [
-        { key: "control", name: "Control", config: "{}", is_control: true },
-        { key: "variant_a", name: "Variant A", config: "{}", is_control: false },
-      ],
-    });
+  const [form, setForm] = useState(blankForm);
+  const resetForm = () => setForm(blankForm());
 
   const createExperiment = async () => {
     try {
-      if (!form.key || !form.name) {
-        toast({ title: "Key and name required", variant: "destructive" });
+      if (!form.name) {
+        toast({ title: "Give your test a name", variant: "destructive" });
         return;
       }
-      // Parse variant configs first
-      const parsedVariants = form.variants.map((v) => {
-        let cfg: Record<string, unknown> = {};
-        try { cfg = v.config.trim() ? JSON.parse(v.config) : {}; }
-        catch (e) { throw new Error(`Invalid JSON in variant ${v.key}: ${(e as Error).message}`); }
-        return { ...v, configParsed: cfg };
-      });
+      const baseKey = slugify(form.name);
+      const parsedVariants = form.variants.map((v, i) => ({
+        key: i === 0 && v.is_control ? "control" : slugify(v.name) || `option_${i + 1}`,
+        name: v.name || `Option ${i + 1}`,
+        is_control: v.is_control,
+        configParsed: cleanConfig(v.config),
+      }));
 
       const { data: exp, error: expErr } = await supabase
         .from("experiments")
         .insert({
-          key: form.key,
+          key: `${baseKey}_${Date.now().toString(36)}`,
           name: form.name,
           description: form.description || null,
           slot_key: form.slot_key,
@@ -244,13 +222,13 @@ export default function CmsExperimentsPage() {
         );
       if (vErr) throw vErr;
 
-      toast({ title: "Experiment created (draft)" });
+      toast({ title: "Test created as a draft", description: "Press Start when you're ready to run it." });
       setCreating(false);
       resetForm();
       qc.invalidateQueries({ queryKey: ["cms-experiments"] });
       qc.invalidateQueries({ queryKey: ["cms-experiment-variants"] });
     } catch (e) {
-      toast({ title: "Could not create experiment", description: (e as Error).message, variant: "destructive" });
+      toast({ title: "Could not create test", description: (e as Error).message, variant: "destructive" });
     }
   };
 
@@ -270,18 +248,32 @@ export default function CmsExperimentsPage() {
 
   // ── Personalization rule create ──
   const [creatingRule, setCreatingRule] = useState(false);
-  const [ruleForm, setRuleForm] = useState({
+  type FriendlySegment = Partial<{
+    device: string[];
+    authState: string[];
+    geoIsUS: string;
+    hasAmbassadorRef: string;
+    referrer: string[];
+  }>;
+  const blankRule = () => ({
     slot_key: SLOT_CATALOG[0].key,
     name: "",
     priority: 100,
-    segment: '{}',
-    variant_config: '{}',
+    segment: {} as FriendlySegment,
+    variant_config: {} as Record<string, unknown>,
     enabled: true,
   });
+  const [ruleForm, setRuleForm] = useState(blankRule);
   const createRule = async () => {
     try {
-      const segment = ruleForm.segment.trim() ? JSON.parse(ruleForm.segment) : {};
-      const variant_config = ruleForm.variant_config.trim() ? JSON.parse(ruleForm.variant_config) : {};
+      const segment: Record<string, unknown> = {};
+      const s = ruleForm.segment;
+      if (s.device?.length) segment.device = s.device;
+      if (s.authState?.length) segment.authState = s.authState;
+      if (s.referrer?.length) segment.referrer = s.referrer;
+      if (s.geoIsUS) segment.geoIsUS = s.geoIsUS === "true";
+      if (s.hasAmbassadorRef) segment.hasAmbassadorRef = s.hasAmbassadorRef === "true";
+      const variant_config = cleanConfig(ruleForm.variant_config);
       const { error } = await supabase.from("personalization_rules").insert({
         slot_key: ruleForm.slot_key,
         name: ruleForm.name || "Untitled rule",
@@ -293,7 +285,7 @@ export default function CmsExperimentsPage() {
       if (error) throw error;
       toast({ title: "Rule created" });
       setCreatingRule(false);
-      setRuleForm({ slot_key: SLOT_CATALOG[0].key, name: "", priority: 100, segment: "{}", variant_config: "{}", enabled: true });
+      setRuleForm(blankRule());
       qc.invalidateQueries({ queryKey: ["cms-personalization-rules"] });
     } catch (e) {
       toast({ title: "Could not create rule", description: (e as Error).message, variant: "destructive" });
@@ -389,27 +381,37 @@ export default function CmsExperimentsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {variants.map((v) => {
                         const isWinner = winner?.id === v.id && totalExposures > 50;
+                        const fields = summarizeConfig(exp.slot_key, v.config);
                         return (
                           <div key={v.id} className={`border p-3 ${isWinner ? "border-primary" : "border-border"}`}>
                             <div className="flex items-center justify-between mb-2">
-                              <div className="font-medium text-sm">{v.name} {v.is_control && <Badge variant="outline" className="ml-1">control</Badge>}{isWinner && <Badge className="ml-1">leader</Badge>}</div>
-                              <code className="text-xs text-muted-foreground">{v.key}</code>
+                              <div className="font-medium text-sm">
+                                {v.name}
+                                {v.is_control && <Badge variant="outline" className="ml-1">current</Badge>}
+                                {isWinner && <Badge className="ml-1">leader</Badge>}
+                              </div>
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-xs">
-                              <div><div className="text-muted-foreground">Exposures</div><div className="font-mono">{v.exposures}</div></div>
-                              <div><div className="text-muted-foreground">CVR</div><div className="font-mono">{fmtCvr(v.conversions, v.exposures)}</div></div>
-                              <div><div className="text-muted-foreground">Rev/visitor</div><div className="font-mono">{fmtRpv(v.revenue_cents, v.exposures)}</div></div>
+                              <div><div className="text-muted-foreground">People shown</div><div className="font-mono">{v.exposures}</div></div>
+                              <div><div className="text-muted-foreground">Click rate</div><div className="font-mono">{fmtCvr(v.conversions, v.exposures)}</div></div>
+                              <div><div className="text-muted-foreground">$ / visitor</div><div className="font-mono">{fmtRpv(v.revenue_cents, v.exposures)}</div></div>
                             </div>
-                            <details className="mt-2">
-                              <summary className="text-xs text-muted-foreground cursor-pointer">config</summary>
-                              <pre className="text-[10px] mt-1 bg-muted p-2 overflow-auto">{JSON.stringify(v.config, null, 2)}</pre>
-                            </details>
+                            {fields.length > 0 && (
+                              <dl className="mt-3 space-y-1 text-xs">
+                                {fields.map((f) => (
+                                  <div key={f.label} className="flex gap-2">
+                                    <dt className="text-muted-foreground min-w-[7rem]">{f.label}</dt>
+                                    <dd className="font-medium break-all">{f.value}</dd>
+                                  </div>
+                                ))}
+                              </dl>
+                            )}
                           </div>
                         );
                       })}
                     </div>
                     {totalExposures < 50 && exp.status === "running" && (
-                      <p className="text-xs text-muted-foreground mt-3">Need ~50 exposures per variant before results are meaningful.</p>
+                      <p className="text-xs text-muted-foreground mt-3">Need about 50 visitors per option before results mean much.</p>
                     )}
                   </CardContent>
                 </Card>
@@ -426,37 +428,71 @@ export default function CmsExperimentsPage() {
                 No personalization rules yet. Rules take precedence over experiments.
               </CardContent></Card>
             )}
-            {rulesQuery.data?.map((r) => (
-              <Card key={r.id}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <div>
-                    <CardTitle className="text-base">{r.name} <Badge variant={r.enabled ? "default" : "outline"}>{r.enabled ? "on" : "off"}</Badge></CardTitle>
-                    <p className="text-xs text-muted-foreground">slot <code>{r.slot_key}</code> · priority {r.priority}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => toggleRule(r.id, !r.enabled)}>{r.enabled ? "Disable" : "Enable"}</Button>
-                    <Button size="sm" variant="ghost" onClick={() => deleteRule(r.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                  <div><div className="text-muted-foreground mb-1">Segment</div><pre className="bg-muted p-2 overflow-auto">{JSON.stringify(r.segment, null, 2)}</pre></div>
-                  <div><div className="text-muted-foreground mb-1">Config override</div><pre className="bg-muted p-2 overflow-auto">{JSON.stringify(r.variant_config, null, 2)}</pre></div>
-                </CardContent>
-              </Card>
-            ))}
+            {rulesQuery.data?.map((r) => {
+              const schema = getSchema(r.slot_key);
+              const fields = summarizeConfig(r.slot_key, (r.variant_config ?? {}) as Record<string, unknown>);
+              const seg = (r.segment ?? {}) as Record<string, unknown>;
+              const segChips: string[] = [];
+              if (Array.isArray(seg.device)) segChips.push(`Device: ${(seg.device as string[]).join(", ")}`);
+              if (Array.isArray(seg.authState)) segChips.push(`Sign-in: ${(seg.authState as string[]).join(", ")}`);
+              if (Array.isArray(seg.referrer)) segChips.push(`From: ${(seg.referrer as string[]).join(", ")}`);
+              if (typeof seg.geoIsUS === "boolean") segChips.push(seg.geoIsUS ? "In the US" : "Outside the US");
+              if (typeof seg.hasAmbassadorRef === "boolean") segChips.push(seg.hasAmbassadorRef ? "From an ambassador link" : "Not from an ambassador link");
+              return (
+                <Card key={r.id}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <div>
+                      <CardTitle className="text-base">
+                        {r.name} <Badge variant={r.enabled ? "default" : "outline"}>{r.enabled ? "on" : "off"}</Badge>
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground">For: {schema?.label ?? r.slot_key} · Priority {r.priority}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => toggleRule(r.id, !r.enabled)}>{r.enabled ? "Disable" : "Enable"}</Button>
+                      <Button size="sm" variant="ghost" onClick={() => deleteRule(r.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <div className="text-muted-foreground mb-2">Who sees this</div>
+                      {segChips.length === 0 ? (
+                        <p className="text-muted-foreground italic">Everyone</p>
+                      ) : (
+                        <ul className="space-y-1">{segChips.map((c) => <li key={c}>• {c}</li>)}</ul>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground mb-2">What they see</div>
+                      {fields.length === 0 ? (
+                        <p className="text-muted-foreground italic">Default (no overrides)</p>
+                      ) : (
+                        <dl className="space-y-1">
+                          {fields.map((f) => (
+                            <div key={f.label} className="flex gap-2">
+                              <dt className="text-muted-foreground min-w-[6rem]">{f.label}</dt>
+                              <dd className="font-medium break-all">{f.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </TabsContent>
 
           <TabsContent value="slots" className="mt-6 space-y-3">
-            <p className="text-sm text-muted-foreground">Surfaces currently wired into the app. Reference these slot keys when creating experiments or rules.</p>
+            <p className="text-sm text-muted-foreground">These are the spots on the site you can test or personalize. Pick any of them when creating a test or rule.</p>
             {SLOT_CATALOG.map((s) => (
               <Card key={s.key}>
                 <CardContent className="py-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="font-medium">{s.label}</div>
-                    <code className="text-xs bg-muted px-2 py-1">{s.key}</code>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{s.description}</p>
-                  <pre className="text-[11px] bg-muted p-2 mt-2 overflow-auto">{s.configHint}</pre>
+                  <div className="font-medium mb-1">{s.label}</div>
+                  <p className="text-sm text-muted-foreground mb-2">{s.description}</p>
+                  <div className="text-xs text-muted-foreground">You can change:</div>
+                  <ul className="text-xs mt-1 space-y-0.5">
+                    {s.fields.map((f) => <li key={f.key}>• {f.label}</li>)}
+                  </ul>
                 </CardContent>
               </Card>
             ))}
@@ -475,102 +511,158 @@ export default function CmsExperimentsPage() {
       {/* Create experiment dialog */}
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>New Experiment</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Key (unique)</Label>
-                <Input value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value.replace(/[^a-z0-9_]/gi, "_").toLowerCase() })} placeholder="hero_red_blend_test" />
-              </div>
-              <div>
-                <Label>Slot</Label>
-                <Select value={form.slot_key} onValueChange={(v) => setForm({ ...form, slot_key: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {SLOT_CATALOG.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+          <DialogHeader><DialogTitle>New Test</DialogTitle></DialogHeader>
+          <div className="space-y-5">
+            <div>
+              <Label>What part of the site do you want to test?</Label>
+              <Select value={form.slot_key} onValueChange={(v) => setForm({ ...form, slot_key: v, variants: form.variants.map((va) => ({ ...va, config: {} })) })}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SLOT_CATALOG.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">{getSchema(form.slot_key)?.description}</p>
             </div>
             <div>
-              <Label>Name</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Label>Give this test a short name</Label>
+              <Input className="mt-1" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder='e.g. "Try a warmer hero headline"' />
             </div>
             <div>
-              <Label>Description</Label>
-              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} />
+              <Label>Notes (optional)</Label>
+              <Textarea className="mt-1" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="What are you hoping to learn?" />
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.use_bandit} onChange={(e) => setForm({ ...form, use_bandit: e.target.checked })} />
-              Use bandit (auto-shift traffic to winners)
-            </label>
-            <div className="space-y-2">
+            <div className="flex items-center justify-between border border-border p-3">
+              <div>
+                <Label className="text-sm">Let the system auto-pick winners</Label>
+                <p className="text-xs text-muted-foreground mt-1">Recommended. Sends more visitors to whichever option is winning.</p>
+              </div>
+              <Switch checked={form.use_bandit} onCheckedChange={(c) => setForm({ ...form, use_bandit: c })} />
+            </div>
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Variants</Label>
-                <Button type="button" size="sm" variant="outline" onClick={() => setForm({ ...form, variants: [...form.variants, { key: `variant_${form.variants.length}`, name: `Variant ${form.variants.length}`, config: "{}", is_control: false }] })}>
-                  <Plus className="h-3 w-3 mr-1" />Add variant
+                <Label>Options to compare</Label>
+                <Button type="button" size="sm" variant="outline" onClick={() => setForm({ ...form, variants: [...form.variants, { name: `Option ${String.fromCharCode(65 + form.variants.length)}`, config: {}, is_control: false }] })}>
+                  <Plus className="h-3 w-3 mr-1" />Add option
                 </Button>
               </div>
               {form.variants.map((v, i) => (
-                <div key={i} className="border border-border p-3 space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input value={v.key} onChange={(e) => { const arr = [...form.variants]; arr[i] = { ...v, key: e.target.value }; setForm({ ...form, variants: arr }); }} placeholder="variant key" />
-                    <Input value={v.name} onChange={(e) => { const arr = [...form.variants]; arr[i] = { ...v, name: e.target.value }; setForm({ ...form, variants: arr }); }} placeholder="display name" />
-                  </div>
-                  <Textarea value={v.config} onChange={(e) => { const arr = [...form.variants]; arr[i] = { ...v, config: e.target.value }; setForm({ ...form, variants: arr }); }} rows={3} className="font-mono text-xs" placeholder="{}" />
-                  <div className="flex items-center justify-between text-xs">
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" checked={v.is_control} onChange={(e) => { const arr = [...form.variants]; arr[i] = { ...v, is_control: e.target.checked }; setForm({ ...form, variants: arr }); }} />
-                      control
+                <div key={i} className="border border-border p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <Input value={v.name} onChange={(e) => { const arr = [...form.variants]; arr[i] = { ...v, name: e.target.value }; setForm({ ...form, variants: arr }); }} placeholder="Option name" />
+                    <label className="flex items-center gap-2 text-xs whitespace-nowrap">
+                      <input type="checkbox" checked={v.is_control} onChange={(e) => { const arr = form.variants.map((x, j) => ({ ...x, is_control: j === i ? e.target.checked : (e.target.checked ? false : x.is_control) })); setForm({ ...form, variants: arr }); }} />
+                      Current version
                     </label>
                     {form.variants.length > 1 && (
                       <Button type="button" size="sm" variant="ghost" onClick={() => setForm({ ...form, variants: form.variants.filter((_, j) => j !== i) })}><Trash2 className="h-3 w-3" /></Button>
                     )}
                   </div>
+                  {v.is_control ? (
+                    <p className="text-xs text-muted-foreground italic">Uses the current live content — nothing to fill in.</p>
+                  ) : (
+                    <SlotFieldsForm
+                      schema={getSchema(form.slot_key)!}
+                      value={v.config}
+                      onChange={(cfg) => { const arr = [...form.variants]; arr[i] = { ...v, config: cfg }; setForm({ ...form, variants: arr }); }}
+                    />
+                  )}
                 </div>
               ))}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setCreating(false); resetForm(); }}>Cancel</Button>
-            <Button onClick={createExperiment}>Create</Button>
+            <Button onClick={createExperiment}>Save as draft</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Create rule dialog */}
       <Dialog open={creatingRule} onOpenChange={setCreatingRule}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>New Personalization Rule</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Slot</Label>
-                <Select value={ruleForm.slot_key} onValueChange={(v) => setRuleForm({ ...ruleForm, slot_key: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{SLOT_CATALOG.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}</SelectContent>
-                </Select>
+          <p className="text-xs text-muted-foreground -mt-2">Show different content to specific groups of visitors. Rules always win over tests.</p>
+          <div className="space-y-5">
+            <div>
+              <Label>What part of the site?</Label>
+              <Select value={ruleForm.slot_key} onValueChange={(v) => setRuleForm({ ...ruleForm, slot_key: v, variant_config: {} })}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>{SLOT_CATALOG.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Rule name</Label>
+              <Input className="mt-1" value={ruleForm.name} onChange={(e) => setRuleForm({ ...ruleForm, name: e.target.value })} placeholder='e.g. "Welcome back members"' />
+            </div>
+            <div className="space-y-3 border border-border p-3">
+              <div className="font-medium text-sm">Who should see this?</div>
+              <ChipPicker
+                label="Device"
+                options={AUDIENCE_OPTIONS.device}
+                value={ruleForm.segment.device ?? []}
+                onChange={(arr) => setRuleForm({ ...ruleForm, segment: { ...ruleForm.segment, device: arr } })}
+              />
+              <ChipPicker
+                label="Sign-in status"
+                options={AUDIENCE_OPTIONS.authState}
+                value={ruleForm.segment.authState ?? []}
+                onChange={(arr) => setRuleForm({ ...ruleForm, segment: { ...ruleForm.segment, authState: arr } })}
+              />
+              <ChipPicker
+                label="Came from"
+                options={AUDIENCE_OPTIONS.referrer}
+                value={ruleForm.segment.referrer ?? []}
+                onChange={(arr) => setRuleForm({ ...ruleForm, segment: { ...ruleForm.segment, referrer: arr } })}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Location</Label>
+                  <Select value={ruleForm.segment.geoIsUS ?? "any"} onValueChange={(v) => setRuleForm({ ...ruleForm, segment: { ...ruleForm.segment, geoIsUS: v === "any" ? undefined : v } })}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Anywhere</SelectItem>
+                      <SelectItem value="true">In the US</SelectItem>
+                      <SelectItem value="false">Outside the US</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Ambassador link</Label>
+                  <Select value={ruleForm.segment.hasAmbassadorRef ?? "any"} onValueChange={(v) => setRuleForm({ ...ruleForm, segment: { ...ruleForm.segment, hasAmbassadorRef: v === "any" ? undefined : v } })}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Doesn't matter</SelectItem>
+                      <SelectItem value="true">Came from an ambassador</SelectItem>
+                      <SelectItem value="false">Did not come from an ambassador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div><Label>Priority (lower = first)</Label><Input type="number" value={ruleForm.priority} onChange={(e) => setRuleForm({ ...ruleForm, priority: Number(e.target.value) })} /></div>
             </div>
-            <div><Label>Name</Label><Input value={ruleForm.name} onChange={(e) => setRuleForm({ ...ruleForm, name: e.target.value })} /></div>
-            <div>
-              <Label>Segment (JSON). Keys: {SEGMENT_KEYS.join(", ")}</Label>
-              <Textarea value={ruleForm.segment} onChange={(e) => setRuleForm({ ...ruleForm, segment: e.target.value })} rows={4} className="font-mono text-xs"
-                placeholder='{"authState":["member"],"device":["mobile"]}' />
+            <div className="space-y-2 border border-border p-3">
+              <div className="font-medium text-sm">What should they see?</div>
+              <p className="text-xs text-muted-foreground">Leave any field blank to keep the default.</p>
+              <SlotFieldsForm
+                schema={getSchema(ruleForm.slot_key)!}
+                value={ruleForm.variant_config}
+                onChange={(cfg) => setRuleForm({ ...ruleForm, variant_config: cfg })}
+              />
             </div>
-            <div>
-              <Label>Variant config (JSON)</Label>
-              <Textarea value={ruleForm.variant_config} onChange={(e) => setRuleForm({ ...ruleForm, variant_config: e.target.value })} rows={4} className="font-mono text-xs"
-                placeholder='{"headlineOverride":"Welcome back to The Pack"}' />
+            <div className="flex items-center justify-between border border-border p-3">
+              <div>
+                <Label className="text-sm">Priority</Label>
+                <p className="text-xs text-muted-foreground mt-1">Lower numbers run first when multiple rules match.</p>
+              </div>
+              <Input type="number" className="w-24" value={ruleForm.priority} onChange={(e) => setRuleForm({ ...ruleForm, priority: Number(e.target.value) })} />
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={ruleForm.enabled} onChange={(e) => setRuleForm({ ...ruleForm, enabled: e.target.checked })} /> enabled
-            </label>
+            <div className="flex items-center justify-between border border-border p-3">
+              <Label className="text-sm">Enable this rule now</Label>
+              <Switch checked={ruleForm.enabled} onCheckedChange={(c) => setRuleForm({ ...ruleForm, enabled: c })} />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreatingRule(false)}>Cancel</Button>
-            <Button onClick={createRule}>Create</Button>
+            <Button onClick={createRule}>Create rule</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -128,7 +128,7 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium truncate">{product.node.title}</p>
-                <p className="text-xs text-muted-foreground">${price.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Add for +${price.toFixed(2)}</p>
               </div>
               <Button
                 size="sm"

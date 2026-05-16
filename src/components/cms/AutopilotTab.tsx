@@ -50,7 +50,7 @@ export default function AutopilotTab() {
     queryFn: async () => {
       const { data, error } = await supabase.from("experiment_templates").select("*").order("slot_key");
       if (error) throw error;
-      return (data ?? []) as Template[];
+      return ((data ?? []) as unknown) as Template[];
     },
   });
 

@@ -38,7 +38,7 @@ const categories = [
 
 const WinesPage = () => {
   const [activeCategory, setActiveCategory] = useState(0);
-  const { data: products, isLoading } = useProducts(50, "tag:wine");
+  const { data: products, isLoading } = useProducts(50, "product_type:Wine");
 
   const { featured, sortedProducts } = useMemo(() => {
     if (!products) return { featured: null, sortedProducts: [] };

@@ -48,19 +48,15 @@ export function CartSubscribeToggle({ price, quantity }: CartSubscribeToggleProp
             className="scale-75 origin-right"
           />
         ) : (
-          <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+          <Link
+            to="/login"
+            className="text-[10px] font-bold uppercase tracking-brand text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+          >
+            <Lock className="w-3 h-3" />
+            Sign in
+          </Link>
         )}
       </div>
-
-      {!user && (
-        <div className="px-2.5 pb-2.5 border-t border-border/50 pt-2 space-y-1.5">
-          <p className="text-[11px] text-muted-foreground">Account required for recurring shipments.</p>
-          <div className="flex gap-1.5">
-            <Link to="/login" className="flex-1 text-center border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted">Sign In</Link>
-            <Link to="/signup" className="flex-1 text-center border border-primary bg-primary text-primary-foreground px-2 py-1 text-[11px] font-medium hover:bg-primary/90">Sign Up</Link>
-          </div>
-        </div>
-      )}
 
       {blockedByClub && user && !enabled && (
         <div className="px-2.5 pb-2 text-[11px] text-muted-foreground border-t border-border/50 pt-2">

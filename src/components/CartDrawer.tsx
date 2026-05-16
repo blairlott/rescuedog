@@ -95,6 +95,7 @@ export const CartDrawer = () => {
   // matches Vinoshipper's "Excluded from Discounts" rule.
   const totalBottlesEffective = isMerchRoute ? totalItems : effectiveBottleCount(items as any);
   const { freeShippingBottleCount, merchFreeShippingThreshold, fullCaseCount } = useCartSettings();
+  const { fullCaseDiscount } = useCartSettings();
   const shippingIncluded = isMerchRoute
     ? totalPrice >= merchFreeShippingThreshold
     : totalBottlesEffective >= freeShippingBottleCount;
@@ -107,6 +108,15 @@ export const CartDrawer = () => {
   const showMerchNudge = isMerchRoute && !shippingIncluded && dollarsNeeded > 0 && dollarsNeeded <= 25 && totalItems > 0;
   const bottlesToCase = !isMerchRoute && totalBottlesEffective > 0 && totalBottlesEffective < fullCaseCount
     ? fullCaseCount - totalBottlesEffective
+    : 0;
+  // Project the dollar savings the user unlocks by topping up to a full
+  // case. Uses the heavier of public case discount vs. member rate.
+  const effectiveCaseDiscountPct = isMember ? discountPercent : fullCaseDiscount;
+  const avgWineBottlePrice = wineItems.length
+    ? wineTotal / Math.max(1, wineItems.reduce((s, i) => s + i.quantity, 0))
+    : 0;
+  const caseTopUpSavings = bottlesToCase > 0 && avgWineBottlePrice > 0
+    ? (wineTotal + avgWineBottlePrice * bottlesToCase) * (effectiveCaseDiscountPct / 100)
     : 0;
 
   const lastOrder: { items: any[] } | null = (() => {
@@ -457,8 +467,8 @@ export const CartDrawer = () => {
                   <CartUpsellBanner totalBottles={totalBottlesEffective} cartTotal={totalPrice} />
                 </div>
 
-                {/* Product recommendations — only when cart is small (avoid drawer bloat) */}
-                {totalItems > 0 && totalItems <= 2 && (
+                {/* Product cross-sells — always visible above the fold */}
+                {totalItems > 0 && (
                   <div className="mt-4">
                     <CartRecommendations cartItems={items} cartTotal={totalPrice} />
                   </div>
@@ -474,9 +484,6 @@ export const CartDrawer = () => {
                       {!isMerchRoute && <CartTrustBlock totalBottles={totalBottlesEffective} />}
                       <CartGiftToggle />
                       <CartSaveForLater />
-                      {totalItems > 2 && (
-                        <CartRecommendations cartItems={items} cartTotal={totalPrice} />
-                      )}
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
@@ -484,13 +491,23 @@ export const CartDrawer = () => {
 
               {/* Footer with total and checkout */}
               <div className="space-y-3 pt-4 border-t pb-2">
-                {bottlesToCase > 0 && bottlesToCase <= 4 && (
-                  <div className="text-xs bg-primary/10 border border-primary/30 px-3 py-2 flex items-center justify-between gap-2">
-                    <span>
-                      <strong>Add {bottlesToCase} more</strong> to unlock the case discount
-                    </span>
-                    <Button size="sm" variant="outline" onClick={addCaseTopUp} className="h-6 text-[11px] px-2">
-                      +{bottlesToCase}
+                {bottlesToCase > 0 && bottlesToCase <= 6 && (
+                  <div className="bg-primary text-primary-foreground px-3 py-2.5 flex items-center justify-between gap-3">
+                    <div className="leading-tight">
+                      <p className="text-[11px] uppercase tracking-brand font-bold">
+                        Make it a case · save {effectiveCaseDiscountPct}%
+                      </p>
+                      <p className="text-[10px] opacity-90">
+                        Add {bottlesToCase} more bottle{bottlesToCase !== 1 ? "s" : ""}
+                        {caseTopUpSavings > 0 ? ` — saves about $${caseTopUpSavings.toFixed(0)}` : ""}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={addCaseTopUp}
+                      className="h-8 text-[11px] px-3 bg-background text-foreground hover:bg-background/90 whitespace-nowrap font-bold"
+                    >
+                      +{bottlesToCase} bottles
                     </Button>
                   </div>
                 )}

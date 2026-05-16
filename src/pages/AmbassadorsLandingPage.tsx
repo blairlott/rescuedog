@@ -236,6 +236,11 @@ export default function AmbassadorsLandingPage() {
             <p className="text-sm text-muted-foreground mt-6">
               <strong className="text-foreground">How to apply:</strong> use the standard ambassador application and mention your 501(c)(3) status and EIN in your bio. Our team will follow up to set up org-level payout.
             </p>
+            <div className="text-center mt-6">
+              <Button asChild size="lg">
+                <Link to="/ambassador/signup">Apply as a Nonprofit</Link>
+              </Button>
+            </div>
           </div>
         </section>
 
@@ -261,9 +266,12 @@ export default function AmbassadorsLandingPage() {
               </a>
             </div>
             <div className="text-center mt-8">
-              <a href={IMPACT_SIGNUP} target="_blank" rel="noopener noreferrer" className="text-sm underline inline-flex items-center gap-1">
-                Apply directly through the impact.com portal <ExternalLink className="w-3 h-3" />
-              </a>
+              <Button asChild size="lg">
+                <Link to="/ambassador/signup">Start Your Application</Link>
+              </Button>
+              <p className="text-xs text-muted-foreground mt-3">
+                Already approved? <a href={IMPACT_SIGNUP} target="_blank" rel="noopener noreferrer" className="underline inline-flex items-center gap-1">Sign in to the impact.com portal <ExternalLink className="w-3 h-3" /></a>
+              </p>
             </div>
           </div>
         </section>

@@ -14,6 +14,8 @@ import { CartRecommendations } from "@/components/cart/CartRecommendations";
 import { CartSubscribeToggle } from "@/components/cart/CartSubscribeToggle";
 import { CartWineClubUpsell } from "@/components/cart/CartWineClubUpsell";
 import { VinoshipperCheckoutModal } from "@/components/cart/VinoshipperCheckoutModal";
+import { DualCheckoutNotice } from "@/components/cart/DualCheckoutNotice";
+import { DualCheckoutConfirm } from "@/components/cart/DualCheckoutConfirm";
 import { useGeo } from "@/hooks/useGeo";
 import { useTranslation } from "react-i18next";
 import { CartTrustBlock } from "@/components/cart/CartTrustBlock";
@@ -69,6 +71,7 @@ const wineSnapshotsMatch = (a: WineSnapshotLine[], b: WineSnapshotLine[]) => {
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [vsCheckoutOpen, setVsCheckoutOpen] = useState(false);
+  const [dualConfirmOpen, setDualConfirmOpen] = useState(false);
   // Surfaces a manual "Resume wine checkout" button as a fallback whenever
   // the auto-resume bailed (snapshot mismatch, expired, or user dismissed
   // the toast before clicking the action).
@@ -321,7 +324,14 @@ export const CartDrawer = () => {
       handleCheckoutWines();
       return;
     }
-    // Both: open merch in a new tab, then hand wine off to VS in this tab.
+    // Both: surface the compliance explainer first so the customer isn't
+    // surprised by two tabs / two charges / two emails.
+    setDualConfirmOpen(true);
+  };
+
+  const runDualCheckout = () => {
+    setDualConfirmOpen(false);
+    // Open merch in a new tab, then hand wine off to VS in this tab.
     const url = getShopifyCheckoutUrl();
     if (url) {
       const win = window.open(url, "_blank");
@@ -524,6 +534,14 @@ export const CartDrawer = () => {
                 {merchItems.length > 0 && (
                   <CartGiftMode />
                 )}
+                {isDual && (
+                  <DualCheckoutNotice
+                    wineCount={wineItems.reduce((s, i) => s + i.quantity, 0)}
+                    merchCount={merchItems.reduce((s, i) => s + i.quantity, 0)}
+                    wineTotal={wineTotal}
+                    merchTotal={merchTotal}
+                  />
+                )}
                 {manualResumeAvailable && hasWine && (
                   <div className="text-xs bg-primary/10 border border-primary/30 px-3 py-2 flex items-center justify-between gap-2">
                     <span className="leading-tight">
@@ -653,6 +671,15 @@ export const CartDrawer = () => {
       </SheetContent>
     </Sheet>
     <VinoshipperCheckoutModal open={vsCheckoutOpen} onOpenChange={setVsCheckoutOpen} />
+    <DualCheckoutConfirm
+      open={dualConfirmOpen}
+      onOpenChange={setDualConfirmOpen}
+      onConfirm={runDualCheckout}
+      wineCount={wineItems.reduce((s, i) => s + i.quantity, 0)}
+      merchCount={merchItems.reduce((s, i) => s + i.quantity, 0)}
+      wineTotal={wineTotal}
+      merchTotal={merchTotal}
+    />
     </>
   );
 };

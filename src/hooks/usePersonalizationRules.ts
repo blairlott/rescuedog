@@ -25,13 +25,15 @@ export function usePersonalizationRules(slotKey: string): PersonalizationRule[] 
     }
     let promise = inflight.get(slotKey);
     if (!promise) {
-      promise = supabase
-        .from("personalization_rules")
-        .select("id,slot_key,name,priority,segment,variant_config,enabled")
-        .eq("slot_key", slotKey)
-        .eq("enabled", true)
-        .order("priority", { ascending: true })
-        .then(({ data }) => (data ?? []) as PersonalizationRule[]);
+      promise = (async () => {
+        const { data } = await supabase
+          .from("personalization_rules")
+          .select("id,slot_key,name,priority,segment,variant_config,enabled")
+          .eq("slot_key", slotKey)
+          .eq("enabled", true)
+          .order("priority", { ascending: true });
+        return (data ?? []) as PersonalizationRule[];
+      })();
       inflight.set(slotKey, promise);
     }
     promise.then((r) => {

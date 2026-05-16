@@ -73,6 +73,39 @@ function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "test";
 }
 
+function ChipPicker({
+  label, options, value, onChange,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  value: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const toggle = (v: string) =>
+    onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
+  return (
+    <div>
+      <Label className="text-xs">{label}</Label>
+      <div className="flex flex-wrap gap-2 mt-1">
+        {options.map((o) => {
+          const active = value.includes(o.value);
+          return (
+            <Badge
+              key={o.value}
+              variant={active ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() => toggle(o.value)}
+            >
+              {o.label}
+            </Badge>
+          );
+        })}
+        {value.length === 0 && <span className="text-xs text-muted-foreground self-center">Anyone</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function CmsExperimentsPage() {
   const { isCmsEditor, loading } = useCmsAuth();
   const navigate = useNavigate();

@@ -15,64 +15,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Plus, Trash2, Loader2, Play, Pause, Square, FlaskConical } from "lucide-react";
 import MediaLibraryTab from "@/components/cms/MediaLibraryTab";
 import AutopilotTab from "@/components/cms/AutopilotTab";
+import SlotFieldsForm from "@/components/cms/SlotFieldsForm";
+import { SLOT_SCHEMAS, getSchema, cleanConfig, summarizeConfig, AUDIENCE_OPTIONS } from "@/components/cms/slotSchemas";
 
-/**
- * Catalog of slots wired into the app. New slots can be added in code and
- * will automatically show up as targetable here. Keep this in sync with
- * actual useExperiment("slot_key", …) calls.
- */
-const SLOT_CATALOG: { key: string; label: string; description: string; configHint: string }[] = [
-  {
-    key: "homepage_hero",
-    label: "Homepage Hero",
-    description: "Hero image, headline, subtitle, CTA label + destination.",
-    configHint: '{ "imageUrl": "https://…", "headlineOverride": "…", "subtitleOverride": "…", "ctaLabel": "Shop Wines", "ctaHref": "/wines" }',
-  },
-  {
-    key: "homepage_ambassador_strip",
-    label: "Homepage Ambassador Strip",
-    description: "Whether to show the ambassador program block on the homepage and how to frame it.",
-    configHint: '{ "show": true, "headline": "…", "ctaLabel": "Become an Ambassador" }',
-  },
-  {
-    key: "homepage_blocks_order",
-    label: "Homepage Block Order",
-    description: "Reserved for future Mission/Shop/Club/Ambassador reordering.",
-    configHint: '{ "order": ["mission","shop","club","ambassador"] }',
-  },
-  {
-    key: "cart_promo_banner",
-    label: "Cart Promo Banner",
-    description: "Cart promo framing (e.g. case discount vs shipping vs club).",
-    configHint: '{ "headline": "Shipping included on 12+", "accent": "primary" }',
-  },
-  {
-    key: "club_featured_tier",
-    label: "Wine Club Featured Tier",
-    description: "Which tier shows the 'Most Popular' badge.",
-    configHint: '{ "tierKey": "6" }',
-  },
-  {
-    key: "ambassador_placement",
-    label: "Ambassador CTA Placement",
-    description: "Where the apply CTA appears site-wide.",
-    configHint: '{ "footer": true, "sticky": false, "postPurchase": true }',
-  },
-  {
-    key: "pdp_layout",
-    label: "Product Detail Layout",
-    description: "Image-first vs story-first vs reviews-first.",
-    configHint: '{ "variant": "image_first" }',
-  },
-];
-
-const SEGMENT_KEYS = [
-  "geoCountry", "geoIsUS", "authState", "device", "referrer", "hasAmbassadorRef",
-  "utmSource", "utmMedium", "utmCampaign",
-];
+// Slot definitions moved to src/components/cms/slotSchemas.ts so the
+// Experiments + Rules forms can render plain-language inputs.
+const SLOT_CATALOG = SLOT_SCHEMAS;
 
 type Experiment = {
   id: string;
@@ -115,6 +67,10 @@ function fmtRpv(revenueCents: number, exposures: number) {
 function fmtCvr(conversions: number, exposures: number) {
   if (!exposures) return "—";
   return `${((conversions / exposures) * 100).toFixed(1)}%`;
+}
+
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "test";
 }
 
 export default function CmsExperimentsPage() {
@@ -178,49 +134,38 @@ export default function CmsExperimentsPage() {
 
   // ── Create experiment dialog state ──
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({
-    key: "",
+  type FriendlyVariant = { name: string; config: Record<string, unknown>; is_control: boolean };
+  const blankForm = () => ({
     name: "",
     description: "",
     slot_key: SLOT_CATALOG[0].key,
     use_bandit: true,
     variants: [
-      { key: "control", name: "Control", config: "{}", is_control: true },
-      { key: "variant_a", name: "Variant A", config: "{}", is_control: false },
-    ],
+      { name: "Current (control)", config: {}, is_control: true },
+      { name: "Option B", config: {}, is_control: false },
+    ] as FriendlyVariant[],
   });
-
-  const resetForm = () =>
-    setForm({
-      key: "",
-      name: "",
-      description: "",
-      slot_key: SLOT_CATALOG[0].key,
-      use_bandit: true,
-      variants: [
-        { key: "control", name: "Control", config: "{}", is_control: true },
-        { key: "variant_a", name: "Variant A", config: "{}", is_control: false },
-      ],
-    });
+  const [form, setForm] = useState(blankForm);
+  const resetForm = () => setForm(blankForm());
 
   const createExperiment = async () => {
     try {
-      if (!form.key || !form.name) {
-        toast({ title: "Key and name required", variant: "destructive" });
+      if (!form.name) {
+        toast({ title: "Give your test a name", variant: "destructive" });
         return;
       }
-      // Parse variant configs first
-      const parsedVariants = form.variants.map((v) => {
-        let cfg: Record<string, unknown> = {};
-        try { cfg = v.config.trim() ? JSON.parse(v.config) : {}; }
-        catch (e) { throw new Error(`Invalid JSON in variant ${v.key}: ${(e as Error).message}`); }
-        return { ...v, configParsed: cfg };
-      });
+      const baseKey = slugify(form.name);
+      const parsedVariants = form.variants.map((v, i) => ({
+        key: i === 0 && v.is_control ? "control" : slugify(v.name) || `option_${i + 1}`,
+        name: v.name || `Option ${i + 1}`,
+        is_control: v.is_control,
+        configParsed: cleanConfig(v.config),
+      }));
 
       const { data: exp, error: expErr } = await supabase
         .from("experiments")
         .insert({
-          key: form.key,
+          key: `${baseKey}_${Date.now().toString(36)}`,
           name: form.name,
           description: form.description || null,
           slot_key: form.slot_key,
@@ -244,13 +189,13 @@ export default function CmsExperimentsPage() {
         );
       if (vErr) throw vErr;
 
-      toast({ title: "Experiment created (draft)" });
+      toast({ title: "Test created as a draft", description: "Press Start when you're ready to run it." });
       setCreating(false);
       resetForm();
       qc.invalidateQueries({ queryKey: ["cms-experiments"] });
       qc.invalidateQueries({ queryKey: ["cms-experiment-variants"] });
     } catch (e) {
-      toast({ title: "Could not create experiment", description: (e as Error).message, variant: "destructive" });
+      toast({ title: "Could not create test", description: (e as Error).message, variant: "destructive" });
     }
   };
 
@@ -270,18 +215,32 @@ export default function CmsExperimentsPage() {
 
   // ── Personalization rule create ──
   const [creatingRule, setCreatingRule] = useState(false);
-  const [ruleForm, setRuleForm] = useState({
+  type FriendlySegment = Partial<{
+    device: string[];
+    authState: string[];
+    geoIsUS: string;
+    hasAmbassadorRef: string;
+    referrer: string[];
+  }>;
+  const blankRule = () => ({
     slot_key: SLOT_CATALOG[0].key,
     name: "",
     priority: 100,
-    segment: '{}',
-    variant_config: '{}',
+    segment: {} as FriendlySegment,
+    variant_config: {} as Record<string, unknown>,
     enabled: true,
   });
+  const [ruleForm, setRuleForm] = useState(blankRule);
   const createRule = async () => {
     try {
-      const segment = ruleForm.segment.trim() ? JSON.parse(ruleForm.segment) : {};
-      const variant_config = ruleForm.variant_config.trim() ? JSON.parse(ruleForm.variant_config) : {};
+      const segment: Record<string, unknown> = {};
+      const s = ruleForm.segment;
+      if (s.device?.length) segment.device = s.device;
+      if (s.authState?.length) segment.authState = s.authState;
+      if (s.referrer?.length) segment.referrer = s.referrer;
+      if (s.geoIsUS) segment.geoIsUS = s.geoIsUS === "true";
+      if (s.hasAmbassadorRef) segment.hasAmbassadorRef = s.hasAmbassadorRef === "true";
+      const variant_config = cleanConfig(ruleForm.variant_config);
       const { error } = await supabase.from("personalization_rules").insert({
         slot_key: ruleForm.slot_key,
         name: ruleForm.name || "Untitled rule",
@@ -293,7 +252,7 @@ export default function CmsExperimentsPage() {
       if (error) throw error;
       toast({ title: "Rule created" });
       setCreatingRule(false);
-      setRuleForm({ slot_key: SLOT_CATALOG[0].key, name: "", priority: 100, segment: "{}", variant_config: "{}", enabled: true });
+      setRuleForm(blankRule());
       qc.invalidateQueries({ queryKey: ["cms-personalization-rules"] });
     } catch (e) {
       toast({ title: "Could not create rule", description: (e as Error).message, variant: "destructive" });

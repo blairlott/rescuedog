@@ -28,6 +28,7 @@ import { PairingFinder } from "@/components/PairingFinder";
 import { LazyYouTube } from "@/components/LazyYouTube";
 import { Seo } from "@/components/Seo";
 import { T } from "@/components/T";
+import { useExperiment } from "@/hooks/useExperiment";
 
 const instagramPosts = [
   {
@@ -71,6 +72,21 @@ const Index = () => {
   const { content, upsert } = useCmsContent("homepage");
   const [editSection, setEditSection] = useState<EditSection>(null);
   const showImpact = useFeatureFlag("impact_counter", false);
+
+  // Self-optimizing hero. Overrides apply on top of CMS values.
+  const hero = useExperiment<{
+    imageUrl?: string;
+    headlineOverride?: string;
+    subtitleOverride?: string;
+    ctaLabel?: string;
+    ctaHref?: string;
+  }>("homepage_hero", {});
+
+  // Self-optimizing ambassador strip placement on homepage.
+  const ambassadorStrip = useExperiment<{ show?: boolean; headline?: string; ctaLabel?: string }>(
+    "homepage_ambassador_strip",
+    { show: false },
+  );
 
   const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
 

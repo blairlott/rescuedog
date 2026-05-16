@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Loader2, Mail, RefreshCw, Search } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Mail, Power, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 
 type Lead = {
@@ -33,6 +34,28 @@ const STATUS_COLORS: Record<string, string> = {
 export default function CrmLeadsPage() {
   const [search, setSearch] = useState("");
   const qc = useQueryClient();
+
+  const { data: welcomeEnabled, isLoading: switchLoading } = useQuery({
+    queryKey: ["welcome-series-enabled"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "welcome_series_enabled")
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.value as boolean) ?? true;
+    },
+  });
+
+  const toggleWelcome = async (next: boolean) => {
+    const { error } = await supabase
+      .from("app_settings")
+      .upsert({ key: "welcome_series_enabled", value: next as any, updated_at: new Date().toISOString() });
+    if (error) return toast.error(error.message);
+    toast.success(next ? "Welcome series ENABLED" : "Welcome series PAUSED");
+    qc.invalidateQueries({ queryKey: ["welcome-series-enabled"] });
+  };
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["crm-leads", search],
@@ -77,6 +100,25 @@ export default function CrmLeadsPage() {
           <RefreshCw className="h-4 w-4 mr-1" /> Refresh
         </Button>
       </div>
+
+      <Card className="p-4 flex items-center justify-between gap-4 border-l-4 border-l-primary">
+        <div className="flex items-start gap-3">
+          <Power className={`h-5 w-5 mt-0.5 ${welcomeEnabled ? "text-green-600" : "text-muted-foreground"}`} />
+          <div>
+            <div className="font-semibold text-sm uppercase tracking-wider">
+              Welcome Email Series — {welcomeEnabled ? "ACTIVE" : "PAUSED"}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Master kill switch. Turn OFF on launch day if Mailchimp's welcome flow is still running, to prevent duplicate emails.
+            </p>
+          </div>
+        </div>
+        <Switch
+          checked={!!welcomeEnabled}
+          disabled={switchLoading}
+          onCheckedChange={toggleWelcome}
+        />
+      </Card>
 
       <div className="relative max-w-md">
         <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />

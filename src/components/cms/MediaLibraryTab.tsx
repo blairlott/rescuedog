@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, X, RefreshCw, Image as ImageIcon } from "lucide-react";
+import { Loader2, Check, X, RefreshCw, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type MediaAsset = {
   id: string;
@@ -36,6 +39,11 @@ export default function MediaLibraryTab() {
   const { toast } = useToast();
   const [filter, setFilter] = useState<"pending" | "approved" | "rejected">("pending");
   const [scanning, setScanning] = useState<string | null>(null);
+  const [enhanceFor, setEnhanceFor] = useState<MediaAsset | null>(null);
+  const [enhancePreset, setEnhancePreset] = useState<string>("enhance");
+  const [enhanceVariants, setEnhanceVariants] = useState<number>(1);
+  const [enhancePrompt, setEnhancePrompt] = useState<string>("");
+  const [enhancing, setEnhancing] = useState(false);
 
   const assetsQuery = useQuery({
     queryKey: ["cms-media-assets", filter],
@@ -91,6 +99,33 @@ export default function MediaLibraryTab() {
       return;
     }
     qc.invalidateQueries({ queryKey: ["cms-media-assets"] });
+  }
+
+  async function runEnhance() {
+    if (!enhanceFor) return;
+    setEnhancing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("enhance-image", {
+        body: {
+          asset_id: enhanceFor.id,
+          preset: enhancePrompt.trim() ? undefined : enhancePreset,
+          custom_prompt: enhancePrompt.trim() || undefined,
+          variants: enhanceVariants,
+        },
+      });
+      if (error) throw error;
+      const count = (data as { results?: unknown[] })?.results?.length ?? 0;
+      toast({ title: "Enhanced", description: `${count} variant(s) queued in Pending.` });
+      setEnhanceFor(null);
+      setEnhancePrompt("");
+      setFilter("pending");
+      qc.invalidateQueries({ queryKey: ["cms-media-assets"] });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast({ title: "Enhance failed", description: msg, variant: "destructive" });
+    } finally {
+      setEnhancing(false);
+    }
   }
 
   return (
@@ -174,9 +209,14 @@ export default function MediaLibraryTab() {
                   </div>
                 )}
                 {filter === "approved" && (
-                  <Button size="sm" variant="outline" className="w-full" onClick={() => setStatus(a.id, "archived")}>
-                    Archive
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="default" className="flex-1" onClick={() => { setEnhanceFor(a); setEnhancePrompt(""); setEnhancePreset("enhance"); setEnhanceVariants(1); }}>
+                      <Sparkles className="h-3 w-3 mr-1" /> Enhance
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setStatus(a.id, "archived")}>
+                      Archive
+                    </Button>
+                  </div>
                 )}
                 {filter === "rejected" && (
                   <Button size="sm" variant="outline" className="w-full" onClick={() => setStatus(a.id, "pending")}>
@@ -188,6 +228,52 @@ export default function MediaLibraryTab() {
           ))}
         </div>
       )}
+
+      <Dialog open={!!enhanceFor} onOpenChange={(o) => !o && setEnhanceFor(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> Enhance / Iterate</DialogTitle>
+          </DialogHeader>
+          {enhanceFor && (
+            <div className="space-y-4">
+              <img src={enhanceFor.image_url} alt="" className="w-full h-40 object-cover" />
+              <div className="space-y-2">
+                <label className="text-xs font-medium">Preset</label>
+                <Select value={enhancePreset} onValueChange={setEnhancePreset} disabled={!!enhancePrompt.trim()}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="enhance">Enhance quality (sharpen, denoise)</SelectItem>
+                    <SelectItem value="hero">Restyle as cinematic hero</SelectItem>
+                    <SelectItem value="square">Reframe as 1:1 social square</SelectItem>
+                    <SelectItem value="background">Replace background</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium">Custom prompt (overrides preset)</label>
+                <Textarea rows={3} placeholder="e.g. make the lighting warmer, add a vineyard background"
+                  value={enhancePrompt} onChange={(e) => setEnhancePrompt(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium">Variants</label>
+                <Select value={String(enhanceVariants)} onValueChange={(v) => setEnhanceVariants(Number(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEnhanceFor(null)} disabled={enhancing}>Cancel</Button>
+            <Button onClick={runEnhance} disabled={enhancing}>
+              {enhancing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              Generate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

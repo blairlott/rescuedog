@@ -10,7 +10,7 @@ export default function AmbassadorDisclosurePage() {
         <div className="prose prose-sm max-w-none space-y-4 text-foreground">
           <p className="font-semibold">FTC Material Connection Required.</p>
           <p>
-            Rescue Dog Wines Ambassadors earn commission on wine sales generated through their personal tracking links. Per Federal Trade Commission guidelines (16 CFR § 255), you must clearly and conspicuously disclose this relationship in every post, story, video, email, or other content where you promote our wines.
+            Rescue Dog Wines Ambassadors earn a flat 12% commission on wine sales generated through their personal tracking links. Per Federal Trade Commission guidelines (16 CFR § 255), you must clearly and conspicuously disclose this relationship in every post, story, video, email, or other content where you promote our wines.
           </p>
           <h2 className="text-xl font-bold uppercase mt-8">Acceptable Disclosures</h2>
           <ul className="list-disc pl-6 space-y-1">

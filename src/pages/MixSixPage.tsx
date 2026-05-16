@@ -70,6 +70,11 @@ export default function MixSixPage() {
         title="Build a Mix Six"
         description="Mix and match any 6, 12, or 24 bottles — unlock 5–15% off plus shipping included."
         path="/wines/mix-six"
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "Wines", path: "/wines" },
+          { name: "Mix Six", path: "/wines/mix-six" },
+        ]}
       />
       <Header />
       <PageHero

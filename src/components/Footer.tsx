@@ -50,6 +50,7 @@ export function Footer() {
               <li><Link to="/policies#shipping" className="hover:text-primary transition-colors"><T>Shipping Policy</T></Link></li>
               <li><Link to="/policies#terms" className="hover:text-primary transition-colors"><T>Terms of Service</T></Link></li>
               <li><Link to="/admin" className="hover:text-primary transition-colors"><T>Admin</T></Link></li>
+              <li><Link to="/crm/login" className="hover:text-primary transition-colors"><T>RDW Sales Portal</T></Link></li>
             </ul>
           </div>
 

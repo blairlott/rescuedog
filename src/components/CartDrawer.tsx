@@ -344,25 +344,16 @@ export const CartDrawer = () => {
 
   const runDualCheckout = () => {
     setDualConfirmOpen(false);
-    // Open merch in a new tab, then hand wine off to VS in this tab.
-    const url = getShopifyCheckoutUrl();
-    if (url) {
-      const win = window.open(url, "_blank");
-      if (!win || win.closed || typeof win.closed === "undefined") {
-        logCheckoutEvent("popup_blocked", { kind: "dual" });
-        // Popup blocked — stash wine intent and navigate to merch checkout
-        // in the same tab. User finishes merch first, then returns for wine.
-        try {
-          localStorage.setItem(
-            PENDING_WINE_KEY,
-            JSON.stringify(snapshotWineLines(wineItems)),
-          );
-        } catch {}
-        window.location.href = url;
-        return;
-      }
-      logCheckoutEvent("dual_popup_opened");
-    }
+    // WINE FIRST. Open Vinoshipper modal only — do NOT open Shopify yet.
+    // After the wine order is placed, the VS modal renders a "Continue to
+    // merch checkout" CTA. That click is a fresh user gesture, so the
+    // Shopify popup is not blocked. If the customer closes the modal
+    // without clicking, we already wrote a pending_merch_handoffs row so
+    // the cron can email a one-tap link to finish the merch order.
+    logCheckoutEvent("dual_wine_first_started", {
+      wine_items: wineItems.length,
+      merch_items: merchItems.length,
+    });
     handleCheckoutWines();
   };
 

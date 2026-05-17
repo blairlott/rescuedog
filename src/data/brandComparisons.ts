@@ -464,7 +464,7 @@ export const BRAND_COMPARISONS: BrandComparison[] = [
       { attribute: "Origin", rdw: "Lodi, CA (single appellation)", them: "California (multi-source)", advantageRdw: true },
       { attribute: "Production scale", rdw: "Small-batch craft", them: "Large-scale production", advantageRdw: true },
       { attribute: "Owned by", rdw: "Independent rescue-mission winery", them: "Vintage Wine Estates portfolio brand" },
-      { attribute: "Dog connection", rdw: "Real rescue dogs on every label with adoption stories", them: "Branded dog illustration", advantageRdw: true },
+      { attribute: "Dog connection", rdw: "Rescue dogs on every label to support over 170 rescue organizations", them: "Branded dog illustration", advantageRdw: true },
       { attribute: "Profit to charity", rdw: "50% of profits to dog rescue", them: "Occasional cause-marketing donations only", advantageRdw: true },
       { attribute: "Sustainability", rdw: "Lodi Rules certified region", them: "Not publicly certified" },
       { attribute: "Price range", rdw: "$18–$28 (member pricing 20% off)", them: "$13–$18" },

@@ -272,6 +272,7 @@ export type Database = {
           payload: Json
           projected_impact_cents: number
           rationale: string | null
+          rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           rollback_state: Json | null
@@ -293,6 +294,7 @@ export type Database = {
           payload?: Json
           projected_impact_cents?: number
           rationale?: string | null
+          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           rollback_state?: Json | null
@@ -314,6 +316,7 @@ export type Database = {
           payload?: Json
           projected_impact_cents?: number
           rationale?: string | null
+          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           rollback_state?: Json | null
@@ -4895,6 +4898,7 @@ export type Database = {
           payload: Json
           projected_impact_cents: number
           rationale: string | null
+          rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           rollback_state: Json | null

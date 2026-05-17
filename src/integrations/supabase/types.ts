@@ -4324,6 +4324,387 @@ export type Database = {
         }
         Relationships: []
       }
+      vs_abandoned_carts: {
+        Row: {
+          buyer_email: string | null
+          buyer_first_name: string | null
+          buyer_last_name: string | null
+          buyer_phone: string | null
+          buyer_salutation: string | null
+          cart_value: number | null
+          created_at: string
+          id: string
+          imported_at: string
+          last_seen: string | null
+          problems: string | null
+          sales_contents: string | null
+          ship_city: string | null
+          ship_first_name: string | null
+          ship_last_name: string | null
+          ship_state: string | null
+          ship_street: string | null
+          ship_zip: string | null
+          skus: string[] | null
+          upcs: string[] | null
+        }
+        Insert: {
+          buyer_email?: string | null
+          buyer_first_name?: string | null
+          buyer_last_name?: string | null
+          buyer_phone?: string | null
+          buyer_salutation?: string | null
+          cart_value?: number | null
+          created_at?: string
+          id?: string
+          imported_at?: string
+          last_seen?: string | null
+          problems?: string | null
+          sales_contents?: string | null
+          ship_city?: string | null
+          ship_first_name?: string | null
+          ship_last_name?: string | null
+          ship_state?: string | null
+          ship_street?: string | null
+          ship_zip?: string | null
+          skus?: string[] | null
+          upcs?: string[] | null
+        }
+        Update: {
+          buyer_email?: string | null
+          buyer_first_name?: string | null
+          buyer_last_name?: string | null
+          buyer_phone?: string | null
+          buyer_salutation?: string | null
+          cart_value?: number | null
+          created_at?: string
+          id?: string
+          imported_at?: string
+          last_seen?: string | null
+          problems?: string | null
+          sales_contents?: string | null
+          ship_city?: string | null
+          ship_first_name?: string | null
+          ship_last_name?: string | null
+          ship_state?: string | null
+          ship_street?: string | null
+          ship_zip?: string | null
+          skus?: string[] | null
+          upcs?: string[] | null
+        }
+        Relationships: []
+      }
+      vs_products_lifetime: {
+        Row: {
+          created_at: string
+          discount: number | null
+          discount_code: string | null
+          gross_value: number | null
+          id: string
+          imported_at: string
+          in_open_orders: number | null
+          is_multipack: boolean
+          name: string
+          product_category: string | null
+          product_id: string | null
+          quantity_sold: number | null
+          shipped_picked_up: number | null
+          sku: string | null
+          store: string | null
+          upc: string | null
+          value: number | null
+          year: string | null
+        }
+        Insert: {
+          created_at?: string
+          discount?: number | null
+          discount_code?: string | null
+          gross_value?: number | null
+          id?: string
+          imported_at?: string
+          in_open_orders?: number | null
+          is_multipack?: boolean
+          name: string
+          product_category?: string | null
+          product_id?: string | null
+          quantity_sold?: number | null
+          shipped_picked_up?: number | null
+          sku?: string | null
+          store?: string | null
+          upc?: string | null
+          value?: number | null
+          year?: string | null
+        }
+        Update: {
+          created_at?: string
+          discount?: number | null
+          discount_code?: string | null
+          gross_value?: number | null
+          id?: string
+          imported_at?: string
+          in_open_orders?: number | null
+          is_multipack?: boolean
+          name?: string
+          product_category?: string | null
+          product_id?: string | null
+          quantity_sold?: number | null
+          shipped_picked_up?: number | null
+          sku?: string | null
+          store?: string | null
+          upc?: string | null
+          value?: number | null
+          year?: string | null
+        }
+        Relationships: []
+      }
+      vs_transactions: {
+        Row: {
+          active_club_member: boolean | null
+          attribution_credit: number | null
+          attribution_fees: number | null
+          attribution_funds_received: number | null
+          attribution_gross_product_value: number | null
+          attribution_packaging: number | null
+          attribution_product_discounts: number | null
+          attribution_shipping: number | null
+          attribution_taxes: number | null
+          attribution_tip: number | null
+          bottles: number | null
+          business_name: string | null
+          cash_external: number | null
+          cc_fee: number | null
+          chain_status: string | null
+          club: string | null
+          created_at: string
+          credit_applied: number | null
+          custom_state_tax: number | null
+          customer_city: string | null
+          customer_email: string | null
+          customer_first_name: string | null
+          customer_id: string | null
+          customer_last_name: string | null
+          customer_phone: string | null
+          customer_state: string | null
+          customer_street: string | null
+          customer_zip: string | null
+          delivery_type: string | null
+          discount: number | null
+          discount_code: string | null
+          excise_tax: number | null
+          final_order: string | null
+          funds_received: number | null
+          gross_value: number | null
+          id: string
+          imported_at: string
+          inventory_location: string | null
+          invoice: string
+          license_type: string | null
+          liters: number | null
+          non_taxable_value: number | null
+          order_total: number | null
+          order_type: string | null
+          packaging: number | null
+          paid_on: string | null
+          payment_type: string | null
+          pick_pack_fee: number | null
+          platform_total: number | null
+          producer_payment: number | null
+          raw: Json | null
+          referrer: string | null
+          release: string | null
+          requested_ship_date: string | null
+          sale_location: string | null
+          ship_date: string | null
+          ship_to_business_name: string | null
+          ship_to_city: string | null
+          ship_to_county: string | null
+          ship_to_first_name: string | null
+          ship_to_last_name: string | null
+          ship_to_state: string | null
+          ship_to_street: string | null
+          ship_to_zip: string | null
+          shipping_to_customer: number | null
+          sold_by: string | null
+          sold_by_team_member: string | null
+          statement_num: string | null
+          store: string | null
+          successor_order: string | null
+          taxable_value: number | null
+          terms: string | null
+          tip_collected: number | null
+          total_sales_tax: number | null
+          tracking: string | null
+          transaction_date: string | null
+          transaction_type: string | null
+          updated_at: string
+          vinoshipper_fee: number | null
+          vinoshipper_funds: number | null
+        }
+        Insert: {
+          active_club_member?: boolean | null
+          attribution_credit?: number | null
+          attribution_fees?: number | null
+          attribution_funds_received?: number | null
+          attribution_gross_product_value?: number | null
+          attribution_packaging?: number | null
+          attribution_product_discounts?: number | null
+          attribution_shipping?: number | null
+          attribution_taxes?: number | null
+          attribution_tip?: number | null
+          bottles?: number | null
+          business_name?: string | null
+          cash_external?: number | null
+          cc_fee?: number | null
+          chain_status?: string | null
+          club?: string | null
+          created_at?: string
+          credit_applied?: number | null
+          custom_state_tax?: number | null
+          customer_city?: string | null
+          customer_email?: string | null
+          customer_first_name?: string | null
+          customer_id?: string | null
+          customer_last_name?: string | null
+          customer_phone?: string | null
+          customer_state?: string | null
+          customer_street?: string | null
+          customer_zip?: string | null
+          delivery_type?: string | null
+          discount?: number | null
+          discount_code?: string | null
+          excise_tax?: number | null
+          final_order?: string | null
+          funds_received?: number | null
+          gross_value?: number | null
+          id?: string
+          imported_at?: string
+          inventory_location?: string | null
+          invoice: string
+          license_type?: string | null
+          liters?: number | null
+          non_taxable_value?: number | null
+          order_total?: number | null
+          order_type?: string | null
+          packaging?: number | null
+          paid_on?: string | null
+          payment_type?: string | null
+          pick_pack_fee?: number | null
+          platform_total?: number | null
+          producer_payment?: number | null
+          raw?: Json | null
+          referrer?: string | null
+          release?: string | null
+          requested_ship_date?: string | null
+          sale_location?: string | null
+          ship_date?: string | null
+          ship_to_business_name?: string | null
+          ship_to_city?: string | null
+          ship_to_county?: string | null
+          ship_to_first_name?: string | null
+          ship_to_last_name?: string | null
+          ship_to_state?: string | null
+          ship_to_street?: string | null
+          ship_to_zip?: string | null
+          shipping_to_customer?: number | null
+          sold_by?: string | null
+          sold_by_team_member?: string | null
+          statement_num?: string | null
+          store?: string | null
+          successor_order?: string | null
+          taxable_value?: number | null
+          terms?: string | null
+          tip_collected?: number | null
+          total_sales_tax?: number | null
+          tracking?: string | null
+          transaction_date?: string | null
+          transaction_type?: string | null
+          updated_at?: string
+          vinoshipper_fee?: number | null
+          vinoshipper_funds?: number | null
+        }
+        Update: {
+          active_club_member?: boolean | null
+          attribution_credit?: number | null
+          attribution_fees?: number | null
+          attribution_funds_received?: number | null
+          attribution_gross_product_value?: number | null
+          attribution_packaging?: number | null
+          attribution_product_discounts?: number | null
+          attribution_shipping?: number | null
+          attribution_taxes?: number | null
+          attribution_tip?: number | null
+          bottles?: number | null
+          business_name?: string | null
+          cash_external?: number | null
+          cc_fee?: number | null
+          chain_status?: string | null
+          club?: string | null
+          created_at?: string
+          credit_applied?: number | null
+          custom_state_tax?: number | null
+          customer_city?: string | null
+          customer_email?: string | null
+          customer_first_name?: string | null
+          customer_id?: string | null
+          customer_last_name?: string | null
+          customer_phone?: string | null
+          customer_state?: string | null
+          customer_street?: string | null
+          customer_zip?: string | null
+          delivery_type?: string | null
+          discount?: number | null
+          discount_code?: string | null
+          excise_tax?: number | null
+          final_order?: string | null
+          funds_received?: number | null
+          gross_value?: number | null
+          id?: string
+          imported_at?: string
+          inventory_location?: string | null
+          invoice?: string
+          license_type?: string | null
+          liters?: number | null
+          non_taxable_value?: number | null
+          order_total?: number | null
+          order_type?: string | null
+          packaging?: number | null
+          paid_on?: string | null
+          payment_type?: string | null
+          pick_pack_fee?: number | null
+          platform_total?: number | null
+          producer_payment?: number | null
+          raw?: Json | null
+          referrer?: string | null
+          release?: string | null
+          requested_ship_date?: string | null
+          sale_location?: string | null
+          ship_date?: string | null
+          ship_to_business_name?: string | null
+          ship_to_city?: string | null
+          ship_to_county?: string | null
+          ship_to_first_name?: string | null
+          ship_to_last_name?: string | null
+          ship_to_state?: string | null
+          ship_to_street?: string | null
+          ship_to_zip?: string | null
+          shipping_to_customer?: number | null
+          sold_by?: string | null
+          sold_by_team_member?: string | null
+          statement_num?: string | null
+          store?: string | null
+          successor_order?: string | null
+          taxable_value?: number | null
+          terms?: string | null
+          tip_collected?: number | null
+          total_sales_tax?: number | null
+          tracking?: string | null
+          transaction_date?: string | null
+          transaction_type?: string | null
+          updated_at?: string
+          vinoshipper_fee?: number | null
+          vinoshipper_funds?: number | null
+        }
+        Relationships: []
+      }
       welcome_email_schedule: {
         Row: {
           attempts: number

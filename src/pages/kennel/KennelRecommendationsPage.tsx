@@ -21,6 +21,7 @@ type Rec = {
   reviewed_at: string | null;
   executed_at: string | null;
   created_at: string;
+  rejection_reason?: string | null;
 };
 
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -42,7 +43,7 @@ function timeLeft(iso: string | null) {
 export default function KennelRecommendationsPage() {
   const [recs, setRecs] = useState<Rec[]>([]);
   const [channels, setChannels] = useState<Record<string, string>>({});
-  const [filter, setFilter] = useState<"pending" | "approved" | "executed" | "all">("pending");
+  const [filter, setFilter] = useState<"pending" | "approved" | "executed" | "rejected" | "failed" | "all">("pending");
   const [busy, setBusy] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -101,8 +102,8 @@ export default function KennelRecommendationsPage() {
             Lindy is analyzing. Sorted by projected impact × confidence.
           </p>
         </div>
-        <div className="flex gap-1">
-          {(["pending", "approved", "executed", "all"] as const).map((f) => (
+        <div className="flex gap-1 flex-wrap">
+          {(["pending", "approved", "executed", "rejected", "failed", "all"] as const).map((f) => (
             <Button
               key={f}
               size="sm"
@@ -159,6 +160,17 @@ export default function KennelRecommendationsPage() {
                         <summary className="cursor-pointer hover:text-foreground">Rationale</summary>
                         <p className="mt-1 whitespace-pre-wrap">{r.rationale}</p>
                       </details>
+                    )}
+                    {(r.status === "rejected" || r.status === "failed") && r.rejection_reason && (
+                      <div
+                        className="mt-2 border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+                        style={SHARP}
+                      >
+                        <span className="font-bold uppercase tracking-brand mr-2">
+                          {r.status === "rejected" ? "Rejected" : "Failed"}:
+                        </span>
+                        {r.rejection_reason}
+                      </div>
                     )}
                   </div>
                   <div className="text-right shrink-0">

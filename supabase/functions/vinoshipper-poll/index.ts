@@ -1,0 +1,318 @@
+// Polls Vinoshipper REST API for new orders, mirrors them into vs_transactions,
+// and fires server-side conversions for Meta/GA4 with LTV-weighted values.
+//
+// Why this exists: Vinoshipper has no outbound webhook. To keep ad platforms
+// fed with real conversion signals (so Meta/Google can optimize correctly),
+// we poll every 15 minutes. Z3a's daily poll into Google Sheets is unaffected —
+// they dedup on order_id and write to different storage.
+//
+// LTV weighting (launch baseline, replace once vs_transactions has 30+ days of fresh data):
+//   - Purchase event value = actual order_total (real money, real ROAS)
+//   - Subscribe event (wine club signup) value = $400 USD = projected 12-month LTV
+//
+// Dedup: vs_transactions.invoice UNIQUE prevents duplicate rows. meta_capi_events
+// unique index on (order_id) WHERE test_mode=false AND success=true prevents
+// duplicate live Meta fires.
+//
+// Auth: shared secret KENNEL_INGEST_SECRET (header x-kennel-ingest-secret)
+// OR admin JWT. pg_cron passes the secret.
+
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { forwardPurchaseConversion } from "../_shared/serverConversions.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-kennel-ingest-secret",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const VS_BASE = "https://vinoshipper.com/api/v3/p";
+const STATIC_CLUB_LTV_CENTS = 40000; // $400 — replace with real LTV once fresh data accumulates
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+/** Map a Vinoshipper order JSON into a vs_transactions row. */
+function mapOrder(o: any): Record<string, unknown> {
+  const cust = o.customer ?? {};
+  const ship = o.shipTo ?? o.shipping ?? cust;
+  const billAddr = cust.address ?? {};
+  const shipAddr = ship.address ?? billAddr;
+  const club = o.club ?? o.subscription ?? null;
+  const isClub = !!club || /club|member/i.test(String(o.cartType ?? o.orderType ?? ""));
+
+  return {
+    invoice: String(o.id ?? o.orderId ?? o.invoice),
+    transaction_date: o.orderDate ? new Date(o.orderDate).toISOString().slice(0, 10) : null,
+    transaction_type: o.orderType ?? o.cartType ?? null,
+    ship_date: o.shipDate ? new Date(o.shipDate).toISOString().slice(0, 10) : null,
+    requested_ship_date: o.requestedShipDate ? new Date(o.requestedShipDate).toISOString().slice(0, 10) : null,
+    store: o.store ?? null,
+    delivery_type: o.deliveryType ?? null,
+    inventory_location: o.inventoryLocation ?? null,
+    tracking: o.tracking ?? null,
+    payment_type: o.paymentType ?? null,
+    club: club?.name ?? club?.clubName ?? null,
+    release: club?.release ?? null,
+    order_type: o.orderType ?? null,
+    referrer: o.referrerUrl ?? o.referrer ?? null,
+    discount_code: o.discountCode ?? null,
+    customer_first_name: cust.firstName ?? null,
+    customer_last_name: cust.lastName ?? null,
+    customer_email: cust.email ?? null,
+    customer_phone: cust.phone ?? null,
+    customer_id: cust.id ? String(cust.id) : null,
+    active_club_member: isClub,
+    business_name: cust.businessName ?? null,
+    customer_street: billAddr.street1 ?? billAddr.address1 ?? null,
+    customer_city: billAddr.city ?? null,
+    customer_state: billAddr.state ?? billAddr.stateCode ?? null,
+    customer_zip: billAddr.zip ?? billAddr.postalCode ?? null,
+    ship_to_first_name: ship.firstName ?? cust.firstName ?? null,
+    ship_to_last_name: ship.lastName ?? cust.lastName ?? null,
+    ship_to_street: shipAddr.street1 ?? shipAddr.address1 ?? null,
+    ship_to_city: shipAddr.city ?? null,
+    ship_to_state: shipAddr.state ?? shipAddr.stateCode ?? null,
+    ship_to_zip: shipAddr.zip ?? shipAddr.postalCode ?? null,
+    bottles: o.bottles ?? null,
+    gross_value: o.grossValue ?? o.subtotal ?? null,
+    discount: o.discount ?? null,
+    shipping_to_customer: o.shipping ?? null,
+    order_total: o.orderTotal ?? o.total ?? null,
+    chain_status: o.chainStatus ?? o.status ?? null,
+    raw: o,
+  };
+}
+
+/** Send a Meta CAPI Subscribe event for a wine club signup with projected LTV. */
+async function sendMetaSubscribe(input: {
+  orderId: string;
+  valueCents: number;
+  email?: string | null;
+  phone?: string | null;
+  state?: string | null;
+  zip?: string | null;
+}): Promise<{ ok: boolean; error?: string }> {
+  const pixelId = Deno.env.get("META_PIXEL_ID");
+  const token = Deno.env.get("META_CAPI_TOKEN");
+  if (!pixelId || !token) return { ok: true };
+
+  const sha = async (s: string | null | undefined) => {
+    if (!s) return undefined;
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s.trim().toLowerCase()));
+    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  };
+  const [em, ph, st, zp] = await Promise.all([
+    sha(input.email), sha(input.phone?.replace(/\D/g, "")), sha(input.state), sha(input.zip),
+  ]);
+  const userData: Record<string, unknown> = {};
+  if (em) userData.em = [em];
+  if (ph) userData.ph = [ph];
+  if (st) userData.st = [st];
+  if (zp) userData.zp = [zp];
+  userData.country = [await sha("us")];
+
+  const body = {
+    data: [{
+      event_name: "Subscribe",
+      event_time: Math.floor(Date.now() / 1000),
+      event_id: `sub-${input.orderId}`,
+      action_source: "website",
+      user_data: userData,
+      custom_data: {
+        currency: "USD",
+        value: input.valueCents / 100,
+        predicted_ltv: input.valueCents / 100,
+        order_id: input.orderId,
+      },
+    }],
+  };
+  try {
+    const r = await fetch(
+      `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${encodeURIComponent(token)}`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+    );
+    if (!r.ok) return { ok: false, error: `Meta Subscribe ${r.status}` };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
+
+  // Auth — secret or admin JWT
+  const ingestSecret = req.headers.get("x-kennel-ingest-secret");
+  const expectedSecret = Deno.env.get("KENNEL_INGEST_SECRET");
+  const secretOk = !!expectedSecret && ingestSecret === expectedSecret;
+
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  if (!secretOk) {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const jwt = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!jwt) return json({ error: "unauthorized" }, 401);
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: claims } = await userClient.auth.getClaims(jwt);
+    const uid = claims?.claims?.sub;
+    if (!uid) return json({ error: "unauthorized" }, 401);
+    const { data: ok } = await admin.rpc("is_admin_or_owner", { _user_id: uid });
+    if (!ok) return json({ error: "forbidden" }, 403);
+  }
+
+  // Parse body — optional overrides for test runs
+  let body: any = {};
+  try { body = await req.json(); } catch { /* default empty */ }
+  const limit = Math.min(Math.max(Number(body?.limit ?? 100), 1), 500);
+  const testMode = body?.test_mode === true;
+
+  const keyId = Deno.env.get("VINOSHIPPER_API_KEY_ID");
+  const secret = Deno.env.get("VINOSHIPPER_API_SECRET");
+  if (!keyId || !secret) return json({ error: "VS credentials missing" }, 500);
+  const auth = `Basic ${btoa(`${keyId}:${secret}`)}`;
+
+  // Start log row
+  const { data: logRow } = await admin
+    .from("vs_poll_log")
+    .insert({ notes: { test_mode: testMode, limit } })
+    .select("id")
+    .single();
+  const logId = logRow?.id;
+
+  try {
+    // Poll Vinoshipper
+    const r = await fetch(`${VS_BASE}/orders/search`, {
+      method: "POST",
+      headers: { Authorization: auth, "Content-Type": "application/json" },
+      body: JSON.stringify({ limit, offset: 0 }),
+    });
+    if (!r.ok) {
+      const txt = await r.text().catch(() => "");
+      await admin.from("vs_poll_log").update({
+        finished_at: new Date().toISOString(),
+        error: `VS ${r.status}: ${txt.slice(0, 300)}`,
+      }).eq("id", logId);
+      return json({ error: `VS ${r.status}`, body: txt.slice(0, 500) }, 502);
+    }
+    const data = await r.json();
+    const orders: any[] = Array.isArray(data) ? data : (data.orders ?? data.results ?? data.data ?? []);
+    const ordersSeen = orders.length;
+
+    // Find which invoices we already have
+    const invoices = orders.map((o) => String(o.id ?? o.orderId ?? o.invoice)).filter(Boolean);
+    const existing = new Set<string>();
+    if (invoices.length > 0) {
+      const { data: have } = await admin
+        .from("vs_transactions")
+        .select("invoice")
+        .in("invoice", invoices);
+      have?.forEach((row: any) => existing.add(row.invoice));
+    }
+    const newOrders = orders.filter((o) => !existing.has(String(o.id ?? o.orderId ?? o.invoice)));
+
+    // Upsert new orders
+    let inserted = 0;
+    if (newOrders.length > 0) {
+      const rows = newOrders.map(mapOrder);
+      const { error: upErr, count } = await admin
+        .from("vs_transactions")
+        .upsert(rows, { onConflict: "invoice", count: "exact" });
+      if (upErr) throw new Error(`upsert: ${upErr.message}`);
+      inserted = count ?? rows.length;
+    }
+
+    // Fire CAPI conversions for each new order
+    let purchases = 0, subscribes = 0, ltvCents = 0;
+    for (const o of newOrders) {
+      const orderId = String(o.id ?? o.orderId ?? o.invoice);
+      const orderTotal = Number(o.orderTotal ?? o.total ?? 0);
+      const valueCents = Math.round(orderTotal * 100);
+      if (valueCents <= 0) continue;
+
+      const cust = o.customer ?? {};
+      const ship = o.shipTo ?? cust;
+      const shipAddr = ship?.address ?? cust?.address ?? {};
+      const club = o.club ?? o.subscription ?? null;
+      const isClub = !!club || /club|member/i.test(String(o.cartType ?? o.orderType ?? ""));
+
+      // Purchase event (always)
+      const conv = await forwardPurchaseConversion({
+        orderId,
+        valueCents,
+        currency: "USD",
+        email: cust.email ?? null,
+        phone: cust.phone ?? null,
+        firstName: cust.firstName ?? null,
+        lastName: cust.lastName ?? null,
+        city: shipAddr.city ?? null,
+        state: shipAddr.state ?? shipAddr.stateCode ?? null,
+        zip: shipAddr.zip ?? shipAddr.postalCode ?? null,
+        country: "US",
+        debug: testMode,
+      });
+      if (conv.meta?.ok) purchases++;
+      ltvCents += valueCents;
+
+      // Subscribe event with projected $400 LTV — wine club signups only
+      if (isClub && !testMode) {
+        const sub = await sendMetaSubscribe({
+          orderId,
+          valueCents: STATIC_CLUB_LTV_CENTS,
+          email: cust.email ?? null,
+          phone: cust.phone ?? null,
+          state: shipAddr.state ?? shipAddr.stateCode ?? null,
+          zip: shipAddr.zip ?? shipAddr.postalCode ?? null,
+        });
+        if (sub.ok) {
+          subscribes++;
+          ltvCents += STATIC_CLUB_LTV_CENTS;
+        }
+      }
+    }
+
+    await admin.from("vs_poll_log").update({
+      finished_at: new Date().toISOString(),
+      orders_seen: ordersSeen,
+      orders_new: inserted,
+      capi_purchases_sent: purchases,
+      capi_subscribes_sent: subscribes,
+      ltv_value_sent_cents: ltvCents,
+      notes: {
+        test_mode: testMode,
+        limit,
+        static_club_ltv_cents: STATIC_CLUB_LTV_CENTS,
+        ltv_note: "Static $400 LTV — replace once vs_transactions has 30+ days of fresh per-customer data",
+      },
+    }).eq("id", logId);
+
+    return json({
+      ok: true,
+      orders_seen: ordersSeen,
+      orders_new: inserted,
+      capi_purchases_sent: purchases,
+      capi_subscribes_sent: subscribes,
+      ltv_value_sent_cents: ltvCents,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    await admin.from("vs_poll_log").update({
+      finished_at: new Date().toISOString(),
+      error: msg.slice(0, 500),
+    }).eq("id", logId);
+    return json({ error: msg }, 500);
+  }
+});

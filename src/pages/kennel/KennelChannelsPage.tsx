@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ChevronRight, Pause, Play, RefreshCw, Home, Pencil } from "lucide-react";
+import { ChevronRight, Pause, Play, RefreshCw, Home, Pencil, Upload, Download, Tag, Sparkles } from "lucide-react";
 import KeywordEnginePanel from "@/components/kennel/KeywordEnginePanel";
 
 const SHARP = { borderRadius: 0 } as const;
@@ -28,6 +28,8 @@ type Entity = {
   optimization_goal?: string;
   updated_time?: string;
   resource_name?: string;
+  api_name?: string;
+  has_alias?: boolean;
 };
 
 type Crumb = { level: Level; parent_id?: string; label: string };

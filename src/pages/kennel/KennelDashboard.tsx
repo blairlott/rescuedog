@@ -60,7 +60,7 @@ export default function KennelDashboard() {
     if (!data) return { revenue: 0, orders: 0 };
     const seen = new Set<string>();
     let revenue = 0;
-    for (const r of data.dtc) {
+    for (const r of (data.dtc ?? [])) {
       if (seen.has(r.order_id)) continue;
       seen.add(r.order_id);
       revenue += Number(r.value_cents || 0) / 100;

@@ -458,13 +458,13 @@ export const BRAND_COMPARISONS: BrandComparison[] = [
     hero: {
       eyebrow: "Bar Dog alternative",
       headline: "A dog on the label is nice. Funding rescue is better.",
-      sub: "Bar Dog put a friendly pup on a $15 California red and built a following. Rescue Dog Wines goes further: every label is a real adoptable dog, every bottle is small-batch Lodi, and 50% of profits go to 501(c)(3) dog-rescue partners.",
+      sub: "Bar Dog put a friendly pup on a $15 California red and built a following. Rescue Dog Wines goes further: every label is an artistic rendering representing all rescue dogs, every bottle is small-batch Lodi, and 50% of profits go to 501(c)(3) dog-rescue partners.",
     },
     specs: [
       { attribute: "Origin", rdw: "Lodi, CA (single appellation)", them: "California (multi-source)", advantageRdw: true },
       { attribute: "Production scale", rdw: "Small-batch craft", them: "Large-scale production", advantageRdw: true },
       { attribute: "Owned by", rdw: "Independent rescue-mission winery", them: "Vintage Wine Estates portfolio brand" },
-      { attribute: "Dog connection", rdw: "Rescue dogs on every label to support over 170 rescue organizations", them: "Branded dog illustration", advantageRdw: true },
+      { attribute: "Dog connection", rdw: "Artistic rescue-dog renderings on every label, supporting 170+ rescue organizations", them: "Branded dog illustration", advantageRdw: true },
       { attribute: "Profit to charity", rdw: "50% of profits to dog rescue", them: "Occasional cause-marketing donations only", advantageRdw: true },
       { attribute: "Sustainability", rdw: "Lodi Rules certified region", them: "Not publicly certified" },
       { attribute: "Price range", rdw: "$18–$28 (member pricing 20% off)", them: "$13–$18" },
@@ -473,7 +473,7 @@ export const BRAND_COMPARISONS: BrandComparison[] = [
     reasons: [
       {
         title: "Same dog energy — built on a real rescue mission.",
-        body: "Bar Dog uses dog branding as marketing. Rescue Dog Wines was founded around dog rescue: every label features a real adoptable dog, and 50% of profits fund vetted 501(c)(3) rescue partners.",
+        body: "Bar Dog uses dog branding as marketing. Rescue Dog Wines was founded around dog rescue: every label features an artistic rendering representing rescue dogs everywhere, and 50% of profits fund vetted 501(c)(3) rescue partners.",
       },
       {
         title: "Small-batch Lodi over portfolio-scale California.",
@@ -488,7 +488,7 @@ export const BRAND_COMPARISONS: BrandComparison[] = [
       {
         question: "Is there a dog-branded wine that actually donates to rescue?",
         answer:
-          "Yes — Rescue Dog Wines was built specifically for this. 50% of profits fund 501(c)(3) dog-rescue partners on every bottle, and every label features a real adoptable rescue dog with its story.",
+          "Yes — Rescue Dog Wines was built specifically for this. 50% of profits fund 501(c)(3) dog-rescue partners on every bottle, and every label features an artistic rendering that represents all rescue dogs.",
       },
       {
         question: "Who owns Bar Dog wine?",

@@ -10,7 +10,31 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
-type Range = 7 | 14 | 30;
+type Range = 7 | 14 | 30 | 90 | 180 | 365 | 730 | "ytd";
+
+const RANGE_TABS: { value: Range; label: string }[] = [
+  { value: 7,    label: "7d" },
+  { value: 14,   label: "14d" },
+  { value: 30,   label: "30d" },
+  { value: 90,   label: "90d" },
+  { value: 180,  label: "6mo" },
+  { value: "ytd", label: "YTD" },
+  { value: 365,  label: "12mo" },
+  { value: 730,  label: "2yr" },
+];
+
+function rangeStartIso(range: Range): { iso: string; days: number; label: string } {
+  const today = new Date();
+  if (range === "ytd") {
+    const start = new Date(today.getFullYear(), 0, 1);
+    const days = Math.max(1, Math.round((today.getTime() - start.getTime()) / 86400000));
+    return { iso: start.toISOString().slice(0, 10), days, label: "YTD" };
+  }
+  const d = new Date();
+  d.setDate(d.getDate() - range);
+  const label = RANGE_TABS.find((t) => t.value === range)?.label ?? `${range}d`;
+  return { iso: d.toISOString().slice(0, 10), days: range, label };
+}
 
 interface PerfRow {
   channel_id: string;
@@ -35,9 +59,7 @@ export default function KennelDashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ["kennel-dashboard", range],
     queryFn: async () => {
-      const fromDate = new Date();
-      fromDate.setDate(fromDate.getDate() - range);
-      const fromIso = fromDate.toISOString().slice(0, 10);
+      const { iso: fromIso } = rangeStartIso(range);
 
       const [channelsRes, perfRes, syncRes, dtcRes, bmRes, bmLifetimeRes, finRes, finLifetimeRes] = await Promise.all([
         supabase.from("ad_channels" as any).select("id, name, platform").order("name"),

@@ -56,6 +56,83 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_anomalies: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          channel_id: string | null
+          detected_at: string
+          expected: number
+          id: string
+          kind: string
+          metric: string
+          narrative: string | null
+          observed: number
+          pct_change: number | null
+          platform: string
+          resolved_at: string | null
+          scope_id: string | null
+          scope_label: string | null
+          scope_type: string
+          severity: string
+          std_dev: number | null
+          suggested_action: string | null
+          z_score: number | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          channel_id?: string | null
+          detected_at?: string
+          expected: number
+          id?: string
+          kind: string
+          metric: string
+          narrative?: string | null
+          observed: number
+          pct_change?: number | null
+          platform: string
+          resolved_at?: string | null
+          scope_id?: string | null
+          scope_label?: string | null
+          scope_type: string
+          severity: string
+          std_dev?: number | null
+          suggested_action?: string | null
+          z_score?: number | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          channel_id?: string | null
+          detected_at?: string
+          expected?: number
+          id?: string
+          kind?: string
+          metric?: string
+          narrative?: string | null
+          observed?: number
+          pct_change?: number | null
+          platform?: string
+          resolved_at?: string | null
+          scope_id?: string | null
+          scope_label?: string | null
+          scope_type?: string
+          severity?: string
+          std_dev?: number | null
+          suggested_action?: string | null
+          z_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_anomalies_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_channels: {
         Row: {
           api_endpoint: string | null
@@ -136,6 +213,74 @@ export type Database = {
             columns: ["recommendation_id"]
             isOneToOne: false
             referencedRelation: "ad_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_forecasts: {
+        Row: {
+          channel_id: string | null
+          confidence: number | null
+          forecast_value: number
+          generated_at: string
+          horizon_days: number
+          id: string
+          lower_bound: number | null
+          metric: string
+          model: string
+          narrative: string | null
+          platform: string
+          scope_id: string | null
+          scope_label: string | null
+          scope_type: string
+          series: Json | null
+          upper_bound: number | null
+          valid_until: string | null
+        }
+        Insert: {
+          channel_id?: string | null
+          confidence?: number | null
+          forecast_value: number
+          generated_at?: string
+          horizon_days: number
+          id?: string
+          lower_bound?: number | null
+          metric: string
+          model?: string
+          narrative?: string | null
+          platform: string
+          scope_id?: string | null
+          scope_label?: string | null
+          scope_type: string
+          series?: Json | null
+          upper_bound?: number | null
+          valid_until?: string | null
+        }
+        Update: {
+          channel_id?: string | null
+          confidence?: number | null
+          forecast_value?: number
+          generated_at?: string
+          horizon_days?: number
+          id?: string
+          lower_bound?: number | null
+          metric?: string
+          model?: string
+          narrative?: string | null
+          platform?: string
+          scope_id?: string | null
+          scope_label?: string | null
+          scope_type?: string
+          series?: Json | null
+          upper_bound?: number | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_forecasts_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "ad_channels"
             referencedColumns: ["id"]
           },
         ]
@@ -252,6 +397,125 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ad_performance_daily_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_performance_facts: {
+        Row: {
+          ad_group_id: string | null
+          ad_group_name: string | null
+          ad_id: string | null
+          ad_name: string | null
+          attribution_window: string | null
+          audience_id: string | null
+          audience_name: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          channel_id: string
+          clicks: number
+          conversions: number
+          created_at: string
+          creative_id: string | null
+          creative_name: string | null
+          date: string
+          device: string | null
+          dim_hash: string | null
+          geo_country: string | null
+          geo_dma: string | null
+          geo_region: string | null
+          geo_zip: string | null
+          hour: number | null
+          id: string
+          impressions: number
+          ingest_request_id: string | null
+          network: string | null
+          placement: string | null
+          platform: string
+          revenue: number
+          source: string
+          spend: number
+          updated_at: string
+          view_through_conversions: number
+        }
+        Insert: {
+          ad_group_id?: string | null
+          ad_group_name?: string | null
+          ad_id?: string | null
+          ad_name?: string | null
+          attribution_window?: string | null
+          audience_id?: string | null
+          audience_name?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          channel_id: string
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          creative_id?: string | null
+          creative_name?: string | null
+          date: string
+          device?: string | null
+          dim_hash?: string | null
+          geo_country?: string | null
+          geo_dma?: string | null
+          geo_region?: string | null
+          geo_zip?: string | null
+          hour?: number | null
+          id?: string
+          impressions?: number
+          ingest_request_id?: string | null
+          network?: string | null
+          placement?: string | null
+          platform: string
+          revenue?: number
+          source?: string
+          spend?: number
+          updated_at?: string
+          view_through_conversions?: number
+        }
+        Update: {
+          ad_group_id?: string | null
+          ad_group_name?: string | null
+          ad_id?: string | null
+          ad_name?: string | null
+          attribution_window?: string | null
+          audience_id?: string | null
+          audience_name?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          channel_id?: string
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          creative_id?: string | null
+          creative_name?: string | null
+          date?: string
+          device?: string | null
+          dim_hash?: string | null
+          geo_country?: string | null
+          geo_dma?: string | null
+          geo_region?: string | null
+          geo_zip?: string | null
+          hour?: number | null
+          id?: string
+          impressions?: number
+          ingest_request_id?: string | null
+          network?: string | null
+          placement?: string | null
+          platform?: string
+          revenue?: number
+          source?: string
+          spend?: number
+          updated_at?: string
+          view_through_conversions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_performance_facts_channel_id_fkey"
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "ad_channels"
@@ -380,6 +644,65 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ad_reconciliation_log_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_saturation_curves: {
+        Row: {
+          channel_id: string | null
+          current_daily_spend: number | null
+          current_roas: number | null
+          curve_points: Json
+          efficient_spend_ceiling: number | null
+          generated_at: string
+          id: string
+          platform: string
+          reallocation_delta: number | null
+          recommendation: string | null
+          scope_id: string | null
+          scope_label: string | null
+          scope_type: string
+          target_roas: number | null
+        }
+        Insert: {
+          channel_id?: string | null
+          current_daily_spend?: number | null
+          current_roas?: number | null
+          curve_points: Json
+          efficient_spend_ceiling?: number | null
+          generated_at?: string
+          id?: string
+          platform: string
+          reallocation_delta?: number | null
+          recommendation?: string | null
+          scope_id?: string | null
+          scope_label?: string | null
+          scope_type: string
+          target_roas?: number | null
+        }
+        Update: {
+          channel_id?: string | null
+          current_daily_spend?: number | null
+          current_roas?: number | null
+          curve_points?: Json
+          efficient_spend_ceiling?: number | null
+          generated_at?: string
+          id?: string
+          platform?: string
+          reallocation_delta?: number | null
+          recommendation?: string | null
+          scope_id?: string | null
+          scope_label?: string | null
+          scope_type?: string
+          target_roas?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_saturation_curves_channel_id_fkey"
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "ad_channels"
@@ -597,6 +920,45 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value?: Json
+        }
+        Relationships: []
+      }
+      audience_propensity_scores: {
+        Row: {
+          computed_at: string
+          expires_at: string | null
+          features: Json | null
+          id: string
+          model_version: string
+          percentile: number | null
+          score: number
+          score_type: string
+          user_id: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          computed_at?: string
+          expires_at?: string | null
+          features?: Json | null
+          id?: string
+          model_version?: string
+          percentile?: number | null
+          score: number
+          score_type: string
+          user_id?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          computed_at?: string
+          expires_at?: string | null
+          features?: Json | null
+          id?: string
+          model_version?: string
+          percentile?: number | null
+          score?: number
+          score_type?: string
+          user_id?: string | null
+          visitor_id?: string | null
         }
         Relationships: []
       }

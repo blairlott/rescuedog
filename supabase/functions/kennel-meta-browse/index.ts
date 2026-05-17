@@ -88,9 +88,12 @@ async function googleAccessToken(): Promise<{ ok: true; token: string } | { ok: 
       grant_type: "refresh_token",
     }).toString(),
   });
-  const body = await res.json().catch(() => ({}));
+  const text = await res.text();
+  let body: any = {};
+  try { body = text ? JSON.parse(text) : {}; } catch { body = { raw: text }; }
   if (!res.ok || !body?.access_token) {
-    return { ok: false, error: body?.error_description ?? body?.error ?? `token HTTP ${res.status}` };
+    const parts = [body?.error, body?.error_description].filter(Boolean);
+    return { ok: false, error: parts.length ? parts.join(": ") : `token HTTP ${res.status}` };
   }
   return { ok: true, token: body.access_token as string };
 }
@@ -109,16 +112,28 @@ function googleHeaders(accessToken: string) {
 
 async function googleSearch(customerId: string, query: string, accessToken: string) {
   const cid = customerId.replace(/-/g, "");
-  const res = await fetch(
-    `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}/customers/${cid}/googleAds:search`,
-    { method: "POST", headers: googleHeaders(accessToken), body: JSON.stringify({ query }) },
-  );
-  const body = await res.json().catch(() => ({}));
+  let res: Response;
+  try {
+    res = await fetch(
+      `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}/customers/${cid}/googleAds:search`,
+      { method: "POST", headers: googleHeaders(accessToken), body: JSON.stringify({ query }) },
+    );
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : String(e), body: null };
+  }
+  const text = await res.text();
+  let body: any = {};
+  try { body = text ? JSON.parse(text) : {}; } catch { body = { raw: text }; }
   if (!res.ok) {
     const msg = Array.isArray(body) ? body[0]?.error?.message : body?.error?.message;
     return { ok: false as const, error: msg ?? `HTTP ${res.status}`, body };
   }
   return { ok: true as const, body };
+}
+
+function googleError(action: string, error: string, details?: unknown) {
+  console.error(`google ${action} failed`, JSON.stringify(details ?? { error }).slice(0, 4000));
+  return json({ ok: false, platform: "google", items: [], error: `Google Ads: ${error}`, details, fallback: true });
 }
 
 async function googleMutate(
@@ -363,7 +378,7 @@ async function handle(req: Request): Promise<Response> {
       return json({ ok: true, platform: "google", items: [], not_connected: true, message: "Google Ads credentials missing" });
     }
     const tk = await googleAccessToken();
-    if (!tk.ok) return json({ error: tk.error }, 502);
+    if (!tk.ok) return googleError("token", tk.error);
     const cidClean = customerId.replace(/-/g, "");
 
     if (action === "list_campaigns") {
@@ -373,8 +388,7 @@ async function handle(req: Request): Promise<Response> {
         tk.token,
       );
       if (!r.ok) {
-        console.error("google list_campaigns failed", JSON.stringify(r.body));
-        return json({ ok: false, platform: "google", items: [], error: `Google Ads: ${r.error}`, details: r.body });
+        return googleError("list_campaigns", r.error, r.body);
       }
       const items = (r.body.results ?? []).map((row: any) => ({
         id: String(row.campaign.id),
@@ -396,7 +410,7 @@ async function handle(req: Request): Promise<Response> {
         `SELECT ad_group.id, ad_group.name, ad_group.status, ad_group.resource_name, ad_group.type, ad_group.cpc_bid_micros FROM ad_group WHERE campaign.id = ${Number(campaignId)} AND ad_group.status IN ('ENABLED','PAUSED') ORDER BY ad_group.name`,
         tk.token,
       );
-      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
+      if (!r.ok) return googleError("list_adsets", r.error, r.body);
       const items = (r.body.results ?? []).map((row: any) => ({
         id: String(row.adGroup.id),
         name: row.adGroup.name,
@@ -417,7 +431,7 @@ async function handle(req: Request): Promise<Response> {
         `SELECT ad_group_ad.ad.id, ad_group_ad.ad.name, ad_group_ad.status, ad_group_ad.resource_name, ad_group_ad.ad.type FROM ad_group_ad WHERE ad_group.id = ${Number(adGroupId)} AND ad_group_ad.status IN ('ENABLED','PAUSED')`,
         tk.token,
       );
-      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
+      if (!r.ok) return googleError("list_ads", r.error, r.body);
       const items = (r.body.results ?? []).map((row: any) => ({
         id: String(row.adGroupAd.ad.id),
         name: row.adGroupAd.ad.name ?? `${row.adGroupAd.ad.type} ad`,

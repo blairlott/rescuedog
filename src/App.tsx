@@ -96,6 +96,7 @@ const KennelLogPage = lazy(() => import("./pages/kennel/KennelLogPage"));
 const KennelChannelsPage = lazy(() => import("./pages/kennel/KennelChannelsPage"));
 const KennelTrueRoasPage = lazy(() => import("./pages/kennel/KennelTrueRoasPage"));
 const KennelCapiPage = lazy(() => import("./pages/kennel/KennelCapiPage"));
+const KennelMethodologyPage = lazy(() => import("./pages/kennel/KennelMethodologyPage"));
 const ExecutiveCommandCenter = lazy(() => import("./pages/intelligence/ExecutiveCommandCenter"));
 
 const queryClient = new QueryClient();
@@ -219,6 +220,7 @@ function AppContent() {
         <Route path="channels" element={<KennelChannelsPage />} />
         <Route path="log" element={<KennelLogPage />} />
         <Route path="settings" element={<KennelSettingsPage />} />
+        <Route path="methodology" element={<KennelMethodologyPage />} />
       </Route>
       <Route path="/intelligence" element={<KennelGuard><ExecutiveCommandCenter /></KennelGuard>} />
       <Route path="*" element={<NotFound />} />

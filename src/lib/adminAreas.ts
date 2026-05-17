@@ -1,4 +1,4 @@
-import { PenLine, Users, Wine, Truck, type LucideIcon } from "lucide-react";
+import { PenLine, Users, Wine, Truck, Megaphone, type LucideIcon } from "lucide-react";
 
 export interface AdminArea {
   key: string;
@@ -44,6 +44,14 @@ export const ADMIN_AREAS: AdminArea[] = [
     desc: "Partners, orders, payouts.",
     icon: Truck,
     roles: ["owner", "admin", "dropship_manager"],
+  },
+  {
+    key: "kennel",
+    to: "/kennel",
+    title: "The Kennel",
+    desc: "Ad ops command center — spend, ROAS, recommendations.",
+    icon: Megaphone,
+    roles: ["owner", "admin", "ad_ops_manager"],
   },
 ];
 

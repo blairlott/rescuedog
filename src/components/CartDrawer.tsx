@@ -690,7 +690,29 @@ export const CartDrawer = () => {
         </div>
       </SheetContent>
     </Sheet>
-    <VinoshipperCheckoutModal open={vsCheckoutOpen} onOpenChange={setVsCheckoutOpen} />
+    <VinoshipperCheckoutModal
+      open={vsCheckoutOpen}
+      onOpenChange={setVsCheckoutOpen}
+      pendingMerchHandoff={
+        hasWine && hasMerch
+          ? {
+              checkoutUrl: getShopifyCheckoutUrl() ?? "",
+              itemCount: merchItems.reduce((s, i) => s + i.quantity, 0),
+              subtotalCents: Math.round(merchTotal * 100),
+              items: merchItems.map((i) => ({
+                handle: i.product.node.handle,
+                title: i.product.node.title,
+                variant_id: i.variantId,
+                quantity: i.quantity,
+                unit_price: parseFloat(i.price.amount),
+              })),
+            }
+          : null
+      }
+      onWineOrderPlaced={({ orderId }) => {
+        logCheckoutEvent("dual_wine_completed", { order_id: orderId });
+      }}
+    />
     <DualCheckoutConfirm
       open={dualConfirmOpen}
       onOpenChange={setDualConfirmOpen}

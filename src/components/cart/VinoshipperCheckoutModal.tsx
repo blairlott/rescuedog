@@ -427,6 +427,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
             </p>
           </div>
         ) : (
+        <>
         <div className="overflow-y-auto p-6 pb-32 flex-1 space-y-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-display">
@@ -691,6 +692,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
             )}
           </Button>
         </div>
+        </>
         )}
       </DialogContent>
     </Dialog>

@@ -274,6 +274,171 @@ export const BRAND_COMPARISONS: BrandComparison[] = [
       },
     ],
   },
+  {
+    slug: "kendall-jackson",
+    competitor: "Kendall-Jackson",
+    competitorTagline: "Best-selling California Chardonnay, ~$18/bottle",
+    pricePoint: "$18–$28",
+    category: "Chardonnay & Cabernet alternatives",
+    keywords: [
+      "wines like Kendall-Jackson",
+      "Kendall-Jackson alternative",
+      "Kendall-Jackson Vintner's Reserve alternative",
+      "California Chardonnay charity wine",
+      "small batch alternative to Kendall-Jackson",
+    ],
+    seoTitle: "Wines Like Kendall-Jackson — Charity Lodi Alternative",
+    seoDescription:
+      "Kendall-Jackson alternative from Lodi. Same approachable California profile, small-batch and independently owned, with 50% of profits to 501(c)(3) dog rescue.",
+    hero: {
+      eyebrow: "Kendall-Jackson alternative",
+      headline: "America's Chardonnay, reimagined for dog people.",
+      sub: "Kendall-Jackson's Vintner's Reserve has been America's #1 Chardonnay for decades — built on multi-county California blends. Rescue Dog Wines delivers the same approachable, food-friendly profile at single-appellation Lodi scale, with 50% of every bottle's profit going to dog rescue.",
+    },
+    specs: [
+      { attribute: "Origin", rdw: "Lodi, CA (single appellation)", them: "Multi-county California blend", advantageRdw: true },
+      { attribute: "Production scale", rdw: "Small-batch craft", them: "Millions of cases/yr", advantageRdw: true },
+      { attribute: "Owned by", rdw: "Independent rescue-mission winery", them: "Jackson Family Wines" },
+      { attribute: "Sustainability", rdw: "Lodi Rules certified region", them: "Certified California Sustainable Winegrowing" },
+      { attribute: "Profit to charity", rdw: "50% of profits to dog rescue", them: "No structured profit-share giveback", advantageRdw: true },
+      { attribute: "Price range", rdw: "$18–$28 (member pricing 20% off)", them: "$15–$22" },
+      { attribute: "Wine Club benefit", rdw: "20% off + member-only releases", them: "Estate club, no DTC giveback" },
+    ],
+    reasons: [
+      {
+        title: "America's Chardonnay profile — at independent winery scale.",
+        body: "Kendall-Jackson is the flagship of Jackson Family Wines, with over 40 brands and millions of cases. We're one winery, one mission: small-batch Lodi wines that fund dog rescue.",
+      },
+      {
+        title: "Single-appellation Lodi over multi-county blends.",
+        body: "Vintner's Reserve is built from grapes across multiple California counties. We farm a single Lodi appellation for tighter expression and a smaller footprint.",
+      },
+      {
+        title: "Every bottle funds a rescue partner.",
+        body: "Buying Kendall-Jackson supports a family wine portfolio. Buying Rescue Dog Wines routes 50% of profits to vetted 501(c)(3) rescue partners — every bottle, every order.",
+      },
+    ],
+    faqs: [
+      {
+        question: "What wines are similar to Kendall-Jackson Vintner's Reserve?",
+        answer:
+          "Rescue Dog Wines' Lodi Chardonnay sits in the same approachable, oak-touched California style as Vintner's Reserve at a similar price point. Other comparable bottles include La Crema, Cambria, and Sonoma-Cutrer — but none route 50% of profits to dog rescue.",
+      },
+      {
+        question: "Who owns Kendall-Jackson?",
+        answer:
+          "Kendall-Jackson is owned by Jackson Family Wines, a private family wine company with more than 40 brands worldwide. Rescue Dog Wines is independently owned with a charter to direct 50% of profits to 501(c)(3) dog-rescue partners.",
+      },
+      {
+        question: "Does Kendall-Jackson donate to charity?",
+        answer:
+          "Jackson Family Wines runs corporate sustainability and community programs, but Kendall-Jackson does not operate a structured per-bottle profit-share giveback. Rescue Dog Wines commits 50% of profits to dog rescue on every bottle.",
+      },
+    ],
+    disclosure: COMMON_DISCLOSURE,
+    sources: [
+      {
+        label: "Kendall-Jackson is owned by Jackson Family Wines",
+        publisher: "Jackson Family Wines (official)",
+        url: "https://www.jacksonfamilywines.com/our-wines",
+      },
+      {
+        label: "Vintner's Reserve Chardonnay — best-selling Chardonnay in the U.S.",
+        publisher: "Kendall-Jackson (official)",
+        url: "https://www.kj.com/wine/vintners-reserve-chardonnay",
+      },
+      {
+        label: "Certified California Sustainable Winegrowing program",
+        publisher: "California Sustainable Winegrowing Alliance",
+        url: "https://www.sustainablewinegrowing.org/certified-sustainable-winegrowing.php",
+      },
+      {
+        label: "Lodi Rules — Certified Sustainable Winegrowing",
+        publisher: "Lodi Winegrape Commission",
+        url: "https://www.lodirules.com/",
+      },
+    ],
+  },
+  {
+    slug: "19-crimes",
+    competitor: "19 Crimes",
+    competitorTagline: "Celebrity-branded Australian/California red, ~$10/bottle",
+    pricePoint: "Upgrade tier ($18+)",
+    category: "Bold red, story-driven label upgrade",
+    keywords: [
+      "19 Crimes alternative",
+      "wines like 19 Crimes",
+      "Snoop Cali Red alternative",
+      "story-driven wine with a cause",
+      "premium upgrade from 19 Crimes",
+    ],
+    seoTitle: "Wines Like 19 Crimes — Story-Driven Charity Alternative",
+    seoDescription:
+      "19 Crimes alternative with a real story behind every bottle. Small-batch Lodi reds, sustainably farmed, with 50% of profits to 501(c)(3) dog rescue partners.",
+    hero: {
+      eyebrow: "19 Crimes alternative",
+      headline: "Story on the label. Mission in the bottle.",
+      sub: "19 Crimes built a category on character-driven labels and AR storytelling. Rescue Dog Wines tells a story too — but every bottle on our shelf has the face of a real rescue dog, and 50% of profits go to the 501(c)(3) partners helping them find their forever home.",
+    },
+    specs: [
+      { attribute: "Origin", rdw: "Lodi, CA (single appellation)", them: "South Eastern Australia / California sourcing" },
+      { attribute: "Production scale", rdw: "Small-batch craft", them: "Mass-produced (multi-million cases)", advantageRdw: true },
+      { attribute: "Owned by", rdw: "Independent rescue-mission winery", them: "Treasury Wine Estates" },
+      { attribute: "Label story", rdw: "Real rescue dogs, named partners", them: "Historical convicts / celebrity tie-ins" },
+      { attribute: "Profit to charity", rdw: "50% of profits to dog rescue", them: "No structured profit-share giveback", advantageRdw: true },
+      { attribute: "Price range", rdw: "$18–$30", them: "$8–$12" },
+      { attribute: "Best for", rdw: "Upgrading to small-batch with a real cause", them: "Entry-level shelf buy" },
+    ],
+    reasons: [
+      {
+        title: "A label story that funds real outcomes.",
+        body: "19 Crimes tells stories of 18th-century convicts. We tell the stories of the dogs on the bottle — and 50% of every bottle's profit funds the 501(c)(3) partners helping more like them.",
+      },
+      {
+        title: "Small-batch Lodi over global mass production.",
+        body: "19 Crimes is owned by Treasury Wine Estates, one of the largest wine companies in the world. We're an independent Lodi winery, sustainably farmed and built around a single mission.",
+      },
+      {
+        title: "A real upgrade — without losing the story.",
+        body: "If you love a wine with a hook, ours has one: every bottle is a dog. Every order helps fund their rescue. Same story-on-the-label energy, with measurable impact.",
+      },
+    ],
+    faqs: [
+      {
+        question: "What's a good alternative to 19 Crimes?",
+        answer:
+          "Rescue Dog Wines is a story-driven, mission-led upgrade from 19 Crimes — small-batch Lodi reds with real rescue dogs on the label and 50% of profits funding 501(c)(3) rescue partners. Other story-led brands include Apothic and Cupcake, but neither has a structured charity model.",
+      },
+      {
+        question: "Who owns 19 Crimes?",
+        answer:
+          "19 Crimes is a brand of Treasury Wine Estates, an Australia-based global wine company. Rescue Dog Wines is independently owned and routes 50% of profits to 501(c)(3) dog-rescue partners.",
+      },
+      {
+        question: "Does 19 Crimes donate to charity?",
+        answer:
+          "19 Crimes runs occasional cause-marketing tie-ins through Treasury Wine Estates' broader CSR programs, but the brand does not operate a per-bottle profit-share giveback. Rescue Dog Wines commits 50% of profits to dog rescue on every bottle.",
+      },
+    ],
+    disclosure: COMMON_DISCLOSURE,
+    sources: [
+      {
+        label: "19 Crimes is part of Treasury Wine Estates' brand portfolio",
+        publisher: "Treasury Wine Estates (official)",
+        url: "https://www.tweglobal.com/our-brands",
+      },
+      {
+        label: "19 Crimes — brand overview and label storytelling",
+        publisher: "19 Crimes (official)",
+        url: "https://www.19crimes.com/",
+      },
+      {
+        label: "Treasury Wine Estates sustainability & community reporting",
+        publisher: "Treasury Wine Estates Sustainability Report",
+        url: "https://www.tweglobal.com/sustainability",
+      },
+    ],
+  },
 ];
 
 export function getBrandComparison(slug: string): BrandComparison | undefined {

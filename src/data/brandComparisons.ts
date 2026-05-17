@@ -441,7 +441,6 @@ export const BRAND_COMPARISONS: BrandComparison[] = [
   },
 ];
 
-// (Bar Dog entry appended below)
 
 export function getBrandComparison(slug: string): BrandComparison | undefined {
   return BRAND_COMPARISONS.find((b) => b.slug === slug);

@@ -485,6 +485,23 @@ async function handle(req: Request): Promise<Response> {
       return json({ ok: true, platform: "instacart", items });
     }
 
+    // Resolve composite "format:entity_id" IDs to a PATCH path. Falls back
+    // to legacy sponsored-product paths when no format prefix is present.
+    const resolveIcCampaignPath = (rawId: string): string => {
+      const [maybeFormat, ...rest] = String(rawId).split(":");
+      const entityId = rest.length > 0 ? rest.join(":") : maybeFormat;
+      const format = rest.length > 0 ? maybeFormat : "sponsored_product";
+      switch (format) {
+        case "display":           return `/display_campaigns/${entityId}`;
+        case "shoppable_display": return `/shoppable_display_campaigns/${entityId}`;
+        case "brand_page":        return `/brand_pages/${entityId}`;
+        case "promotion":         return `/promotions/${entityId}`;
+        case "universal":         return `/universal_campaigns/${entityId}`;
+        case "video":             return `/video_campaigns/${entityId}`;
+        default:                  return `/campaigns/${entityId}`;
+      }
+    };
+
     if (action === "set_status") {
       const entityType = body?.entity_type;
       const entityId = body?.entity_id;
@@ -494,7 +511,7 @@ async function handle(req: Request): Promise<Response> {
         return json({ error: "entity_id and entity_type required" }, 400);
       }
       const path =
-        entityType === "campaign" ? `/campaigns/${entityId}`
+        entityType === "campaign" ? resolveIcCampaignPath(entityId)
         : entityType === "adset" ? `/ad_groups/${entityId}`
         : `/ad_group_products/${entityId}`;
       const result = await icPatch(path, { status: icStatus });
@@ -530,7 +547,7 @@ async function handle(req: Request): Promise<Response> {
       }
       if (Object.keys(clean).length === 0) return json({ error: "no editable fields supplied" }, 400);
       const path =
-        entityType === "campaign" ? `/campaigns/${entityId}`
+        entityType === "campaign" ? resolveIcCampaignPath(entityId)
         : entityType === "adset" ? `/ad_groups/${entityId}`
         : `/ad_group_products/${entityId}`;
       const result = await icPatch(path, clean);

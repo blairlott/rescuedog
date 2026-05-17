@@ -923,6 +923,45 @@ export type Database = {
         }
         Relationships: []
       }
+      attribution_paths: {
+        Row: {
+          computed_at: string
+          id: string
+          last_touch_credit: Json | null
+          order_date: string
+          order_id: string
+          order_revenue_cents: number
+          position_based_credit: Json | null
+          time_decay_credit: Json | null
+          touchpoints: Json
+          user_id: string | null
+        }
+        Insert: {
+          computed_at?: string
+          id?: string
+          last_touch_credit?: Json | null
+          order_date: string
+          order_id: string
+          order_revenue_cents?: number
+          position_based_credit?: Json | null
+          time_decay_credit?: Json | null
+          touchpoints: Json
+          user_id?: string | null
+        }
+        Update: {
+          computed_at?: string
+          id?: string
+          last_touch_credit?: Json | null
+          order_date?: string
+          order_id?: string
+          order_revenue_cents?: number
+          position_based_credit?: Json | null
+          time_decay_credit?: Json | null
+          touchpoints?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       audience_propensity_scores: {
         Row: {
           computed_at: string
@@ -1069,6 +1108,78 @@ export type Database = {
           last_harvest_legacy_at?: string | null
           min_exposures_per_arm?: number
           notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      business_revenue_facts: {
+        Row: {
+          channel: string
+          cogs_cents: number
+          created_at: string
+          customer_segment: string | null
+          date: string
+          dim_hash: string | null
+          discount_cents: number
+          gross_revenue_cents: number
+          id: string
+          margin_cents: number
+          net_revenue_cents: number
+          orders: number
+          product_name: string | null
+          shipping_cents: number
+          sku: string | null
+          source: string
+          state: string | null
+          tax_cents: number
+          unique_customers: number
+          units: number
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          cogs_cents?: number
+          created_at?: string
+          customer_segment?: string | null
+          date: string
+          dim_hash?: string | null
+          discount_cents?: number
+          gross_revenue_cents?: number
+          id?: string
+          margin_cents?: number
+          net_revenue_cents?: number
+          orders?: number
+          product_name?: string | null
+          shipping_cents?: number
+          sku?: string | null
+          source?: string
+          state?: string | null
+          tax_cents?: number
+          unique_customers?: number
+          units?: number
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          cogs_cents?: number
+          created_at?: string
+          customer_segment?: string | null
+          date?: string
+          dim_hash?: string | null
+          discount_cents?: number
+          gross_revenue_cents?: number
+          id?: string
+          margin_cents?: number
+          net_revenue_cents?: number
+          orders?: number
+          product_name?: string | null
+          shipping_cents?: number
+          sku?: string | null
+          source?: string
+          state?: string | null
+          tax_cents?: number
+          unique_customers?: number
+          units?: number
           updated_at?: string
         }
         Relationships: []
@@ -1458,6 +1569,63 @@ export type Database = {
           source?: string
           status_code?: number
           to_path?: string
+        }
+        Relationships: []
+      }
+      customer_cohorts: {
+        Row: {
+          acquisition_month: string | null
+          avg_order_value_cents: number
+          churn_probability: number | null
+          computed_at: string
+          customer_email: string | null
+          days_since_last_order: number | null
+          first_order_at: string | null
+          id: string
+          is_club_member: boolean
+          last_order_at: string | null
+          lifetime_revenue_cents: number
+          orders_count: number
+          predicted_ltv_cents: number | null
+          segment: string | null
+          state: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acquisition_month?: string | null
+          avg_order_value_cents?: number
+          churn_probability?: number | null
+          computed_at?: string
+          customer_email?: string | null
+          days_since_last_order?: number | null
+          first_order_at?: string | null
+          id?: string
+          is_club_member?: boolean
+          last_order_at?: string | null
+          lifetime_revenue_cents?: number
+          orders_count?: number
+          predicted_ltv_cents?: number | null
+          segment?: string | null
+          state?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acquisition_month?: string | null
+          avg_order_value_cents?: number
+          churn_probability?: number | null
+          computed_at?: string
+          customer_email?: string | null
+          days_since_last_order?: number | null
+          first_order_at?: string | null
+          id?: string
+          is_club_member?: boolean
+          last_order_at?: string | null
+          lifetime_revenue_cents?: number
+          orders_count?: number
+          predicted_ltv_cents?: number | null
+          segment?: string | null
+          state?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -2347,6 +2515,84 @@ export type Database = {
           id?: string
           token?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      executive_decisions: {
+        Row: {
+          action_kind: string
+          action_payload: Json
+          approved_at: string | null
+          approved_by: string | null
+          auto_executable: boolean
+          category: string
+          confidence: number | null
+          created_at: string
+          estimated_impact_cents: number | null
+          executed_at: string | null
+          execution_result: Json | null
+          expires_at: string | null
+          id: string
+          narrative: string | null
+          priority: number
+          recommended_action: string
+          related_record_ids: string[] | null
+          scope: string
+          scope_id: string | null
+          source_engine: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_kind: string
+          action_payload?: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          auto_executable?: boolean
+          category: string
+          confidence?: number | null
+          created_at?: string
+          estimated_impact_cents?: number | null
+          executed_at?: string | null
+          execution_result?: Json | null
+          expires_at?: string | null
+          id?: string
+          narrative?: string | null
+          priority?: number
+          recommended_action: string
+          related_record_ids?: string[] | null
+          scope: string
+          scope_id?: string | null
+          source_engine?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_kind?: string
+          action_payload?: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          auto_executable?: boolean
+          category?: string
+          confidence?: number | null
+          created_at?: string
+          estimated_impact_cents?: number | null
+          executed_at?: string | null
+          execution_result?: Json | null
+          expires_at?: string | null
+          id?: string
+          narrative?: string | null
+          priority?: number
+          recommended_action?: string
+          related_record_ids?: string[] | null
+          scope?: string
+          scope_id?: string | null
+          source_engine?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -6061,6 +6307,40 @@ export type Database = {
       }
     }
     Functions: {
+      approve_executive_decision: {
+        Args: { _action: string; _decision_id: string }
+        Returns: {
+          action_kind: string
+          action_payload: Json
+          approved_at: string | null
+          approved_by: string | null
+          auto_executable: boolean
+          category: string
+          confidence: number | null
+          created_at: string
+          estimated_impact_cents: number | null
+          executed_at: string | null
+          execution_result: Json | null
+          expires_at: string | null
+          id: string
+          narrative: string | null
+          priority: number
+          recommended_action: string
+          related_record_ids: string[] | null
+          scope: string
+          scope_id: string | null
+          source_engine: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "executive_decisions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       award_loyalty_points: {
         Args: {
           _delta_points: number
@@ -6162,6 +6442,7 @@ export type Database = {
       is_brand_ambassador: { Args: { _user_id: string }; Returns: boolean }
       is_cms_editor: { Args: { _user_id: string }; Returns: boolean }
       is_dropship_manager: { Args: { _user_id: string }; Returns: boolean }
+      is_executive: { Args: { _user_id: string }; Returns: boolean }
       is_sales_team: { Args: { _user_id: string }; Returns: boolean }
       is_wine_club_manager: { Args: { _user_id: string }; Returns: boolean }
       kennel_review_recommendation: {
@@ -6253,6 +6534,7 @@ export type Database = {
         | "cms_editor"
         | "crm_user"
         | "ad_ops_manager"
+        | "executive"
       experiment_metric:
         | "revenue_per_visitor"
         | "conversion_rate"
@@ -6401,6 +6683,7 @@ export const Constants = {
         "cms_editor",
         "crm_user",
         "ad_ops_manager",
+        "executive",
       ],
       experiment_metric: [
         "revenue_per_visitor",

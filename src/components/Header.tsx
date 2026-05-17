@@ -220,8 +220,7 @@ export function Header() {
               </Link>
             )
           ))}
-          {isStaff && (
-            <div className="pt-2 mt-2 border-t border-border space-y-3">
+          <div className="pt-2 mt-2 border-t border-border space-y-3">
               <Link
                 to="/admin"
                 className="block text-sm font-medium tracking-brand uppercase text-foreground"
@@ -243,8 +242,7 @@ export function Header() {
               >
                 COMMAND CENTER
               </Link>
-            </div>
-          )}
+          </div>
           <div className="pt-2 border-t border-border">
             <LanguageSwitcher />
           </div>

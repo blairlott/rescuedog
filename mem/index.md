@@ -71,3 +71,5 @@
 - [No Bottle Perks](mem://constraints/no-bottle-perks) — Compliance: no free bottle giveaways; Mailchimp handles birthday discount codes
 - [Vinoshipper Poll + LTV CAPI](mem://features/vinoshipper-poll) — 15-min VS poll into vs_transactions, fires Meta Purchase + Subscribe (static $400 LTV) for ad optimization
 - [v2 Unified Checkout Plan](mem://plans/v2-unified-checkout) — Sandboxed /v2/* rebuild: Shopify payments + VS fulfillment via API (written approval)
+- [v2 Unified Checkout Spec](mem://specs/v2-unified-checkout-spec) — Reviewable technical spec (contracts, compliance rules, failure modes) for Lindy + Claude
+- [v2 Review Process](mem://plans/v2-review-process) — Lindy (ops/compliance) + Claude (technical) review gates before v2 cutover

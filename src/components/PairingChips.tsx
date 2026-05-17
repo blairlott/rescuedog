@@ -1,4 +1,4 @@
-import { Wine } from "lucide-react";
+import { Wine, ChefHat } from "lucide-react";
 
 // Reads Shopify tags like "pairs:steak", "pairing:seafood", "food:cheese"
 // and renders them as clickable chips that open the sommelier with a pairing prompt.
@@ -22,6 +22,9 @@ export function PairingChips({ tags, productTitle }: { tags: string[]; productTi
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
         <Wine className="h-3.5 w-3.5" /> Pairs With
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 ml-1 bg-foreground text-background text-[9px] font-bold tracking-brand">
+          <ChefHat className="h-2.5 w-2.5" /> Chef-Tested
+        </span>
       </div>
       <div className="flex flex-wrap gap-2">
         {pairings.length > 0 ? pairings.map(p => (

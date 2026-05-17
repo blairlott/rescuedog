@@ -26,6 +26,7 @@ import { ImpactCounter } from "@/components/ImpactCounter";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { PairingFinder } from "@/components/PairingFinder";
 import { LazyYouTube } from "@/components/LazyYouTube";
+import { RescueVoices } from "@/components/rescue/RescueVoices";
 import { Seo } from "@/components/Seo";
 import { T } from "@/components/T";
 import { useExperiment } from "@/hooks/useExperiment";
@@ -412,6 +413,9 @@ const Index = () => {
 
       {/* AI Pairing Finder */}
       <PairingFinder />
+
+      {/* Voices from the rescues we fund — rotating real partner blurbs */}
+      <RescueVoices />
 
       {/* About Us Section */}
       <section className="py-16 md:py-24 relative">

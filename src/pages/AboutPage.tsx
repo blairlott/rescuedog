@@ -8,6 +8,7 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 import { CmsToolbar } from "@/components/cms/CmsToolbar";
 import { T } from "@/components/T";
+import { LazyYouTube } from "@/components/LazyYouTube";
 import lauraBlair from "@/assets/migrated/laura-blair-lott.jpg";
 import vineyard5 from "@/assets/migrated/vineyard-5.jpg";
 
@@ -256,6 +257,56 @@ const AboutPage = () => {
                   <T>Blended to true varietal expression. If a Cab should taste like Cab, ours does. That's the whole point.</T>
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Awards Wall — qualitative, no counts */}
+        <section className="py-12 border-y border-border bg-background">
+          <div className="container mx-auto px-4 max-w-5xl text-center">
+            <p className="text-xs tracking-brand uppercase text-muted-foreground mb-5 font-bold">
+              <T>Critically Recognized</T>
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+              {[
+                { label: "Double Gold", className: "bg-brand-gold text-foreground" },
+                { label: "Gold", className: "bg-brand-gold/70 text-foreground" },
+                { label: "Silver", className: "bg-muted-foreground text-primary-foreground" },
+                { label: "90+ Points", className: "bg-foreground text-background" },
+                { label: "Lodi Rules Certified", className: "bg-primary text-primary-foreground" },
+                { label: "Best of Class", className: "bg-brand-gold text-foreground" },
+              ].map((a) => (
+                <span
+                  key={a.label}
+                  className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-brand ${a.className}`}
+                >
+                  {a.label}
+                </span>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-4 italic">
+              <T>Recognition spanning San Francisco Chronicle, Sunset International, and California State Fair competitions.</T>
+            </p>
+          </div>
+        </section>
+
+        {/* Founder / winemaker video — editorial embed */}
+        <section className="py-16 md:py-20 bg-secondary">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <div className="text-center mb-8">
+              <p className="text-xs tracking-brand uppercase text-primary mb-2 font-bold">
+                <T>From the Vineyard</T>
+              </p>
+              <h2 className="text-3xl md:text-4xl font-bold uppercase leading-tight text-foreground">
+                <T>Meet the Hands Behind the Bottle</T>
+              </h2>
+            </div>
+            <div className="aspect-video w-full overflow-hidden border border-border bg-foreground">
+              <LazyYouTube
+                videoId="rNxSRJpqz_w"
+                title="Rescue Dog Wines — Founders & Winemaking"
+                className="w-full h-full"
+              />
             </div>
           </div>
         </section>

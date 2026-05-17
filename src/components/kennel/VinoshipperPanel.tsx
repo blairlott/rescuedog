@@ -31,22 +31,45 @@ export function VinoshipperPanel({ rangeDays }: { rangeDays: number }) {
     queryKey: ["vs-mirror", rangeDays],
     queryFn: async () => {
       const [txRes, prodRes, cartRes] = await Promise.all([
-        supabase
-          .from("vs_transactions" as any)
-          .select("invoice,transaction_date,order_total,bottles,customer_id,customer_email,active_club_member,ship_to_state,discount_code,chain_status,order_type,club")
-          .eq("transaction_type", "ORDER")
-          .order("transaction_date", { ascending: false })
-          .limit(10000),
+        (async () => {
+          // Page through every ORDER row (PostgREST caps single responses at 1000).
+          const PAGE = 1000;
+          const acc: TxRow[] = [];
+          for (let from = 0; from < 200000; from += PAGE) {
+            const { data, error } = await supabase
+              .from("vs_transactions" as any)
+              .select("invoice,transaction_date,order_total,bottles,customer_id,customer_email,active_club_member,ship_to_state,discount_code,chain_status,order_type,club")
+              .eq("transaction_type", "ORDER")
+              .order("transaction_date", { ascending: false })
+              .range(from, from + PAGE - 1);
+            if (error) break;
+            const rows = ((data as any) ?? []) as TxRow[];
+            acc.push(...rows);
+            if (rows.length < PAGE) break;
+          }
+          return { data: acc };
+        })(),
         supabase
           .from("vs_products_lifetime" as any)
           .select("name,sku,value,quantity_sold,is_multipack")
           .order("value", { ascending: false })
           .limit(50),
-        supabase
-          .from("vs_abandoned_carts" as any)
-          .select("last_seen,cart_value,buyer_email")
-          .order("last_seen", { ascending: false })
-          .limit(2000),
+        (async () => {
+          const PAGE = 1000;
+          const acc: CartRow[] = [];
+          for (let from = 0; from < 10000; from += PAGE) {
+            const { data, error } = await supabase
+              .from("vs_abandoned_carts" as any)
+              .select("last_seen,cart_value,buyer_email")
+              .order("last_seen", { ascending: false })
+              .range(from, from + PAGE - 1);
+            if (error) break;
+            const rows = ((data as any) ?? []) as CartRow[];
+            acc.push(...rows);
+            if (rows.length < PAGE) break;
+          }
+          return { data: acc };
+        })(),
       ]);
       return {
         tx: ((txRes.data as any) ?? []) as TxRow[],

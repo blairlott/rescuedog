@@ -109,16 +109,28 @@ function googleHeaders(accessToken: string) {
 
 async function googleSearch(customerId: string, query: string, accessToken: string) {
   const cid = customerId.replace(/-/g, "");
-  const res = await fetch(
-    `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}/customers/${cid}/googleAds:search`,
-    { method: "POST", headers: googleHeaders(accessToken), body: JSON.stringify({ query }) },
-  );
-  const body = await res.json().catch(() => ({}));
+  let res: Response;
+  try {
+    res = await fetch(
+      `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}/customers/${cid}/googleAds:search`,
+      { method: "POST", headers: googleHeaders(accessToken), body: JSON.stringify({ query }) },
+    );
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : String(e), body: null };
+  }
+  const text = await res.text();
+  let body: any = {};
+  try { body = text ? JSON.parse(text) : {}; } catch { body = { raw: text }; }
   if (!res.ok) {
     const msg = Array.isArray(body) ? body[0]?.error?.message : body?.error?.message;
     return { ok: false as const, error: msg ?? `HTTP ${res.status}`, body };
   }
   return { ok: true as const, body };
+}
+
+function googleError(action: string, error: string, details?: unknown) {
+  console.error(`google ${action} failed`, JSON.stringify(details ?? { error }).slice(0, 4000));
+  return json({ ok: false, platform: "google", items: [], error: `Google Ads: ${error}`, details, fallback: true });
 }
 
 async function googleMutate(

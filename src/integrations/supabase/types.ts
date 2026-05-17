@@ -56,6 +56,95 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_channels: {
+        Row: {
+          api_endpoint: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          platform: string
+          updated_at: string
+        }
+        Insert: {
+          api_endpoint?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          platform: string
+          updated_at?: string
+        }
+        Update: {
+          api_endpoint?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          platform?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ad_performance_daily: {
+        Row: {
+          channel_id: string
+          clicks: number
+          conversions: number
+          cpa: number | null
+          created_at: string
+          date: string
+          id: string
+          impressions: number
+          ingest_request_id: string | null
+          revenue: number
+          roas: number | null
+          source: string
+          spend: number
+          updated_at: string
+        }
+        Insert: {
+          channel_id: string
+          clicks?: number
+          conversions?: number
+          cpa?: number | null
+          created_at?: string
+          date: string
+          id?: string
+          impressions?: number
+          ingest_request_id?: string | null
+          revenue?: number
+          roas?: number | null
+          source?: string
+          spend?: number
+          updated_at?: string
+        }
+        Update: {
+          channel_id?: string
+          clicks?: number
+          conversions?: number
+          cpa?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          impressions?: number
+          ingest_request_id?: string | null
+          revenue?: number
+          roas?: number | null
+          source?: string
+          spend?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_performance_daily_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ambassador_event_rsvps: {
         Row: {
           attended: boolean
@@ -398,6 +487,47 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      channel_sync_status: {
+        Row: {
+          channel_id: string
+          error_message: string | null
+          id: string
+          last_backup_sync: string | null
+          last_primary_sync: string | null
+          last_sync_source: string | null
+          sync_status: string
+          updated_at: string
+        }
+        Insert: {
+          channel_id: string
+          error_message?: string | null
+          id?: string
+          last_backup_sync?: string | null
+          last_primary_sync?: string | null
+          last_sync_source?: string | null
+          sync_status?: string
+          updated_at?: string
+        }
+        Update: {
+          channel_id?: string
+          error_message?: string | null
+          id?: string
+          last_backup_sync?: string | null
+          last_primary_sync?: string | null
+          last_sync_source?: string | null
+          sync_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_sync_status_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: true
+            referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cms_content: {
         Row: {
@@ -4475,6 +4605,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_ad_ops: { Args: { _user_id: string }; Returns: boolean }
       is_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
       is_ambassador_manager: { Args: { _user_id: string }; Returns: boolean }
       is_brand_ambassador: { Args: { _user_id: string }; Returns: boolean }

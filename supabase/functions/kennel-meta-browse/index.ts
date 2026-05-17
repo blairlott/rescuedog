@@ -252,6 +252,75 @@ async function handle(req: Request): Promise<Response> {
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+  // ---------------- Friendly-name aliases (cross-platform) ----------------
+  if (action === "list_aliases") {
+    const { data, error } = await admin
+      .from("kennel_entity_aliases")
+      .select("*")
+      .eq("platform", platform)
+      .order("entity_type", { ascending: true })
+      .order("updated_at", { ascending: false });
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, aliases: data ?? [] });
+  }
+
+  if (action === "set_alias") {
+    const entity_type = String(body?.entity_type ?? "");
+    const entity_id = String(body?.entity_id ?? "");
+    const friendly_name = String(body?.friendly_name ?? "").trim();
+    if (!entity_type || !entity_id) return json({ error: "entity_type and entity_id required" }, 400);
+    if (!friendly_name) {
+      const { error } = await admin
+        .from("kennel_entity_aliases")
+        .delete()
+        .eq("platform", platform).eq("entity_type", entity_type).eq("entity_id", entity_id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ ok: true, cleared: true });
+    }
+    const { data, error } = await admin
+      .from("kennel_entity_aliases")
+      .upsert({ platform, entity_type, entity_id, friendly_name, notes: body?.notes ?? null, created_by: userId },
+              { onConflict: "platform,entity_type,entity_id" })
+      .select()
+      .single();
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, alias: data });
+  }
+
+  if (action === "bulk_set_aliases") {
+    const rows = Array.isArray(body?.rows) ? body.rows : [];
+    if (rows.length === 0) return json({ error: "rows required" }, 400);
+    if (rows.length > 5000) return json({ error: "max 5000 rows per import" }, 400);
+    const clean = rows
+      .map((r: any) => ({
+        platform,
+        entity_type: String(r.entity_type ?? "").toLowerCase(),
+        entity_id: String(r.entity_id ?? "").trim(),
+        friendly_name: String(r.friendly_name ?? "").trim(),
+        notes: r.notes ? String(r.notes) : null,
+        created_by: userId,
+      }))
+      .filter((r: any) => ["campaign", "adset", "ad", "keyword"].includes(r.entity_type) && r.entity_id && r.friendly_name);
+    if (clean.length === 0) return json({ error: "no valid rows after validation" }, 400);
+    const { error, count } = await admin
+      .from("kennel_entity_aliases")
+      .upsert(clean, { onConflict: "platform,entity_type,entity_id", count: "exact" });
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, imported: clean.length, total_rows: rows.length, skipped: rows.length - clean.length, count });
+  }
+
+  if (action === "delete_alias") {
+    const entity_type = String(body?.entity_type ?? "");
+    const entity_id = String(body?.entity_id ?? "");
+    if (!entity_type || !entity_id) return json({ error: "entity_type and entity_id required" }, 400);
+    const { error } = await admin
+      .from("kennel_entity_aliases")
+      .delete()
+      .eq("platform", platform).eq("entity_type", entity_type).eq("entity_id", entity_id);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true });
+  }
+
   // ---------------- Instacart Ads ----------------
   if (platform === "instacart") {
     const tk = await instacartAccessToken();

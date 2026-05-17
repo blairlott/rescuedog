@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCartSync } from "@/hooks/useCartSync";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { captureFbclid, captureGclid } from "@/lib/metaAttribution";
 import { AgeGate } from "@/components/AgeGate";
 import { ExitIntentOffer } from "@/components/ExitIntentOffer";
@@ -14,89 +14,94 @@ import { CustomerAuthProvider } from "@/hooks/useCustomerAuth";
 import { GeoProvider } from "@/hooks/useGeo";
 import { GeoNotice } from "@/components/GeoNotice";
 import { AutoTranslator } from "@/components/AutoTranslator";
-import Index from "./pages/Index";
-import MerchHomePage from "./pages/MerchHomePage";
-import ProductDetail from "./pages/ProductDetail";
-import WinesPage from "./pages/WinesPage";
-import MixSixPage from "./pages/MixSixPage";
-import ShopPage from "./pages/ShopPage";
-import StoreLocatorPage from "./pages/StoreLocatorPage";
-import WholesalePage from "./pages/WholesalePage";
-import AboutPage from "./pages/AboutPage";
-import MissionPage from "./pages/MissionPage";
-import EventsPage from "./pages/EventsPage";
-import VineyardPage from "./pages/VineyardPage";
-import ContactPage from "./pages/ContactPage";
-import WineClubPage from "./pages/WineClubPage";
-import DonationPage from "./pages/DonationPage";
-import WineThatGivesBackPage from "./pages/WineThatGivesBackPage";
-import PressPage from "./pages/PressPage";
-import CompareHubPage from "./pages/CompareHubPage";
-import BrandComparePage from "./pages/BrandComparePage";
-import SubscribePage from "./pages/SubscribePage";
-import CustomerLoginPage from "./pages/CustomerLoginPage";
-import CustomerSignupPage from "./pages/CustomerSignupPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import CustomerResetPasswordPage from "./pages/CustomerResetPasswordPage";
-import AccountPage from "./pages/AccountPage";
-import GiftCertificatePrintPage from "./pages/GiftCertificatePrintPage";
-import NotFound from "./pages/NotFound";
-import ThankYouPage from "./pages/ThankYouPage";
-import CheckoutPage from "./pages/CheckoutPage";
-import CrmLoginPage from "./pages/CrmLoginPage";
-import CrmLayout from "./components/crm/CrmLayout";
-import CrmDashboard from "./pages/CrmDashboard";
-import CrmAccountDetail from "./pages/CrmAccountDetail";
-import CrmMapPage from "./pages/CrmMapPage";
-import CrmRoutePlanner from "./pages/CrmRoutePlanner";
-import CrmAdminPage from "./pages/CrmAdminPage";
-import CrmMarginPage from "./pages/CrmMarginPage";
-import CrmResetPasswordPage from "./pages/CrmResetPasswordPage";
-import CmsLoginPage from "./pages/CmsLoginPage";
-import CmsDashboard from "./pages/CmsDashboard";
-import CmsExperimentsPage from "./pages/CmsExperimentsPage";
-import WineClubAdminPage from "./pages/WineClubAdminPage";
-import WineClubLoginPage from "./pages/WineClubLoginPage";
-import WineClubResetPasswordPage from "./pages/WineClubResetPasswordPage";
-import BlogPage from "./pages/BlogPage";
-import BlogPostPage from "./pages/BlogPostPage";
-import Pairings from "./pages/Pairings";
-import PairingDetail from "./pages/PairingDetail";
-import DropshipDashboard from "./pages/DropshipDashboard";
-import AdminFlagsPage from "./pages/AdminFlagsPage";
-import AdminPortalPage from "./pages/AdminPortalPage";
-import RequestAccessPage from "./pages/RequestAccessPage";
-import SellOnSitePage from "./pages/SellOnSitePage";
-import AmbassadorsLandingPage from "./pages/AmbassadorsLandingPage";
-import AmbassadorSignupPage from "./pages/AmbassadorSignupPage";
-import AmbassadorDashboardPage from "./pages/AmbassadorDashboardPage";
-import UnsubscribePage from "./pages/UnsubscribePage";
-import AmbassadorEventEditorPage from "./pages/AmbassadorEventEditorPage";
-import AmbassadorPublicProfilePage from "./pages/AmbassadorPublicProfilePage";
-import AmbassadorEventPublicPage from "./pages/AmbassadorEventPublicPage";
-import AmbassadorDirectoryPage from "./pages/AmbassadorDirectoryPage";
-import AmbassadorDisclosurePage from "./pages/AmbassadorDisclosurePage";
-import CrmAmbassadorsPage from "./pages/CrmAmbassadorsPage";
-import CrmCompliancePage from "./pages/crm/CrmCompliancePage";
-import CrmLeadsPage from "./pages/crm/CrmLeadsPage";
-import CrmLegacyMigrationPage from "./pages/CrmLegacyMigrationPage";
-import RewardsTermsPage from "./pages/RewardsTermsPage";
-import RewardsPage from "./pages/RewardsPage";
-import PoliciesPage from "./pages/PoliciesPage";
-import { KennelGuard } from "./components/kennel/KennelGuard";
-import { KennelLayout } from "./components/kennel/KennelLayout";
-import KennelDashboard from "./pages/kennel/KennelDashboard";
-import KennelRecommendationsPage from "./pages/kennel/KennelRecommendationsPage";
-import KennelSettingsPage from "./pages/kennel/KennelSettingsPage";
-import KennelLogPage from "./pages/kennel/KennelLogPage";
-import KennelChannelsPage from "./pages/kennel/KennelChannelsPage";
-import KennelTrueRoasPage from "./pages/kennel/KennelTrueRoasPage";
-import KennelCapiPage from "./pages/kennel/KennelCapiPage";
+import { useLocation } from "react-router-dom";
 import { SommelierChat } from "./components/SommelierChat";
 import { EmailCapturePrompt } from "./components/cart/EmailCapturePrompt";
-import { useLocation } from "react-router-dom";
+import { KennelGuard } from "./components/kennel/KennelGuard";
+import { KennelLayout } from "./components/kennel/KennelLayout";
+import CrmLayout from "./components/crm/CrmLayout";
+
+const Index = lazy(() => import("./pages/Index"));
+const MerchHomePage = lazy(() => import("./pages/MerchHomePage"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const WinesPage = lazy(() => import("./pages/WinesPage"));
+const MixSixPage = lazy(() => import("./pages/MixSixPage"));
+const ShopPage = lazy(() => import("./pages/ShopPage"));
+const StoreLocatorPage = lazy(() => import("./pages/StoreLocatorPage"));
+const WholesalePage = lazy(() => import("./pages/WholesalePage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const MissionPage = lazy(() => import("./pages/MissionPage"));
+const EventsPage = lazy(() => import("./pages/EventsPage"));
+const VineyardPage = lazy(() => import("./pages/VineyardPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const WineClubPage = lazy(() => import("./pages/WineClubPage"));
+const DonationPage = lazy(() => import("./pages/DonationPage"));
+const WineThatGivesBackPage = lazy(() => import("./pages/WineThatGivesBackPage"));
+const PressPage = lazy(() => import("./pages/PressPage"));
+const CompareHubPage = lazy(() => import("./pages/CompareHubPage"));
+const BrandComparePage = lazy(() => import("./pages/BrandComparePage"));
+const SubscribePage = lazy(() => import("./pages/SubscribePage"));
+const CustomerLoginPage = lazy(() => import("./pages/CustomerLoginPage"));
+const CustomerSignupPage = lazy(() => import("./pages/CustomerSignupPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const CustomerResetPasswordPage = lazy(() => import("./pages/CustomerResetPasswordPage"));
+const AccountPage = lazy(() => import("./pages/AccountPage"));
+const GiftCertificatePrintPage = lazy(() => import("./pages/GiftCertificatePrintPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const ThankYouPage = lazy(() => import("./pages/ThankYouPage"));
+const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const CrmLoginPage = lazy(() => import("./pages/CrmLoginPage"));
+const CrmDashboard = lazy(() => import("./pages/CrmDashboard"));
+const CrmAccountDetail = lazy(() => import("./pages/CrmAccountDetail"));
+const CrmMapPage = lazy(() => import("./pages/CrmMapPage"));
+const CrmRoutePlanner = lazy(() => import("./pages/CrmRoutePlanner"));
+const CrmAdminPage = lazy(() => import("./pages/CrmAdminPage"));
+const CrmMarginPage = lazy(() => import("./pages/CrmMarginPage"));
+const CrmResetPasswordPage = lazy(() => import("./pages/CrmResetPasswordPage"));
+const CmsLoginPage = lazy(() => import("./pages/CmsLoginPage"));
+const CmsDashboard = lazy(() => import("./pages/CmsDashboard"));
+const CmsExperimentsPage = lazy(() => import("./pages/CmsExperimentsPage"));
+const WineClubAdminPage = lazy(() => import("./pages/WineClubAdminPage"));
+const WineClubLoginPage = lazy(() => import("./pages/WineClubLoginPage"));
+const WineClubResetPasswordPage = lazy(() => import("./pages/WineClubResetPasswordPage"));
+const BlogPage = lazy(() => import("./pages/BlogPage"));
+const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
+const Pairings = lazy(() => import("./pages/Pairings"));
+const PairingDetail = lazy(() => import("./pages/PairingDetail"));
+const DropshipDashboard = lazy(() => import("./pages/DropshipDashboard"));
+const AdminFlagsPage = lazy(() => import("./pages/AdminFlagsPage"));
+const AdminPortalPage = lazy(() => import("./pages/AdminPortalPage"));
+const RequestAccessPage = lazy(() => import("./pages/RequestAccessPage"));
+const SellOnSitePage = lazy(() => import("./pages/SellOnSitePage"));
+const AmbassadorsLandingPage = lazy(() => import("./pages/AmbassadorsLandingPage"));
+const AmbassadorSignupPage = lazy(() => import("./pages/AmbassadorSignupPage"));
+const AmbassadorDashboardPage = lazy(() => import("./pages/AmbassadorDashboardPage"));
+const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage"));
+const AmbassadorEventEditorPage = lazy(() => import("./pages/AmbassadorEventEditorPage"));
+const AmbassadorPublicProfilePage = lazy(() => import("./pages/AmbassadorPublicProfilePage"));
+const AmbassadorEventPublicPage = lazy(() => import("./pages/AmbassadorEventPublicPage"));
+const AmbassadorDirectoryPage = lazy(() => import("./pages/AmbassadorDirectoryPage"));
+const AmbassadorDisclosurePage = lazy(() => import("./pages/AmbassadorDisclosurePage"));
+const CrmAmbassadorsPage = lazy(() => import("./pages/CrmAmbassadorsPage"));
+const CrmCompliancePage = lazy(() => import("./pages/crm/CrmCompliancePage"));
+const CrmLeadsPage = lazy(() => import("./pages/crm/CrmLeadsPage"));
+const CrmLegacyMigrationPage = lazy(() => import("./pages/CrmLegacyMigrationPage"));
+const RewardsTermsPage = lazy(() => import("./pages/RewardsTermsPage"));
+const RewardsPage = lazy(() => import("./pages/RewardsPage"));
+const PoliciesPage = lazy(() => import("./pages/PoliciesPage"));
+const KennelDashboard = lazy(() => import("./pages/kennel/KennelDashboard"));
+const KennelRecommendationsPage = lazy(() => import("./pages/kennel/KennelRecommendationsPage"));
+const KennelSettingsPage = lazy(() => import("./pages/kennel/KennelSettingsPage"));
+const KennelLogPage = lazy(() => import("./pages/kennel/KennelLogPage"));
+const KennelChannelsPage = lazy(() => import("./pages/kennel/KennelChannelsPage"));
+const KennelTrueRoasPage = lazy(() => import("./pages/kennel/KennelTrueRoasPage"));
+const KennelCapiPage = lazy(() => import("./pages/kennel/KennelCapiPage"));
 
 const queryClient = new QueryClient();
+
+const PageFallback = () => (
+  <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">Loading…</div>
+);
 
 function AppContent() {
   useCartSync();
@@ -119,6 +124,7 @@ function AppContent() {
     <>
     <a href="#main-content" className="skip-link">Skip to main content</a>
     <main id="main-content" tabIndex={-1}>
+    <Suspense fallback={<PageFallback />}>
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/merch" element={<MerchHomePage />} />
@@ -215,6 +221,7 @@ function AppContent() {
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
     </main>
     {showSommelier && !isKennel && <SommelierChat />}
     {!isKennel && <EmailCapturePrompt />}

@@ -39,7 +39,8 @@ function isoDay(d: Date) { return d.toISOString().slice(0, 10); }
 // ───────────────────────── META ─────────────────────────
 async function metaBackfill(channel_id: string, since: string, until: string): Promise<DailyRow[]> {
   const TOKEN = Deno.env.get("META_ADS_ACCESS_TOKEN");
-  const ACCOUNT = Deno.env.get("META_ADS_ACCOUNT_ID");
+  const ACCOUNT_RAW = Deno.env.get("META_ADS_ACCOUNT_ID") ?? "";
+  const ACCOUNT = ACCOUNT_RAW.replace(/^act_/, "");
   if (!TOKEN || !ACCOUNT) throw new Error("META credentials missing");
 
   const fields = ["spend", "impressions", "clicks", "actions", "action_values", "date_start"].join(",");

@@ -39,7 +39,7 @@ export default function KennelDashboard() {
       fromDate.setDate(fromDate.getDate() - range);
       const fromIso = fromDate.toISOString().slice(0, 10);
 
-      const [channelsRes, perfRes, syncRes, dtcRes, bmRes, bmLifetimeRes] = await Promise.all([
+      const [channelsRes, perfRes, syncRes, dtcRes, bmRes, bmLifetimeRes, finRes, finLifetimeRes] = await Promise.all([
         supabase.from("ad_channels" as any).select("id, name, platform").order("name"),
         supabase.from("ad_performance_daily" as any).select("channel_id, date, spend, impressions, clicks, conversions, revenue, roas, cpa").gte("date", fromIso).order("date"),
         supabase.from("channel_sync_status" as any).select("channel_id, last_primary_sync"),
@@ -72,6 +72,15 @@ export default function KennelDashboard() {
           .from("business_revenue_facts" as any)
           .select("net_revenue_cents, units")
           .in("channel", ["brick_mortar_off", "brick_mortar_on", "distributor_depletion"]),
+        // QuickBooks expenses — period rows for category breakdown
+        supabase
+          .from("business_expense_facts" as any)
+          .select("date, category, subcategory, amount_cents")
+          .gte("date", fromIso),
+        // QuickBooks expenses — lifetime totals
+        supabase
+          .from("business_expense_facts" as any)
+          .select("category, amount_cents"),
       ]);
       return {
         channels: ((channelsRes.data as any) || []) as Channel[],
@@ -83,6 +92,8 @@ export default function KennelDashboard() {
         dtc: ((dtcRes.data as any) || []) as { order_total: number; invoice: string }[],
         bm: ((bmRes.data as any) || []) as { date: string; channel: string; state: string | null; net_revenue_cents: number; units: number; orders: number }[],
         bmLifetime: ((bmLifetimeRes.data as any) || []) as { net_revenue_cents: number; units: number }[],
+        fin: ((finRes.data as any) || []) as { date: string; category: string; subcategory: string | null; amount_cents: number }[],
+        finLifetime: ((finLifetimeRes.data as any) || []) as { category: string; amount_cents: number }[],
       };
     },
   });
@@ -125,6 +136,38 @@ export default function KennelDashboard() {
       depl: (byChannel.get("distributor_depletion") ?? 0) / 100,
       topStates: topStates.map(([s, c]) => [s, c / 100] as [string, number]),
       hasData: rows.length > 0 || lifetimeRev > 0,
+    };
+  }, [data]);
+
+  const fin = useMemo(() => {
+    if (!data) return null;
+    const rows = data.fin ?? [];
+    const lifetime = data.finLifetime ?? [];
+    const sumBy = (arr: { category: string; amount_cents: number }[]) => {
+      const m = new Map<string, number>();
+      for (const r of arr) m.set(r.category, (m.get(r.category) ?? 0) + Number(r.amount_cents || 0));
+      return m;
+    };
+    const periodMap = sumBy(rows as any);
+    const lifeMap = sumBy(lifetime as any);
+    const period = {
+      cogs: (periodMap.get("cogs") ?? 0) / 100,
+      cos: (periodMap.get("cost_of_sales") ?? 0) / 100,
+      opex: (periodMap.get("operating_expense") ?? 0) / 100,
+    };
+    const life = {
+      cogs: (lifeMap.get("cogs") ?? 0) / 100,
+      cos: (lifeMap.get("cost_of_sales") ?? 0) / 100,
+      opex: (lifeMap.get("operating_expense") ?? 0) / 100,
+    };
+    return {
+      ...period,
+      total: period.cogs + period.cos + period.opex,
+      lifetimeCogs: life.cogs,
+      lifetimeCos: life.cos,
+      lifetimeOpex: life.opex,
+      lifetimeTotal: life.cogs + life.cos + life.opex,
+      hasData: rows.length > 0 || lifetime.length > 0,
     };
   }, [data]);
 

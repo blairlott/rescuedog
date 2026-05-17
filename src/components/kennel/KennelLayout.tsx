@@ -1,8 +1,9 @@
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send } from "lucide-react";
+import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useState, useEffect } from "react";
 
 const NAV = [
   { to: "/kennel", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -18,6 +19,10 @@ export function KennelLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: roleInfo } = useUserRole();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Close mobile drawer on route change
+  useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
 
   const segments = location.pathname.replace(/^\/+|\/+$/g, "").split("/");
   // segments[0] === "kennel"
@@ -33,7 +38,40 @@ export function KennelLayout() {
 
   return (
     <div className="min-h-screen flex bg-background font-sans" style={{ fontFamily: '"Nunito Sans", system-ui, sans-serif' }}>
-      <aside className="w-60 border-r border-border bg-card flex flex-col shrink-0">
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between px-3 py-2 border-b border-border bg-card">
+        <button
+          onClick={() => setMobileNavOpen(true)}
+          className="p-2 text-foreground"
+          aria-label="Open navigation"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <div className="flex items-center gap-2">
+          <Megaphone className="h-4 w-4 text-primary" />
+          <span className="font-bold text-foreground uppercase tracking-brand text-xs">The Kennel</span>
+        </div>
+        <div className="w-9" />
+      </div>
+
+      {/* Mobile drawer overlay */}
+      {mobileNavOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-50 bg-black/50"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed md:static inset-y-0 left-0 z-50 w-60 border-r border-border bg-card flex flex-col shrink-0 transform transition-transform md:transform-none ${
+          mobileNavOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
+        <div className="md:hidden flex justify-end p-2">
+          <button onClick={() => setMobileNavOpen(false)} aria-label="Close navigation" className="p-1 text-foreground">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
         <Link to="/kennel" className="flex items-center gap-2 px-4 py-4 border-b border-border">
           <Megaphone className="h-5 w-5 text-primary" />
           <div>
@@ -72,11 +110,11 @@ export function KennelLayout() {
           </Button>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pt-12 md:pt-0 min-w-0">
         {crumbs.length > 0 && (
           <nav
             aria-label="Breadcrumb"
-            className="flex items-center gap-1 text-xs px-6 py-2 border-b border-border bg-card/50"
+            className="flex items-center gap-1 text-xs px-4 md:px-6 py-2 border-b border-border bg-card/50 overflow-x-auto whitespace-nowrap"
           >
             <Home className="h-3 w-3 text-muted-foreground" />
             {crumbs.map((c, i) => (

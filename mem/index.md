@@ -70,3 +70,4 @@
 - [Vinoshipper Architecture](mem://tech/vinoshipper-architecture) — Injector owns checkout; REST API is UX-enrichment only. Account ID 2212, live mode on as of 2026-05-15.
 - [No Bottle Perks](mem://constraints/no-bottle-perks) — Compliance: no free bottle giveaways; Mailchimp handles birthday discount codes
 - [Vinoshipper Poll + LTV CAPI](mem://features/vinoshipper-poll) — 15-min VS poll into vs_transactions, fires Meta Purchase + Subscribe (static $400 LTV) for ad optimization
+- [v2 Unified Checkout Plan](mem://plans/v2-unified-checkout) — Sandboxed /v2/* rebuild: Shopify payments + VS fulfillment via API (written approval)

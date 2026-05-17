@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles, Trophy, Copy, Share2, PawPrint, Wine, Link2, RefreshCw, CreditCard } from "lucide-react";
+import { User, Heart, Package, Gift, LogOut, Loader2, Trash2, Sparkles, Trophy, Copy, Share2, PawPrint, Wine, RefreshCw, CreditCard, ShoppingBag } from "lucide-react";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +22,7 @@ import { SubscribeAndSaveTab } from "@/components/account/SubscribeAndSaveTab";
 import { GiftCertificatesTab } from "@/components/account/GiftCertificatesTab";
 import { PaymentMethodsTab } from "@/components/account/PaymentMethodsTab";
 import { RescueRewardsDashboard } from "@/components/account/RescueRewardsDashboard";
+import { OrdersTab } from "@/components/account/OrdersTab";
 
 const AccountPage = () => {
   const { user, loading, signOut } = useCustomerAuth();
@@ -253,6 +254,9 @@ const AccountPage = () => {
               <TabsTrigger value="for-you" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> For You
               </TabsTrigger>
+              <TabsTrigger value="orders" className="gap-1.5">
+                <ShoppingBag className="h-3.5 w-3.5" /> Orders
+              </TabsTrigger>
               <TabsTrigger value="profile" className="gap-1.5">
                 <User className="h-3.5 w-3.5" /> Profile
               </TabsTrigger>
@@ -288,6 +292,11 @@ const AccountPage = () => {
                 favoriteHandles={favorites.map((f: any) => f.product_handle)}
                 winePreferences={profile?.wine_preferences || []}
               />
+            </TabsContent>
+
+            {/* Orders Tab */}
+            <TabsContent value="orders">
+              <OrdersTab userId={user.id} email={user.email} />
             </TabsContent>
 
             {/* Profile Tab */}
@@ -333,43 +342,6 @@ const AccountPage = () => {
                   Save Changes
                 </Button>
 
-                <Separator className="my-2" />
-
-                <div className="space-y-2">
-                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <Link2 className="w-4 h-4 text-primary" /> Vinoshipper Account
-                  </h3>
-                  {profile?.vinoshipper_customer_id ? (
-                    <p className="text-xs text-muted-foreground">
-                      Linked — wine shipments, age verification, and stored payment methods
-                      are managed securely on Vinoshipper.
-                    </p>
-                  ) : (
-                    <>
-                      <p className="text-xs text-muted-foreground">
-                        Your account is not yet linked to Vinoshipper. Wine club shipments
-                        and stored payment methods require this link.
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={async () => {
-                          try {
-                            const { error } = await supabase.functions.invoke("vinoshipper-link-customer");
-                            if (error) throw error;
-                            toast.success("Linked to Vinoshipper");
-                            queryClient.invalidateQueries({ queryKey: ["customer-profile"] });
-                          } catch (err: any) {
-                            toast.error(err.message || "Could not link Vinoshipper account");
-                          }
-                        }}
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" /> Link Vinoshipper Account
-                      </Button>
-                    </>
-                  )}
-                </div>
               </div>
             </TabsContent>
 

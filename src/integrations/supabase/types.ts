@@ -86,6 +86,60 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_execution_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_kind: string
+          created_at: string
+          error_message: string | null
+          id: string
+          recommendation_id: string | null
+          request_payload: Json | null
+          response_payload: Json | null
+          success: boolean
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_kind?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recommendation_id?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          success?: boolean
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_kind?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recommendation_id?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_execution_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_execution_log_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "ad_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_performance_daily: {
         Row: {
           channel_id: string
@@ -141,6 +195,116 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_recommendations: {
+        Row: {
+          channel_id: string | null
+          confidence: number
+          created_at: string
+          executed_at: string | null
+          expires_at: string | null
+          id: string
+          ingest_request_id: string | null
+          kind: string
+          payload: Json
+          projected_impact_cents: number
+          rationale: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rollback_state: Json | null
+          source: string
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          channel_id?: string | null
+          confidence?: number
+          created_at?: string
+          executed_at?: string | null
+          expires_at?: string | null
+          id?: string
+          ingest_request_id?: string | null
+          kind: string
+          payload?: Json
+          projected_impact_cents?: number
+          rationale?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rollback_state?: Json | null
+          source?: string
+          status?: string
+          summary: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          channel_id?: string | null
+          confidence?: number
+          created_at?: string
+          executed_at?: string | null
+          expires_at?: string | null
+          id?: string
+          ingest_request_id?: string | null
+          kind?: string
+          payload?: Json
+          projected_impact_cents?: number
+          rationale?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rollback_state?: Json | null
+          source?: string
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_recommendations_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_recommendations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4613,6 +4777,36 @@ export type Database = {
       is_dropship_manager: { Args: { _user_id: string }; Returns: boolean }
       is_sales_team: { Args: { _user_id: string }; Returns: boolean }
       is_wine_club_manager: { Args: { _user_id: string }; Returns: boolean }
+      kennel_review_recommendation: {
+        Args: { _action: string; _notes?: string; _rec_id: string }
+        Returns: {
+          channel_id: string | null
+          confidence: number
+          created_at: string
+          executed_at: string | null
+          expires_at: string | null
+          id: string
+          ingest_request_id: string | null
+          kind: string
+          payload: Json
+          projected_impact_cents: number
+          rationale: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rollback_state: Json | null
+          source: string
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ad_recommendations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string

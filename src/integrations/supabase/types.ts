@@ -142,6 +142,10 @@ export type Database = {
       }
       ad_guardrails: {
         Row: {
+          auto_execute_enabled: boolean
+          auto_execute_max_budget_change_pct: number
+          auto_execute_max_impact_cents: number
+          auto_execute_min_confidence: number
           channel_id: string
           daily_spend_cap_cents: number
           max_bid_change_pct: number
@@ -152,6 +156,10 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          auto_execute_enabled?: boolean
+          auto_execute_max_budget_change_pct?: number
+          auto_execute_max_impact_cents?: number
+          auto_execute_min_confidence?: number
           channel_id: string
           daily_spend_cap_cents?: number
           max_bid_change_pct?: number
@@ -162,6 +170,10 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          auto_execute_enabled?: boolean
+          auto_execute_max_budget_change_pct?: number
+          auto_execute_max_impact_cents?: number
+          auto_execute_min_confidence?: number
           channel_id?: string
           daily_spend_cap_cents?: number
           max_bid_change_pct?: number

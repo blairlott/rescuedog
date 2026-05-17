@@ -5,6 +5,7 @@ import { MetricCard } from "@/components/kennel/MetricCard";
 import { ChannelPerformanceTable, type ChannelRow } from "@/components/kennel/ChannelPerformanceTable";
 import { SpendChart, type SpendDatum } from "@/components/kennel/SpendChart";
 import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
 
 type Range = 7 | 14 | 30;
 
@@ -102,8 +103,20 @@ export default function KennelDashboard() {
 
   const channelNames = data?.channels.map(c => c.name) ?? [];
 
+  const lindyStale = useMemo(() => {
+    if (!data) return false;
+    const cutoff = Date.now() - 25 * 3600 * 1000;
+    return data.sync.length > 0 && data.sync.every(s => !s.last_primary_sync || new Date(s.last_primary_sync).getTime() < cutoff);
+  }, [data]);
+
   return (
     <div className="p-6 space-y-6 max-w-[1400px]">
+      {lindyStale && (
+        <div className="border-2 border-destructive bg-destructive/10 p-3 flex items-center gap-2 text-sm" style={{ borderRadius: 0 }}>
+          <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+          <span><strong className="uppercase tracking-brand">Lindy silent &gt;25h.</strong> Verify ingestion mode in Settings.</span>
+        </div>
+      )}
       <header className="flex items-end justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground uppercase tracking-brand" style={{ fontFamily: '"Nunito Sans", system-ui, sans-serif' }}>

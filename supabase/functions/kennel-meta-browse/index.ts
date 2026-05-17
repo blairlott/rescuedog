@@ -16,21 +16,31 @@ async function instacartAccessToken(): Promise<{ ok: true; token: string } | { o
   const clientId = Deno.env.get("INSTACART_ADS_CLIENT_ID");
   const clientSecret = Deno.env.get("INSTACART_ADS_CLIENT_SECRET");
   const refreshToken = Deno.env.get("INSTACART_ADS_REFRESH_TOKEN");
-  if (!clientId || !clientSecret || !refreshToken) {
-    return { ok: false, error: "Instacart OAuth credentials missing (client id/secret/refresh token)" };
+  if (!clientId || !clientSecret) {
+    return { ok: false, error: "Instacart OAuth credentials missing (client id/secret)" };
   }
   if (_icTokenCache && _icTokenCache.expires_at > Date.now() + 30_000) {
     return { ok: true, token: _icTokenCache.token };
   }
+  // Instacart Ads API uses OAuth2 client_credentials grant (machine-to-machine).
+  // Fall back to refresh_token grant only if a refresh token is explicitly stored.
+  const body = refreshToken
+    ? new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+      })
+    : new URLSearchParams({
+        grant_type: "client_credentials",
+        client_id: clientId,
+        client_secret: clientSecret,
+        scope: "ads_api",
+      });
   const res = await fetch(INSTACART_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-    }).toString(),
+    body: body.toString(),
   });
   const b = await res.json().catch(() => ({}));
   if (!res.ok || !b?.access_token) {

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MetricCard } from "@/components/kennel/MetricCard";
 import { ChannelPerformanceTable, type ChannelRow } from "@/components/kennel/ChannelPerformanceTable";
 import { SpendChart, type SpendDatum } from "@/components/kennel/SpendChart";
+import { VinoshipperPanel } from "@/components/kennel/VinoshipperPanel";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 
@@ -182,6 +183,11 @@ export default function KennelDashboard() {
               <MetricCard label="True ROAS" value={(aggregates?.spend ?? 0) > 0 ? `${(dtc.revenue / (aggregates?.spend ?? 1)).toFixed(2)}x` : "—"} hint="DTC Revenue ÷ Ad Spend" />
               <MetricCard label="AOV" value={dtc.orders > 0 ? `$${(dtc.revenue / dtc.orders).toFixed(0)}` : "—"} hint="Average order value" />
             </div>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Vinoshipper DTC (full history)</h2>
+            <VinoshipperPanel rangeDays={range} />
           </section>
 
           <SpendChart data={chartData} channels={channelNames} />

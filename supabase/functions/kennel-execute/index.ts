@@ -230,6 +230,11 @@ Deno.serve(async (req) => {
     });
     if (error) return json({ error: error.message }, 400);
 
+    // Persist the rejection reason on the rec for UI display.
+    if (action === "reject" && notes) {
+      await admin.from("ad_recommendations").update({ rejection_reason: notes }).eq("id", recommendation_id);
+    }
+
     // Auto-execute hook: if approved and per-channel guardrails allow, dispatch immediately.
     let autoResult: any = null;
     if (action === "approve") {

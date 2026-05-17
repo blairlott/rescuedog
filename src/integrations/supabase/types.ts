@@ -1112,6 +1112,72 @@ export type Database = {
         }
         Relationships: []
       }
+      bm_finance_entries: {
+        Row: {
+          account_code: string | null
+          account_name: string | null
+          amount_cents: number
+          category: string
+          channel: string | null
+          created_at: string
+          currency: string | null
+          date: string
+          entry_type: string
+          external_id: string
+          id: string
+          memo: string | null
+          sku: string | null
+          source: string | null
+          state: string | null
+          subcategory: string | null
+          units: number | null
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          account_code?: string | null
+          account_name?: string | null
+          amount_cents: number
+          category: string
+          channel?: string | null
+          created_at?: string
+          currency?: string | null
+          date: string
+          entry_type: string
+          external_id: string
+          id?: string
+          memo?: string | null
+          sku?: string | null
+          source?: string | null
+          state?: string | null
+          subcategory?: string | null
+          units?: number | null
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          account_code?: string | null
+          account_name?: string | null
+          amount_cents?: number
+          category?: string
+          channel?: string | null
+          created_at?: string
+          currency?: string | null
+          date?: string
+          entry_type?: string
+          external_id?: string
+          id?: string
+          memo?: string | null
+          sku?: string | null
+          source?: string | null
+          state?: string | null
+          subcategory?: string | null
+          units?: number | null
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: []
+      }
       business_expense_facts: {
         Row: {
           account: string | null

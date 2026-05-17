@@ -32,6 +32,7 @@ type Entity = {
   has_alias?: boolean;
   format?: string;
   entity_id?: string;
+  ad_format?: string;
 };
 
 type Crumb = { level: Level; parent_id?: string; label: string };
@@ -565,6 +566,11 @@ export default function KennelChannelsPage() {
                           {e.format && (
                             <Badge style={SHARP} variant="outline" className="text-[9px] uppercase tracking-wide">
                               {e.format.replace(/_/g, " ")}
+                            </Badge>
+                          )}
+                          {e.ad_format && e.ad_format !== e.format && (
+                            <Badge style={SHARP} variant="secondary" className="text-[9px] uppercase tracking-wide">
+                              {e.ad_format.replace(/_/g, " ")}
                             </Badge>
                           )}
                           {(e.objective || e.optimization_goal) && e.objective !== e.format && (

@@ -85,20 +85,20 @@ async function fetchInstacartReport(
 const IC_FORMAT_SOURCES: Array<{ format: string; path: string; listKeys: string[] }> = [
   { format: "sponsored_product",  path: `/campaigns`,                    listKeys: ["campaigns"] },
   { format: "display",            path: `/display_campaigns`,            listKeys: ["display_campaigns", "campaigns"] },
-  { format: "shoppable_display",  path: `/shoppable_display_campaigns`,  listKeys: ["shoppable_display_campaigns", "campaigns"] },
   { format: "brand_page",         path: `/brand_pages`,                  listKeys: ["brand_pages", "data"] },
   { format: "promotion",          path: `/promotions`,                   listKeys: ["promotions", "coupons", "data"] },
   { format: "universal",          path: `/universal_campaigns`,          listKeys: ["universal_campaigns", "campaigns"] },
   { format: "video",              path: `/video_campaigns`,              listKeys: ["video_campaigns", "campaigns"] },
+  { format: "inspiration",        path: `/inspiration_campaigns`,        listKeys: ["inspiration_campaigns", "campaigns"] },
 ];
 const PATCH_PATH_BY_FORMAT: Record<string, string> = {
   sponsored_product: "/campaigns",
   display: "/display_campaigns",
-  shoppable_display: "/shoppable_display_campaigns",
   brand_page: "/brand_pages",
   promotion: "/promotions",
   universal: "/universal_campaigns",
   video: "/video_campaigns",
+  inspiration: "/inspiration_campaigns",
 };
 
 async function fetchInstacartCampaignsAllFormats(token: string, advertiserId: string) {

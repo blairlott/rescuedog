@@ -119,6 +119,8 @@ export default function KennelDashboard() {
       };
     },
   });
+
+  const periodMeta = useMemo(() => rangeStartIso(range), [range]);
   const dtc = useMemo(() => {
     if (!data) return { revenue: 0, orders: 0 };
     const invoices = new Set<string>();
@@ -286,19 +288,19 @@ export default function KennelDashboard() {
           <h1 className="text-2xl md:text-3xl font-bold text-foreground uppercase tracking-brand" style={{ fontFamily: '"Nunito Sans", system-ui, sans-serif' }}>
             Command Center
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Last {range} days · all channels</p>
+          <p className="text-sm text-muted-foreground mt-1">{periodMeta.label === "YTD" ? "Year to date" : `Last ${periodMeta.label}`} · all channels</p>
         </div>
         <div className="flex gap-1 items-center flex-wrap">
-          {([7, 14, 30] as Range[]).map(r => (
+          {RANGE_TABS.map((tab) => (
             <Button
-              key={r}
+              key={String(tab.value)}
               size="sm"
-              variant={range === r ? "default" : "outline"}
-              onClick={() => setRange(r)}
+              variant={range === tab.value ? "default" : "outline"}
+              onClick={() => setRange(tab.value)}
               style={{ borderRadius: 0 }}
               className="uppercase tracking-brand text-xs"
             >
-              {r}d
+              {tab.label}
             </Button>
           ))}
           <Button
@@ -341,7 +343,7 @@ export default function KennelDashboard() {
 
           <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Vinoshipper DTC (full history)</h2>
-            <VinoshipperPanel rangeDays={range} />
+            <VinoshipperPanel rangeDays={periodMeta.days} />
           </section>
 
           <section className="space-y-2">
@@ -353,14 +355,14 @@ export default function KennelDashboard() {
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <MetricCard label={`B&M Revenue (${range}d)`} value={`$${bm.periodRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`${bm.periodUnits.toLocaleString()} units · ${bm.periodOrders.toLocaleString()} invoices`} />
+                  <MetricCard label={`B&M Revenue (${periodMeta.label})`} value={`$${bm.periodRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`${bm.periodUnits.toLocaleString()} units · ${bm.periodOrders.toLocaleString()} invoices`} />
                   <MetricCard label="B&M Lifetime" value={`$${bm.lifetimeRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`${bm.lifetimeUnits.toLocaleString()} units · life of brand`} />
                   <MetricCard label="Off-premise" value={`$${bm.off.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Retail (period)" />
                   <MetricCard label="On-premise + Depl." value={`$${(bm.on + bm.depl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Restaurants + distributor" />
                 </div>
                 {bm.topStates.length > 0 && (
                   <div className="border-2 border-foreground p-4 mt-3" style={{ borderRadius: 0 }}>
-                    <h3 className="text-xs uppercase tracking-brand font-bold text-foreground mb-3">Top B&amp;M states ({range}d)</h3>
+                    <h3 className="text-xs uppercase tracking-brand font-bold text-foreground mb-3">Top B&amp;M states ({periodMeta.label})</h3>
                     <table className="w-full text-xs">
                       <tbody>
                         {bm.topStates.map(([state, rev]) => (
@@ -386,10 +388,10 @@ export default function KennelDashboard() {
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <MetricCard label={`COGS (${range}d)`} value={`$${fin.cogs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeCogs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-                  <MetricCard label={`Cost of Sales (${range}d)`} value={`$${fin.cos.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeCos.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-                  <MetricCard label={`Operating Expenses (${range}d)`} value={`$${fin.opex.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeOpex.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-                  <MetricCard label={`Total Expenses (${range}d)`} value={`$${fin.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+                  <MetricCard label={`COGS (${periodMeta.label})`} value={`$${fin.cogs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeCogs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+                  <MetricCard label={`Cost of Sales (${periodMeta.label})`} value={`$${fin.cos.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeCos.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+                  <MetricCard label={`Operating Expenses (${periodMeta.label})`} value={`$${fin.opex.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeOpex.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+                  <MetricCard label={`Total Expenses (${periodMeta.label})`} value={`$${fin.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
                 </div>
               </>
             )}

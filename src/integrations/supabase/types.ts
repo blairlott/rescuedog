@@ -3293,6 +3293,69 @@ export type Database = {
         }
         Relationships: []
       }
+      meta_capi_events: {
+        Row: {
+          created_at: string
+          currency: string
+          email_hash: string | null
+          error: string | null
+          event_id: string
+          event_name: string
+          fbc: string | null
+          fbp: string | null
+          id: string
+          order_id: string
+          request_payload: Json | null
+          response_body: Json | null
+          response_status: number | null
+          sent_at: string
+          success: boolean
+          test_event_code: string | null
+          test_mode: boolean
+          value_cents: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          email_hash?: string | null
+          error?: string | null
+          event_id: string
+          event_name?: string
+          fbc?: string | null
+          fbp?: string | null
+          id?: string
+          order_id: string
+          request_payload?: Json | null
+          response_body?: Json | null
+          response_status?: number | null
+          sent_at?: string
+          success?: boolean
+          test_event_code?: string | null
+          test_mode?: boolean
+          value_cents: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          email_hash?: string | null
+          error?: string | null
+          event_id?: string
+          event_name?: string
+          fbc?: string | null
+          fbp?: string | null
+          id?: string
+          order_id?: string
+          request_payload?: Json | null
+          response_body?: Json | null
+          response_status?: number | null
+          sent_at?: string
+          success?: boolean
+          test_event_code?: string | null
+          test_mode?: boolean
+          value_cents?: number
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           cost_cents: number | null

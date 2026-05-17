@@ -135,7 +135,9 @@ export function Header() {
 
           {/* Right: Account + Cart */}
           <div className="flex items-center justify-end gap-3 min-w-0">
-            <LanguageSwitcher compact className="hidden md:inline-flex" />
+            <div className="hidden md:inline-flex">
+              <LanguageSwitcher compact />
+            </div>
             <Link
               to={user ? "/account" : "/login"}
               className="p-1 text-foreground hover:text-primary transition-colors"

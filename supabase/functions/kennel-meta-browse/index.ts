@@ -53,6 +53,49 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// ---------------- Friendly-name helpers ----------------
+
+/**
+ * Pick the first non-empty string from a list of candidate fields.
+ * Used to surface the most human-readable name from the Instacart API,
+ * which often returns UUID-like ids in `name` but has nicer fields elsewhere.
+ */
+function firstString(...vals: unknown[]): string | undefined {
+  for (const v of vals) {
+    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  }
+  return undefined;
+}
+
+/** Quick test: is this name basically a UUID / opaque id? */
+function looksLikeId(name: string | undefined): boolean {
+  if (!name) return true;
+  const s = name.trim();
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return true;
+  if (/^\d{6,}$/.test(s)) return true;
+  return false;
+}
+
+/** Fetch friendly-name aliases for a set of entity ids, returns map id -> friendly_name. */
+async function fetchAliases(
+  admin: ReturnType<typeof createClient>,
+  platform: string,
+  entityType: string,
+  ids: string[],
+): Promise<Record<string, string>> {
+  if (ids.length === 0) return {};
+  const { data } = await admin
+    .from("kennel_entity_aliases")
+    .select("entity_id, friendly_name")
+    .eq("platform", platform)
+    .eq("entity_type", entityType)
+    .in("entity_id", ids);
+  const map: Record<string, string> = {};
+  for (const row of data ?? []) map[(row as any).entity_id] = (row as any).friendly_name;
+  return map;
+}
+
 async function metaGet(path: string, fields: string, token: string, extra: Record<string, string> = {}) {
   const qs = new URLSearchParams({ fields, access_token: token, limit: "100", ...extra });
   const res = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/${path}?${qs}`);

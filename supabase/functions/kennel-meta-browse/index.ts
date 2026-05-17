@@ -375,7 +375,7 @@ async function handle(req: Request): Promise<Response> {
       return json({ ok: true, platform: "google", items: [], not_connected: true, message: "Google Ads credentials missing" });
     }
     const tk = await googleAccessToken();
-    if (!tk.ok) return json({ error: tk.error }, 502);
+    if (!tk.ok) return googleError("token", tk.error);
     const cidClean = customerId.replace(/-/g, "");
 
     if (action === "list_campaigns") {
@@ -385,8 +385,7 @@ async function handle(req: Request): Promise<Response> {
         tk.token,
       );
       if (!r.ok) {
-        console.error("google list_campaigns failed", JSON.stringify(r.body));
-        return json({ ok: false, platform: "google", items: [], error: `Google Ads: ${r.error}`, details: r.body });
+        return googleError("list_campaigns", r.error, r.body);
       }
       const items = (r.body.results ?? []).map((row: any) => ({
         id: String(row.campaign.id),
@@ -408,7 +407,7 @@ async function handle(req: Request): Promise<Response> {
         `SELECT ad_group.id, ad_group.name, ad_group.status, ad_group.resource_name, ad_group.type, ad_group.cpc_bid_micros FROM ad_group WHERE campaign.id = ${Number(campaignId)} AND ad_group.status IN ('ENABLED','PAUSED') ORDER BY ad_group.name`,
         tk.token,
       );
-      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
+      if (!r.ok) return googleError("list_adsets", r.error, r.body);
       const items = (r.body.results ?? []).map((row: any) => ({
         id: String(row.adGroup.id),
         name: row.adGroup.name,
@@ -429,7 +428,7 @@ async function handle(req: Request): Promise<Response> {
         `SELECT ad_group_ad.ad.id, ad_group_ad.ad.name, ad_group_ad.status, ad_group_ad.resource_name, ad_group_ad.ad.type FROM ad_group_ad WHERE ad_group.id = ${Number(adGroupId)} AND ad_group_ad.status IN ('ENABLED','PAUSED')`,
         tk.token,
       );
-      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
+      if (!r.ok) return googleError("list_ads", r.error, r.body);
       const items = (r.body.results ?? []).map((row: any) => ({
         id: String(row.adGroupAd.ad.id),
         name: row.adGroupAd.ad.name ?? `${row.adGroupAd.ad.type} ad`,

@@ -17,6 +17,32 @@ async function sha256Hex(s: string): Promise<string> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const url = new URL(req.url);
+  // One-shot: exchange an authorization code and return the result (does NOT save).
+  // GET /kennel-secret-hash?exchange_code=<code>&redirect_uri=<uri>
+  if (url.searchParams.get("exchange_code")) {
+    const code = url.searchParams.get("exchange_code")!;
+    const redirect_uri = url.searchParams.get("redirect_uri") ?? "https://rescuedogwines.com/";
+    const cid = Deno.env.get("INSTACART_ADS_CLIENT_ID");
+    const cs = Deno.env.get("INSTACART_ADS_CLIENT_SECRET");
+    const r = await fetch("https://api.ads.instacart.com/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "authorization_code",
+        client_id: cid,
+        client_secret: cs,
+        code,
+        redirect_uri,
+      }),
+    });
+    const body = await r.text();
+    return new Response(JSON.stringify({ status: r.status, body }, null, 2), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const out: Record<string, unknown> = {};
   for (const name of SECRETS) {
     const raw = Deno.env.get(name);

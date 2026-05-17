@@ -1112,6 +1112,63 @@ export type Database = {
         }
         Relationships: []
       }
+      business_expense_facts: {
+        Row: {
+          account: string | null
+          account_id: string | null
+          amount_cents: number
+          category: string
+          created_at: string
+          currency: string
+          date: string
+          dim_hash: string | null
+          external_id: string | null
+          id: string
+          memo: string | null
+          metadata: Json
+          source: string
+          subcategory: string | null
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          account?: string | null
+          account_id?: string | null
+          amount_cents?: number
+          category: string
+          created_at?: string
+          currency?: string
+          date: string
+          dim_hash?: string | null
+          external_id?: string | null
+          id?: string
+          memo?: string | null
+          metadata?: Json
+          source?: string
+          subcategory?: string | null
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          account?: string | null
+          account_id?: string | null
+          amount_cents?: number
+          category?: string
+          created_at?: string
+          currency?: string
+          date?: string
+          dim_hash?: string | null
+          external_id?: string | null
+          id?: string
+          memo?: string | null
+          metadata?: Json
+          source?: string
+          subcategory?: string | null
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: []
+      }
       business_revenue_facts: {
         Row: {
           channel: string

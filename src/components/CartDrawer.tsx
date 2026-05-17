@@ -423,7 +423,7 @@ export const CartDrawer = () => {
           ) : (
             <>
               {/* Free shipping progress bar */}
-              <div className="flex-shrink-0 mb-3">
+              <div className="sticky top-0 z-10 -mx-1 px-1 pt-1 pb-3 bg-background/95 backdrop-blur-sm">
                 <FreeShippingBar
                   totalBottles={totalBottlesEffective}
                   cartTotal={totalPrice}
@@ -583,6 +583,22 @@ export const CartDrawer = () => {
                     <p className="text-[11px] text-primary font-bold uppercase tracking-brand text-right">
                       Member savings: -${memberSavings.toFixed(2)}
                     </p>
+                  )}
+                  {!isMember && !isMerchRoute && discountableSubtotal > 0 && (
+                    <div className="flex items-center justify-between gap-2 border border-dashed border-primary/40 bg-primary/5 px-2.5 py-1.5">
+                      <p className="text-[11px] leading-tight">
+                        <span className="font-bold text-primary uppercase tracking-brand">Pack members save </span>
+                        <span className="font-bold text-foreground">${(discountableSubtotal * 0.20).toFixed(2)}</span>
+                        <span className="text-muted-foreground"> on this cart</span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => { setIsOpen(false); navigate("/club"); }}
+                        className="text-[10px] uppercase tracking-brand font-bold text-primary hover:underline whitespace-nowrap"
+                      >
+                        Join →
+                      </button>
+                    </div>
                   )}
                   {wrapFee > 0 && (
                     <p className="text-[11px] text-muted-foreground text-right">

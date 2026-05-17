@@ -7,7 +7,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Award, ShoppingBag, Heart, Lock, Zap } from "lucide-react";
+import { Award, ShoppingBag, Heart, Lock, Zap, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { isWineProduct } from "@/lib/productUtils";
 import { useGeo } from "@/hooks/useGeo";
@@ -50,6 +50,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const isSampler = titleLower.includes('sampler') || titleLower.includes('sample') || titleLower.includes('6 bottle') || titleLower.includes('6-bottle');
   const tagSet = new Set((node.tags || []).map(t => t.toLowerCase()));
   const isClubExclusive = tagSet.has('club-exclusive') || tagSet.has('club exclusive');
+  const isLowStock = ['low-stock', 'low stock', 'limited', 'last-call', 'last call', 'nearly-out'].some(t => tagSet.has(t));
   const locked = isClubExclusive && !isMember;
   const isWine = isWineProduct(product);
   const soldOut = !firstVariant?.availableForSale;
@@ -170,6 +171,13 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 bg-foreground/85 text-background text-center py-2 text-[11px] font-bold uppercase tracking-brand z-10">
             {t("common.sold_out")}
           </div>
+        )}
+
+        {/* Low-stock urgency badge */}
+        {isLowStock && !soldOut && !locked && (
+          <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold uppercase tracking-brand shadow-sm bg-orange-500 text-white">
+            <AlertCircle className="w-3 h-3" /> Only a few left
+          </span>
         )}
 
       </div>

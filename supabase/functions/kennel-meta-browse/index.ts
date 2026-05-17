@@ -151,6 +151,20 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
 
+  try {
+    return await handle(req);
+  } catch (e) {
+    console.error("kennel-meta-browse uncaught", e instanceof Error ? e.stack : String(e));
+    return json({
+      ok: false,
+      error: e instanceof Error ? e.message : String(e),
+      stack: e instanceof Error ? e.stack : undefined,
+    }, 200);
+  }
+});
+
+async function handle(req: Request): Promise<Response> {
+
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401);
 
@@ -613,4 +627,4 @@ Deno.serve(async (req) => {
   }
 
   return json({ error: `unknown action: ${action}` }, 400);
-});
+}

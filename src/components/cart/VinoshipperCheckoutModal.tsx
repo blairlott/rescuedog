@@ -78,6 +78,14 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
     orderId: string;
     total: number;
     bottles: number;
+    /**
+     * Snapshot of the merch handoff captured at the moment wine succeeds.
+     * We can't rely on the live `pendingMerchHandoff` prop here because the
+     * parent CartDrawer re-renders right after wine items are removed and
+     * passes `pendingMerchHandoff={null}` (no wine + merch → no dual), which
+     * would unmount the handoff screen mid-flow.
+     */
+    handoff: NonNullable<Props["pendingMerchHandoff"]>;
   }>(null);
   const [shipMethod, setShipMethod] = useState<"home" | "ups_ap">("home");
   const [accessPoint, setAccessPoint] = useState<AccessPoint | null>(null);
@@ -330,6 +338,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
           orderId: fakeOrderId,
           total: totalForRedirect,
           bottles: bottlesForRedirect,
+          handoff: pendingMerchHandoff,
         });
         // Pre-register a pending handoff row so the cron can email if abandoned.
         try {

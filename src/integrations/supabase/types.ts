@@ -2363,6 +2363,111 @@ export type Database = {
           },
         ]
       }
+      kennel_keyword_ideas: {
+        Row: {
+          ad_group_id: string
+          campaign_id: string | null
+          competition: string | null
+          cpc_micros: number | null
+          created_at: string
+          executed_resource_name: string | null
+          execution_response: Json | null
+          id: string
+          keyword: string
+          match_type: string
+          platform: string
+          reasoning: string | null
+          recommended_action: string
+          recommended_bid_micros: number | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          score: number
+          source: string
+          status: string
+          updated_at: string
+          volume: number | null
+        }
+        Insert: {
+          ad_group_id: string
+          campaign_id?: string | null
+          competition?: string | null
+          cpc_micros?: number | null
+          created_at?: string
+          executed_resource_name?: string | null
+          execution_response?: Json | null
+          id?: string
+          keyword: string
+          match_type?: string
+          platform: string
+          reasoning?: string | null
+          recommended_action: string
+          recommended_bid_micros?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score?: number
+          source: string
+          status?: string
+          updated_at?: string
+          volume?: number | null
+        }
+        Update: {
+          ad_group_id?: string
+          campaign_id?: string | null
+          competition?: string | null
+          cpc_micros?: number | null
+          created_at?: string
+          executed_resource_name?: string | null
+          execution_response?: Json | null
+          id?: string
+          keyword?: string
+          match_type?: string
+          platform?: string
+          reasoning?: string | null
+          recommended_action?: string
+          recommended_bid_micros?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score?: number
+          source?: string
+          status?: string
+          updated_at?: string
+          volume?: number | null
+        }
+        Relationships: []
+      }
+      kennel_keyword_settings: {
+        Row: {
+          auto_apply: boolean
+          bid_raise_gate_pct: number
+          engine_enabled: boolean
+          max_daily_adds: number
+          pause_threshold_cents: number
+          pause_zero_conv_days: number
+          platform: string
+          updated_at: string
+        }
+        Insert: {
+          auto_apply?: boolean
+          bid_raise_gate_pct?: number
+          engine_enabled?: boolean
+          max_daily_adds?: number
+          pause_threshold_cents?: number
+          pause_zero_conv_days?: number
+          platform: string
+          updated_at?: string
+        }
+        Update: {
+          auto_apply?: boolean
+          bid_raise_gate_pct?: number
+          engine_enabled?: boolean
+          max_daily_adds?: number
+          pause_threshold_cents?: number
+          pause_zero_conv_days?: number
+          platform?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string

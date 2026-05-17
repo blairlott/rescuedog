@@ -691,6 +691,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
             )}
           </Button>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );

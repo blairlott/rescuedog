@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ChevronRight, Pause, Play, RefreshCw, Home, Pencil } from "lucide-react";
+import KeywordEnginePanel from "@/components/kennel/KeywordEnginePanel";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -444,6 +445,14 @@ export default function KennelChannelsPage() {
       <p className="text-[11px] text-muted-foreground mt-4">
         All pause/resume and edit actions are recorded in the Execution Log.
       </p>
+
+      {platform && (platform === "google" || platform === "instacart") && current?.level === "ad" && trail.length >= 2 && (
+        <KeywordEnginePanel
+          platform={platform as "google" | "instacart"}
+          campaignId={trail[trail.length - 2]?.parent_id}
+          adGroupId={current.parent_id!}
+        />
+      )}
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent style={SHARP} className="max-w-lg">

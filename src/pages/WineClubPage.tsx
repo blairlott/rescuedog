@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Wine, Gift, Truck, Star, Heart, Users } from "lucide-react";
+import { Wine, Gift, Truck, Star, Heart, Users, XCircle } from "lucide-react";
 import { useState } from "react";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "@/components/cms/CmsEditButton";
@@ -12,7 +12,7 @@ import { ClubConfigurator } from "@/components/wine-club/ClubConfigurator";
 import { ClubSignupForm } from "@/components/wine-club/ClubSignupForm";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Seo } from "@/components/Seo";
 import { faqPageSchema } from "@/lib/jsonLd";
 
@@ -234,6 +234,15 @@ const WineClubPage = () => {
                     <CmsEditButton onClick={() => setEditFaqIdx(idx)} label="Edit FAQ" scope="wine_club" />
                     <h4 className="font-bold text-foreground mb-2">{faq.q}</h4>
                     <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+                    {/cancel/i.test(faq.q) && membership && membership.status !== "cancelled" && (
+                      <div className="mt-3">
+                        <Button asChild variant="outline" size="sm" className="gap-2">
+                          <Link to="/account?tab=wine-club">
+                            <XCircle className="w-4 h-4" /> Cancel Now
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

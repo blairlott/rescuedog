@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,14 @@ import { OrdersTab } from "@/components/account/OrdersTab";
 const AccountPage = () => {
   const { user, loading, signOut } = useCustomerAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab") || "for-you";
+  const handleTabChange = (val: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (val === "for-you") next.delete("tab");
+    else next.set("tab", val);
+    setSearchParams(next, { replace: true });
+  };
   const { data: membership, isLoading: membershipLoading } = useMyMembership();
   const queryClient = useQueryClient();
 
@@ -249,7 +257,7 @@ const AccountPage = () => {
             </Button>
           </div>
 
-          <Tabs defaultValue="for-you">
+          <Tabs value={tabParam} onValueChange={handleTabChange}>
             <TabsList className="mb-6">
               <TabsTrigger value="for-you" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> For You

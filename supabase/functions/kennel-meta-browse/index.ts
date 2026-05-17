@@ -307,15 +307,22 @@ async function handle(req: Request): Promise<Response> {
       const r = await icGet(`/campaigns?advertiser_id=${advertiserId}&limit=100`);
       if (!r.ok) return json({ error: r.error, body: r.body }, 502);
       const raw = r.body?.campaigns ?? r.body?.data ?? r.body ?? [];
-      const items = (Array.isArray(raw) ? raw : []).map((c: any) => ({
-        id: String(c.id),
-        name: c.name,
-        status: mapStatus(c.status),
-        effective_status: mapStatus(c.status),
-        objective: c.objective ?? c.campaign_type,
-        daily_budget: c.daily_budget_cents ? String(c.daily_budget_cents) : (c.budget?.daily_cents ? String(c.budget.daily_cents) : undefined),
-        updated_time: c.updated_at,
-      }));
+      const baseItems = (Array.isArray(raw) ? raw : []).map((c: any) => {
+        const apiName = firstString(c.display_name, c.name, c.campaign_name, c.internal_name, c.label, c.title);
+        return {
+          id: String(c.id),
+          name: apiName ?? `Campaign ${c.id}`,
+          api_name: apiName,
+          status: mapStatus(c.status),
+          effective_status: mapStatus(c.status),
+          objective: c.objective ?? c.campaign_type,
+          daily_budget: c.daily_budget_cents ? String(c.daily_budget_cents) : (c.budget?.daily_cents ? String(c.budget.daily_cents) : undefined),
+          updated_time: c.updated_at,
+          ...(body?.debug ? { raw: c } : {}),
+        };
+      });
+      const aliasMap = await fetchAliases(admin, "instacart", "campaign", baseItems.map(i => i.id));
+      const items = baseItems.map(i => ({ ...i, name: aliasMap[i.id] ?? i.name, has_alias: !!aliasMap[i.id] }));
       return json({ ok: true, platform: "instacart", items });
     }
 
@@ -325,15 +332,22 @@ async function handle(req: Request): Promise<Response> {
       const r = await icGet(`/ad_groups?campaign_id=${campaignId}&limit=100`);
       if (!r.ok) return json({ error: r.error, body: r.body }, 502);
       const raw = r.body?.ad_groups ?? r.body?.data ?? r.body ?? [];
-      const items = (Array.isArray(raw) ? raw : []).map((g: any) => ({
-        id: String(g.id),
-        name: g.name,
-        status: mapStatus(g.status),
-        effective_status: mapStatus(g.status),
-        optimization_goal: g.optimization_goal ?? g.targeting_strategy,
-        daily_budget: g.daily_budget_cents ? String(g.daily_budget_cents) : undefined,
-        updated_time: g.updated_at,
-      }));
+      const baseItems = (Array.isArray(raw) ? raw : []).map((g: any) => {
+        const apiName = firstString(g.display_name, g.name, g.ad_group_name, g.internal_name, g.label);
+        return {
+          id: String(g.id),
+          name: apiName ?? `Ad group ${g.id}`,
+          api_name: apiName,
+          status: mapStatus(g.status),
+          effective_status: mapStatus(g.status),
+          optimization_goal: g.optimization_goal ?? g.targeting_strategy,
+          daily_budget: g.daily_budget_cents ? String(g.daily_budget_cents) : undefined,
+          updated_time: g.updated_at,
+          ...(body?.debug ? { raw: g } : {}),
+        };
+      });
+      const aliasMap = await fetchAliases(admin, "instacart", "adset", baseItems.map(i => i.id));
+      const items = baseItems.map(i => ({ ...i, name: aliasMap[i.id] ?? i.name, has_alias: !!aliasMap[i.id] }));
       return json({ ok: true, platform: "instacart", items });
     }
 
@@ -343,13 +357,29 @@ async function handle(req: Request): Promise<Response> {
       const r = await icGet(`/ad_group_products?ad_group_id=${adGroupId}&limit=200`);
       if (!r.ok) return json({ error: r.error, body: r.body }, 502);
       const raw = r.body?.ad_group_products ?? r.body?.data ?? r.body ?? [];
-      const items = (Array.isArray(raw) ? raw : []).map((a: any) => ({
-        id: String(a.id),
-        name: a.product_name ?? a.name ?? a.upc ?? `Product ${a.product_id ?? a.id}`,
-        status: mapStatus(a.status),
-        effective_status: mapStatus(a.status),
-        updated_time: a.updated_at,
-      }));
+      const baseItems = (Array.isArray(raw) ? raw : []).map((a: any) => {
+        const apiName = firstString(
+          a.product?.display_name,
+          a.product?.name,
+          a.product?.brand_name,
+          a.product_name,
+          a.display_name,
+          a.name,
+          a.upc,
+          a.product?.upc,
+        );
+        return {
+          id: String(a.id),
+          name: apiName ?? `Product ${a.product_id ?? a.id}`,
+          api_name: apiName,
+          status: mapStatus(a.status),
+          effective_status: mapStatus(a.status),
+          updated_time: a.updated_at,
+          ...(body?.debug ? { raw: a } : {}),
+        };
+      });
+      const aliasMap = await fetchAliases(admin, "instacart", "ad", baseItems.map(i => i.id));
+      const items = baseItems.map(i => ({ ...i, name: aliasMap[i.id] ?? i.name, has_alias: !!aliasMap[i.id] }));
       return json({ ok: true, platform: "instacart", items });
     }
 

@@ -376,12 +376,13 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   }, [open]);
 
   const handleContinueToMerch = () => {
-    if (!pendingMerchHandoff || !merchHandoffReady) return;
+    if (!merchHandoffReady) return;
+    const handoff = merchHandoffReady.handoff;
     // Fresh user gesture — popups are allowed here.
-    const win = window.open(pendingMerchHandoff.checkoutUrl, "_blank");
+    const win = window.open(handoff.checkoutUrl, "_blank");
     if (!win) {
       // Popup blocked — fall back to same-tab nav.
-      window.location.href = pendingMerchHandoff.checkoutUrl;
+      window.location.href = handoff.checkoutUrl;
       return;
     }
     onOpenChange(false);
@@ -393,7 +394,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] p-0 flex flex-col">
-        {merchHandoffReady && pendingMerchHandoff ? (
+        {merchHandoffReady ? (
           <div className="p-6 space-y-5">
             <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
               <CheckCircle2 className="h-5 w-5" />

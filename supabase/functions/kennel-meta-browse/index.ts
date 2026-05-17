@@ -253,6 +253,40 @@ Deno.serve(async (req) => {
       return json({ ok: result.ok, response: result.body });
     }
 
+    if (action === "update_entity") {
+      const entityType = body?.entity_type;
+      const entityId = body?.entity_id;
+      const fields = (body?.fields ?? {}) as Record<string, unknown>;
+      if (!entityId || !["campaign", "adset", "ad"].includes(entityType)) {
+        return json({ error: "entity_id and entity_type required" }, 400);
+      }
+      const allow: Record<string, string[]> = {
+        campaign: ["name", "daily_budget_cents", "total_budget_cents", "start_date", "end_date"],
+        adset: ["name", "daily_budget_cents", "default_bid"],
+        ad: ["bid_override"],
+      };
+      const clean: Record<string, unknown> = {};
+      for (const k of allow[entityType]) {
+        if (fields[k] !== undefined && fields[k] !== "" && fields[k] !== null) clean[k] = fields[k];
+      }
+      if (Object.keys(clean).length === 0) return json({ error: "no editable fields supplied" }, 400);
+      const path =
+        entityType === "campaign" ? `/campaigns/${entityId}`
+        : entityType === "adset" ? `/ad_groups/${entityId}`
+        : `/ad_group_products/${entityId}`;
+      const result = await icPatch(path, clean);
+      await admin.from("ad_execution_log").insert({
+        recommendation_id: null,
+        action: "update",
+        actor_id: userId,
+        actor_kind: "user",
+        request_payload: { platform: "instacart", entity_type: entityType, entity_id: entityId, fields: clean },
+        response_payload: { status: result.status, body: result.body },
+        success: result.ok,
+      });
+      return json({ ok: result.ok, response: result.body });
+    }
+
     return json({ error: `unknown action: ${action}` }, 400);
   }
 
@@ -354,6 +388,56 @@ Deno.serve(async (req) => {
       return json({ ok: result.ok, response: result.body });
     }
 
+    if (action === "update_entity") {
+      const entityType = body?.entity_type;
+      const incoming = body?.resource_name ?? body?.entity_id;
+      const fields = (body?.fields ?? {}) as Record<string, unknown>;
+      if (!incoming || !["campaign", "adset", "ad"].includes(entityType)) {
+        return json({ error: "entity_id and entity_type required" }, 400);
+      }
+      const rn = String(incoming).includes("/")
+        ? String(incoming)
+        : entityType === "campaign" ? `customers/${cidClean}/campaigns/${incoming}`
+        : entityType === "adset" ? `customers/${cidClean}/adGroups/${incoming}`
+        : `customers/${cidClean}/adGroupAds/${incoming}`;
+      const fieldMap: Record<string, string> = {
+        name: "name",
+        start_date: "startDate",
+        end_date: "endDate",
+        cpc_bid_micros: "cpcBidMicros",
+        status: "status",
+      };
+      const update: Record<string, unknown> = { resourceName: rn };
+      const masks: string[] = [];
+      for (const [k, v] of Object.entries(fields)) {
+        if (v === undefined || v === "" || v === null) continue;
+        const fk = fieldMap[k] ?? k;
+        update[fk] = v;
+        masks.push(fk);
+      }
+      if (masks.length === 0) return json({ error: "no editable fields supplied" }, 400);
+      const endpoint = entityType === "campaign" ? "campaigns:mutate" : entityType === "adset" ? "adGroups:mutate" : "adGroupAds:mutate";
+      const res = await fetch(
+        `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}/customers/${cidClean}/${endpoint}`,
+        {
+          method: "POST",
+          headers: googleHeaders(tk.token),
+          body: JSON.stringify({ operations: [{ update, updateMask: masks.join(",") }] }),
+        },
+      );
+      const respBody = await res.json().catch(() => ({}));
+      await admin.from("ad_execution_log").insert({
+        recommendation_id: null,
+        action: "update",
+        actor_id: userId,
+        actor_kind: "user",
+        request_payload: { platform: "google", entity_type: entityType, resource_name: rn, fields, update_mask: masks },
+        response_payload: { status: res.status, body: respBody },
+        success: res.ok,
+      });
+      return json({ ok: res.ok, response: respBody });
+    }
+
     return json({ error: `unknown action: ${action}` }, 400);
   }
 
@@ -438,6 +522,39 @@ Deno.serve(async (req) => {
     });
 
     return json({ ok: result.ok, before: pre.body, response: result.body });
+  }
+
+  // --- Update any entity (meta) ---
+  if (action === "update_entity") {
+    const entityId = body?.entity_id;
+    const entityType = body?.entity_type;
+    const fields = (body?.fields ?? {}) as Record<string, unknown>;
+    if (!entityId || !["campaign", "adset", "ad"].includes(entityType)) {
+      return json({ error: "entity_id and entity_type required" }, 400);
+    }
+    const allow: Record<string, string[]> = {
+      campaign: ["name", "daily_budget", "lifetime_budget", "spend_cap", "status"],
+      adset: ["name", "daily_budget", "lifetime_budget", "bid_amount", "optimization_goal", "start_time", "end_time", "status"],
+      ad: ["name", "status"],
+    };
+    const update: Record<string, string> = {};
+    for (const k of allow[entityType]) {
+      const v = fields[k];
+      if (v !== undefined && v !== "" && v !== null) update[k] = String(v);
+    }
+    if (Object.keys(update).length === 0) return json({ error: "no editable fields supplied" }, 400);
+    const pre = await metaGet(entityId, "id,name,status", token);
+    const result = await metaPost(entityId, update, token);
+    await admin.from("ad_execution_log").insert({
+      recommendation_id: null,
+      action: "update",
+      actor_id: userId,
+      actor_kind: "user",
+      request_payload: { platform: "meta", entity_type: entityType, entity_id: entityId, fields: update, pre: pre.ok ? pre.body : null },
+      response_payload: { status: result.status, body: result.body },
+      success: result.ok,
+    });
+    return json({ ok: result.ok, response: result.body });
   }
 
   return json({ error: `unknown action: ${action}` }, 400);

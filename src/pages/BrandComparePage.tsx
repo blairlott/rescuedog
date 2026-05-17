@@ -108,6 +108,30 @@ export default function BrandComparePage() {
             {data.disclosure && (
               <p className="text-xs text-muted-foreground mt-4">{data.disclosure}</p>
             )}
+            {data.sources && data.sources.length > 0 && (
+              <div className="mt-8 border-t border-border pt-6">
+                <p className="text-[11px] tracking-[0.3em] uppercase text-muted-foreground mb-3">
+                  Sources
+                </p>
+                <ol className="space-y-2 text-xs text-muted-foreground list-decimal pl-5">
+                  {data.sources.map((s) => (
+                    <li key={s.url}>
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                        className="underline hover:text-foreground"
+                      >
+                        {s.label}
+                      </a>
+                      {s.publisher && (
+                        <span className="text-muted-foreground/70"> — {s.publisher}</span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
           </div>
         </section>
 

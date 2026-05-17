@@ -220,6 +220,7 @@ function AppContent() {
         <Route path="log" element={<KennelLogPage />} />
         <Route path="settings" element={<KennelSettingsPage />} />
       </Route>
+      <Route path="/intelligence" element={<KennelGuard><ExecutiveCommandCenter /></KennelGuard>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
     </Suspense>

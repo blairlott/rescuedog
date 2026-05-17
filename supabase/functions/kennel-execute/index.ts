@@ -212,7 +212,21 @@ Deno.serve(async (req) => {
       _notes: notes ?? null,
     });
     if (error) return json({ error: error.message }, 400);
-    return json({ ok: true, recommendation: data });
+
+    // Auto-execute hook: if approved and per-channel guardrails allow, dispatch immediately.
+    let autoResult: any = null;
+    if (action === "approve") {
+      const { data: freshRec } = await admin.from("ad_recommendations").select("*").eq("id", recommendation_id).maybeSingle();
+      if (freshRec) {
+        const decision = await shouldAutoExecute(admin, freshRec);
+        if (decision.go) {
+          autoResult = await runExecute(admin, recommendation_id, userId, "auto", notes ?? "auto-executed after approve");
+        } else {
+          autoResult = { auto_skipped: true, reason: decision.reason };
+        }
+      }
+    }
+    return json({ ok: true, recommendation: data, auto: autoResult });
   }
 
   // execute / rollback paths
@@ -221,49 +235,9 @@ Deno.serve(async (req) => {
   if (recErr || !rec) return json({ error: "not found" }, 404);
 
   if (action === "execute") {
-    if (rec.status !== "approved") return json({ error: `cannot execute (status=${rec.status})` }, 400);
-
-    // Guardrails
-    const guardErr = await checkGuardrails(admin, rec);
-    if (guardErr) {
-      await admin.from("ad_execution_log").insert({
-        recommendation_id, action: "execute", actor_id: userId, actor_kind: "user",
-        request_payload: { notes: notes ?? null }, response_payload: { error: guardErr },
-        success: false,
-      });
-      return json({ error: guardErr }, 422);
-    }
-
-    const platform = (rec.payload?.platform ?? "").toString().toLowerCase();
-    let dispatch: MetaDispatchResult;
-    if (platform === "meta" || platform === "facebook") {
-      dispatch = await dispatchMeta(rec.payload);
-    } else {
-      dispatch = {
-        dispatched: false, ok: true,
-        response: { skipped: true, reason: `platform '${platform || "unknown"}' not wired yet` },
-        rollback_state: rec.payload?.rollback_state ?? {},
-      };
-    }
-
-    const newStatus = dispatch.ok ? "executed" : "failed";
-    const { error: updErr } = await admin
-      .from("ad_recommendations")
-      .update({
-        status: newStatus,
-        executed_at: dispatch.ok ? new Date().toISOString() : null,
-        rollback_state: dispatch.rollback_state ?? rec.payload?.rollback_state ?? {},
-      })
-      .eq("id", recommendation_id);
-    if (updErr) return json({ error: updErr.message }, 500);
-
-    await admin.from("ad_execution_log").insert({
-      recommendation_id, action: "execute", actor_id: userId, actor_kind: "user",
-      request_payload: { notes: notes ?? null, platform, dispatch_request: dispatch.request ?? null },
-      response_payload: { dispatched: dispatch.dispatched, status: dispatch.status ?? null, response: dispatch.response ?? null, error: dispatch.error ?? null },
-      success: dispatch.ok,
-    });
-    return json({ ok: dispatch.ok, dispatched: dispatch.dispatched, response: dispatch.response, error: dispatch.error });
+    const result = await runExecute(admin, recommendation_id, userId, "user", notes ?? null);
+    if (!result.ok && result.error && !result.dispatched) return json(result, 422);
+    return json(result);
   }
 
   if (action === "rollback") {

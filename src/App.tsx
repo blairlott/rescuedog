@@ -89,6 +89,7 @@ import KennelDashboard from "./pages/kennel/KennelDashboard";
 import KennelRecommendationsPage from "./pages/kennel/KennelRecommendationsPage";
 import KennelSettingsPage from "./pages/kennel/KennelSettingsPage";
 import KennelLogPage from "./pages/kennel/KennelLogPage";
+import KennelChannelsPage from "./pages/kennel/KennelChannelsPage";
 import { SommelierChat } from "./components/SommelierChat";
 import { EmailCapturePrompt } from "./components/cart/EmailCapturePrompt";
 import { useLocation } from "react-router-dom";
@@ -204,6 +205,7 @@ function AppContent() {
       <Route path="/kennel" element={<KennelGuard><KennelLayout /></KennelGuard>}>
         <Route index element={<KennelDashboard />} />
         <Route path="recommendations" element={<KennelRecommendationsPage />} />
+        <Route path="channels" element={<KennelChannelsPage />} />
         <Route path="log" element={<KennelLogPage />} />
         <Route path="settings" element={<KennelSettingsPage />} />
       </Route>

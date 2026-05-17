@@ -24,8 +24,8 @@ export function ChannelPerformanceTable({ rows, onRowClick }: { rows: ChannelRow
     return <div className="border border-border p-8 text-center text-sm text-muted-foreground bg-card" style={{ borderRadius: 0 }}>No channel data yet.</div>;
   }
   return (
-    <div className="border border-border bg-card" style={{ borderRadius: 0 }}>
-      <Table>
+    <div className="border border-border bg-card overflow-x-auto" style={{ borderRadius: 0 }}>
+      <Table className="min-w-[720px]">
         <TableHeader>
           <TableRow>
             <TableHead>Channel</TableHead>

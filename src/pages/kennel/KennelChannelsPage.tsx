@@ -3,8 +3,12 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ChevronRight, Pause, Play, RefreshCw, Home } from "lucide-react";
+import { ChevronRight, Pause, Play, RefreshCw, Home, Pencil } from "lucide-react";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -44,6 +48,64 @@ const entityTypeFor: Record<Exclude<Level, "platform">, "campaign" | "adset" | "
   campaign: "campaign",
   adset: "adset",
   ad: "ad",
+};
+
+type FieldType = "text" | "number" | "money_cents" | "money_micros" | "date" | "datetime" | "enum";
+type FieldDef = { key: string; label: string; type: FieldType; options?: string[]; hint?: string };
+
+const FIELD_SCHEMA: Record<Platform, Partial<Record<Exclude<Level, "platform">, FieldDef[]>>> = {
+  meta: {
+    campaign: [
+      { key: "name", label: "Name", type: "text" },
+      { key: "daily_budget", label: "Daily budget ($)", type: "money_cents" },
+      { key: "lifetime_budget", label: "Lifetime budget ($)", type: "money_cents" },
+      { key: "spend_cap", label: "Spend cap ($)", type: "money_cents" },
+    ],
+    adset: [
+      { key: "name", label: "Name", type: "text" },
+      { key: "daily_budget", label: "Daily budget ($)", type: "money_cents" },
+      { key: "lifetime_budget", label: "Lifetime budget ($)", type: "money_cents" },
+      { key: "bid_amount", label: "Bid amount (cents)", type: "number" },
+      { key: "optimization_goal", label: "Optimization goal", type: "enum",
+        options: ["IMPRESSIONS","REACH","LINK_CLICKS","OFFSITE_CONVERSIONS","LANDING_PAGE_VIEWS","VALUE","THRUPLAY","APP_INSTALLS"] },
+      { key: "start_time", label: "Start time (ISO)", type: "datetime" },
+      { key: "end_time", label: "End time (ISO)", type: "datetime" },
+    ],
+    ad: [
+      { key: "name", label: "Name", type: "text" },
+    ],
+  },
+  google: {
+    campaign: [
+      { key: "name", label: "Name", type: "text" },
+      { key: "start_date", label: "Start date (YYYY-MM-DD)", type: "date" },
+      { key: "end_date", label: "End date (YYYY-MM-DD)", type: "date" },
+    ],
+    adset: [
+      { key: "name", label: "Name", type: "text" },
+      { key: "cpc_bid_micros", label: "Max CPC ($)", type: "money_micros", hint: "Sent as micros (×1,000,000)" },
+    ],
+    ad: [
+      { key: "name", label: "Name", type: "text" },
+    ],
+  },
+  instacart: {
+    campaign: [
+      { key: "name", label: "Name", type: "text" },
+      { key: "daily_budget_cents", label: "Daily budget ($)", type: "money_cents" },
+      { key: "total_budget_cents", label: "Total budget ($)", type: "money_cents" },
+      { key: "start_date", label: "Start date", type: "date" },
+      { key: "end_date", label: "End date", type: "date" },
+    ],
+    adset: [
+      { key: "name", label: "Name", type: "text" },
+      { key: "daily_budget_cents", label: "Daily budget ($)", type: "money_cents" },
+      { key: "default_bid", label: "Default bid ($)", type: "number" },
+    ],
+    ad: [
+      { key: "bid_override", label: "Bid override ($)", type: "number" },
+    ],
+  },
 };
 
 function fmtBudget(cents?: string) {

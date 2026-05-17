@@ -83,6 +83,11 @@ import CrmLegacyMigrationPage from "./pages/CrmLegacyMigrationPage";
 import RewardsTermsPage from "./pages/RewardsTermsPage";
 import RewardsPage from "./pages/RewardsPage";
 import PoliciesPage from "./pages/PoliciesPage";
+import { KennelGuard } from "./components/kennel/KennelGuard";
+import { KennelLayout } from "./components/kennel/KennelLayout";
+import KennelDashboard from "./pages/kennel/KennelDashboard";
+import KennelRecommendationsPage from "./pages/kennel/KennelRecommendationsPage";
+import KennelSettingsPage from "./pages/kennel/KennelSettingsPage";
 import { SommelierChat } from "./components/SommelierChat";
 import { EmailCapturePrompt } from "./components/cart/EmailCapturePrompt";
 import { useLocation } from "react-router-dom";
@@ -105,6 +110,7 @@ function AppContent() {
     }
   }, [path]);
   const showSommelier = !["/merch", "/crm", "/cms", "/sell", "/donation", "/login", "/signup", "/ambassador"].some(p => path === p || path.startsWith(p + "/"));
+  const isKennel = path === "/kennel" || path.startsWith("/kennel/");
   return (
     <>
     <a href="#main-content" className="skip-link">Skip to main content</a>
@@ -194,11 +200,16 @@ function AppContent() {
         <Route path="leads" element={<CrmLeadsPage />} />
         <Route path="legacy-migration" element={<CrmLegacyMigrationPage />} />
       </Route>
+      <Route path="/kennel" element={<KennelGuard><KennelLayout /></KennelGuard>}>
+        <Route index element={<KennelDashboard />} />
+        <Route path="recommendations" element={<KennelRecommendationsPage />} />
+        <Route path="settings" element={<KennelSettingsPage />} />
+      </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
     </main>
-    {showSommelier && <SommelierChat />}
-    <EmailCapturePrompt />
+    {showSommelier && !isKennel && <SommelierChat />}
+    {!isKennel && <EmailCapturePrompt />}
     </>
   );
 }

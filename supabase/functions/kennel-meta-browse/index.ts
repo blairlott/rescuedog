@@ -388,6 +388,56 @@ Deno.serve(async (req) => {
       return json({ ok: result.ok, response: result.body });
     }
 
+    if (action === "update_entity") {
+      const entityType = body?.entity_type;
+      const incoming = body?.resource_name ?? body?.entity_id;
+      const fields = (body?.fields ?? {}) as Record<string, unknown>;
+      if (!incoming || !["campaign", "adset", "ad"].includes(entityType)) {
+        return json({ error: "entity_id and entity_type required" }, 400);
+      }
+      const rn = String(incoming).includes("/")
+        ? String(incoming)
+        : entityType === "campaign" ? `customers/${cidClean}/campaigns/${incoming}`
+        : entityType === "adset" ? `customers/${cidClean}/adGroups/${incoming}`
+        : `customers/${cidClean}/adGroupAds/${incoming}`;
+      const fieldMap: Record<string, string> = {
+        name: "name",
+        start_date: "startDate",
+        end_date: "endDate",
+        cpc_bid_micros: "cpcBidMicros",
+        status: "status",
+      };
+      const update: Record<string, unknown> = { resourceName: rn };
+      const masks: string[] = [];
+      for (const [k, v] of Object.entries(fields)) {
+        if (v === undefined || v === "" || v === null) continue;
+        const fk = fieldMap[k] ?? k;
+        update[fk] = v;
+        masks.push(fk);
+      }
+      if (masks.length === 0) return json({ error: "no editable fields supplied" }, 400);
+      const endpoint = entityType === "campaign" ? "campaigns:mutate" : entityType === "adset" ? "adGroups:mutate" : "adGroupAds:mutate";
+      const res = await fetch(
+        `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}/customers/${cidClean}/${endpoint}`,
+        {
+          method: "POST",
+          headers: googleHeaders(tk.token),
+          body: JSON.stringify({ operations: [{ update, updateMask: masks.join(",") }] }),
+        },
+      );
+      const respBody = await res.json().catch(() => ({}));
+      await admin.from("ad_execution_log").insert({
+        recommendation_id: null,
+        action: "update",
+        actor_id: userId,
+        actor_kind: "user",
+        request_payload: { platform: "google", entity_type: entityType, resource_name: rn, fields, update_mask: masks },
+        response_payload: { status: res.status, body: respBody },
+        success: res.ok,
+      });
+      return json({ ok: res.ok, response: respBody });
+    }
+
     return json({ error: `unknown action: ${action}` }, 400);
   }
 

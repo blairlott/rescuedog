@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
   const targets = [
     { name: "Meta", env: ["META_ADS_ACCESS_TOKEN"] },
     { name: "Google", env: ["GOOGLE_ADS_REFRESH_TOKEN", "GOOGLE_ADS_DEVELOPER_TOKEN"] },
-    { name: "Instacart", env: ["INSTACART_ADS_TOKEN"] },
+    { name: "Instacart", env: ["INSTACART_ADS_API_TOKEN"] },
     { name: "Vinoshipper", env: ["VINOSHIPPER_API_KEY_ID", "VINOSHIPPER_API_SECRET"] },
   ];
 

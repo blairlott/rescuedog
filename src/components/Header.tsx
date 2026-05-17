@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X, User, LogIn } from "lucide-react";
 import { HeaderSearch } from "./HeaderSearch";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useState } from "react";
 import { CartDrawer } from "./CartDrawer";
 import rdwLogo from "@/assets/rdw-logo.png";
@@ -39,6 +40,14 @@ export function Header() {
   const [editSection, setEditSection] = useState<"logos" | "banner" | null>(null);
   const location = useLocation();
   const { user } = useCustomerAuth();
+  const { data: roleInfo } = useUserRole();
+  const isStaff =
+    !!roleInfo &&
+    (roleInfo.isAdminOrOwner ||
+      (roleInfo.isSalesRep === true && roleInfo.roles.length > 0) ||
+      roleInfo.roles.some((r) =>
+        ["national_manager", "regional_manager", "state_manager", "brand_ambassador", "ambassador_manager", "wine_club_manager", "dropship_manager", "cms_editor", "crm_user"].includes(r)
+      ));
   const { content, upsert } = useCmsContent("header");
   const merchPaths = ["/merch", "/about", "/mission", "/donation"];
   const isMerch = merchPaths.includes(location.pathname) || isRescueDogDomain();
@@ -211,6 +220,31 @@ export function Header() {
               </Link>
             )
           ))}
+          {isStaff && (
+            <div className="pt-2 mt-2 border-t border-border space-y-3">
+              <Link
+                to="/admin"
+                className="block text-sm font-medium tracking-brand uppercase text-foreground"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                ADMIN
+              </Link>
+              <Link
+                to="/crm/login"
+                className="block text-sm font-medium tracking-brand uppercase text-foreground"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                RDW SALES PORTAL
+              </Link>
+              <Link
+                to="/intelligence"
+                className="block text-sm font-medium tracking-brand uppercase text-foreground"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                COMMAND CENTER
+              </Link>
+            </div>
+          )}
           <div className="pt-2 border-t border-border">
             <LanguageSwitcher />
           </div>

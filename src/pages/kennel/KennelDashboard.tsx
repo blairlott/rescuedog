@@ -355,6 +355,24 @@ export default function KennelDashboard() {
             )}
           </section>
 
+          <section className="space-y-2">
+            <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Finance (QuickBooks via Lindy)</h2>
+            {!fin?.hasData ? (
+              <div className="border-2 border-dashed border-border p-4 text-sm text-muted-foreground" style={{ borderRadius: 0 }}>
+                Awaiting first QuickBooks ingest. Once Lindy posts to <code className="font-mono text-xs">/functions/v1/kennel-ingest-finance</code>, COGS, cost of sales, and operating expenses roll up here — lifetime + period.
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <MetricCard label={`COGS (${range}d)`} value={`$${fin.cogs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeCogs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+                  <MetricCard label={`Cost of Sales (${range}d)`} value={`$${fin.cos.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeCos.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+                  <MetricCard label={`Operating Expenses (${range}d)`} value={`$${fin.opex.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeOpex.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+                  <MetricCard label={`Total Expenses (${range}d)`} value={`$${fin.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`Lifetime $${fin.lifetimeTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+                </div>
+              </>
+            )}
+          </section>
+
           <SpendChart data={chartData} channels={channelNames} />
 
           <section>

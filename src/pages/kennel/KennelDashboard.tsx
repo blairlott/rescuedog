@@ -165,21 +165,21 @@ export default function KennelDashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-[1400px]">
+    <div className="p-4 md:p-6 space-y-6 max-w-[1400px] min-w-0">
       {lindyStale && (
         <div className="border-2 border-destructive bg-destructive/10 p-3 flex items-center gap-2 text-sm" style={{ borderRadius: 0 }}>
           <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
           <span><strong className="uppercase tracking-brand">Lindy silent &gt;25h.</strong> Verify ingestion mode in Settings.</span>
         </div>
       )}
-      <header className="flex items-end justify-between flex-wrap gap-3">
+      <header className="flex items-start md:items-end justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-foreground uppercase tracking-brand" style={{ fontFamily: '"Nunito Sans", system-ui, sans-serif' }}>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground uppercase tracking-brand" style={{ fontFamily: '"Nunito Sans", system-ui, sans-serif' }}>
             Command Center
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Last {range} days · all channels</p>
         </div>
-        <div className="flex gap-1 items-center">
+        <div className="flex gap-1 items-center flex-wrap">
           {([7, 14, 30] as Range[]).map(r => (
             <Button
               key={r}

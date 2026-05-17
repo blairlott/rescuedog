@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Lock, Wine, Apple, Smartphone, Home, MapPin } from "lucide-react";
+import { Loader2, Lock, Wine, Apple, Smartphone, Home, MapPin, ShoppingBag, CheckCircle2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -29,6 +29,21 @@ import { getSignupPromo, markSignupPromoUsed } from "@/lib/signupPromo";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * When set, the customer also has merch in their cart. After wine
+   * checkout succeeds, the modal shows a handoff screen with a CTA
+   * that opens the Shopify checkout in a new tab (fresh user gesture,
+   * so popups are not blocked) and writes a pending_merch_handoffs row
+   * for the reminder-email cron to act on if the customer bails.
+   */
+  pendingMerchHandoff?: {
+    checkoutUrl: string;
+    itemCount: number;
+    subtotalCents: number;
+    items: Array<{ handle: string; title: string; variant_id: string; quantity: number; unit_price: number }>;
+  } | null;
+  /** Called after wine order is successfully placed (success branch only). */
+  onWineOrderPlaced?: (info: { orderId: string; total: number; bottles: number }) => void;
 }
 
 interface AccessPoint {
@@ -45,10 +60,10 @@ interface AccessPoint {
  * without Account ID / API keys yet. On "Place Order" it logs a fake
  * vinoshipper_webhook_logs row and clears the cart.
  */
-export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
+export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHandoff, onWineOrderPlaced }: Props) {
   const { user } = useCustomerAuth();
   const { data: membership } = useMyMembership();
-  const { items, clearCart } = useCartStore();
+  const { items, clearCart, removeItem } = useCartStore();
   const { caseDiscountCode, fullCaseCount } = useCartSettings();
   const checkoutIntent = useCheckoutIntentStore((s) => s.intent);
   const resetCheckoutIntent = useCheckoutIntentStore((s) => s.reset);
@@ -56,6 +71,14 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
 
   const [ageOk, setAgeOk] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // After wine succeeds, if merch is pending, we show a handoff screen
+  // instead of immediately closing + navigating away. The CTA on that
+  // screen opens Shopify in a new tab as a direct user gesture.
+  const [merchHandoffReady, setMerchHandoffReady] = useState<null | {
+    orderId: string;
+    total: number;
+    bottles: number;
+  }>(null);
   const [shipMethod, setShipMethod] = useState<"home" | "ups_ap">("home");
   const [accessPoint, setAccessPoint] = useState<AccessPoint | null>(null);
   const [accessPoints, setAccessPoints] = useState<AccessPoint[]>([]);
@@ -288,12 +311,47 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
       });
       const bottlesForRedirect = totalBottles;
       const totalForRedirect = total;
-      clearCart();
+      onWineOrderPlaced?.({
+        orderId: fakeOrderId,
+        total: totalForRedirect,
+        bottles: bottlesForRedirect,
+      });
+      // Clear only wine items so merch stays in cart for the Shopify handoff.
+      const wineLines = items.filter((i) => i.product.node.productKind === "wine");
+      if (wineLines.length === items.length) {
+        clearCart();
+      } else {
+        wineLines.forEach((i) => removeItem(i.variantId));
+      }
       resetCheckoutIntent();
-      onOpenChange(false);
-      navigate(
-        `/thank-you?order=${encodeURIComponent(fakeOrderId)}&total=${totalForRedirect.toFixed(2)}&bottles=${bottlesForRedirect}`,
-      );
+      if (pendingMerchHandoff) {
+        // Stay open and show the merch handoff CTA — do NOT navigate.
+        setMerchHandoffReady({
+          orderId: fakeOrderId,
+          total: totalForRedirect,
+          bottles: bottlesForRedirect,
+        });
+        // Pre-register a pending handoff row so the cron can email if abandoned.
+        try {
+          await supabase.from("pending_merch_handoffs").insert({
+            user_id: user?.id ?? null,
+            email: form.email,
+            checkout_url: pendingMerchHandoff.checkoutUrl,
+            items: pendingMerchHandoff.items as any,
+            item_count: pendingMerchHandoff.itemCount,
+            subtotal_cents: pendingMerchHandoff.subtotalCents,
+            wine_order_id: fakeOrderId,
+            status: "pending",
+          });
+        } catch (err) {
+          console.warn("[merch-handoff] could not pre-register pending row", err);
+        }
+      } else {
+        onOpenChange(false);
+        navigate(
+          `/thank-you?order=${encodeURIComponent(fakeOrderId)}&total=${totalForRedirect.toFixed(2)}&bottles=${bottlesForRedirect}`,
+        );
+      }
     } catch (e: any) {
       toast.error("Could not log simulated order", {
         description: e?.message,
@@ -303,9 +361,73 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
     }
   };
 
+  // Reset the handoff screen whenever the modal is reopened fresh.
+  useEffect(() => {
+    if (!open) setMerchHandoffReady(null);
+  }, [open]);
+
+  const handleContinueToMerch = () => {
+    if (!pendingMerchHandoff || !merchHandoffReady) return;
+    // Fresh user gesture — popups are allowed here.
+    const win = window.open(pendingMerchHandoff.checkoutUrl, "_blank");
+    if (!win) {
+      // Popup blocked — fall back to same-tab nav.
+      window.location.href = pendingMerchHandoff.checkoutUrl;
+      return;
+    }
+    onOpenChange(false);
+    navigate(
+      `/thank-you?order=${encodeURIComponent(merchHandoffReady.orderId)}&total=${merchHandoffReady.total.toFixed(2)}&bottles=${merchHandoffReady.bottles}&merch_pending=1`,
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] p-0 flex flex-col">
+        {merchHandoffReady && pendingMerchHandoff ? (
+          <div className="p-6 space-y-5">
+            <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+              <CheckCircle2 className="h-5 w-5" />
+              <span className="text-xs font-semibold uppercase tracking-[0.2em]">
+                Wine order placed
+              </span>
+            </div>
+            <div className="space-y-1">
+              <h2 className="font-display text-xl">One more step — your merch</h2>
+              <p className="text-sm text-muted-foreground">
+                Wine ships from our licensed partner. Your {pendingMerchHandoff.itemCount}{" "}
+                merch item{pendingMerchHandoff.itemCount === 1 ? "" : "s"} check out separately
+                through our secure merch checkout.
+              </p>
+            </div>
+            <div className="border border-border bg-muted/30 p-3 text-xs space-y-1">
+              <div className="flex items-center gap-2 font-semibold">
+                <ShoppingBag className="h-4 w-4" /> Merch total
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">
+                  {pendingMerchHandoff.itemCount} item{pendingMerchHandoff.itemCount === 1 ? "" : "s"}
+                </span>
+                <span className="font-bold">
+                  ${(pendingMerchHandoff.subtotalCents / 100).toFixed(2)}
+                </span>
+              </div>
+            </div>
+            <Button
+              type="button"
+              className="w-full"
+              size="lg"
+              onClick={handleContinueToMerch}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Continue to merch checkout
+            </Button>
+            <p className="text-[11px] text-muted-foreground text-center">
+              Opens in a new tab. If you don't complete it now, we'll email you a one-tap link to finish later.
+            </p>
+          </div>
+        ) : (
+        <>
         <div className="overflow-y-auto p-6 pb-32 flex-1 space-y-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-display">
@@ -570,6 +692,8 @@ export function VinoshipperCheckoutModal({ open, onOpenChange }: Props) {
             )}
           </Button>
         </div>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone } from "lucide-react";
+import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -7,6 +7,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 const NAV = [
   { to: "/kennel", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/kennel/recommendations", label: "Recommendations", icon: Lightbulb, end: false },
+  { to: "/kennel/log", label: "Execution log", icon: ScrollText, end: false },
   { to: "/kennel/settings", label: "Settings", icon: Settings, end: false },
 ];
 

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { MetricCard } from "@/components/kennel/MetricCard";
@@ -25,6 +26,7 @@ interface SyncRow { channel_id: string; last_primary_sync: string | null; }
 
 export default function KennelDashboard() {
   const [range, setRange] = useState<Range>(30);
+  const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
     queryKey: ["kennel-dashboard", range],
@@ -155,7 +157,10 @@ export default function KennelDashboard() {
 
           <section>
             <h2 className="text-sm uppercase tracking-brand font-bold text-foreground mb-3">Channel breakdown</h2>
-            <ChannelPerformanceTable rows={channelRows} />
+            <ChannelPerformanceTable
+              rows={channelRows}
+              onRowClick={(r) => navigate(`/kennel/channels?platform=${encodeURIComponent(r.platform)}`)}
+            />
           </section>
         </>
       )}

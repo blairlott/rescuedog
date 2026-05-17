@@ -1,5 +1,5 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network } from "lucide-react";
+import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -14,7 +14,20 @@ const NAV = [
 
 export function KennelLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: roleInfo } = useUserRole();
+
+  const segments = location.pathname.replace(/^\/+|\/+$/g, "").split("/");
+  // segments[0] === "kennel"
+  const crumbs: { label: string; to: string }[] = [];
+  let acc = "";
+  segments.forEach((seg, i) => {
+    acc += `/${seg}`;
+    const label =
+      i === 0 ? "Kennel"
+      : seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, " ");
+    crumbs.push({ label, to: acc });
+  });
 
   return (
     <div className="min-h-screen flex bg-background font-sans" style={{ fontFamily: '"Nunito Sans", system-ui, sans-serif' }}>
@@ -58,6 +71,29 @@ export function KennelLayout() {
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
+        {crumbs.length > 0 && (
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center gap-1 text-xs px-6 py-2 border-b border-border bg-card/50"
+          >
+            <Home className="h-3 w-3 text-muted-foreground" />
+            {crumbs.map((c, i) => (
+              <span key={c.to} className="flex items-center gap-1">
+                {i > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+                {i === crumbs.length - 1 ? (
+                  <span className="uppercase tracking-brand font-bold text-foreground">{c.label}</span>
+                ) : (
+                  <Link
+                    to={c.to}
+                    className="uppercase tracking-brand text-muted-foreground hover:text-foreground"
+                  >
+                    {c.label}
+                  </Link>
+                )}
+              </span>
+            ))}
+          </nav>
+        )}
         <Outlet />
       </main>
     </div>

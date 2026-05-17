@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Send, Activity } from "lucide-react";
+import { Send, Activity, Flame, CheckCircle2, XCircle, Clock } from "lucide-react";
 
 const SHARP = { borderRadius: 0 } as const;
 
@@ -25,6 +25,8 @@ type CapiEvent = {
 
 export default function KennelCapiPage() {
   const [events, setEvents] = useState<CapiEvent[]>([]);
+  const [recent, setRecent] = useState<CapiEvent[]>([]);
+  const [z3aOnly, setZ3aOnly] = useState(false);
   const [enabled, setEnabled] = useState(true);
   const [ociEnabled, setOciEnabled] = useState(false);
   const [testOrder, setTestOrder] = useState({
@@ -36,11 +38,14 @@ export default function KennelCapiPage() {
   const [sending, setSending] = useState(false);
 
   const load = async () => {
-    const [{ data: ev }, { data: flags }] = await Promise.all([
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const [{ data: ev }, { data: rec }, { data: flags }] = await Promise.all([
       supabase.from("meta_capi_events").select("*").order("sent_at", { ascending: false }).limit(50),
+      supabase.from("meta_capi_events").select("*").gte("sent_at", since).order("sent_at", { ascending: false }).limit(500),
       supabase.from("app_settings").select("key,value").in("key", ["kennel_capi_enabled", "kennel_oci_enabled"]),
     ]);
     setEvents((ev as CapiEvent[]) ?? []);
+    setRecent((rec as CapiEvent[]) ?? []);
     const fmap = Object.fromEntries((flags ?? []).map((f: any) => [f.key, f.value]));
     setEnabled(fmap.kennel_capi_enabled === true || fmap.kennel_capi_enabled === "true");
     setOciEnabled(fmap.kennel_oci_enabled === true || fmap.kennel_oci_enabled === "true");
@@ -86,6 +91,44 @@ export default function KennelCapiPage() {
   const liveSuccess = events.filter((e) => !e.test_mode && e.success).length;
   const testCount = events.filter((e) => e.test_mode).length;
 
+  // --- 24h panel derivations ---
+  const inZ3aWindow = (iso: string) => {
+    // Format hour:minute in America/New_York
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(new Date(iso));
+    const h = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+    const m = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+    const mins = h * 60 + m;
+    return mins >= 1 * 60 + 25 && mins <= 1 * 60 + 45;
+  };
+
+  const filtered = z3aOnly ? recent.filter((e) => inZ3aWindow(e.sent_at)) : recent;
+  const fires24 = filtered.length;
+  const succ24 = filtered.filter((e) => e.success).length;
+  const successRate = fires24 ? Math.round((succ24 / fires24) * 100) : null;
+  const lastFire = filtered[0]?.sent_at ?? null;
+
+  const relTime = (iso: string | null) => {
+    if (!iso) return "—";
+    const diff = Date.now() - new Date(iso).getTime();
+    const s = Math.floor(diff / 1000);
+    if (s < 45) return "just now";
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  };
+
+  const sortedRows = [...filtered].sort((a, b) => {
+    if (a.success !== b.success) return a.success ? 1 : -1; // failures first
+    return new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime();
+  });
+
   return (
     <div className="p-6 space-y-6 max-w-6xl">
       <header>
@@ -95,6 +138,71 @@ export default function KennelCapiPage() {
           Uses <code className="px-1 bg-muted">order_id</code> as event_id to dedupe against the browser Pixel.
         </p>
       </header>
+
+      {/* --- Last 24h CAPI Fires panel --- */}
+      <Card style={SHARP} className="p-4 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Flame className="h-4 w-4" />
+            <h2 className="font-bold uppercase tracking-brand">Last 24h CAPI Fires</h2>
+          </div>
+          <button
+            onClick={() => setZ3aOnly((v) => !v)}
+            style={SHARP}
+            className={`text-xs px-3 py-1 border ${z3aOnly ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            Z3a cycle only {z3aOnly ? "✓" : ""}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div className="border border-border p-3" style={SHARP}>
+            <div className="text-xs uppercase text-muted-foreground flex items-center gap-1"><Flame className="h-3 w-3" /> Fires (24h)</div>
+            <div className="text-2xl font-bold mt-1 tabular-nums">{fires24}</div>
+          </div>
+          <div className="border border-border p-3" style={SHARP}>
+            <div className="text-xs uppercase text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Success rate</div>
+            <div className="text-2xl font-bold mt-1 tabular-nums">{successRate == null ? "—" : `${successRate}%`}</div>
+            <div className="text-xs text-muted-foreground">{succ24} / {fires24} ok</div>
+          </div>
+          <div className="border border-border p-3" style={SHARP}>
+            <div className="text-xs uppercase text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Last fire</div>
+            <div className="text-2xl font-bold mt-1">{relTime(lastFire)}</div>
+            <div className="text-xs text-muted-foreground">{lastFire ? new Date(lastFire).toLocaleString() : "—"}</div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left border-b border-border text-xs uppercase text-muted-foreground">
+                <th className="py-2">Sent</th><th>Order</th><th>fbc</th><th>Value</th><th>Status</th><th>Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedRows.map((e) => (
+                <tr key={e.id} className={`border-b border-border/50 ${!e.success ? "bg-destructive/5" : ""}`}>
+                  <td className="py-2 text-xs whitespace-nowrap">{new Date(e.sent_at).toLocaleString()}</td>
+                  <td className="font-mono text-xs">{e.order_id}</td>
+                  <td className="font-mono text-xs">{e.fbc ? `${e.fbc.slice(0, 20)}${e.fbc.length > 20 ? "…" : ""}` : "—"}</td>
+                  <td className="tabular-nums">${(e.value_cents / 100).toFixed(2)}</td>
+                  <td>
+                    {e.success
+                      ? <span className="text-green-600 inline-flex items-center gap-1"><CheckCircle2 className="h-4 w-4" /></span>
+                      : <span className="text-destructive inline-flex items-center gap-1"><XCircle className="h-4 w-4" /></span>}
+                  </td>
+                  <td className="text-xs text-destructive max-w-md truncate">{!e.success ? e.error ?? "fail" : ""}</td>
+                </tr>
+              ))}
+              {sortedRows.length === 0 && (
+                <tr><td colSpan={6} className="py-6 text-center text-muted-foreground text-sm">
+                  No CAPI fires in the last 24h — Z3a runs at 1:30am ET
+                </td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-3 gap-4">
         <Card style={SHARP} className="p-4">

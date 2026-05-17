@@ -4393,6 +4393,48 @@ export type Database = {
         }
         Relationships: []
       }
+      vs_poll_log: {
+        Row: {
+          capi_purchases_sent: number
+          capi_subscribes_sent: number
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          ltv_value_sent_cents: number
+          notes: Json
+          orders_new: number
+          orders_seen: number
+          started_at: string
+        }
+        Insert: {
+          capi_purchases_sent?: number
+          capi_subscribes_sent?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          ltv_value_sent_cents?: number
+          notes?: Json
+          orders_new?: number
+          orders_seen?: number
+          started_at?: string
+        }
+        Update: {
+          capi_purchases_sent?: number
+          capi_subscribes_sent?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          ltv_value_sent_cents?: number
+          notes?: Json
+          orders_new?: number
+          orders_seen?: number
+          started_at?: string
+        }
+        Relationships: []
+      }
       vs_products_lifetime: {
         Row: {
           created_at: string

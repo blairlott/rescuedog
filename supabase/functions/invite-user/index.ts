@@ -40,20 +40,27 @@ serve(async (req) => {
     const surface: string = ["cms", "crm", "admin"].includes(String(body.surface))
       ? String(body.surface)
       : "admin";
+    const sendEmail: boolean = body.send_email === true;
+    const emailTemplate: string = typeof body.email_template === "string" && body.email_template
+      ? body.email_template
+      : "kennel-access-invite";
+    const rolesLabel: string = typeof body.roles_label === "string" ? body.roles_label : "";
     const expiresInDays: number = Number(body.expires_in_days) > 0 ? Number(body.expires_in_days) : 7;
 
     if (!email) throw new Error("Email is required");
     if (roles.length === 0) throw new Error("At least one role is required");
 
-    // Owner-only check
-    if (roles.includes("owner")) {
+    // Owner-only check (owner role, plus any Kennel-restricted role)
+    const ownerOnlyRoles = new Set(["owner", "kennel_viewer", "ad_ops_manager", "executive"]);
+    const needsOwner = roles.some((r) => ownerOnlyRoles.has(r));
+    if (needsOwner) {
       const { data: isOwner } = await supabaseAdmin
         .from("user_roles")
         .select("id")
         .eq("user_id", caller.id)
         .eq("role", "owner")
         .maybeSingle();
-      if (!isOwner) throw new Error("Only an owner can grant the owner role");
+      if (!isOwner) throw new Error("Only the owner can grant this role");
     }
 
     // Find or create user
@@ -144,6 +151,45 @@ serve(async (req) => {
       invitation_id = null;
     }
 
+    // Optionally send a branded email with the recovery link
+    let email_sent = false;
+    if (sendEmail && recovery_link) {
+      try {
+        const { data: callerProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", caller.id)
+          .maybeSingle();
+        const invitedByName = callerProfile?.full_name || callerProfile?.email || "The team";
+
+        const sendRes = await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-transactional-email`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+            },
+            body: JSON.stringify({
+              templateName: emailTemplate,
+              recipientEmail: email,
+              idempotencyKey: `invite-${invitation_id || userId}-${emailTemplate}`,
+              templateData: {
+                recipientName: full_name || undefined,
+                recoveryUrl: recovery_link,
+                rolesLabel: rolesLabel || roles.map((r) => r.replace(/_/g, " ")).join(", "),
+                invitedByName,
+              },
+            }),
+          }
+        );
+        email_sent = sendRes.ok;
+      } catch (_) {
+        email_sent = false;
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -154,6 +200,7 @@ serve(async (req) => {
         roles_skipped: skipped,
         recovery_link,
         expires_at,
+        email_sent,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

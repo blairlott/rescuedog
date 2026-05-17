@@ -6,13 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Copy, ArrowLeft, ArrowRight, Check, FileText, ShieldCheck, Shield, Globe, Map, MapPin, UserCog, Heart, Wine, Truck, Users } from "lucide-react";
+import { Copy, ArrowLeft, ArrowRight, Check, FileText, ShieldCheck, Shield, Globe, Map, MapPin, UserCog, Heart, Wine, Truck, Users, Eye, Zap, BarChart3 } from "lucide-react";
 
 type Role =
   | "owner" | "admin" | "cms_editor" | "crm_user"
   | "national_manager" | "regional_manager" | "state_manager"
   | "brand_ambassador" | "ambassador_manager"
-  | "wine_club_manager" | "dropship_manager";
+  | "wine_club_manager" | "dropship_manager"
+  | "kennel_viewer" | "ad_ops_manager" | "executive";
 
 const ROLE_GROUPS: { group: string; roles: { value: Role; label: string; desc: string; icon: any }[] }[] = [
   {
@@ -46,6 +47,14 @@ const ROLE_GROUPS: { group: string; roles: { value: Role; label: string; desc: s
       { value: "dropship_manager", label: "Drop-Ship Manager", desc: "Manage merch fulfillment & marketplace partners", icon: Truck },
     ],
   },
+  {
+    group: "The Kennel — Ad Ops & Performance",
+    roles: [
+      { value: "kennel_viewer", label: "Kennel Viewer", desc: "Read-only access to The Kennel dashboards", icon: Eye },
+      { value: "ad_ops_manager", label: "Ad Ops Manager", desc: "Approve recommendations & manage guardrails", icon: Zap },
+      { value: "executive", label: "Executive", desc: "Executive Command Center & morning brief", icon: BarChart3 },
+    ],
+  },
 ];
 
 interface Props {
@@ -61,11 +70,18 @@ interface Props {
   title?: string;
   /** Which surface this invite originates from (drives status grouping) */
   surface?: "cms" | "crm" | "admin";
+  /** When true, the invite-user function will email the recovery link to the recipient */
+  sendEmail?: boolean;
+  /** Optional override of the transactional template name */
+  emailTemplate?: string;
+  /** Optional human-friendly label for the role(s) in the email body */
+  rolesLabel?: string;
 }
 
 export function TeamInviteDialog({
   open, onOpenChange, onInvited, defaultRoles = [], allowedRoles, isOwner = false,
   title = "Invite a team member", surface = "admin",
+  sendEmail = false, emailTemplate, rolesLabel,
 }: Props) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState("");
@@ -101,6 +117,9 @@ export function TeamInviteDialog({
           roles,
           surface,
           redirect_to: `${window.location.origin}/reset-password`,
+          send_email: sendEmail,
+          ...(emailTemplate ? { email_template: emailTemplate } : {}),
+          ...(rolesLabel ? { roles_label: rolesLabel } : {}),
         },
       });
       if (error) throw error;

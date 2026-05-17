@@ -20,6 +20,7 @@ import { Seo } from "@/components/Seo";
 import { PairItPicker } from "@/components/merch/PairItPicker";
 import { PairWineWithMerch } from "@/components/cross-sell/PairWineWithMerch";
 import { ProductReviews, useProductRating } from "@/components/reviews/ProductReviews";
+import { isBundleHandle } from "@/lib/wineBundles";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();
@@ -98,6 +99,15 @@ const ProductDetail = () => {
     .find((t) => ["apparel", "drinkware", "pet", "home", "gift"].includes(t));
   const isClubExclusive = tags.map(t => t.toLowerCase()).some(t => t === 'club-exclusive' || t === 'club exclusive');
   const locked = isClubExclusive && !isMember;
+  // Bundles like the 6-Bottle Sampler are excluded from the member discount
+  // (mirrors Vinoshipper's "Excluded from Discounts" rule).
+  const titleLower = product.title.toLowerCase();
+  const isSamplerBundle =
+    isBundleHandle((product as any).handle) ||
+    titleLower.includes("sampler") ||
+    titleLower.includes("6 bottle") ||
+    titleLower.includes("6-bottle");
+  const memberDiscountApplies = isMember && !isSamplerBundle;
   const variantPrice = parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount);
   const memberUnitPrice = variantPrice * (1 - (discountPercent || 20) / 100);
   const lineTotal = variantPrice * quantity;
@@ -274,7 +284,7 @@ const ProductDetail = () => {
                   {product.title}
                 </h1>
 
-                  {isMember ? (
+                  {memberDiscountApplies ? (
                     <div>
                       <p className="text-2xl font-bold text-primary">
                         ${memberUnitPrice.toFixed(2)}
@@ -457,7 +467,7 @@ const ProductDetail = () => {
                   ) : (
                     <>
                       <ShoppingCart className="w-4 h-4 mr-2" />
-                      Add to Cart — ${(isMember ? memberLineTotal : lineTotal).toFixed(2)}
+                      Add to Cart — ${(memberDiscountApplies ? memberLineTotal : lineTotal).toFixed(2)}
                     </>
                   )}
                 </Button>
@@ -497,7 +507,7 @@ const ProductDetail = () => {
           ) : (
             <span className="text-muted-foreground">Ships from US partners · 3–7 days</span>
           )}
-          {isMember && !locked && selectedVariant?.availableForSale && (
+          {memberDiscountApplies && !locked && selectedVariant?.availableForSale && (
             <span className="text-primary font-bold uppercase tracking-brand text-[10px]">
               Save ${(lineTotal - memberLineTotal).toFixed(2)} ({discountPercent}% off)
             </span>

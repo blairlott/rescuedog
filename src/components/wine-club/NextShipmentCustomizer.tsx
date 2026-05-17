@@ -179,7 +179,9 @@ export function NextShipmentCustomizer({ membership }: Props) {
       <div className="border border-border p-6 mb-8">
         <h3 className="font-bold text-foreground mb-2 flex items-center gap-2"><ShoppingBag className="h-5 w-5" /> Next Shipment</h3>
         <p className="text-sm text-muted-foreground">
-          Your membership is managed in Vinoshipper. To customize upcoming shipments, please use your Vinoshipper account.
+          Your membership is being migrated to our new system. Customization for upcoming
+          shipments will be available here shortly — in the meantime, reach out to support
+          if you'd like to make changes.
         </p>
       </div>
     );
@@ -193,9 +195,13 @@ export function NextShipmentCustomizer({ membership }: Props) {
     return (
       <div className="border border-border p-8 text-center mb-8">
         <ShoppingBag className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-        <h3 className="text-lg font-bold text-foreground mb-2">No upcoming shipment yet</h3>
+        <h3 className="text-lg font-bold text-foreground mb-2">
+          {membership?.next_shipment_date ? "Customization opens soon" : "No upcoming shipment yet"}
+        </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          We'll email you as soon as your next shipment opens for customization.
+          {membership?.next_shipment_date
+            ? `Your next shipment is scheduled for ${new Date(membership.next_shipment_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. You'll be able to customize it closer to the ship date — we'll email you when it opens.`
+            : "We'll email you as soon as your next shipment opens for customization."}
         </p>
       </div>
     );

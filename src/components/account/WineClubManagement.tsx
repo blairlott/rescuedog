@@ -27,9 +27,9 @@ export const WineClubManagement = ({ currentTier }: { currentTier?: string }) =>
         body: { action, to_tier: action === "switch" ? toTier : undefined, pause_cycles: action === "pause" ? pauseCycles : undefined, reason },
       });
       if (error) throw error;
-      const result = data as { vinoshipper_synced: boolean; vinoshipper_error: string | null };
+      const result = (data ?? {}) as { vinoshipper_synced?: boolean };
       if (result.vinoshipper_synced) toast.success("Membership updated. Changes effective next billing cycle.");
-      else toast.success("Request recorded. Our team will sync this with Vinoshipper shortly.");
+      else toast.success("Request recorded — your update will apply on your next billing cycle.");
       setOpen(null);
       setReason("");
       queryClient.invalidateQueries({ queryKey: ["wine-club-membership"] });
@@ -45,7 +45,7 @@ export const WineClubManagement = ({ currentTier }: { currentTier?: string }) =>
       <div className="border border-border p-5 mt-4">
         <h3 className="font-bold text-foreground mb-3">Manage Membership</h3>
         <p className="text-xs text-muted-foreground mb-4">
-          Changes take effect on your next billing cycle and are synced to Vinoshipper for shipment and billing.
+          Changes take effect on your next billing cycle for shipment and billing.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Button variant="outline" className="gap-2" onClick={() => setOpen("switch")}>

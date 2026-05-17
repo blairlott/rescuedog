@@ -84,9 +84,11 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
             <span className="inline-flex items-center px-3 py-1 bg-primary/10 text-primary text-xs font-bold uppercase tracking-brand">
               {membership.status}
             </span>
-            <span className="inline-flex items-center px-3 py-1 bg-muted text-muted-foreground text-xs font-bold uppercase tracking-brand">
-              {membership.payment_status}
-            </span>
+            {membership.payment_status && membership.payment_status !== "simulated" && (
+              <span className="inline-flex items-center px-3 py-1 bg-muted text-muted-foreground text-xs font-bold uppercase tracking-brand">
+                {membership.payment_status}
+              </span>
+            )}
           </div>
         </div>
       </div>

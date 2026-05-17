@@ -2,11 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Package, SkipForward, X, CreditCard, Link as LinkIcon } from "lucide-react";
+import { Loader2, Package, SkipForward, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
-export const SubscribeAndSaveTab = ({ userId, vinoshipperLinked }: { userId: string; vinoshipperLinked: boolean }) => {
+export const SubscribeAndSaveTab = ({ userId, vinoshipperLinked: _vinoshipperLinked }: { userId: string; vinoshipperLinked?: boolean }) => {
   const queryClient = useQueryClient();
 
   const { data: subs = [], isLoading } = useQuery({
@@ -35,19 +35,6 @@ export const SubscribeAndSaveTab = ({ userId, vinoshipperLinked }: { userId: str
     },
     onError: (e: any) => toast.error(e.message || "Could not complete request"),
   });
-
-  if (!vinoshipperLinked) {
-    return (
-      <div className="border border-border p-6 text-center">
-        <CreditCard className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-        <h3 className="font-bold text-foreground mb-2">Link your Vinoshipper account first</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Subscribe & Save uses Vinoshipper to securely store your payment method and handle recurring shipments.
-        </p>
-        <Button asChild variant="outline" className="gap-2"><Link to="#"><LinkIcon className="w-4 h-4" />Go to Profile to Link</Link></Button>
-      </div>
-    );
-  }
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
 

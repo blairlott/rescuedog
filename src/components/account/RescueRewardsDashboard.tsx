@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { isRewardsRedemptionAllowed, REWARDS_BLOCKED_STATES, REWARDS_RULES } from "@/lib/rewardsCompliance";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Account { points_balance: number; lifetime_points_earned: number; tier: string; }
 interface Entry { id: string; delta_points: number; event_type: string; reason: string; created_at: string; }
@@ -31,7 +32,12 @@ const US_STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","
 
 export function RescueRewardsDashboard() {
   const { user } = useCustomerAuth();
-  const testMode = useFeatureFlag("rewards_test_mode", true);
+  const { data: roleInfo } = useUserRole();
+  const isStaff = !!roleInfo?.isAdminOrOwner;
+  // Test-mode UI (simulate purchase, redemption presets, mode banner) is
+  // gated to admins/owners — regular customers never see dev affordances.
+  const testModeFlag = useFeatureFlag("rewards_test_mode", true);
+  const testMode = isStaff && testModeFlag;
   const [acct, setAcct] = useState<Account | null>(null);
   const [ledger, setLedger] = useState<Entry[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
@@ -203,7 +209,8 @@ export function RescueRewardsDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Mode banner */}
+      {/* Mode banner — admin only */}
+      {isStaff && (
       <div
         className={`border p-3 flex items-center justify-between text-xs ${
           testMode
@@ -223,10 +230,11 @@ export function RescueRewardsDashboard() {
           <span className="text-muted-foreground hidden sm:inline">
             {testMode
               ? "Simulated earns enabled — points are not from real orders."
-              : "Live mode — points come only from real Vinoshipper orders."}
+              : "Live mode — points come only from real orders."}
           </span>
         </div>
       </div>
+      )}
 
       {/* Balance hero */}
       <section className="border border-border bg-card p-5 space-y-4">
@@ -318,7 +326,7 @@ export function RescueRewardsDashboard() {
           <span className="text-[10px] uppercase tracking-brand bg-primary/20 text-primary px-1.5 py-0.5">Test mode</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          Earn points without checking out — for testing the rewards experience. Real orders will earn points automatically once Vinoshipper is wired up.
+          Earn points without checking out — for testing the rewards experience. Real orders earn points automatically.
         </p>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">$</span>
@@ -370,7 +378,7 @@ export function RescueRewardsDashboard() {
             {redemptions.map(r => (
               <li key={r.id} className="flex justify-between items-center p-3">
                 <div>
-                  <div className="font-bold">{r.reward_title}{r.simulated && <span className="ml-2 text-[10px] uppercase tracking-brand text-primary">test</span>}</div>
+                  <div className="font-bold">{r.reward_title}{isStaff && r.simulated && <span className="ml-2 text-[10px] uppercase tracking-brand text-primary">test</span>}</div>
                   <div className="text-muted-foreground">{new Date(r.created_at).toLocaleDateString()} · {r.points_cost} pts</div>
                 </div>
                 <span className="text-[10px] uppercase tracking-brand border border-border px-2 py-1">{r.status}</span>

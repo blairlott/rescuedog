@@ -110,6 +110,9 @@ export function Header() {
             <button className="md:hidden p-1 text-foreground" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
+            <div className="md:hidden">
+              <LanguageSwitcher compact />
+            </div>
             <HeaderSearch className="hidden md:block p-1 text-foreground hover:text-primary transition-colors" />
           </div>
 

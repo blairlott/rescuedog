@@ -13,9 +13,9 @@ const INSTACART_TOKEN_URL = "https://api.ads.instacart.com/oauth/token";
 let _icTokenCache: { token: string; expires_at: number } | null = null;
 let _icAdvertiserCache: string | null = null;
 async function instacartAccessToken(): Promise<{ ok: true; token: string } | { ok: false; error: string }> {
-  const clientId = Deno.env.get("INSTACART_ADS_CLIENT_ID");
-  const clientSecret = Deno.env.get("INSTACART_ADS_CLIENT_SECRET");
-  const refreshToken = Deno.env.get("INSTACART_ADS_REFRESH_TOKEN");
+  const clientId = Deno.env.get("INSTACART_ADS_CLIENT_ID")?.trim();
+  const clientSecret = Deno.env.get("INSTACART_ADS_CLIENT_SECRET")?.trim();
+  const refreshToken = Deno.env.get("INSTACART_ADS_REFRESH_TOKEN")?.trim();
   if (!clientId || !clientSecret) {
     return { ok: false, error: "Instacart OAuth credentials missing (client id/secret)" };
   }

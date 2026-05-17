@@ -2847,6 +2847,51 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_merch_handoffs: {
+        Row: {
+          checkout_url: string
+          created_at: string
+          email: string
+          id: string
+          item_count: number
+          items: Json
+          reminder_sent_at: string | null
+          status: string
+          subtotal_cents: number
+          updated_at: string
+          user_id: string | null
+          wine_order_id: string | null
+        }
+        Insert: {
+          checkout_url: string
+          created_at?: string
+          email: string
+          id?: string
+          item_count?: number
+          items?: Json
+          reminder_sent_at?: string | null
+          status?: string
+          subtotal_cents?: number
+          updated_at?: string
+          user_id?: string | null
+          wine_order_id?: string | null
+        }
+        Update: {
+          checkout_url?: string
+          created_at?: string
+          email?: string
+          id?: string
+          item_count?: number
+          items?: Json
+          reminder_sent_at?: string | null
+          status?: string
+          subtotal_cents?: number
+          updated_at?: string
+          user_id?: string | null
+          wine_order_id?: string | null
+        }
+        Relationships: []
+      }
       personalization_rules: {
         Row: {
           created_at: string

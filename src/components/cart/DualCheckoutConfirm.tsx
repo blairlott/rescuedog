@@ -40,33 +40,10 @@ export function DualCheckoutConfirm({
         </DialogHeader>
 
         <div className="space-y-3 py-2">
-          {/* Step 1 */}
-          <div className="flex gap-3 border border-border p-3">
-            <div className="flex-shrink-0 w-7 h-7 bg-foreground text-background flex items-center justify-center text-xs font-bold">
-              1
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-1">
-                <ShoppingBag className="h-3.5 w-3.5" />
-                <span className="text-xs font-bold uppercase tracking-brand">
-                  Merch — opens in a new tab
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {merchCount} item{merchCount !== 1 ? "s" : ""} · ${merchTotal.toFixed(2)} ·
-                charged by Rescue Dog
-              </p>
-            </div>
-          </div>
-
-          <div className="flex justify-center">
-            <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
-          </div>
-
-          {/* Step 2 */}
+          {/* Step 1 — Wine */}
           <div className="flex gap-3 border border-primary/40 bg-primary/[0.04] p-3">
             <div className="flex-shrink-0 w-7 h-7 bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-              2
+              1
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-1">
@@ -78,6 +55,29 @@ export function DualCheckoutConfirm({
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {wineCount} bottle{wineCount !== 1 ? "s" : ""} · ${wineTotal.toFixed(2)} ·
                 charged by Vinoshipper (our licensed shipper). 21+ ID required at delivery.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
+          </div>
+
+          {/* Step 2 — Merch */}
+          <div className="flex gap-3 border border-border p-3">
+            <div className="flex-shrink-0 w-7 h-7 bg-foreground text-background flex items-center justify-center text-xs font-bold">
+              2
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-1">
+                <ShoppingBag className="h-3.5 w-3.5" />
+                <span className="text-xs font-bold uppercase tracking-brand">
+                  Merch — opens in a new tab
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {merchCount} item{merchCount !== 1 ? "s" : ""} · ${merchTotal.toFixed(2)} ·
+                charged by Rescue Dog
               </p>
             </div>
           </div>

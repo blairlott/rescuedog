@@ -358,7 +358,10 @@ Deno.serve(async (req) => {
         `SELECT campaign.id, campaign.name, campaign.status, campaign.resource_name, campaign.advertising_channel_type, campaign_budget.amount_micros FROM campaign WHERE campaign.status IN ('ENABLED','PAUSED') ORDER BY campaign.name`,
         tk.token,
       );
-      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
+      if (!r.ok) {
+        console.error("google list_campaigns failed", JSON.stringify(r.body));
+        return json({ ok: false, platform: "google", items: [], error: `Google Ads: ${r.error}`, details: r.body });
+      }
       const items = (r.body.results ?? []).map((row: any) => ({
         id: String(row.campaign.id),
         name: row.campaign.name,

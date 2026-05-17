@@ -6253,6 +6253,7 @@ export type Database = {
         | "cms_editor"
         | "crm_user"
         | "ad_ops_manager"
+        | "executive"
       experiment_metric:
         | "revenue_per_visitor"
         | "conversion_rate"
@@ -6401,6 +6402,7 @@ export const Constants = {
         "cms_editor",
         "crm_user",
         "ad_ops_manager",
+        "executive",
       ],
       experiment_metric: [
         "revenue_per_visitor",

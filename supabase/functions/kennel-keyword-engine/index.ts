@@ -53,10 +53,11 @@ async function instacartAccessToken(): Promise<string | null> {
   const cs = Deno.env.get("INSTACART_ADS_CLIENT_SECRET");
   const rt = Deno.env.get("INSTACART_ADS_REFRESH_TOKEN");
   if (!cid || !cs || !rt) return null;
+  // Instacart Ads API: credentials in JSON body (matches working I1/I2/I3/Z7).
   const r = await fetch(INSTACART_TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "refresh_token", client_id: cid, client_secret: cs, refresh_token: rt }).toString(),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ grant_type: "refresh_token", client_id: cid, client_secret: cs, refresh_token: rt }),
   });
   const b = await r.json().catch(() => ({}));
   if (!r.ok || !b?.access_token) return null;

@@ -27,3 +27,7 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.kennel-ingest]
     verify_jwt = false
+  [functions.kennel-reconcile]
+    verify_jwt = false
+  [functions.kennel-sync-native]
+    verify_jwt = false

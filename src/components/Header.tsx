@@ -136,7 +136,12 @@ export function Header() {
           {/* Right: Account + Cart */}
           <div className="flex items-center justify-end gap-3 min-w-0">
             <LanguageSwitcher compact />
-            <Link to={user ? "/account" : "/login"} className="hidden md:block p-1 text-foreground hover:text-primary transition-colors" title={user ? t("nav.account") : t("nav.sign_in")}>
+            <Link
+              to={user ? "/account" : "/login"}
+              className="p-1 text-foreground hover:text-primary transition-colors"
+              title={user ? t("nav.account") : t("nav.sign_in")}
+              aria-label={user ? "Account" : "Sign in"}
+            >
               {user ? <User className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
             </Link>
             <CartDrawer />

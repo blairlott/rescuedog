@@ -1,71 +1,102 @@
-# Migrate off rescuedogwines.com (legacy WP site)
+# Autonomous Keyword Engine — Google Ads & Instacart
 
-A repo-wide sweep found ~40 references to `rescuedogwines.com`. They split into 4 buckets, each needing a different strategy. None of these have been changed yet — flagging trade-offs so you can pick.
+A semi-auto keyword generation + optimization layer wired into the existing Channels drill-down at `/kennel/channels`. Same `is_ad_ops` permission model, same Execution Log audit trail.
 
-## Bucket 1 — Hard-coded WP images on public pages
+## What it does
 
-These currently load JPGs/PNGs/WEBPs directly from the old WordPress media library. If the old site goes down (or DNS flips), every one of these breaks.
+For any selected ad group (Google or Instacart), the engine can:
 
-Files affected:
-- `src/pages/Index.tsx` — mission image + 6 Instagram feed images + sustainability badge
-- `src/pages/AboutPage.tsx` — hero, story, sustainability images (3)
-- `src/pages/VineyardPage.tsx` — hero + 3 vineyard tiles + Lodi badge
-- `src/pages/WinesPage.tsx` — hero
-- `src/pages/ContactPage.tsx` — hero
-- `src/components/Seo.tsx` `DEFAULT_IMG` — sitewide OG fallback
-- `index.html` — `og:image` and `twitter:image`
+1. **Generate keyword ideas** from 4 sources, blended + deduped:
+   - Lovable AI (Gemini) — brand-aware seeds from `wine_products` + mission copy
+   - Google Ads Keyword Plan Idea Service — real volume/competition/CPC
+   - Semrush keyword research — volume, difficulty, related/question terms
+   - Search-term reports from the campaign itself — what already triggered ads
+2. **Score & classify** each idea: high-intent / low-intent / negative-candidate
+3. **Auto-execute** the safe actions, queue the risky ones for approval:
+   - Auto: add high-intent keywords, add negatives for zero-conversion search terms, lower bids on losers, pause keywords past spend threshold with zero conversions
+   - Gated: bid raises above +25%, keywords with monthly volume > 50k, broad-match additions
+4. **Run nightly** via cron, plus on-demand "Run engine" button in the drill-down
 
-**Options (pick one):**
-- **A.** Download each image, commit to `src/assets/migrated/`, import as ES modules. Pros: bundled, instant, no infra. Cons: ~12 image downloads, repo size grows.
-- **B.** Upload to Supabase storage bucket `site-media`, reference by public URL. Pros: editable via CMS, lighter repo. Cons: needs bucket + RLS migration first.
-- **C.** Hybrid — A for hero/static, B for the Instagram feed (so it can be refreshed without code).
+## UI changes
 
-The 6 Instagram images on the homepage are an extra question: do you want a real IG feed integration eventually, or are these manually curated forever? That decides B vs hand-managed.
+Inside the ad-group level of Channels drill-down (Google + Instacart), add a **Keyword Engine** panel:
 
-## Bucket 2 — PDFs on the old site
+- "Run engine" button → calls edge function, shows live progress
+- Tabs: **Ideas** (pending) · **Applied** (executed) · **Pending approval** (gated) · **Negatives**
+- Each row: keyword, source badge, est. volume, est. CPC, score, recommended action, approve/reject buttons
+- Settings drawer: spend threshold for pause, bid-raise % gate, daily idea cap
 
-`src/pages/AmbassadorsLandingPage.tsx` links two affiliate PDFs:
-- `RDW_Affiliate-Program-Application-Walkthrough_2024-04.pdf`
-- `RDW_Affiliate-Program-Tips_2024-01.pdf`
+## Backend
 
-**Plan:** download both, store in `public/docs/ambassadors/`, link with `/docs/ambassadors/<file>.pdf` (relative). DNS-flip-safe.
+### New table: `kennel_keyword_ideas`
+| col | type | notes |
+|---|---|---|
+| id | uuid | pk |
+| platform | text | google / instacart |
+| campaign_id | text | |
+| ad_group_id | text | |
+| keyword | text | |
+| match_type | text | exact / phrase / broad |
+| source | text | ai / google_plan / semrush / search_term |
+| score | int | 0–100 |
+| recommended_action | text | add / negative / raise_bid / lower_bid / pause |
+| recommended_bid_micros | bigint | nullable |
+| volume | int | nullable |
+| cpc_micros | bigint | nullable |
+| status | text | pending / applied / rejected / awaiting_approval |
+| reasoning | text | short AI/heuristic explanation |
+| executed_resource_name | text | platform-side ID after apply |
+| created_at / updated_at / reviewed_by | |
 
-Open question: are these PDFs still current, or should they be regenerated/replaced before relaunch?
+RLS: `is_ad_ops` only.
 
-## Bucket 3 — Absolute URLs in email templates & edge functions
+### New table: `kennel_keyword_settings` (one row per advertiser)
+- pause_threshold_cents (default 2000)
+- pause_zero_conv_days (default 14)
+- bid_raise_gate_pct (default 25)
+- max_daily_adds (default 20)
+- engine_enabled (bool)
 
-Emails and server-side code have to use absolute URLs (no `/path` in inboxes). Today they hard-code `https://rescuedogwines.com`:
-- `supabase/functions/create-gift-certificate/index.ts` — gift redemption link
-- `supabase/functions/provision-reviewer/index.ts` — login + site URLs
-- `supabase/functions/_shared/transactional-email-templates/ambassador-welcome.tsx`
-- `supabase/functions/_shared/transactional-email-templates/reviewer-invite.tsx`
-- `supabase/functions/_shared/transactional-email-templates/stale-accounts-{rep-alert,summary}.tsx`
-- `supabase/functions/_shared/serverConversions.ts` — Meta CAPI `event_source_url`
-- `supabase/functions/impact-health-check/index.ts` — pixel probe URL
+### New edge function: `kennel-keyword-engine`
+Actions:
+- `generate` — pulls from 4 sources, scores, inserts ideas
+- `apply` — executes a single idea (or batch); auto vs gated based on settings
+- `list` — returns ideas for an ad group, grouped by status
+- `update_settings`
 
-**Plan:** introduce a single `PUBLIC_SITE_URL` secret (defaults to `https://shopify-buddy-b2b.lovable.app` until DNS flips, then update once to `https://rescuedogwines.com`). All templates/functions read `Deno.env.get("PUBLIC_SITE_URL")`. One source of truth, one switch on go-live.
+Calls existing `kennel-meta-browse` patterns for Google Ads (`adGroupCriterion:mutate`) and the Instacart v3 endpoints for keyword targeting. Logs every apply to `ad_execution_log`.
 
-## Bucket 4 — Rescue partner event links
+### Nightly cron
+`pg_cron` job at 03:00 UTC → POSTs to `kennel-keyword-engine` with `action=run_all` per advertiser. Skips ad groups where `engine_enabled = false`.
 
-`src/data/rescuePartners.ts` has 5 partner entries pointing at old `rescuedogwines.com/event/...` slugs. We don't have an `/event/<slug>` route in the new app yet.
+## Scoring heuristic (deterministic, on top of AI suggestions)
 
-**Options:**
-- **A.** Drop the `url` field on those entries (no link until events are migrated).
-- **B.** Build a minimal `/events/:slug` route + Supabase `events` table, then wire links to `/events/<slug>`.
-- **C.** Leave as-is until events CMS lands (do nothing now).
+```
+score = 0
++ 40 if source = search_term AND conversions > 0
++ 30 if volume between 100 and 10k
++ 20 if cpc <= ad_group_default_bid * 1.2
++ 10 if keyword contains a brand/varietal token from wine_products
+- 30 if competition = HIGH AND no prior conversions
+```
 
-Recommend A as the safe interim — no broken links, no scope creep. B can come with the events CMS work.
+`score >= 70` → auto-add. `40–69` → awaiting_approval. `< 40` → discard. Search terms with spend ≥ threshold and zero conversions → negative candidate.
 
-## Bucket 5 — SEO canonicals & JSON-LD
+## Out of scope (v1)
 
-`Seo.tsx` (`SITE = "https://rescuedogwines.com"`), `jsonLd.tsx`, `index.html` canonical, and `PoliciesPage` JSON-LD all use `rescuedogwines.com`. **These should stay absolute and pointed at the future production domain** — that's exactly what canonicals are for. Nothing to migrate here. (If you'd rather they point at `shopify-buddy-b2b.lovable.app` until DNS flips, say so and I'll switch them.)
+- Bid-raises that pass the gate auto-apply once approved (no further escalation)
+- Match-type optimization on existing keywords
+- Cross-campaign portfolio bidding
+- Conversion-import wiring (uses what's already in Google Ads / Instacart)
 
-## What I need from you
+## Files I'll touch
 
-1. **Bucket 1**: A, B, or C? (And: keep IG strip as static or wire a real feed?)
-2. **Bucket 2**: confirm PDFs are still current, or supply replacements.
-3. **Bucket 3**: OK to add a `PUBLIC_SITE_URL` secret? (Yes = I'll wire it.)
-4. **Bucket 4**: A, B, or C?
-5. **Bucket 5**: keep canonicals pointing to `rescuedogwines.com` (recommended), or switch to lovable.app for now?
+- **New migration**: `kennel_keyword_ideas`, `kennel_keyword_settings`, RLS
+- **New edge function**: `supabase/functions/kennel-keyword-engine/index.ts`
+- **New component**: `src/components/kennel/KeywordEnginePanel.tsx`
+- **Edit**: `src/pages/kennel/KennelChannelsPage.tsx` — mount panel at ad-group level
+- **New cron**: pg_cron job via `insert` tool (not migration — contains URL/key)
 
-Once you answer, I'll execute in one pass — Bucket 3 + 4 are quick, Bucket 1 + 2 are the bulk of the work.
+## Confirm before I build
+
+This is ~1 large pass. Want me to proceed end-to-end, or build it in two ships: (1) generation + UI + manual apply first, then (2) auto-execution + nightly cron once you've eyeballed the suggestions?

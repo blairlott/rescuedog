@@ -27,6 +27,7 @@ import { useIsMember } from "@/hooks/useIsMember";
 import { Percent } from "lucide-react";
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
 import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
+import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInterstitial";
 
 const LAST_ORDER_KEY = "rdw_last_order";
 const PENDING_WINE_KEY = "rdw_pending_wine_checkout";
@@ -72,6 +73,8 @@ export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [vsCheckoutOpen, setVsCheckoutOpen] = useState(false);
   const [dualConfirmOpen, setDualConfirmOpen] = useState(false);
+  const [shopifyHandoffOpen, setShopifyHandoffOpen] = useState(false);
+  const pendingShopifyUrlRef = useRef<string | null>(null);
   // Surfaces a manual "Resume wine checkout" button as a fallback whenever
   // the auto-resume bailed (snapshot mismatch, expired, or user dismissed
   // the toast before clicking the action).
@@ -306,15 +309,8 @@ export const CartDrawer = () => {
     if (hasMerch && !hasWine) {
       const url = getShopifyCheckoutUrl();
       if (url) {
-        const win = window.open(url, "_blank");
-        if (!win || win.closed || typeof win.closed === "undefined") {
-          logCheckoutEvent("popup_blocked", { kind: "merch_only" });
-          // Popup blocked — fall back to same-tab navigation
-          window.location.href = url;
-          return;
-        }
-        logCheckoutEvent("merch_popup_opened");
-        setIsOpen(false);
+        pendingShopifyUrlRef.current = url;
+        setShopifyHandoffOpen(true);
       } else {
         handleCheckoutMerch();
       }
@@ -327,6 +323,23 @@ export const CartDrawer = () => {
     // Both: surface the compliance explainer first so the customer isn't
     // surprised by two tabs / two charges / two emails.
     setDualConfirmOpen(true);
+  };
+
+  // Fires once the branded interstitial finishes — opens Shopify in a new
+  // tab, falls back to same-tab nav if the popup is blocked.
+  const completeShopifyHandoff = () => {
+    setShopifyHandoffOpen(false);
+    const url = pendingShopifyUrlRef.current;
+    pendingShopifyUrlRef.current = null;
+    if (!url) return;
+    const win = window.open(url, "_blank");
+    if (!win || win.closed || typeof win.closed === "undefined") {
+      logCheckoutEvent("popup_blocked", { kind: "merch_only" });
+      window.location.href = url;
+      return;
+    }
+    logCheckoutEvent("merch_popup_opened");
+    setIsOpen(false);
   };
 
   const runDualCheckout = () => {
@@ -695,6 +708,10 @@ export const CartDrawer = () => {
       merchCount={merchItems.reduce((s, i) => s + i.quantity, 0)}
       wineTotal={wineTotal}
       merchTotal={merchTotal}
+    />
+    <ShopifyHandoffInterstitial
+      open={shopifyHandoffOpen}
+      onDone={completeShopifyHandoff}
     />
     </>
   );

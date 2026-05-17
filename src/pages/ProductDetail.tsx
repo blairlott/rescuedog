@@ -20,6 +20,7 @@ import { Seo } from "@/components/Seo";
 import { PairItPicker } from "@/components/merch/PairItPicker";
 import { PairWineWithMerch } from "@/components/cross-sell/PairWineWithMerch";
 import { ProductReviews, useProductRating } from "@/components/reviews/ProductReviews";
+import { LocalRescueLine } from "@/components/rescue/LocalRescueLine";
 import { isBundleHandle } from "@/lib/wineBundles";
 
 const ProductDetail = () => {
@@ -357,6 +358,9 @@ const ProductDetail = () => {
 
               {/* Ships-to-your-state compliance check (wine only) */}
               {!isMerch && <ShipsToStateCheck />}
+
+              {/* Geo-personalized rescue line — only after a ship-to state is selected */}
+              {!isMerch && <LocalRescueLine />}
 
               {/* Out-of-stock banner */}
               {!selectedVariant?.availableForSale && (

@@ -458,7 +458,7 @@ export const BRAND_COMPARISONS: BrandComparison[] = [
     hero: {
       eyebrow: "Bar Dog alternative",
       headline: "A dog on the label is nice. Funding rescue is better.",
-      sub: "Bar Dog put a friendly pup on a $15 California red and built a following. Rescue Dog Wines goes further: every label is an artistic rendering representing all rescue dogs, every bottle is small-batch Lodi, and 50% of profits go to 501(c)(3) dog-rescue partners.",
+      sub: "Bar Dog put a friendly pup on a $15 California red and built a following. Rescue Dog Wines goes further: every label is an artistic rendering representing rescue dogs, every bottle is small-batch Lodi, and 50% of profits go to 501(c)(3) dog-rescue partners.",
     },
     specs: [
       { attribute: "Origin", rdw: "Lodi, CA (single appellation)", them: "California (multi-source)", advantageRdw: true },

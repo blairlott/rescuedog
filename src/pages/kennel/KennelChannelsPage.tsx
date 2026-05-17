@@ -22,13 +22,14 @@ type Entity = {
   objective?: string;
   optimization_goal?: string;
   updated_time?: string;
+  resource_name?: string;
 };
 
 type Crumb = { level: Level; parent_id?: string; label: string };
 
 const PLATFORMS: { id: Platform; label: string; live: boolean }[] = [
   { id: "meta", label: "Meta (Facebook/Instagram)", live: true },
-  { id: "google", label: "Google Ads", live: false },
+  { id: "google", label: "Google Ads", live: true },
   { id: "instacart", label: "Instacart Ads", live: false },
 ];
 
@@ -147,7 +148,14 @@ export default function KennelChannelsPage() {
     setBusy(e.id);
     try {
       const { data, error } = await supabase.functions.invoke("kennel-meta-browse", {
-        body: { platform, action: "set_status", entity_type, entity_id: e.id, status: next },
+        body: {
+          platform,
+          action: "set_status",
+          entity_type,
+          entity_id: e.id,
+          resource_name: e.resource_name,
+          status: next,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);

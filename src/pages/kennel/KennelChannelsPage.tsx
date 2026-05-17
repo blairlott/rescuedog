@@ -138,6 +138,13 @@ export default function KennelChannelsPage() {
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused">("all");
+  const [aliasing, setAliasing] = useState<Entity | null>(null);
+  const [aliasDraft, setAliasDraft] = useState("");
+  const [aliasSaving, setAliasSaving] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
+  const [optimizerBusy, setOptimizerBusy] = useState(false);
 
   const current: Crumb | null = trail[trail.length - 1] ?? null;
 
@@ -249,6 +256,95 @@ export default function KennelChannelsPage() {
   const openEdit = (e: Entity) => {
     setEditing(e);
     setEditValues({});
+  };
+
+  const openAlias = (e: Entity) => {
+    setAliasing(e);
+    setAliasDraft(e.has_alias ? e.name : "");
+  };
+
+  const saveAlias = async () => {
+    if (!aliasing || !platform || !current || current.level === "platform") return;
+    setAliasSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("kennel-meta-browse", {
+        body: {
+          platform,
+          action: "set_alias",
+          entity_type: entityTypeFor[current.level],
+          entity_id: aliasing.id,
+          friendly_name: aliasDraft.trim(),
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(aliasDraft.trim() ? "Friendly name saved" : "Friendly name cleared");
+      setAliasing(null);
+      await load();
+    } catch (err: any) {
+      toast.error(err.message ?? "Save failed");
+    } finally { setAliasSaving(false); }
+  };
+
+  const exportCsv = () => {
+    if (!current || current.level === "platform") return;
+    const lines = ["entity_type,entity_id,friendly_name"];
+    for (const e of items) {
+      const t = entityTypeFor[current.level];
+      const name = (e.has_alias ? e.name : (e.api_name ?? "")).replace(/"/g, '""');
+      lines.push(`${t},${e.id},"${name}"`);
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `${platform}-${current.level}-names.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const runImport = async () => {
+    if (!platform) return;
+    const lines = importText.trim().split(/\r?\n/).filter(Boolean);
+    if (lines.length === 0) { toast.error("Paste CSV content"); return; }
+    // Skip header if present
+    const startIdx = /entity_type/i.test(lines[0]) ? 1 : 0;
+    const rows = lines.slice(startIdx).map((ln) => {
+      // naive CSV: handle "..." quoted third field
+      const m = ln.match(/^([^,]+),([^,]+),(.*)$/);
+      if (!m) return null;
+      let name = m[3].trim();
+      if (name.startsWith('"') && name.endsWith('"')) name = name.slice(1, -1).replace(/""/g, '"');
+      return { entity_type: m[1].trim().toLowerCase(), entity_id: m[2].trim(), friendly_name: name };
+    }).filter(Boolean);
+    if (rows.length === 0) { toast.error("No valid rows parsed"); return; }
+    setImportBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("kennel-meta-browse", {
+        body: { platform, action: "bulk_set_aliases", rows },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const d = data as any;
+      toast.success(`Imported ${d.imported} names${d.skipped ? ` (${d.skipped} skipped)` : ""}`);
+      setImportOpen(false); setImportText("");
+      await load();
+    } catch (err: any) { toast.error(err.message ?? "Import failed"); }
+    finally { setImportBusy(false); }
+  };
+
+  const runOptimizer = async () => {
+    if (!platform) return;
+    setOptimizerBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("kennel-optimizer", {
+        body: { platform },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const s = (data as any).summary ?? {};
+      toast.success(`Optimizer ran · ${s.budget_recs ?? 0} budget · ${s.bid_recs ?? 0} bid · ${s.pause_recs ?? 0} pause · ${s.applied ?? 0} applied`);
+    } catch (err: any) { toast.error(err.message ?? "Optimizer failed"); }
+    finally { setOptimizerBusy(false); }
   };
 
   const saveEdit = async () => {

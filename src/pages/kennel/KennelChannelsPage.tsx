@@ -135,8 +135,18 @@ export default function KennelChannelsPage() {
   const [editing, setEditing] = useState<Entity | null>(null);
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused">("all");
 
   const current: Crumb | null = trail[trail.length - 1] ?? null;
+
+  const filteredItems = useMemo(() => {
+    if (statusFilter === "all") return items;
+    return items.filter((e) => {
+      const s = (e.effective_status ?? e.status ?? "").toUpperCase();
+      if (statusFilter === "active") return s === "ACTIVE" || s === "ENABLED";
+      return s.includes("PAUSED");
+    });
+  }, [items, statusFilter]);
 
   useEffect(() => {
     const q = (searchParams.get("platform") ?? "").toLowerCase();
@@ -357,7 +367,30 @@ export default function KennelChannelsPage() {
         </Button>
       </div>
 
-      <h2 className="text-2xl font-bold uppercase tracking-brand mb-3">{headerLabel}</h2>
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <h2 className="text-2xl font-bold uppercase tracking-brand">{headerLabel}</h2>
+        <div className="flex items-center gap-1 border border-border" style={SHARP}>
+          {(["all", "active", "paused"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 text-xs uppercase tracking-brand font-bold transition-colors ${
+                statusFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+              style={SHARP}
+            >
+              {s} {s !== "all" && items.length > 0 && (
+                <span className="ml-1 opacity-70">
+                  ({items.filter((e) => {
+                    const st = (e.effective_status ?? e.status ?? "").toUpperCase();
+                    return s === "active" ? (st === "ACTIVE" || st === "ENABLED") : st.includes("PAUSED");
+                  }).length})
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {notConnected ? (
         <div className="border border-border bg-card p-12 text-center text-sm text-muted-foreground" style={SHARP}>
@@ -366,7 +399,7 @@ export default function KennelChannelsPage() {
         </div>
       ) : loading ? (
         <div className="border border-border bg-card p-12 text-center text-sm text-muted-foreground" style={SHARP}>Loading from {platform}…</div>
-      ) : items.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <div className="border border-border bg-card p-12 text-center text-sm text-muted-foreground" style={SHARP}>No {headerLabel.toLowerCase()} found.</div>
       ) : (
         <div className="border border-border bg-card" style={SHARP}>
@@ -381,7 +414,7 @@ export default function KennelChannelsPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((e) => {
+              {filteredItems.map((e) => {
                 const status = (e.status ?? "").toUpperCase();
                 const canDrill = current && nextLevel[current.level] !== null;
                 const canToggle = !["ARCHIVED", "DELETED"].includes(status);

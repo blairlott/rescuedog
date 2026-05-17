@@ -54,6 +54,17 @@ async function dispatchMeta(payload: any): Promise<MetaDispatchResult> {
     if (readRes.ok) rollbackState = await readRes.json();
   } catch (_) { /* non-fatal */ }
 
+  // Pre-flight: Meta refuses any edit on ARCHIVED/DELETED entities except renaming.
+  const currentStatus = (rollbackState as any)?.status;
+  if (currentStatus === "ARCHIVED" || currentStatus === "DELETED") {
+    return {
+      dispatched: false,
+      ok: false,
+      error: `entity is ${currentStatus} on Meta and cannot be edited — duplicate it in Ads Manager and re-target`,
+      rollback_state: rollbackState,
+    };
+  }
+
   // Build update body. Meta budgets are in account-currency MINOR units (cents for USD).
   const update: Record<string, string> = {};
   if (typeof change.daily_budget_cents === "number") update.daily_budget = String(Math.round(change.daily_budget_cents));

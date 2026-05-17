@@ -226,6 +226,40 @@ const AboutPage = () => {
           </div>
         </section>
 
+        {/* How Susy taste & blends */}
+        <section className="py-16 md:py-20 bg-foreground text-primary-foreground">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <div className="text-center mb-10">
+              <p className="text-xs tracking-brand uppercase text-primary-foreground/60 mb-2 font-bold">
+                <T>How We Taste &amp; Blend</T>
+              </p>
+              <h2 className="text-3xl md:text-4xl font-bold uppercase leading-tight">
+                <T>Varietally Correct. Intentionally Made.</T>
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+              <div>
+                <p className="text-xs tracking-brand uppercase text-primary mb-2 font-bold">01 — Vine</p>
+                <p className="text-sm text-primary-foreground/80 leading-relaxed">
+                  <T>Susy walks the rows. Block by block, she selects fruit by ripeness, acid, and tannin structure — not by what's on a contract.</T>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs tracking-brand uppercase text-primary mb-2 font-bold">02 — Cellar</p>
+                <p className="text-sm text-primary-foreground/80 leading-relaxed">
+                  <T>Small-lot fermentation. Native character preserved. No house style imposed at scale — each varietal allowed to speak for itself.</T>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs tracking-brand uppercase text-primary mb-2 font-bold">03 — Glass</p>
+                <p className="text-sm text-primary-foreground/80 leading-relaxed">
+                  <T>Blended to true varietal expression. If a Cab should taste like Cab, ours does. That's the whole point.</T>
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Sustainability */}
         <section className="py-16 relative">
           <CmsEditButton onClick={() => setEditSection("sustainability")} />

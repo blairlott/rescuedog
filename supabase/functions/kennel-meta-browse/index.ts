@@ -379,11 +379,11 @@ async function handle(req: Request): Promise<Response> {
       const sources: Array<{ format: string; path: string; listKeys: string[] }> = [
         { format: "sponsored_product",  path: `/campaigns?advertiser_id=${advertiserId}&limit=100`,                    listKeys: ["campaigns"] },
         { format: "display",            path: `/display_campaigns?advertiser_id=${advertiserId}&limit=100`,            listKeys: ["display_campaigns", "campaigns"] },
-        { format: "shoppable_display",  path: `/shoppable_display_campaigns?advertiser_id=${advertiserId}&limit=100`,  listKeys: ["shoppable_display_campaigns", "campaigns"] },
         { format: "brand_page",         path: `/brand_pages?advertiser_id=${advertiserId}&limit=100`,                  listKeys: ["brand_pages", "data"] },
         { format: "promotion",          path: `/promotions?advertiser_id=${advertiserId}&limit=100`,                   listKeys: ["promotions", "coupons", "data"] },
         { format: "universal",          path: `/universal_campaigns?advertiser_id=${advertiserId}&limit=100`,          listKeys: ["universal_campaigns", "campaigns"] },
         { format: "video",              path: `/video_campaigns?advertiser_id=${advertiserId}&limit=100`,              listKeys: ["video_campaigns", "campaigns"] },
+        { format: "inspiration",        path: `/inspiration_campaigns?advertiser_id=${advertiserId}&limit=100`,        listKeys: ["inspiration_campaigns", "campaigns"] },
       ];
       const probeNotes: Array<{ format: string; ok: boolean; count: number; error?: string }> = [];
       const baseItems: any[] = [];
@@ -398,14 +398,21 @@ async function handle(req: Request): Promise<Response> {
         if (!Array.isArray(raw)) raw = Array.isArray(r.body?.data) ? r.body.data : (Array.isArray(r.body) ? r.body : []);
         probeNotes.push({ format: src.format, ok: true, count: raw.length });
         for (const c of raw) {
+          // Widened name lookup — Instacart uses different keys per format
+          // (campaign_name on sponsored, name on display/video/universal,
+          // brand_page_name on brand pages, promotion_name on promotions, etc.)
           const apiName = firstString(
-            c.display_name, c.name, c.campaign_name, c.internal_name,
-            c.label, c.title, c.headline, c.brand_name,
+            c.campaign_name, c.display_name, c.name, c.internal_name,
+            c.brand_page_name, c.promotion_name, c.inspiration_name,
+            c.title, c.headline, c.label, c.brand_name,
+            c.attributes?.name, c.attributes?.campaign_name, c.attributes?.display_name,
           );
+          const adFormat = firstString(c.ad_format, c.format, c.creative_type, c.attributes?.ad_format);
           baseItems.push({
             id: `${src.format}:${String(c.id)}`,
             entity_id: String(c.id),
             format: src.format,
+            ad_format: adFormat, // e.g. "display_banner" vs "shoppable_display_ad" for Display
             name: apiName ?? `${src.format} ${c.id}`,
             api_name: apiName,
             status: mapStatus(c.status),

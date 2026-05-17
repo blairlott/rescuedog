@@ -6,6 +6,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const META_GRAPH_VERSION = "v21.0";
 const GOOGLE_ADS_VERSION = "v18";
+const INSTACART_BASE = "https://api.ads.instacart.com/api/v2";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

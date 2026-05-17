@@ -69,3 +69,4 @@
 - [Age-gated wine cross-sell](mem://features/age-gated-cross-sell) — Wine suggestions/recommendations require isAgeVerified() (21+ confirmation)
 - [Vinoshipper Architecture](mem://tech/vinoshipper-architecture) — Injector owns checkout; REST API is UX-enrichment only. Account ID 2212, live mode on as of 2026-05-15.
 - [No Bottle Perks](mem://constraints/no-bottle-perks) — Compliance: no free bottle giveaways; Mailchimp handles birthday discount codes
+- [Vinoshipper Poll + LTV CAPI](mem://features/vinoshipper-poll) — 15-min VS poll into vs_transactions, fires Meta Purchase + Subscribe (static $400 LTV) for ad optimization

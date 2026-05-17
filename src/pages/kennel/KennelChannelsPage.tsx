@@ -560,9 +560,18 @@ export default function KennelChannelsPage() {
                         <div className="text-[10px] text-muted-foreground italic">api: {e.api_name}</div>
                       )}
                       <div className="text-[11px] text-muted-foreground font-mono">{e.id}</div>
-                      {(e.objective || e.optimization_goal) && (
-                        <div className="text-[11px] text-muted-foreground mt-0.5">
-                          {e.objective ?? e.optimization_goal}
+                      {(e.format || e.objective || e.optimization_goal) && (
+                        <div className="flex gap-1 mt-1 flex-wrap">
+                          {e.format && (
+                            <Badge style={SHARP} variant="outline" className="text-[9px] uppercase tracking-wide">
+                              {e.format.replace(/_/g, " ")}
+                            </Badge>
+                          )}
+                          {(e.objective || e.optimization_goal) && e.objective !== e.format && (
+                            <span className="text-[11px] text-muted-foreground">
+                              {e.objective ?? e.optimization_goal}
+                            </span>
+                          )}
                         </div>
                       )}
                     </td>

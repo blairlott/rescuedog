@@ -131,6 +131,9 @@ export default function KennelChannelsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [notConnected, setNotConnected] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [editing, setEditing] = useState<Entity | null>(null);
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   const current: Crumb | null = trail[trail.length - 1] ?? null;
 
@@ -227,6 +230,63 @@ export default function KennelChannelsPage() {
       toast.error(err.message ?? "Failed");
     } finally {
       setBusy(null);
+    }
+  };
+
+  const openEdit = (e: Entity) => {
+    setEditing(e);
+    setEditValues({});
+  };
+
+  const saveEdit = async () => {
+    if (!editing || !platform || !current || current.level === "platform") return;
+    const entity_type = entityTypeFor[current.level];
+    const schema = FIELD_SCHEMA[platform]?.[entity_type] ?? [];
+    const fields: Record<string, unknown> = {};
+    for (const f of schema) {
+      const raw = editValues[f.key];
+      if (raw === undefined || raw === "") continue;
+      if (f.type === "money_cents") {
+        const dollars = Number(raw);
+        if (!Number.isFinite(dollars)) continue;
+        fields[f.key] = Math.round(dollars * 100);
+      } else if (f.type === "money_micros") {
+        const dollars = Number(raw);
+        if (!Number.isFinite(dollars)) continue;
+        fields[f.key] = Math.round(dollars * 1_000_000);
+      } else if (f.type === "number") {
+        const n = Number(raw);
+        if (!Number.isFinite(n)) continue;
+        fields[f.key] = n;
+      } else {
+        fields[f.key] = raw;
+      }
+    }
+    if (Object.keys(fields).length === 0) {
+      toast.error("Change at least one field");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("kennel-meta-browse", {
+        body: {
+          platform,
+          action: "update_entity",
+          entity_type,
+          entity_id: editing.id,
+          resource_name: editing.resource_name,
+          fields,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`${entity_type} updated`);
+      setEditing(null);
+      await load();
+    } catch (err: any) {
+      toast.error(err.message ?? "Update failed");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -366,6 +426,11 @@ export default function KennelChannelsPage() {
                             Drill <ChevronRight className="h-3 w-3 ml-1" />
                           </Button>
                         )}
+                        {current && current.level !== "platform" && (FIELD_SCHEMA[platform]?.[entityTypeFor[current.level]]?.length ?? 0) > 0 && (
+                          <Button size="sm" variant="outline" style={SHARP} onClick={() => openEdit(e)}>
+                            <Pencil className="h-3 w-3 mr-1" /> Edit
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -377,8 +442,58 @@ export default function KennelChannelsPage() {
       )}
 
       <p className="text-[11px] text-muted-foreground mt-4">
-        All pause/resume actions are recorded in the Execution Log.
+        All pause/resume and edit actions are recorded in the Execution Log.
       </p>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent style={SHARP} className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="uppercase tracking-brand">
+              Edit {current && current.level !== "platform" ? entityTypeFor[current.level] : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {editing && current && current.level !== "platform" && (
+            <div className="space-y-3">
+              <div className="text-xs text-muted-foreground">
+                <div className="font-bold text-foreground">{editing.name}</div>
+                <div className="font-mono">{editing.id}</div>
+              </div>
+              {(FIELD_SCHEMA[platform!]?.[entityTypeFor[current.level]] ?? []).map((f) => (
+                <div key={f.key} className="space-y-1">
+                  <Label className="text-xs uppercase tracking-brand">{f.label}</Label>
+                  {f.type === "enum" ? (
+                    <Select
+                      value={editValues[f.key] ?? ""}
+                      onValueChange={(v) => setEditValues(prev => ({ ...prev, [f.key]: v }))}
+                    >
+                      <SelectTrigger style={SHARP}>
+                        <SelectValue placeholder="(leave unchanged)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(f.options ?? []).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      style={SHARP}
+                      type={f.type === "number" || f.type === "money_cents" || f.type === "money_micros" ? "number" : f.type === "date" ? "date" : f.type === "datetime" ? "datetime-local" : "text"}
+                      step={f.type === "money_cents" || f.type === "money_micros" ? "0.01" : undefined}
+                      placeholder="(leave blank to keep)"
+                      value={editValues[f.key] ?? ""}
+                      onChange={(ev) => setEditValues(prev => ({ ...prev, [f.key]: ev.target.value }))}
+                    />
+                  )}
+                  {f.hint && <div className="text-[10px] text-muted-foreground">{f.hint}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" style={SHARP} onClick={() => setEditing(null)} disabled={saving}>Cancel</Button>
+            <Button style={SHARP} onClick={saveEdit} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

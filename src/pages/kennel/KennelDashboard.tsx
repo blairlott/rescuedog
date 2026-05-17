@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { MetricCard } from "@/components/kennel/MetricCard";
@@ -7,7 +7,7 @@ import { ChannelPerformanceTable, type ChannelRow } from "@/components/kennel/Ch
 import { SpendChart, type SpendDatum } from "@/components/kennel/SpendChart";
 import { VinoshipperPanel } from "@/components/kennel/VinoshipperPanel";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw, Sparkles, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 type Range = 7 | 14 | 30 | 90 | 180 | 365 | 730 | "ytd";
@@ -401,6 +401,18 @@ export default function KennelDashboard() {
 
           <section>
             <h2 className="text-sm uppercase tracking-brand font-bold text-foreground mb-3">Channel breakdown</h2>
+            <div className="border-2 border-foreground bg-muted/40 p-4 mb-3 flex items-start gap-3" style={{ borderRadius: 0 }}>
+              <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <div className="flex-1 text-xs text-foreground leading-relaxed">
+                <div className="uppercase tracking-brand font-bold mb-1">How this is built</div>
+                <p className="text-muted-foreground">
+                  Numbers below blend live feeds from Meta Ads, Google Ads, and Instacart Ads with DTC orders from Vinoshipper, brick-and-mortar depletions from Lindy, and QuickBooks finance data. An AI layer normalizes channels, attributes revenue, and surfaces anomalies nightly.
+                </p>
+                <Link to="/kennel/methodology" className="inline-flex items-center gap-1 uppercase tracking-brand font-bold text-primary mt-2 hover:underline">
+                  More detail <ChevronRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
             <ChannelPerformanceTable
               rows={channelRows}
               onRowClick={(r) => navigate(`/kennel/channels?platform=${encodeURIComponent(r.platform)}`)}

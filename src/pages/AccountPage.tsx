@@ -341,7 +341,7 @@ const AccountPage = () => {
                     <Input value={profileForm.pet_name} onChange={e => setProfileForm(f => ({ ...f, pet_name: e.target.value }))} placeholder="Buddy" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Pet Birthday (or adopt-iversary)</Label>
+                    <Label>Pet Birthday (or Gotcha Day)</Label>
                     <Input type="date" value={profileForm.pet_birth_date} onChange={e => setProfileForm(f => ({ ...f, pet_birth_date: e.target.value }))} />
                   </div>
                 </div>

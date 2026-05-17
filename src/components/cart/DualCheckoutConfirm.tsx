@@ -1,6 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Wine, ShoppingBag, ArrowRight, Mail, CreditCard } from "lucide-react";
+import { Wine, ShoppingBag, ArrowRight, Mail, CreditCard, User, LogIn } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 
 interface DualCheckoutConfirmProps {
   open: boolean;
@@ -26,6 +28,7 @@ export function DualCheckoutConfirm({
   wineTotal,
   merchTotal,
 }: DualCheckoutConfirmProps) {
+  const { user, signOut } = useCustomerAuth();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -38,6 +41,39 @@ export function DualCheckoutConfirm({
             Your merch and wine will check out separately — here's what to expect.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Auth row */}
+        <div className="flex items-center justify-between gap-2 border border-border bg-muted/40 px-3 py-2 text-[11px]">
+          {user ? (
+            <>
+              <span className="flex items-center gap-1.5 min-w-0 text-muted-foreground truncate">
+                <User className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">Signed in as <strong className="text-foreground">{user.email}</strong></span>
+              </span>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="text-muted-foreground hover:text-primary underline underline-offset-2 flex-shrink-0"
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <LogIn className="h-3 w-3" />
+                Sign in for member pricing &amp; faster checkout
+              </span>
+              <Link
+                to="/login"
+                onClick={() => onOpenChange(false)}
+                className="font-bold uppercase tracking-brand text-primary hover:underline flex-shrink-0"
+              >
+                Sign in
+              </Link>
+            </>
+          )}
+        </div>
 
         <div className="space-y-3 py-2">
           {/* Step 1 — Wine */}

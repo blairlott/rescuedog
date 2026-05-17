@@ -759,6 +759,102 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_attribution_events: {
+        Row: {
+          channel: string | null
+          event_type: string
+          id: string
+          landing_url: string | null
+          metadata: Json
+          occurred_at: string
+          order_id: string | null
+          order_value_cents: number | null
+          referrer: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          channel?: string | null
+          event_type: string
+          id?: string
+          landing_url?: string | null
+          metadata?: Json
+          occurred_at?: string
+          order_id?: string | null
+          order_value_cents?: number | null
+          referrer?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          channel?: string | null
+          event_type?: string
+          id?: string
+          landing_url?: string | null
+          metadata?: Json
+          occurred_at?: string
+          order_id?: string | null
+          order_value_cents?: number | null
+          referrer?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      channel_performance_daily: {
+        Row: {
+          attributed_revenue_cents: number
+          attribution_quality: string
+          campaign_id: string | null
+          channel: string
+          computed_at: string
+          conversions: number
+          day: string
+          id: string
+          platform_reported_revenue_cents: number
+          spend_cents: number
+        }
+        Insert: {
+          attributed_revenue_cents?: number
+          attribution_quality?: string
+          campaign_id?: string | null
+          channel: string
+          computed_at?: string
+          conversions?: number
+          day: string
+          id?: string
+          platform_reported_revenue_cents?: number
+          spend_cents?: number
+        }
+        Update: {
+          attributed_revenue_cents?: number
+          attribution_quality?: string
+          campaign_id?: string | null
+          channel?: string
+          computed_at?: string
+          conversions?: number
+          day?: string
+          id?: string
+          platform_reported_revenue_cents?: number
+          spend_cents?: number
+        }
+        Relationships: []
+      }
       channel_sync_status: {
         Row: {
           channel_id: string
@@ -2266,6 +2362,30 @@ export type Database = {
         }
         Relationships: []
       }
+      holdout_assignments: {
+        Row: {
+          assigned_at: string
+          bucket: number
+          in_holdout: boolean
+          user_id: string | null
+          visitor_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          bucket: number
+          in_holdout: boolean
+          user_id?: string | null
+          visitor_id: string
+        }
+        Update: {
+          assigned_at?: string
+          bucket?: number
+          in_holdout?: boolean
+          user_id?: string | null
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       impact_events: {
         Row: {
           bottles: number
@@ -3350,6 +3470,63 @@ export type Database = {
           vinoshipper_order_id?: string | null
           vinoshipper_status?: string
           wine_subtotal_cents?: number
+        }
+        Relationships: []
+      }
+      paid_link_tags: {
+        Row: {
+          ad_group_id: string | null
+          ad_id: string | null
+          campaign_id: string | null
+          channel: string
+          created_at: string
+          created_by: string | null
+          destination_url: string
+          id: string
+          label: string | null
+          tagged_url: string
+          updated_at: string
+          utm_campaign: string
+          utm_content: string | null
+          utm_medium: string
+          utm_source: string
+          utm_term: string | null
+        }
+        Insert: {
+          ad_group_id?: string | null
+          ad_id?: string | null
+          campaign_id?: string | null
+          channel: string
+          created_at?: string
+          created_by?: string | null
+          destination_url: string
+          id?: string
+          label?: string | null
+          tagged_url: string
+          updated_at?: string
+          utm_campaign: string
+          utm_content?: string | null
+          utm_medium: string
+          utm_source: string
+          utm_term?: string | null
+        }
+        Update: {
+          ad_group_id?: string | null
+          ad_id?: string | null
+          campaign_id?: string | null
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          destination_url?: string
+          id?: string
+          label?: string | null
+          tagged_url?: string
+          updated_at?: string
+          utm_campaign?: string
+          utm_content?: string | null
+          utm_medium?: string
+          utm_source?: string
+          utm_term?: string | null
         }
         Relationships: []
       }

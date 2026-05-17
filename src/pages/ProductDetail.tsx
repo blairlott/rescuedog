@@ -333,6 +333,12 @@ const ProductDetail = () => {
                 </li>
               </ul>
 
+              {!isMerch && (
+                <p className="text-xs tracking-[0.18em] uppercase font-bold text-muted-foreground -mt-4">
+                  Winemaker-driven by Susana Vasquez · Varietally correct · Vine to glass
+                </p>
+              )}
+
               {product.description && (
                 <p className="text-muted-foreground leading-relaxed text-base lg:text-lg font-light max-w-md">
                   {product.description}

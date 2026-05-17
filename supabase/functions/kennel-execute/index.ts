@@ -166,9 +166,15 @@ async function runExecute(admin: any, recId: string, actorId: string | null, act
     };
   }
 
+  // If Meta says the entity is archived/deleted, auto-reject (not "failed") with a clear reason.
+  const autoRejectReason = !dispatch.ok && dispatch.error && /ARCHIVED|DELETED|deleted|archived/.test(dispatch.error)
+    ? dispatch.error
+    : null;
+
   await admin.from("ad_recommendations").update({
-    status: dispatch.ok ? "executed" : "failed",
+    status: dispatch.ok ? "executed" : (autoRejectReason ? "rejected" : "failed"),
     executed_at: dispatch.ok ? new Date().toISOString() : null,
+    rejection_reason: autoRejectReason ?? (dispatch.ok ? null : (dispatch.error ?? null)),
     rollback_state: dispatch.rollback_state ?? rec.payload?.rollback_state ?? {},
   }).eq("id", recId);
 

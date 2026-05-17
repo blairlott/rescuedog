@@ -129,6 +129,9 @@ export function ExitIntentOffer() {
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Join our email list for <strong>10% off your first order</strong>, new releases, and stories from the rescues we support.
               </p>
+              <p className="text-xs text-primary font-bold uppercase tracking-brand leading-snug">
+                Every order helps fund a rescue partner.
+              </p>
               <form onSubmit={handleSubmit} className="space-y-3">
                 <input
                   type="email"

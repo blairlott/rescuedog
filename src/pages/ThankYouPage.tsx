@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Heart, Users, Gift } from "lucide-react";
+import { CheckCircle2, Heart, Users, Gift, Percent } from "lucide-react";
 import { useIsMember } from "@/hooks/useIsMember";
 import { PostPurchaseUpsell } from "@/components/PostPurchaseUpsell";
 import { recordExperimentRevenueForVisitor } from "@/lib/experimentRevenue";
@@ -72,6 +72,25 @@ export default function ThankYouPage() {
           )}
 
           {orderId && <PostPurchaseUpsell orderId={orderId} />}
+
+          {/* Pack savings retro-look — non-members only, wine orders */}
+          {!isMember && bottles > 0 && total && Number(total) > 0 && (
+            <aside className="border border-primary bg-primary/5 p-5 my-6 text-left">
+              <div className="flex items-center gap-2 mb-2">
+                <Percent className="h-5 w-5 text-primary" />
+                <p className="font-bold uppercase tracking-brand text-sm">Pack members would have saved</p>
+              </div>
+              <p className="text-2xl font-display font-bold text-primary mb-1">
+                ${(Number(total) * 0.20).toFixed(2)} on this order
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Join The Pack and lock in 20% off every bottle, first access to new releases, and members-only allocations.
+              </p>
+              <Button asChild size="sm" className="uppercase tracking-brand text-xs font-bold">
+                <Link to="/club">Join The Pack →</Link>
+              </Button>
+            </aside>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {!isMember && (

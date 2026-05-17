@@ -24,6 +24,6 @@ export function KennelGuard({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   }
   if (!hasSession) return <Navigate to="/admin" replace />;
-  if (!roleInfo?.isAdOps) return <Navigate to="/admin/request-access?area=kennel" replace />;
+  if (!roleInfo?.canViewKennel) return <Navigate to="/admin/request-access?area=kennel" replace />;
   return <>{children}</>;
 }

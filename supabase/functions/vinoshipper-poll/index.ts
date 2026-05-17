@@ -243,7 +243,14 @@ Deno.serve(async (req) => {
     // Upsert new orders
     let inserted = 0;
     if (newOrders.length > 0) {
-      const rows = newOrders.map(mapOrder);
+      // VS may return multiple rows per invoice (one per line item).
+      // Collapse to one row per invoice, keeping the last occurrence (richest payload).
+      const byInvoice = new Map<string, Record<string, unknown>>();
+      for (const o of newOrders) {
+        const row = mapOrder(o);
+        byInvoice.set(String(row.invoice), row);
+      }
+      const rows = Array.from(byInvoice.values());
       const { error: upErr, count } = await admin
         .from("vs_transactions")
         .upsert(rows, { onConflict: "invoice", count: "exact" });

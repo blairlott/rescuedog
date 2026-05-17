@@ -81,9 +81,15 @@ Every mutation path (`kennel-keyword-engine`, `kennel-reallocator`, future fns) 
 - Affiliate/Impact.com activation (separate workstream — coordinate with Ambassador program to prevent double-pay)
 - Meta CAPI for non-purchase events (AddToCart, InitiateCheckout)
 
-## Open questions before Ship 1
-1. **Vinoshipper order webhook** — does it exist today, or do we need to poll? CAPI + attribution rollup both need near-realtime order signal.
-2. **OCI Pending** — is the Google Offline Conversion Import (Z3) actually uploading today, or stalled? Ship 6 LTV swap depends on it.
-3. **GTM Tag 92** — can I see the tag template? Need to confirm UTM param names match what `kennel-utm-tagger` will generate.
+## Confirmed inputs (answered)
 
-Ship 1 is ~2-3 days of work. Want me to start there, or answer the open questions first?
+1. **No Vinoshipper webhook → poll-based.** Z3a polls `POST /api/v3/p/orders/search` daily at 1:30am ET. CAPI piggybacks on that same cycle: when Z3a detects a new order, `meta-capi-sender` is invoked inline. Not real-time, but same-day, well within Meta's 7-day attribution window. Architectural impact:
+   - Ship 2 (`meta-capi-sender`) becomes a function the Z3a poller calls per new order, not an order-webhook handler.
+   - Ship 1 attribution rollup stays nightly 1am ET, ordered *before* Z3a (1:30am) so the rollup sees yesterday's clicks against yesterday's matched orders.
+2. **OCI is stalled on Google OAuth.** 50 rows total, 0 uploaded. 13 matched (one shared GCLID from a wine-club batch) eligible but blocked since May 16. 37 permanently unmatched (pre–GTM Tag 92). 0 with `fbc`. Implications:
+   - **Ship 6 LTV swap is hard-blocked until OAuth is reconnected.** Build the `google-troas-setter` + LTV-as-conversion-value code, but ship it dark (feature flag `app_settings.kennel_oci_enabled = false`) until Blair reconnects Google Ads OAuth.
+   - Ship 2 CAPI is the priority — it's the only conversion channel that will have signal in the next 30 days. Every Vinoshipper order from May 15 forward should land in Meta even if Google is still dark.
+3. **GTM Tag 92 UTM contract is locked**: `gclid`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term` — exactly these six, no custom names. `kennel-utm-tagger` already emits this set; verified in `supabase/functions/kennel-utm-tagger/index.ts`. Adding `gclid` passthrough to the tagger so Google-channel tagged URLs include a `{gclid}` ValueTrack placeholder Google will fill at click time.
+   - **Flag for Blair**: Tag 92 was published as v43 on May 15 — needs human verification that the published code reads all six params, not a simplified subset. If it drops `utm_content`/`utm_term`, those columns in `channel_attribution_events` will be NULL and we lose ad-level granularity (campaign-level still works).
+
+## Open questions remaining: none — ready to ship.

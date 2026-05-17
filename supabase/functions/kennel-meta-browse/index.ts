@@ -6,6 +6,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const META_GRAPH_VERSION = "v21.0";
 const GOOGLE_ADS_VERSION = "v18";
+const INSTACART_BASE = "https://api.ads.instacart.com/api/v2";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -141,9 +142,118 @@ Deno.serve(async (req) => {
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-  // Instacart still stubbed
+  // ---------------- Instacart Ads ----------------
   if (platform === "instacart") {
-    return json({ ok: true, platform, items: [], not_connected: true, message: "instacart not connected yet" });
+    const icToken = Deno.env.get("INSTACART_ADS_API_TOKEN");
+    const advertiserId = Deno.env.get("INSTACART_ADS_ADVERTISER_ID") ?? body?.advertiser_id;
+    if (!icToken || !advertiserId) {
+      return json({ ok: true, platform: "instacart", items: [], not_connected: true, message: "Instacart Ads credentials missing" });
+    }
+    const icHeaders = {
+      Authorization: `Bearer ${icToken}`,
+      "Content-Type": "application/json",
+      "X-Advertiser-Id": String(advertiserId),
+    };
+
+    const icGet = async (path: string) => {
+      const res = await fetch(`${INSTACART_BASE}${path}`, { headers: icHeaders });
+      const b = await res.json().catch(() => ({}));
+      if (!res.ok) return { ok: false as const, error: b?.error?.message ?? b?.message ?? `HTTP ${res.status}`, body: b };
+      return { ok: true as const, body: b };
+    };
+    const icPatch = async (path: string, payload: any) => {
+      const res = await fetch(`${INSTACART_BASE}${path}`, {
+        method: "PATCH", headers: icHeaders, body: JSON.stringify(payload),
+      });
+      const b = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, body: b };
+    };
+    const mapStatus = (s?: string) => {
+      const v = (s ?? "").toLowerCase();
+      if (v === "active" || v === "enabled" || v === "running") return "ACTIVE";
+      if (v === "paused") return "PAUSED";
+      if (v === "archived" || v === "ended" || v === "completed") return "ARCHIVED";
+      return (s ?? "").toUpperCase();
+    };
+
+    if (action === "list_campaigns") {
+      const r = await icGet(`/campaigns?advertiser_id=${advertiserId}&limit=100`);
+      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
+      const raw = r.body?.campaigns ?? r.body?.data ?? r.body ?? [];
+      const items = (Array.isArray(raw) ? raw : []).map((c: any) => ({
+        id: String(c.id),
+        name: c.name,
+        status: mapStatus(c.status),
+        effective_status: mapStatus(c.status),
+        objective: c.objective ?? c.campaign_type,
+        daily_budget: c.daily_budget_cents ? String(c.daily_budget_cents) : (c.budget?.daily_cents ? String(c.budget.daily_cents) : undefined),
+        updated_time: c.updated_at,
+      }));
+      return json({ ok: true, platform: "instacart", items });
+    }
+
+    if (action === "list_adsets") {
+      const campaignId = body?.parent_id;
+      if (!campaignId) return json({ error: "parent_id (campaign) required" }, 400);
+      const r = await icGet(`/ad_groups?campaign_id=${campaignId}&limit=100`);
+      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
+      const raw = r.body?.ad_groups ?? r.body?.data ?? r.body ?? [];
+      const items = (Array.isArray(raw) ? raw : []).map((g: any) => ({
+        id: String(g.id),
+        name: g.name,
+        status: mapStatus(g.status),
+        effective_status: mapStatus(g.status),
+        optimization_goal: g.optimization_goal ?? g.targeting_strategy,
+        daily_budget: g.daily_budget_cents ? String(g.daily_budget_cents) : undefined,
+        updated_time: g.updated_at,
+      }));
+      return json({ ok: true, platform: "instacart", items });
+    }
+
+    if (action === "list_ads") {
+      const adGroupId = body?.parent_id;
+      if (!adGroupId) return json({ error: "parent_id (ad_group) required" }, 400);
+      const r = await icGet(`/ad_group_products?ad_group_id=${adGroupId}&limit=200`);
+      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
+      const raw = r.body?.ad_group_products ?? r.body?.data ?? r.body ?? [];
+      const items = (Array.isArray(raw) ? raw : []).map((a: any) => ({
+        id: String(a.id),
+        name: a.product_name ?? a.name ?? a.upc ?? `Product ${a.product_id ?? a.id}`,
+        status: mapStatus(a.status),
+        effective_status: mapStatus(a.status),
+        updated_time: a.updated_at,
+      }));
+      return json({ ok: true, platform: "instacart", items });
+    }
+
+    if (action === "set_status") {
+      const entityType = body?.entity_type;
+      const entityId = body?.entity_id;
+      const inStatus = String(body?.status ?? "").toUpperCase();
+      const icStatus = inStatus === "ACTIVE" ? "active" : "paused";
+      if (!entityId || !["campaign", "adset", "ad"].includes(entityType)) {
+        return json({ error: "entity_id and entity_type required" }, 400);
+      }
+      const path =
+        entityType === "campaign" ? `/campaigns/${entityId}`
+        : entityType === "adset" ? `/ad_groups/${entityId}`
+        : `/ad_group_products/${entityId}`;
+      const result = await icPatch(path, { status: icStatus });
+
+      await admin.from("ad_execution_log").insert({
+        recommendation_id: null,
+        action: icStatus === "paused" ? "pause" : "resume",
+        actor_id: userId,
+        actor_kind: "user",
+        request_payload: { platform: "instacart", entity_type: entityType, entity_id: entityId, status: icStatus },
+        response_payload: { status: result.status, body: result.body },
+        success: result.ok,
+      });
+
+      return json({ ok: result.ok, response: result.body });
+    }
+
+    return json({ error: `unknown action: ${action}` }, 400);
   }
 
   // ---------------- Google Ads ----------------

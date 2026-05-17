@@ -30,7 +30,7 @@ type Crumb = { level: Level; parent_id?: string; label: string };
 const PLATFORMS: { id: Platform; label: string; live: boolean }[] = [
   { id: "meta", label: "Meta (Facebook/Instagram)", live: true },
   { id: "google", label: "Google Ads", live: true },
-  { id: "instacart", label: "Instacart Ads", live: false },
+  { id: "instacart", label: "Instacart Ads", live: true },
 ];
 
 const nextLevel: Record<Level, Level | null> = {

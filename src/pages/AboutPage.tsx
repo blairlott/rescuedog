@@ -8,6 +8,7 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 import { CmsToolbar } from "@/components/cms/CmsToolbar";
 import { T } from "@/components/T";
+import { LazyYouTube } from "@/components/LazyYouTube";
 import lauraBlair from "@/assets/migrated/laura-blair-lott.jpg";
 import vineyard5 from "@/assets/migrated/vineyard-5.jpg";
 

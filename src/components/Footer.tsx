@@ -1,9 +1,18 @@
 import { Link } from "react-router-dom";
 import { T } from "@/components/T";
 import { useIsMember } from "@/hooks/useIsMember";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export function Footer() {
   const { isMember } = useIsMember();
+  const { data: roleInfo } = useUserRole();
+  const isStaff =
+    !!roleInfo &&
+    (roleInfo.isAdminOrOwner ||
+      roleInfo.isSalesRep === true && roleInfo.roles.length > 0 ||
+      roleInfo.roles.some((r) =>
+        ["national_manager", "regional_manager", "state_manager", "brand_ambassador", "ambassador_manager", "wine_club_manager", "dropship_manager", "cms_editor", "crm_user"].includes(r)
+      ));
   return (
     <footer className="border-t border-border py-14 mt-20 bg-secondary/30">
       <div className="container mx-auto px-4">
@@ -49,8 +58,12 @@ export function Footer() {
               <li><Link to="/policies#refund" className="hover:text-primary transition-colors"><T>Refund Policy</T></Link></li>
               <li><Link to="/policies#shipping" className="hover:text-primary transition-colors"><T>Shipping Policy</T></Link></li>
               <li><Link to="/policies#terms" className="hover:text-primary transition-colors"><T>Terms of Service</T></Link></li>
-              <li><Link to="/admin" className="hover:text-primary transition-colors"><T>Admin</T></Link></li>
-              <li><Link to="/crm/login" className="hover:text-primary transition-colors"><T>RDW Sales Portal</T></Link></li>
+              {isStaff && (
+                <>
+                  <li><Link to="/admin" className="hover:text-primary transition-colors"><T>Admin</T></Link></li>
+                  <li><Link to="/crm/login" className="hover:text-primary transition-colors"><T>RDW Sales Portal</T></Link></li>
+                </>
+              )}
             </ul>
           </div>
 

@@ -2946,6 +2946,7 @@ export type Database = {
           id: string
           phone: string | null
           role: string | null
+          vinoshipper_customer_id: string | null
         }
         Insert: {
           approved?: boolean
@@ -2955,6 +2956,7 @@ export type Database = {
           id: string
           phone?: string | null
           role?: string | null
+          vinoshipper_customer_id?: string | null
         }
         Update: {
           approved?: boolean
@@ -2964,6 +2966,7 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: string | null
+          vinoshipper_customer_id?: string | null
         }
         Relationships: []
       }
@@ -3443,6 +3446,51 @@ export type Database = {
         }
         Relationships: []
       }
+      vinoshipper_backfill_runs: {
+        Row: {
+          created_by: string | null
+          cursor: string | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          started_at: string
+          status: string
+          total_errors: number
+          total_linked: number
+          total_seen: number
+          total_skipped: number
+        }
+        Insert: {
+          created_by?: string | null
+          cursor?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: string
+          started_at?: string
+          status?: string
+          total_errors?: number
+          total_linked?: number
+          total_seen?: number
+          total_skipped?: number
+        }
+        Update: {
+          created_by?: string | null
+          cursor?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          started_at?: string
+          status?: string
+          total_errors?: number
+          total_linked?: number
+          total_seen?: number
+          total_skipped?: number
+        }
+        Relationships: []
+      }
       vinoshipper_webhook_logs: {
         Row: {
           created_at: string
@@ -3709,8 +3757,10 @@ export type Database = {
         Row: {
           app_tier_config_id: string | null
           cancelled_at: string | null
+          claimed_at: string | null
           created_at: string | null
           gift_message: string | null
+          grandfathered_discount_percent: number | null
           id: string
           imported_at: string | null
           is_gift: boolean | null
@@ -3735,8 +3785,10 @@ export type Database = {
         Insert: {
           app_tier_config_id?: string | null
           cancelled_at?: string | null
+          claimed_at?: string | null
           created_at?: string | null
           gift_message?: string | null
+          grandfathered_discount_percent?: number | null
           id?: string
           imported_at?: string | null
           is_gift?: boolean | null
@@ -3761,8 +3813,10 @@ export type Database = {
         Update: {
           app_tier_config_id?: string | null
           cancelled_at?: string | null
+          claimed_at?: string | null
           created_at?: string | null
           gift_message?: string | null
+          grandfathered_discount_percent?: number | null
           id?: string
           imported_at?: string | null
           is_gift?: boolean | null

@@ -29,18 +29,20 @@ export default function ExecutiveCommandCenter() {
   const qc = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [windowDays, setWindowDays] = useState<7 | 30 | 90 | 180 | 365>(7);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["intelligence-cmd"],
+    queryKey: ["intelligence-cmd", windowDays],
     queryFn: async () => {
-      const d14 = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+      // Pull 2x the window so we can compare current period vs prior period.
+      const lookback = new Date(Date.now() - windowDays * 2 * 86400000).toISOString().slice(0, 10);
       const [decRes, anomRes, bizRes, adRes, cohortRes] = await Promise.all([
         supabase.from("executive_decisions" as any).select("*").eq("status", "pending")
           .order("priority", { ascending: false }).order("created_at", { ascending: false }).limit(50),
         supabase.from("ad_anomalies" as any).select("*").is("resolved_at", null)
           .order("detected_at", { ascending: false }).limit(15),
-        supabase.from("business_revenue_facts" as any).select("date,channel,gross_revenue_cents,orders").gte("date", d14),
-        supabase.from("ad_performance_daily" as any).select("date,spend,revenue,conversions").gte("date", d14),
+        supabase.from("business_revenue_facts" as any).select("date,channel,gross_revenue_cents,orders").gte("date", lookback).limit(50000),
+        supabase.from("ad_performance_daily" as any).select("date,spend,revenue,conversions").gte("date", lookback).limit(50000),
         supabase.from("customer_cohorts" as any).select("segment,churn_probability,lifetime_revenue_cents,orders_count").limit(20000),
       ]);
       return {
@@ -56,30 +58,32 @@ export default function ExecutiveCommandCenter() {
   const kpis: KPI[] = useMemo(() => {
     if (!data) return [];
     const today = new Date().toISOString().slice(0, 10);
-    const d7 = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-    const d14 = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+    const dCur = new Date(Date.now() - windowDays * 86400000).toISOString().slice(0, 10);
+    const dPrev = new Date(Date.now() - windowDays * 2 * 86400000).toISOString().slice(0, 10);
     const sumBiz = (f: string, from: string, to: string) =>
       data.biz.filter(r => r.date >= from && r.date < to).reduce((s, r) => s + Number(r[f] ?? 0), 0);
     const sumAd = (f: string, from: string, to: string) =>
       data.ad.filter(r => r.date >= from && r.date < to).reduce((s, r) => s + Number(r[f] ?? 0), 0);
-    const rev7 = sumBiz("gross_revenue_cents", d7, today) / 100;
-    const revP = sumBiz("gross_revenue_cents", d14, d7) / 100;
-    const spend7 = sumAd("spend", d7, today);
-    const spendP = sumAd("spend", d14, d7);
-    const orders7 = sumBiz("orders", d7, today);
-    const attrRev7 = sumAd("revenue", d7, today);
+    const rev7 = sumBiz("gross_revenue_cents", dCur, today) / 100;
+    const revP = sumBiz("gross_revenue_cents", dPrev, dCur) / 100;
+    const spend7 = sumAd("spend", dCur, today);
+    const spendP = sumAd("spend", dPrev, dCur);
+    const orders7 = sumBiz("orders", dCur, today);
+    const attrRev7 = sumAd("revenue", dCur, today);
     const dPct = (a: number, b: number) => b > 0 ? ((a - b) / b) * 100 : 0;
-    const dStr = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}% WoW`;
+    const periodLabel = windowDays === 7 ? "WoW" : windowDays === 30 ? "MoM" : `vs prior ${windowDays}d`;
+    const dStr = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}% ${periodLabel}`;
     const tone = (n: number) => n > 1 ? "up" : n < -1 ? "down" : "flat";
     const atRisk = data.cohorts.filter(c => Number(c.churn_probability ?? 0) > 0.6).length;
+    const wLabel = `${windowDays}d`;
     return [
-      { label: "Revenue (7d)", value: money(rev7), delta: dStr(dPct(rev7, revP)), tone: tone(dPct(rev7, revP)) },
-      { label: "Ad spend (7d)", value: money(spend7), delta: dStr(dPct(spend7, spendP)), tone: tone(-dPct(spend7, spendP)) },
+      { label: `Revenue (${wLabel})`, value: money(rev7), delta: dStr(dPct(rev7, revP)), tone: tone(dPct(rev7, revP)) },
+      { label: `Ad spend (${wLabel})`, value: money(spend7), delta: dStr(dPct(spend7, spendP)), tone: tone(-dPct(spend7, spendP)) },
       { label: "Blended ROAS", value: spend7 > 0 ? `${(rev7 / spend7).toFixed(2)}x` : "—", delta: spend7 > 0 ? `Attr ${(attrRev7 / spend7).toFixed(2)}x` : "" },
-      { label: "Orders (7d)", value: orders7.toLocaleString(), delta: orders7 > 0 ? `${money(rev7 / orders7)} AOV` : "" },
+      { label: `Orders (${wLabel})`, value: orders7.toLocaleString(), delta: orders7 > 0 ? `${money(rev7 / orders7)} AOV` : "" },
       { label: "Customers at risk", value: atRisk.toLocaleString(), delta: atRisk > 0 ? "Churn p > 0.6" : "", tone: atRisk > 0 ? "down" : "flat" },
     ];
-  }, [data]);
+  }, [data, windowDays]);
 
   const toggleExpand = (id: string) => {
     const next = new Set(expanded);
@@ -141,6 +145,19 @@ export default function ExecutiveCommandCenter() {
             <p className="text-sm text-muted-foreground mt-1">Actionable intelligence beyond personal capacity.</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <div className="flex border border-border" style={SHARP}>
+              {([7, 30, 90, 180, 365] as const).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setWindowDays(d)}
+                  className={`px-3 py-1.5 text-[11px] uppercase tracking-brand border-r border-border last:border-r-0 transition ${
+                    windowDays === d ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted/50"
+                  }`}
+                >
+                  {d}d
+                </button>
+              ))}
+            </div>
             <Button size="sm" variant="outline" style={SHARP} disabled={!!busy}
               onClick={() => runAutopilot(false)} className="uppercase tracking-brand text-xs">
               <RefreshCw className={`h-3 w-3 mr-1 ${busy === "autopilot" ? "animate-spin" : ""}`} /> Run autopilot

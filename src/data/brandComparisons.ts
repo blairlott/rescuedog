@@ -21,6 +21,8 @@ export interface BrandComparison {
   faqs: Array<{ question: string; answer: string }>;
   /** Optional disclosure line shown under the table. */
   disclosure?: string;
+  /** Citations for competitor facts referenced on the page. */
+  sources?: Array<{ label: string; url: string; publisher?: string }>;
 }
 
 const COMMON_DISCLOSURE =
@@ -89,6 +91,23 @@ export const BRAND_COMPARISONS: BrandComparison[] = [
       },
     ],
     disclosure: COMMON_DISCLOSURE,
+    sources: [
+      {
+        label: "Constellation Brands acquires Meiomi for $315M (2015)",
+        publisher: "Reuters",
+        url: "https://www.reuters.com/article/us-meiomi-m-a-constellation-brands-idUSKCN0PJ1VC20150709",
+      },
+      {
+        label: "Meiomi brand overview & AVA sourcing",
+        publisher: "Meiomi Wines (official)",
+        url: "https://www.meiomi.com/our-wines",
+      },
+      {
+        label: "Lodi Rules — Certified Sustainable Winegrowing",
+        publisher: "Lodi Winegrape Commission",
+        url: "https://www.lodirules.com/",
+      },
+    ],
   },
   {
     slug: "justin",
@@ -152,6 +171,28 @@ export const BRAND_COMPARISONS: BrandComparison[] = [
       },
     ],
     disclosure: COMMON_DISCLOSURE,
+    sources: [
+      {
+        label: "Justin Vineyards owned by The Wonderful Company",
+        publisher: "The Wonderful Company (official)",
+        url: "https://www.wonderful.com/our-companies",
+      },
+      {
+        label: "SIP Certified sustainability standard",
+        publisher: "Sustainability in Practice (SIP Certified)",
+        url: "https://www.sipcertified.org/",
+      },
+      {
+        label: "Justin Isosceles — Wine Spectator Top 100 (1999, #6)",
+        publisher: "Wine Spectator",
+        url: "https://top100.winespectator.com/wines/year/1999/",
+      },
+      {
+        label: "Lodi: most sustainably-certified wine region in the U.S.",
+        publisher: "Lodi Winegrape Commission",
+        url: "https://www.lodiwine.com/lodi-rules",
+      },
+    ],
   },
   {
     slug: "barefoot",
@@ -215,6 +256,23 @@ export const BRAND_COMPARISONS: BrandComparison[] = [
       },
     ],
     disclosure: COMMON_DISCLOSURE,
+    sources: [
+      {
+        label: "Barefoot Cellars owned by E. & J. Gallo Winery",
+        publisher: "E. & J. Gallo Winery (official brand list)",
+        url: "https://www.gallo.com/our-brands/",
+      },
+      {
+        label: "Barefoot — top-selling U.S. wine brand by volume",
+        publisher: "Wine Business / Impact Databank rankings",
+        url: "https://www.winebusiness.com/news/article/268140",
+      },
+      {
+        label: "Barefoot non-vintage labeling (product detail)",
+        publisher: "Barefoot Wine (official)",
+        url: "https://www.barefootwine.com/our-wines",
+      },
+    ],
   },
 ];
 

@@ -30,6 +30,8 @@ type Entity = {
   resource_name?: string;
   api_name?: string;
   has_alias?: boolean;
+  format?: string;
+  entity_id?: string;
 };
 
 type Crumb = { level: Level; parent_id?: string; label: string };

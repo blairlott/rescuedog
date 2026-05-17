@@ -709,6 +709,10 @@ export const CartDrawer = () => {
       wineTotal={wineTotal}
       merchTotal={merchTotal}
     />
+    <ShopifyHandoffInterstitial
+      open={shopifyHandoffOpen}
+      onDone={completeShopifyHandoff}
+    />
     </>
   );
 };

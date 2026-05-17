@@ -10,7 +10,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ShieldAlert, Power } from "lucide-react";
+import { ShieldAlert, Power, UserPlus, Eye } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -27,6 +29,9 @@ export default function KennelSettingsPage() {
   const [guardrails, setGuardrails] = useState<Guardrail[]>([]);
   const [loading, setLoading] = useState(true);
   const [killConfirm, setKillConfirm] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const { data: roleInfo } = useUserRole();
+  const isOwner = !!roleInfo?.isOwner;
 
   const load = async () => {
     const [{ data: s }, { data: g }, { data: c }] = await Promise.all([
@@ -82,6 +87,42 @@ export default function KennelSettingsPage() {
           {killSwitch ? "Kill switch ENGAGED" : "Engage kill switch"}
         </Button>
       </header>
+
+      {isOwner && (
+        <section className="border border-border bg-card p-5 space-y-4" style={SHARP}>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-sm uppercase font-bold tracking-brand flex items-center gap-2">
+                <Eye className="h-4 w-4" /> Kennel access
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+                Invite view-only viewers, ad-ops managers, or executives. Only you (the owner)
+                can assign these roles. An email with a password-setup link is sent automatically.
+              </p>
+            </div>
+            <Button
+              style={SHARP}
+              className="gap-2"
+              onClick={() => setInviteOpen(true)}
+            >
+              <UserPlus className="h-4 w-4" /> Invite to Kennel
+            </Button>
+          </div>
+        </section>
+      )}
+
+      <TeamInviteDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        isOwner={isOwner}
+        title="Invite to The Kennel"
+        surface="admin"
+        defaultRoles={["kennel_viewer"]}
+        allowedRoles={["kennel_viewer", "ad_ops_manager", "executive"]}
+        sendEmail
+        emailTemplate="kennel-access-invite"
+        rolesLabel="View-only Kennel access"
+      />
 
       {killSwitch && (
         <div className="border-2 border-destructive bg-destructive/10 p-4 flex items-start gap-3" style={SHARP}>

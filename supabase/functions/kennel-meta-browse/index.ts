@@ -1,10 +1,11 @@
 // Live drill-down + remote pause/resume for ad platforms.
-// Meta is wired against Graph API v21.0. Google/Instacart return stub responses.
+// Meta (Graph API v21.0) and Google Ads (REST v18) are live. Instacart returns a stub response.
 // Auth: requires logged-in user with admin/owner or ad_ops_manager role.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const META_GRAPH_VERSION = "v21.0";
+const GOOGLE_ADS_VERSION = "v18";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -34,6 +35,84 @@ async function metaPost(entityId: string, update: Record<string, string>, token:
   return { ok: res.ok && body?.success !== false && !body?.error, status: res.status, body };
 }
 
+// ---------------- Google Ads helpers ----------------
+
+async function googleAccessToken(): Promise<{ ok: true; token: string } | { ok: false; error: string }> {
+  const clientId = Deno.env.get("GOOGLE_ADS_CLIENT_ID");
+  const clientSecret = Deno.env.get("GOOGLE_ADS_CLIENT_SECRET");
+  const refreshToken = Deno.env.get("GOOGLE_ADS_REFRESH_TOKEN");
+  if (!clientId || !clientSecret || !refreshToken) {
+    return { ok: false, error: "Google Ads OAuth credentials missing" };
+  }
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }).toString(),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || !body?.access_token) {
+    return { ok: false, error: body?.error_description ?? body?.error ?? `token HTTP ${res.status}` };
+  }
+  return { ok: true, token: body.access_token as string };
+}
+
+function googleHeaders(accessToken: string) {
+  const devToken = Deno.env.get("GOOGLE_ADS_DEVELOPER_TOKEN") ?? "";
+  const login = (Deno.env.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID") ?? "").replace(/-/g, "");
+  const h: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    "developer-token": devToken,
+    "Content-Type": "application/json",
+  };
+  if (login) h["login-customer-id"] = login;
+  return h;
+}
+
+async function googleSearch(customerId: string, query: string, accessToken: string) {
+  const cid = customerId.replace(/-/g, "");
+  const res = await fetch(
+    `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}/customers/${cid}/googleAds:search`,
+    { method: "POST", headers: googleHeaders(accessToken), body: JSON.stringify({ query }) },
+  );
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = Array.isArray(body) ? body[0]?.error?.message : body?.error?.message;
+    return { ok: false as const, error: msg ?? `HTTP ${res.status}`, body };
+  }
+  return { ok: true as const, body };
+}
+
+async function googleMutate(
+  customerId: string,
+  resource: "campaigns" | "adGroups" | "adGroupAds",
+  resourceName: string,
+  status: "ENABLED" | "PAUSED",
+  accessToken: string,
+) {
+  const cid = customerId.replace(/-/g, "");
+  const op =
+    resource === "campaigns"
+      ? { update: { resourceName, status }, updateMask: "status" }
+      : resource === "adGroups"
+      ? { update: { resourceName, status }, updateMask: "status" }
+      : { update: { resourceName, status }, updateMask: "status" };
+  const endpoint =
+    resource === "campaigns" ? "campaigns:mutate"
+    : resource === "adGroups" ? "adGroups:mutate"
+    : "adGroupAds:mutate";
+  const res = await fetch(
+    `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}/customers/${cid}/${endpoint}`,
+    { method: "POST", headers: googleHeaders(accessToken), body: JSON.stringify({ operations: [op] }) },
+  );
+  const body = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, body };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
@@ -60,9 +139,112 @@ Deno.serve(async (req) => {
   const platform = String(body?.platform ?? "meta").toLowerCase();
   const action = String(body?.action ?? "");
 
-  // Stubs for unwired platforms
-  if (platform === "google" || platform === "instacart") {
-    return json({ ok: true, platform, items: [], not_connected: true, message: `${platform} not connected yet` });
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+  // Instacart still stubbed
+  if (platform === "instacart") {
+    return json({ ok: true, platform, items: [], not_connected: true, message: "instacart not connected yet" });
+  }
+
+  // ---------------- Google Ads ----------------
+  if (platform === "google" || platform === "google_ads" || platform === "googleads") {
+    const customerId = Deno.env.get("GOOGLE_ADS_CUSTOMER_ID") ?? body?.customer_id;
+    if (!Deno.env.get("GOOGLE_ADS_DEVELOPER_TOKEN") || !customerId) {
+      return json({ ok: true, platform: "google", items: [], not_connected: true, message: "Google Ads credentials missing" });
+    }
+    const tk = await googleAccessToken();
+    if (!tk.ok) return json({ error: tk.error }, 502);
+    const cidClean = customerId.replace(/-/g, "");
+
+    if (action === "list_campaigns") {
+      const r = await googleSearch(
+        customerId,
+        `SELECT campaign.id, campaign.name, campaign.status, campaign.resource_name, campaign.advertising_channel_type, campaign_budget.amount_micros FROM campaign WHERE campaign.status IN ('ENABLED','PAUSED') ORDER BY campaign.name`,
+        tk.token,
+      );
+      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
+      const items = (r.body.results ?? []).map((row: any) => ({
+        id: String(row.campaign.id),
+        name: row.campaign.name,
+        status: row.campaign.status,
+        effective_status: row.campaign.status,
+        objective: row.campaign.advertisingChannelType,
+        daily_budget: row.campaignBudget?.amountMicros ? String(Math.round(Number(row.campaignBudget.amountMicros) / 10000)) : undefined,
+        resource_name: row.campaign.resourceName,
+      }));
+      return json({ ok: true, platform: "google", items });
+    }
+
+    if (action === "list_adsets") {
+      const campaignId = body?.parent_id;
+      if (!campaignId) return json({ error: "parent_id (campaign) required" }, 400);
+      const r = await googleSearch(
+        customerId,
+        `SELECT ad_group.id, ad_group.name, ad_group.status, ad_group.resource_name, ad_group.type, ad_group.cpc_bid_micros FROM ad_group WHERE campaign.id = ${Number(campaignId)} AND ad_group.status IN ('ENABLED','PAUSED') ORDER BY ad_group.name`,
+        tk.token,
+      );
+      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
+      const items = (r.body.results ?? []).map((row: any) => ({
+        id: String(row.adGroup.id),
+        name: row.adGroup.name,
+        status: row.adGroup.status,
+        effective_status: row.adGroup.status,
+        optimization_goal: row.adGroup.type,
+        daily_budget: row.adGroup.cpcBidMicros ? String(Math.round(Number(row.adGroup.cpcBidMicros) / 10000)) : undefined,
+        resource_name: row.adGroup.resourceName,
+      }));
+      return json({ ok: true, platform: "google", items });
+    }
+
+    if (action === "list_ads") {
+      const adGroupId = body?.parent_id;
+      if (!adGroupId) return json({ error: "parent_id (adgroup) required" }, 400);
+      const r = await googleSearch(
+        customerId,
+        `SELECT ad_group_ad.ad.id, ad_group_ad.ad.name, ad_group_ad.status, ad_group_ad.resource_name, ad_group_ad.ad.type FROM ad_group_ad WHERE ad_group.id = ${Number(adGroupId)} AND ad_group_ad.status IN ('ENABLED','PAUSED')`,
+        tk.token,
+      );
+      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
+      const items = (r.body.results ?? []).map((row: any) => ({
+        id: String(row.adGroupAd.ad.id),
+        name: row.adGroupAd.ad.name ?? `${row.adGroupAd.ad.type} ad`,
+        status: row.adGroupAd.status,
+        effective_status: row.adGroupAd.status,
+        resource_name: row.adGroupAd.resourceName,
+      }));
+      return json({ ok: true, platform: "google", items });
+    }
+
+    if (action === "set_status") {
+      const entityType = body?.entity_type;
+      const incoming = body?.resource_name ?? body?.entity_id;
+      const inStatus = String(body?.status ?? "").toUpperCase();
+      const gStatus = inStatus === "ACTIVE" ? "ENABLED" : "PAUSED";
+      if (!incoming || !["campaign", "adset", "ad"].includes(entityType)) {
+        return json({ error: "entity_id and entity_type required" }, 400);
+      }
+      const rn = String(incoming).includes("/")
+        ? incoming
+        : entityType === "campaign" ? `customers/${cidClean}/campaigns/${incoming}`
+        : entityType === "adset" ? `customers/${cidClean}/adGroups/${incoming}`
+        : `customers/${cidClean}/adGroupAds/${incoming}`;
+      const resource = entityType === "campaign" ? "campaigns" : entityType === "adset" ? "adGroups" : "adGroupAds";
+      const result = await googleMutate(customerId, resource as any, rn, gStatus as any, tk.token);
+
+      await admin.from("ad_execution_log").insert({
+        recommendation_id: null,
+        action: gStatus === "PAUSED" ? "pause" : "resume",
+        actor_id: userId,
+        actor_kind: "user",
+        request_payload: { platform: "google", entity_type: entityType, resource_name: rn, status: gStatus },
+        response_payload: { status: result.status, body: result.body },
+        success: result.ok,
+      });
+
+      return json({ ok: result.ok, response: result.body });
+    }
+
+    return json({ error: `unknown action: ${action}` }, 400);
   }
 
   if (platform !== "meta" && platform !== "facebook") {
@@ -72,8 +254,6 @@ Deno.serve(async (req) => {
   const token = Deno.env.get("META_ADS_ACCESS_TOKEN");
   const accountId = Deno.env.get("META_ADS_ACCOUNT_ID") ?? body?.account_id;
   if (!token) return json({ error: "META_ADS_ACCESS_TOKEN missing" }, 500);
-
-  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   // --- List campaigns ---
   if (action === "list_campaigns") {

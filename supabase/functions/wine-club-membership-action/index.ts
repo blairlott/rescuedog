@@ -35,27 +35,32 @@ Deno.serve(async (req) => {
     const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: profile } = await serviceClient
       .from("customer_profiles")
-      .select("vinoshipper_customer_id")
+      .select("vinoshipper_customer_id, first_name, last_name, email, current_wine_club_tier")
       .eq("id", user.id)
       .maybeSingle();
 
-    const apiKey = Deno.env.get("VINOSHIPPER_API_KEY");
+    const apiKeyId = Deno.env.get("VINOSHIPPER_API_KEY_ID");
+    const apiSecret = Deno.env.get("VINOSHIPPER_API_SECRET");
+    const producerId = Deno.env.get("VINOSHIPPER_PRODUCER_ID");
     let vinoshipperResult: unknown = null;
     let vinoshipperError: string | null = null;
 
-    // Best-effort call to Vinoshipper. Endpoint shapes need confirmation
-    // against the live API docs once the key is available.
-    if (apiKey && profile?.vinoshipper_customer_id) {
+    // Best-effort call to Vinoshipper. Vinoshipper uses HTTP Basic auth with
+    // keyId:secret. Endpoint shapes follow the v3 club-membership pattern.
+    if (apiKeyId && apiSecret && profile?.vinoshipper_customer_id) {
       try {
+        const basic = btoa(`${apiKeyId}:${apiSecret}`);
         const path =
           body.action === "switch"
             ? `/customers/${profile.vinoshipper_customer_id}/club-membership`
             : `/customers/${profile.vinoshipper_customer_id}/club-membership/${body.action}`;
-        const res = await fetch(`https://vinoshipper.com/api/v3${path}`, {
+        const url = `https://vinoshipper.com/api/v3${path}${producerId ? `?producerId=${producerId}` : ""}`;
+        const res = await fetch(url, {
           method: body.action === "switch" ? "PUT" : "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Basic ${basic}`,
+            Accept: "application/json",
           },
           body: JSON.stringify({
             tier: body.to_tier,
@@ -64,12 +69,12 @@ Deno.serve(async (req) => {
           }),
         });
         vinoshipperResult = await res.json().catch(() => null);
-        if (!res.ok) vinoshipperError = `Vinoshipper ${res.status}`;
+        if (!res.ok) vinoshipperError = `Vinoshipper ${res.status}: ${typeof vinoshipperResult === "object" ? JSON.stringify(vinoshipperResult) : ""}`;
       } catch (e) {
         vinoshipperError = e instanceof Error ? e.message : String(e);
       }
-    } else if (!apiKey) {
-      vinoshipperError = "VINOSHIPPER_API_KEY not configured — change recorded locally only";
+    } else if (!apiKeyId || !apiSecret) {
+      vinoshipperError = "Vinoshipper API credentials not configured — change recorded locally only";
     } else {
       vinoshipperError = "No linked Vinoshipper customer";
     }
@@ -87,6 +92,33 @@ Deno.serve(async (req) => {
         vinoshipper_error: vinoshipperError,
       },
     });
+
+    // Notify staff so they can verify / manually action in Vinoshipper if sync failed.
+    try {
+      await serviceClient.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "wine-club-staff-action",
+          recipientEmail: "info@rescuedogwines.com",
+          idempotencyKey: `wc-action-${user.id}-${body.action}-${Date.now()}`,
+          templateData: {
+            action: body.action,
+            customerEmail: profile?.email ?? user.email,
+            customerName: [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || undefined,
+            userId: user.id,
+            vinoshipperCustomerId: profile?.vinoshipper_customer_id ?? undefined,
+            fromTier: profile?.current_wine_club_tier ?? undefined,
+            toTier: body.to_tier,
+            pauseCycles: body.pause_cycles,
+            reason: body.reason,
+            vinoshipperSynced: !vinoshipperError,
+            vinoshipperError: vinoshipperError ?? undefined,
+            submittedAt: new Date().toISOString(),
+          },
+        },
+      });
+    } catch (notifyErr) {
+      console.error("Staff notification failed:", notifyErr);
+    }
 
     return json({
       ok: true,

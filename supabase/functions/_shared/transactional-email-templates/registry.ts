@@ -23,6 +23,7 @@ import { template as welcome2Sampler } from './welcome-2-sampler.tsx'
 import { template as welcome3Reviews } from './welcome-3-reviews.tsx'
 import { template as welcome4Mission } from './welcome-4-mission.tsx'
 import { template as welcome5Nudge } from './welcome-5-nudge.tsx'
+import { template as wineClubStaffAction } from './wine-club-staff-action.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'ambassador-welcome': ambassadorWelcome,
@@ -39,4 +40,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'welcome-3-reviews': welcome3Reviews,
   'welcome-4-mission': welcome4Mission,
   'welcome-5-nudge': welcome5Nudge,
+  'wine-club-staff-action': wineClubStaffAction,
 }

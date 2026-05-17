@@ -1,10 +1,11 @@
 // Live drill-down + remote pause/resume for ad platforms.
-// Meta is wired against Graph API v21.0. Google/Instacart return stub responses.
+// Meta (Graph API v21.0) and Google Ads (REST v18) are live. Instacart returns a stub response.
 // Auth: requires logged-in user with admin/owner or ad_ops_manager role.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const META_GRAPH_VERSION = "v21.0";
+const GOOGLE_ADS_VERSION = "v18";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -32,6 +33,84 @@ async function metaPost(entityId: string, update: Record<string, string>, token:
   });
   const body = await res.json().catch(() => ({}));
   return { ok: res.ok && body?.success !== false && !body?.error, status: res.status, body };
+}
+
+// ---------------- Google Ads helpers ----------------
+
+async function googleAccessToken(): Promise<{ ok: true; token: string } | { ok: false; error: string }> {
+  const clientId = Deno.env.get("GOOGLE_ADS_CLIENT_ID");
+  const clientSecret = Deno.env.get("GOOGLE_ADS_CLIENT_SECRET");
+  const refreshToken = Deno.env.get("GOOGLE_ADS_REFRESH_TOKEN");
+  if (!clientId || !clientSecret || !refreshToken) {
+    return { ok: false, error: "Google Ads OAuth credentials missing" };
+  }
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }).toString(),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || !body?.access_token) {
+    return { ok: false, error: body?.error_description ?? body?.error ?? `token HTTP ${res.status}` };
+  }
+  return { ok: true, token: body.access_token as string };
+}
+
+function googleHeaders(accessToken: string) {
+  const devToken = Deno.env.get("GOOGLE_ADS_DEVELOPER_TOKEN") ?? "";
+  const login = (Deno.env.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID") ?? "").replace(/-/g, "");
+  const h: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    "developer-token": devToken,
+    "Content-Type": "application/json",
+  };
+  if (login) h["login-customer-id"] = login;
+  return h;
+}
+
+async function googleSearch(customerId: string, query: string, accessToken: string) {
+  const cid = customerId.replace(/-/g, "");
+  const res = await fetch(
+    `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}/customers/${cid}/googleAds:search`,
+    { method: "POST", headers: googleHeaders(accessToken), body: JSON.stringify({ query }) },
+  );
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = Array.isArray(body) ? body[0]?.error?.message : body?.error?.message;
+    return { ok: false as const, error: msg ?? `HTTP ${res.status}`, body };
+  }
+  return { ok: true as const, body };
+}
+
+async function googleMutate(
+  customerId: string,
+  resource: "campaigns" | "adGroups" | "adGroupAds",
+  resourceName: string,
+  status: "ENABLED" | "PAUSED",
+  accessToken: string,
+) {
+  const cid = customerId.replace(/-/g, "");
+  const op =
+    resource === "campaigns"
+      ? { update: { resourceName, status }, updateMask: "status" }
+      : resource === "adGroups"
+      ? { update: { resourceName, status }, updateMask: "status" }
+      : { update: { resourceName, status }, updateMask: "status" };
+  const endpoint =
+    resource === "campaigns" ? "campaigns:mutate"
+    : resource === "adGroups" ? "adGroups:mutate"
+    : "adGroupAds:mutate";
+  const res = await fetch(
+    `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}/customers/${cid}/${endpoint}`,
+    { method: "POST", headers: googleHeaders(accessToken), body: JSON.stringify({ operations: [op] }) },
+  );
+  const body = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, body };
 }
 
 Deno.serve(async (req) => {

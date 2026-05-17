@@ -1,7 +1,7 @@
 // Approve, reject, or execute a Kennel recommendation.
 // Auth: requires logged-in user with admin/owner or ad_ops_manager role.
 // For approve/reject we call the SECURITY DEFINER RPC `kennel_review_recommendation`.
-// For execute we mark executed and log it (actual platform API calls are wired in Phase 1c).
+// For execute we dispatch to the platform API (Meta wired live; others stubbed) then mark executed.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
@@ -10,6 +10,98 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+const META_GRAPH_VERSION = "v21.0";
+
+type MetaDispatchResult = {
+  dispatched: boolean;
+  ok: boolean;
+  status?: number;
+  request?: Record<string, unknown>;
+  response?: unknown;
+  rollback_state?: Record<string, unknown>;
+  error?: string;
+};
+
+/**
+ * Dispatch a Meta Marketing API change for a campaign or adset.
+ * Expected recommendation.payload shape:
+ *   { platform:"meta", entity_type:"campaign"|"adset", entity_id:"<id>",
+ *     change:{ daily_budget_cents?, lifetime_budget_cents?, status? },
+ *     current?:{ daily_budget_cents?, status? } }
+ */
+async function dispatchMeta(payload: any): Promise<MetaDispatchResult> {
+  const token = Deno.env.get("META_ADS_ACCESS_TOKEN");
+  if (!token) return { dispatched: false, ok: false, error: "META_ADS_ACCESS_TOKEN missing" };
+
+  const entityType = payload?.entity_type;
+  const entityId = payload?.entity_id;
+  const change = payload?.change ?? {};
+  if (!entityId || !["campaign", "adset"].includes(entityType)) {
+    return { dispatched: false, ok: false, error: "payload.entity_type/entity_id invalid for meta" };
+  }
+
+  // Read current state for rollback (best-effort).
+  const fields = entityType === "campaign"
+    ? "id,name,status,daily_budget,lifetime_budget"
+    : "id,name,status,daily_budget,lifetime_budget,bid_amount";
+  let rollbackState: Record<string, unknown> = {};
+  try {
+    const readRes = await fetch(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/${entityId}?fields=${fields}&access_token=${encodeURIComponent(token)}`,
+    );
+    if (readRes.ok) rollbackState = await readRes.json();
+  } catch (_) { /* non-fatal */ }
+
+  // Build update body. Meta budgets are in account-currency MINOR units (cents for USD).
+  const update: Record<string, string> = {};
+  if (typeof change.daily_budget_cents === "number") update.daily_budget = String(Math.round(change.daily_budget_cents));
+  if (typeof change.lifetime_budget_cents === "number") update.lifetime_budget = String(Math.round(change.lifetime_budget_cents));
+  if (typeof change.status === "string") update.status = change.status.toUpperCase();
+  if (Object.keys(update).length === 0) {
+    return { dispatched: false, ok: false, error: "no supported fields in change", rollback_state: rollbackState };
+  }
+
+  const form = new URLSearchParams({ ...update, access_token: token });
+  const res = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/${entityId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form.toString(),
+  });
+  const responseJson = await res.json().catch(() => ({}));
+  return {
+    dispatched: true,
+    ok: res.ok && responseJson?.success !== false && !responseJson?.error,
+    status: res.status,
+    request: { entity_type: entityType, entity_id: entityId, update },
+    response: responseJson,
+    rollback_state: rollbackState,
+  };
+}
+
+/** Apply guardrails for a recommendation. Returns null if ok, or error string. */
+async function checkGuardrails(admin: any, rec: any): Promise<string | null> {
+  if (!rec.channel_id) return null;
+  const { data: g } = await admin.from("ad_guardrails").select("*").eq("channel_id", rec.channel_id).maybeSingle();
+  if (!g) return null;
+  if (g.paused) return "channel is paused via guardrails";
+
+  const change = rec.payload?.change ?? {};
+  const current = rec.payload?.current ?? {};
+
+  // Daily spend cap
+  if (typeof change.daily_budget_cents === "number" && change.daily_budget_cents > g.daily_spend_cap_cents) {
+    return `daily_budget_cents ${change.daily_budget_cents} exceeds cap ${g.daily_spend_cap_cents}`;
+  }
+  // Budget % change
+  if (typeof change.daily_budget_cents === "number" && typeof current.daily_budget_cents === "number" && current.daily_budget_cents > 0) {
+    const pct = Math.abs(change.daily_budget_cents - current.daily_budget_cents) / current.daily_budget_cents * 100;
+    if (pct > Number(g.max_budget_change_pct)) {
+      return `budget change ${pct.toFixed(1)}% exceeds max ${g.max_budget_change_pct}%`;
+    }
+  }
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -64,35 +156,82 @@ Deno.serve(async (req) => {
 
   if (action === "execute") {
     if (rec.status !== "approved") return json({ error: `cannot execute (status=${rec.status})` }, 400);
-    // Phase 1c: dispatch to platform API based on rec.payload.platform.
-    // For now, record execution as a no-op success and capture rollback_state.
-    const rollbackState = rec.payload?.rollback_state ?? {};
+
+    // Guardrails
+    const guardErr = await checkGuardrails(admin, rec);
+    if (guardErr) {
+      await admin.from("ad_execution_log").insert({
+        recommendation_id, action: "execute", actor_id: userId, actor_kind: "user",
+        request_payload: { notes: notes ?? null }, response_payload: { error: guardErr },
+        success: false,
+      });
+      return json({ error: guardErr }, 422);
+    }
+
+    const platform = (rec.payload?.platform ?? "").toString().toLowerCase();
+    let dispatch: MetaDispatchResult;
+    if (platform === "meta" || platform === "facebook") {
+      dispatch = await dispatchMeta(rec.payload);
+    } else {
+      dispatch = {
+        dispatched: false, ok: true,
+        response: { skipped: true, reason: `platform '${platform || "unknown"}' not wired yet` },
+        rollback_state: rec.payload?.rollback_state ?? {},
+      };
+    }
+
+    const newStatus = dispatch.ok ? "executed" : "failed";
     const { error: updErr } = await admin
       .from("ad_recommendations")
-      .update({ status: "executed", executed_at: new Date().toISOString(), rollback_state: rollbackState })
+      .update({
+        status: newStatus,
+        executed_at: dispatch.ok ? new Date().toISOString() : null,
+        rollback_state: dispatch.rollback_state ?? rec.payload?.rollback_state ?? {},
+      })
       .eq("id", recommendation_id);
     if (updErr) return json({ error: updErr.message }, 500);
+
     await admin.from("ad_execution_log").insert({
       recommendation_id, action: "execute", actor_id: userId, actor_kind: "user",
-      request_payload: { notes: notes ?? null }, response_payload: { dispatched: false, reason: "phase_1c_pending" },
-      success: true,
+      request_payload: { notes: notes ?? null, platform, dispatch_request: dispatch.request ?? null },
+      response_payload: { dispatched: dispatch.dispatched, status: dispatch.status ?? null, response: dispatch.response ?? null, error: dispatch.error ?? null },
+      success: dispatch.ok,
     });
-    return json({ ok: true });
+    return json({ ok: dispatch.ok, dispatched: dispatch.dispatched, response: dispatch.response, error: dispatch.error });
   }
 
   if (action === "rollback") {
     if (rec.status !== "executed") return json({ error: `cannot rollback (status=${rec.status})` }, 400);
+
+    // If we have meta rollback state, attempt to restore.
+    const platform = (rec.payload?.platform ?? "").toString().toLowerCase();
+    let dispatch: MetaDispatchResult = { dispatched: false, ok: true };
+    if ((platform === "meta" || platform === "facebook") && rec.rollback_state) {
+      const rb = rec.rollback_state as any;
+      const restorePayload = {
+        entity_type: rec.payload?.entity_type,
+        entity_id: rec.payload?.entity_id ?? rb.id,
+        change: {
+          ...(rb.daily_budget != null ? { daily_budget_cents: Number(rb.daily_budget) } : {}),
+          ...(rb.lifetime_budget != null ? { lifetime_budget_cents: Number(rb.lifetime_budget) } : {}),
+          ...(rb.status ? { status: rb.status } : {}),
+        },
+      };
+      dispatch = await dispatchMeta(restorePayload);
+    }
+
     const { error: updErr } = await admin
       .from("ad_recommendations")
-      .update({ status: "rolled_back" })
+      .update({ status: dispatch.ok ? "rolled_back" : "failed" })
       .eq("id", recommendation_id);
     if (updErr) return json({ error: updErr.message }, 500);
     await admin.from("ad_execution_log").insert({
       recommendation_id, action: "rollback", actor_id: userId, actor_kind: "user",
       request_payload: { notes: notes ?? null, rollback_state: rec.rollback_state },
-      success: true,
+      response_payload: { dispatched: dispatch.dispatched, response: dispatch.response ?? null, error: dispatch.error ?? null },
+      success: dispatch.ok,
     });
-    return json({ ok: true });
+    return json({ ok: dispatch.ok, dispatched: dispatch.dispatched, response: dispatch.response, error: dispatch.error });
   }
 
   return json({ error: "unhandled" }, 400);

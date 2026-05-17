@@ -467,6 +467,23 @@ export default function KennelChannelsPage() {
 
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <h2 className="text-2xl font-bold uppercase tracking-brand">{headerLabel}</h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          {platform === "instacart" && (
+            <>
+              <Button size="sm" variant="outline" style={SHARP} onClick={() => setImportOpen(true)} title="Bulk-import friendly names from CSV">
+                <Upload className="h-3 w-3 mr-1" /> Import names
+              </Button>
+              {current && current.level !== "platform" && items.length > 0 && (
+                <Button size="sm" variant="outline" style={SHARP} onClick={exportCsv} title="Export current IDs + names as CSV">
+                  <Download className="h-3 w-3 mr-1" /> Export CSV
+                </Button>
+              )}
+              <Button size="sm" style={SHARP} onClick={runOptimizer} disabled={optimizerBusy} title="Run programmatic budget pacing, bid optimization, and auto-pause">
+                <Sparkles className={`h-3 w-3 mr-1 ${optimizerBusy ? "animate-pulse" : ""}`} />
+                {optimizerBusy ? "Running…" : "Run optimizer"}
+              </Button>
+            </>
+          )}
         <div className="flex items-center gap-1 border border-border" style={SHARP}>
           {(["all", "active", "paused"] as const).map((s) => (
             <button
@@ -487,6 +504,7 @@ export default function KennelChannelsPage() {
               )}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -519,7 +537,26 @@ export default function KennelChannelsPage() {
                 return (
                   <tr key={e.id} className="border-b border-border last:border-0 hover:bg-muted/50">
                     <td className="px-3 py-3">
-                      <div className="font-bold text-foreground">{e.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-bold text-foreground">{e.name}</div>
+                        {e.has_alias && (
+                          <Badge style={SHARP} className="text-[9px] bg-secondary text-foreground" title="Friendly name override">
+                            <Tag className="h-2.5 w-2.5 mr-0.5" /> ALIAS
+                          </Badge>
+                        )}
+                        {platform === "instacart" && current && current.level !== "platform" && (
+                          <button
+                            onClick={() => openAlias(e)}
+                            className="text-muted-foreground hover:text-primary"
+                            title={e.has_alias ? "Edit friendly name" : "Add friendly name"}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                      {e.has_alias && e.api_name && e.api_name !== e.name && (
+                        <div className="text-[10px] text-muted-foreground italic">api: {e.api_name}</div>
+                      )}
                       <div className="text-[11px] text-muted-foreground font-mono">{e.id}</div>
                       {(e.objective || e.optimization_goal) && (
                         <div className="text-[11px] text-muted-foreground mt-0.5">

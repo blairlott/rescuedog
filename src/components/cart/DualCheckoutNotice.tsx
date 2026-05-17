@@ -36,27 +36,27 @@ export function DualCheckoutNotice({
       <div className="grid grid-cols-2 gap-2 pt-1">
         <div className="border border-border bg-background p-2">
           <div className="flex items-center gap-1 mb-1">
-            <ShoppingBag className="h-3 w-3 text-muted-foreground" />
-            <span className="text-[9px] font-bold uppercase tracking-brand text-muted-foreground">
-              Step 1 · Merch
-            </span>
-          </div>
-          <p className="text-[10px] text-muted-foreground leading-tight">
-            {merchCount} item{merchCount !== 1 ? "s" : ""} · opens in a new tab
-          </p>
-          <p className="text-xs font-bold mt-1">${merchTotal.toFixed(2)}</p>
-        </div>
-        <div className="border border-border bg-background p-2">
-          <div className="flex items-center gap-1 mb-1">
             <Wine className="h-3 w-3 text-primary" />
             <span className="text-[9px] font-bold uppercase tracking-brand text-primary">
-              Step 2 · Wine
+              Step 1 · Wine
             </span>
           </div>
           <p className="text-[10px] text-muted-foreground leading-tight">
             {wineCount} bottle{wineCount !== 1 ? "s" : ""} · 21+ ID at delivery
           </p>
           <p className="text-xs font-bold mt-1">${wineTotal.toFixed(2)}</p>
+        </div>
+        <div className="border border-border bg-background p-2">
+          <div className="flex items-center gap-1 mb-1">
+            <ShoppingBag className="h-3 w-3 text-muted-foreground" />
+            <span className="text-[9px] font-bold uppercase tracking-brand text-muted-foreground">
+              Step 2 · Merch
+            </span>
+          </div>
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            {merchCount} item{merchCount !== 1 ? "s" : ""} · opens in a new tab
+          </p>
+          <p className="text-xs font-bold mt-1">${merchTotal.toFixed(2)}</p>
         </div>
       </div>
     </div>

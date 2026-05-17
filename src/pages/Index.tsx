@@ -165,6 +165,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <InstacartOAuthCatcher />
       <Seo
         title="Award-Winning Sustainable Wines That Help Rescue Dogs"
         description="Lodi-grown, sustainably crafted wines. 50% of profits support animal rescue. Shipping included on 6+ bottles. Join the Wine Club for 20% off."

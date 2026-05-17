@@ -28,6 +28,7 @@ import { PairingFinder } from "@/components/PairingFinder";
 import { LazyYouTube } from "@/components/LazyYouTube";
 import { RescueVoices } from "@/components/rescue/RescueVoices";
 import { Seo } from "@/components/Seo";
+import { InstacartOAuthCatcher } from "@/components/InstacartOAuthCatcher";
 import { T } from "@/components/T";
 import { useExperiment } from "@/hooks/useExperiment";
 

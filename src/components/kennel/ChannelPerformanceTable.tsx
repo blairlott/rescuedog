@@ -19,11 +19,7 @@ export interface ChannelRow {
 const fmtCurrency = (n: number) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 const fmtInt = (n: number) => n.toLocaleString();
 
-export function ChannelPerformanceTable({ rows }: { rows: ChannelRow[] }) {
-  return ChannelPerformanceTableImpl({ rows });
-}
-
-function ChannelPerformanceTableImpl({ rows, onRowClick }: { rows: ChannelRow[]; onRowClick?: (r: ChannelRow) => void }) {
+export function ChannelPerformanceTable({ rows, onRowClick }: { rows: ChannelRow[]; onRowClick?: (r: ChannelRow) => void }) {
   if (rows.length === 0) {
     return <div className="border border-border p-8 text-center text-sm text-muted-foreground bg-card" style={{ borderRadius: 0 }}>No channel data yet.</div>;
   }
@@ -46,13 +42,13 @@ function ChannelPerformanceTableImpl({ rows, onRowClick }: { rows: ChannelRow[];
           {rows.map((r) => (
             <TableRow
               key={r.channel_id}
-              className="cursor-pointer hover:bg-muted/50"
-              onClick={() => onRowClickInternal(r)}
+              className={onRowClick ? "cursor-pointer hover:bg-muted/50" : undefined}
+              onClick={() => onRowClick?.(r)}
             >
               <TableCell className="font-medium">
-                <span className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1">
                   {r.name}
-                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                  {onRowClick && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
                 </span>
               </TableCell>
               <TableCell className="text-right tabular-nums">{fmtCurrency(r.spend)}</TableCell>

@@ -28,6 +28,7 @@ import { PairingFinder } from "@/components/PairingFinder";
 import { LazyYouTube } from "@/components/LazyYouTube";
 import { RescueVoices } from "@/components/rescue/RescueVoices";
 import { Seo } from "@/components/Seo";
+import { InstacartOAuthCatcher } from "@/components/InstacartOAuthCatcher";
 import { T } from "@/components/T";
 import { useExperiment } from "@/hooks/useExperiment";
 
@@ -164,6 +165,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <InstacartOAuthCatcher />
       <Seo
         title="Award-Winning Sustainable Wines That Help Rescue Dogs"
         description="Lodi-grown, sustainably crafted wines. 50% of profits support animal rescue. Shipping included on 6+ bottles. Join the Wine Club for 20% off."

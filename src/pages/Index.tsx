@@ -306,6 +306,56 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Press / As Seen In strip */}
+      <section className="py-8 border-y border-border bg-background">
+        <div className="container mx-auto px-4">
+          <p className="text-[11px] tracking-brand uppercase text-muted-foreground text-center mb-4 font-bold">
+            <T>As Featured In</T>
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-foreground/70">
+            {["Wine Enthusiast", "USA Today", "Forbes", "SF Chronicle", "Lodi Wine Commission"].map((name) => (
+              <span key={name} className="text-sm md:text-base font-bold uppercase tracking-brand opacity-70 hover:opacity-100 transition-opacity">
+                <T>{name}</T>
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Lodi — 3-tile explainer */}
+      <section className="py-16 md:py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <p className="text-xs tracking-brand uppercase text-muted-foreground mb-2 font-bold">
+              <T>Why Lodi</T>
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground uppercase">
+              <T>The Right Place For Honest Wine</T>
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div className="border border-border p-6 text-center">
+              <p className="text-xs tracking-brand uppercase text-primary font-bold mb-3"><T>Mediterranean Climate</T></p>
+              <p className="text-sm text-foreground leading-relaxed">
+                <T>Warm days, cool Delta breezes. Grapes ripen evenly with the natural acid balance that defines varietally correct wine.</T>
+              </p>
+            </div>
+            <div className="border border-border p-6 text-center">
+              <p className="text-xs tracking-brand uppercase text-primary font-bold mb-3"><T>Old-Vine Heritage</T></p>
+              <p className="text-sm text-foreground leading-relaxed">
+                <T>Some of the oldest continuously farmed vines in California. Deep roots, low yields, concentrated flavor — character no young vineyard can fake.</T>
+              </p>
+            </div>
+            <div className="border border-border p-6 text-center">
+              <p className="text-xs tracking-brand uppercase text-primary font-bold mb-3"><T>Lodi Rules Certified</T></p>
+              <p className="text-sm text-foreground leading-relaxed">
+                <T>One of the most rigorous third-party sustainability certifications in the wine industry. Every bottle is as responsible as it is delicious.</T>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Featured Wines */}
       <section className="py-16 bg-secondary">
         <div className="container mx-auto px-4">

@@ -51,6 +51,7 @@ export function Footer() {
               <li><Link to="/donation" className="hover:text-primary transition-colors"><T>Donation Request</T></Link></li>
               <li><Link to="/ambassadors" className="hover:text-primary transition-colors"><T>Become an Ambassador</T></Link></li>
               <li><Link to="/sell" className="hover:text-primary transition-colors"><T>Sell on Rescue Dog</T></Link></li>
+              <li><Link to="/ambassadors" className="hover:text-primary transition-colors font-semibold"><T>Refer a friend — both help fund a rescue →</T></Link></li>
               {isMember && (
                 <li><Link to="/policies#membership" className="hover:text-primary transition-colors"><T>Membership Policy</T></Link></li>
               )}

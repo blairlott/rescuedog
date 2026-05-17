@@ -373,26 +373,59 @@ async function handle(req: Request): Promise<Response> {
     };
 
     if (action === "list_campaigns") {
-      const r = await icGet(`/campaigns?advertiser_id=${advertiserId}&limit=100`);
-      if (!r.ok) return json({ error: r.error, body: r.body }, 502);
-      const raw = r.body?.campaigns ?? r.body?.data ?? r.body ?? [];
-      const baseItems = (Array.isArray(raw) ? raw : []).map((c: any) => {
-        const apiName = firstString(c.display_name, c.name, c.campaign_name, c.internal_name, c.label, c.title);
-        return {
-          id: String(c.id),
-          name: apiName ?? `Campaign ${c.id}`,
-          api_name: apiName,
-          status: mapStatus(c.status),
-          effective_status: mapStatus(c.status),
-          objective: c.objective ?? c.campaign_type,
-          daily_budget: c.daily_budget_cents ? String(c.daily_budget_cents) : (c.budget?.daily_cents ? String(c.budget.daily_cents) : undefined),
-          updated_time: c.updated_at,
-          ...(body?.debug ? { raw: c } : {}),
-        };
-      });
-      const aliasMap = await fetchAliases(admin, "instacart", "campaign", baseItems.map(i => i.id));
-      const items = baseItems.map(i => ({ ...i, name: aliasMap[i.id] ?? i.name, has_alias: !!aliasMap[i.id] }));
-      return json({ ok: true, platform: "instacart", items });
+      // Instacart has multiple ad-format endpoints. Hierarchy is flat (no ad
+      // groups for non-sponsored types), so we fan out, soft-fail each,
+      // tag each row with `format`, and return one unified list.
+      const sources: Array<{ format: string; path: string; listKeys: string[] }> = [
+        { format: "sponsored_product",  path: `/campaigns?advertiser_id=${advertiserId}&limit=100`,                    listKeys: ["campaigns"] },
+        { format: "display",            path: `/display_campaigns?advertiser_id=${advertiserId}&limit=100`,            listKeys: ["display_campaigns", "campaigns"] },
+        { format: "shoppable_display",  path: `/shoppable_display_campaigns?advertiser_id=${advertiserId}&limit=100`,  listKeys: ["shoppable_display_campaigns", "campaigns"] },
+        { format: "brand_page",         path: `/brand_pages?advertiser_id=${advertiserId}&limit=100`,                  listKeys: ["brand_pages", "data"] },
+        { format: "promotion",          path: `/promotions?advertiser_id=${advertiserId}&limit=100`,                   listKeys: ["promotions", "coupons", "data"] },
+        { format: "universal",          path: `/universal_campaigns?advertiser_id=${advertiserId}&limit=100`,          listKeys: ["universal_campaigns", "campaigns"] },
+        { format: "video",              path: `/video_campaigns?advertiser_id=${advertiserId}&limit=100`,              listKeys: ["video_campaigns", "campaigns"] },
+      ];
+      const probeNotes: Array<{ format: string; ok: boolean; count: number; error?: string }> = [];
+      const baseItems: any[] = [];
+      for (const src of sources) {
+        const r = await icGet(src.path);
+        if (!r.ok) {
+          probeNotes.push({ format: src.format, ok: false, count: 0, error: r.error });
+          continue;
+        }
+        let raw: any = null;
+        for (const k of src.listKeys) { if (Array.isArray(r.body?.[k])) { raw = r.body[k]; break; } }
+        if (!Array.isArray(raw)) raw = Array.isArray(r.body?.data) ? r.body.data : (Array.isArray(r.body) ? r.body : []);
+        probeNotes.push({ format: src.format, ok: true, count: raw.length });
+        for (const c of raw) {
+          const apiName = firstString(
+            c.display_name, c.name, c.campaign_name, c.internal_name,
+            c.label, c.title, c.headline, c.brand_name,
+          );
+          baseItems.push({
+            id: `${src.format}:${String(c.id)}`,
+            entity_id: String(c.id),
+            format: src.format,
+            name: apiName ?? `${src.format} ${c.id}`,
+            api_name: apiName,
+            status: mapStatus(c.status),
+            effective_status: mapStatus(c.status),
+            objective: c.objective ?? c.campaign_type ?? src.format,
+            daily_budget: c.daily_budget_cents ? String(c.daily_budget_cents) : (c.budget?.daily_cents ? String(c.budget.daily_cents) : undefined),
+            updated_time: c.updated_at,
+            ...(body?.debug ? { raw: c } : {}),
+          });
+        }
+      }
+      // Aliases keyed by underlying entity_id (not format-prefixed) so renames
+      // persist if format strings ever drift.
+      const aliasMap = await fetchAliases(admin, "instacart", "campaign", baseItems.map(i => i.entity_id));
+      const items = baseItems.map(i => ({
+        ...i,
+        name: aliasMap[i.entity_id] ?? i.name,
+        has_alias: !!aliasMap[i.entity_id],
+      }));
+      return json({ ok: true, platform: "instacart", items, ...(body?.debug ? { probes: probeNotes } : {}) });
     }
 
     if (action === "list_adsets") {

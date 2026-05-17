@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "owner" | "admin" | "national_manager" | "regional_manager" | "state_manager" | "brand_ambassador" | "ambassador_manager" | "wine_club_manager" | "dropship_manager" | "cms_editor" | "crm_user" | "ad_ops_manager";
+export type AppRole = "owner" | "admin" | "national_manager" | "regional_manager" | "state_manager" | "brand_ambassador" | "ambassador_manager" | "wine_club_manager" | "dropship_manager" | "cms_editor" | "crm_user" | "ad_ops_manager" | "executive" | "kennel_viewer";
 
 export interface UserRoleInfo {
   roles: AppRole[];
@@ -11,6 +11,8 @@ export interface UserRoleInfo {
   isSalesRep: boolean;
   isAmbassadorManager: boolean;
   isAdOps: boolean;
+  isKennelViewer: boolean;
+  canViewKennel: boolean;
   profile: { id: string; email: string | null; full_name: string | null; approved?: boolean } | null;
 }
 
@@ -19,7 +21,7 @@ export function useUserRole() {
     queryKey: ["user_role"],
     queryFn: async (): Promise<UserRoleInfo> => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { roles: [], isOwner: false, isAdmin: false, isAdminOrOwner: false, isSalesRep: false, isAmbassadorManager: false, isAdOps: false, profile: null };
+      if (!user) return { roles: [], isOwner: false, isAdmin: false, isAdminOrOwner: false, isSalesRep: false, isAmbassadorManager: false, isAdOps: false, isKennelViewer: false, canViewKennel: false, profile: null };
 
       const [{ data: roleRows }, { data: profile }] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", user.id),
@@ -31,6 +33,9 @@ export function useUserRole() {
       const isAdmin = roles.includes("admin");
       const isAdminOrOwner = isOwner || isAdmin;
 
+      const isAdOps = isAdminOrOwner || roles.includes("ad_ops_manager");
+      const isKennelViewer = roles.includes("kennel_viewer");
+      const isExecutive = roles.includes("executive");
       return {
         roles,
         isOwner,
@@ -38,7 +43,9 @@ export function useUserRole() {
         isAdminOrOwner,
         isSalesRep: roles.includes("brand_ambassador") || roles.length === 0,
         isAmbassadorManager: isAdminOrOwner || roles.includes("ambassador_manager"),
-        isAdOps: isAdminOrOwner || roles.includes("ad_ops_manager"),
+        isAdOps,
+        isKennelViewer,
+        canViewKennel: isAdOps || isExecutive || isKennelViewer,
         profile,
       };
     },

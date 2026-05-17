@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ChevronRight, Pause, Play, RefreshCw, Home, Pencil } from "lucide-react";
+import { ChevronRight, Pause, Play, RefreshCw, Home, Pencil, Upload, Download, Tag, Sparkles } from "lucide-react";
 import KeywordEnginePanel from "@/components/kennel/KeywordEnginePanel";
 
 const SHARP = { borderRadius: 0 } as const;
@@ -28,6 +28,8 @@ type Entity = {
   optimization_goal?: string;
   updated_time?: string;
   resource_name?: string;
+  api_name?: string;
+  has_alias?: boolean;
 };
 
 type Crumb = { level: Level; parent_id?: string; label: string };
@@ -136,6 +138,13 @@ export default function KennelChannelsPage() {
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused">("all");
+  const [aliasing, setAliasing] = useState<Entity | null>(null);
+  const [aliasDraft, setAliasDraft] = useState("");
+  const [aliasSaving, setAliasSaving] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
+  const [optimizerBusy, setOptimizerBusy] = useState(false);
 
   const current: Crumb | null = trail[trail.length - 1] ?? null;
 
@@ -247,6 +256,95 @@ export default function KennelChannelsPage() {
   const openEdit = (e: Entity) => {
     setEditing(e);
     setEditValues({});
+  };
+
+  const openAlias = (e: Entity) => {
+    setAliasing(e);
+    setAliasDraft(e.has_alias ? e.name : "");
+  };
+
+  const saveAlias = async () => {
+    if (!aliasing || !platform || !current || current.level === "platform") return;
+    setAliasSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("kennel-meta-browse", {
+        body: {
+          platform,
+          action: "set_alias",
+          entity_type: entityTypeFor[current.level],
+          entity_id: aliasing.id,
+          friendly_name: aliasDraft.trim(),
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(aliasDraft.trim() ? "Friendly name saved" : "Friendly name cleared");
+      setAliasing(null);
+      await load();
+    } catch (err: any) {
+      toast.error(err.message ?? "Save failed");
+    } finally { setAliasSaving(false); }
+  };
+
+  const exportCsv = () => {
+    if (!current || current.level === "platform") return;
+    const lines = ["entity_type,entity_id,friendly_name"];
+    for (const e of items) {
+      const t = entityTypeFor[current.level];
+      const name = (e.has_alias ? e.name : (e.api_name ?? "")).replace(/"/g, '""');
+      lines.push(`${t},${e.id},"${name}"`);
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `${platform}-${current.level}-names.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const runImport = async () => {
+    if (!platform) return;
+    const lines = importText.trim().split(/\r?\n/).filter(Boolean);
+    if (lines.length === 0) { toast.error("Paste CSV content"); return; }
+    // Skip header if present
+    const startIdx = /entity_type/i.test(lines[0]) ? 1 : 0;
+    const rows = lines.slice(startIdx).map((ln) => {
+      // naive CSV: handle "..." quoted third field
+      const m = ln.match(/^([^,]+),([^,]+),(.*)$/);
+      if (!m) return null;
+      let name = m[3].trim();
+      if (name.startsWith('"') && name.endsWith('"')) name = name.slice(1, -1).replace(/""/g, '"');
+      return { entity_type: m[1].trim().toLowerCase(), entity_id: m[2].trim(), friendly_name: name };
+    }).filter(Boolean);
+    if (rows.length === 0) { toast.error("No valid rows parsed"); return; }
+    setImportBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("kennel-meta-browse", {
+        body: { platform, action: "bulk_set_aliases", rows },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const d = data as any;
+      toast.success(`Imported ${d.imported} names${d.skipped ? ` (${d.skipped} skipped)` : ""}`);
+      setImportOpen(false); setImportText("");
+      await load();
+    } catch (err: any) { toast.error(err.message ?? "Import failed"); }
+    finally { setImportBusy(false); }
+  };
+
+  const runOptimizer = async () => {
+    if (!platform) return;
+    setOptimizerBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("kennel-optimizer", {
+        body: { platform },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const s = (data as any).summary ?? {};
+      toast.success(`Optimizer ran · ${s.budget_recs ?? 0} budget · ${s.bid_recs ?? 0} bid · ${s.pause_recs ?? 0} pause · ${s.applied ?? 0} applied`);
+    } catch (err: any) { toast.error(err.message ?? "Optimizer failed"); }
+    finally { setOptimizerBusy(false); }
   };
 
   const saveEdit = async () => {
@@ -369,6 +467,23 @@ export default function KennelChannelsPage() {
 
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <h2 className="text-2xl font-bold uppercase tracking-brand">{headerLabel}</h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          {platform === "instacart" && (
+            <>
+              <Button size="sm" variant="outline" style={SHARP} onClick={() => setImportOpen(true)} title="Bulk-import friendly names from CSV">
+                <Upload className="h-3 w-3 mr-1" /> Import names
+              </Button>
+              {current && current.level !== "platform" && items.length > 0 && (
+                <Button size="sm" variant="outline" style={SHARP} onClick={exportCsv} title="Export current IDs + names as CSV">
+                  <Download className="h-3 w-3 mr-1" /> Export CSV
+                </Button>
+              )}
+              <Button size="sm" style={SHARP} onClick={runOptimizer} disabled={optimizerBusy} title="Run programmatic budget pacing, bid optimization, and auto-pause">
+                <Sparkles className={`h-3 w-3 mr-1 ${optimizerBusy ? "animate-pulse" : ""}`} />
+                {optimizerBusy ? "Running…" : "Run optimizer"}
+              </Button>
+            </>
+          )}
         <div className="flex items-center gap-1 border border-border" style={SHARP}>
           {(["all", "active", "paused"] as const).map((s) => (
             <button
@@ -389,6 +504,7 @@ export default function KennelChannelsPage() {
               )}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -421,7 +537,26 @@ export default function KennelChannelsPage() {
                 return (
                   <tr key={e.id} className="border-b border-border last:border-0 hover:bg-muted/50">
                     <td className="px-3 py-3">
-                      <div className="font-bold text-foreground">{e.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-bold text-foreground">{e.name}</div>
+                        {e.has_alias && (
+                          <Badge style={SHARP} className="text-[9px] bg-secondary text-foreground" title="Friendly name override">
+                            <Tag className="h-2.5 w-2.5 mr-0.5" /> ALIAS
+                          </Badge>
+                        )}
+                        {platform === "instacart" && current && current.level !== "platform" && (
+                          <button
+                            onClick={() => openAlias(e)}
+                            className="text-muted-foreground hover:text-primary"
+                            title={e.has_alias ? "Edit friendly name" : "Add friendly name"}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                      {e.has_alias && e.api_name && e.api_name !== e.name && (
+                        <div className="text-[10px] text-muted-foreground italic">api: {e.api_name}</div>
+                      )}
                       <div className="text-[11px] text-muted-foreground font-mono">{e.id}</div>
                       {(e.objective || e.optimization_goal) && (
                         <div className="text-[11px] text-muted-foreground mt-0.5">
@@ -533,6 +668,67 @@ export default function KennelChannelsPage() {
           <DialogFooter>
             <Button variant="outline" style={SHARP} onClick={() => setEditing(null)} disabled={saving}>Cancel</Button>
             <Button style={SHARP} onClick={saveEdit} disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Friendly-name rename dialog */}
+      <Dialog open={!!aliasing} onOpenChange={(o) => !o && setAliasing(null)}>
+        <DialogContent style={SHARP} className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="uppercase tracking-brand">Friendly name</DialogTitle>
+          </DialogHeader>
+          {aliasing && (
+            <div className="space-y-3">
+              <div className="text-xs text-muted-foreground">
+                <div className="font-mono">{aliasing.id}</div>
+                {aliasing.api_name && <div>API name: <span className="italic">{aliasing.api_name}</span></div>}
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-brand">Display as</Label>
+                <Input
+                  style={SHARP}
+                  autoFocus
+                  value={aliasDraft}
+                  placeholder="e.g. Cabernet · Fall Promo"
+                  onChange={(ev) => setAliasDraft(ev.target.value)}
+                />
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  Leave blank to clear the override and fall back to the API name.
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" style={SHARP} onClick={() => setAliasing(null)} disabled={aliasSaving}>Cancel</Button>
+            <Button style={SHARP} onClick={saveAlias} disabled={aliasSaving}>{aliasSaving ? "Saving…" : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CSV import dialog */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent style={SHARP} className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="uppercase tracking-brand">Import friendly names</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div>Paste CSV: <code className="bg-muted px-1">entity_type,entity_id,friendly_name</code></div>
+              <div><code className="bg-muted px-1">entity_type</code> is one of: <code>campaign</code>, <code>adset</code>, <code>ad</code>, <code>keyword</code></div>
+              <div>Use "Export CSV" to grab a starter file with current IDs.</div>
+            </div>
+            <textarea
+              className="w-full h-64 border border-border bg-background p-2 text-xs font-mono"
+              style={SHARP}
+              value={importText}
+              onChange={(ev) => setImportText(ev.target.value)}
+              placeholder={"entity_type,entity_id,friendly_name\nadset,abc-123,Cab Fall Promo\nad,xyz-789,Cab 750ml"}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" style={SHARP} onClick={() => setImportOpen(false)} disabled={importBusy}>Cancel</Button>
+            <Button style={SHARP} onClick={runImport} disabled={importBusy}>{importBusy ? "Importing…" : "Import"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

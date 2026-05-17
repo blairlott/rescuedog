@@ -2483,6 +2483,42 @@ export type Database = {
           },
         ]
       }
+      kennel_entity_aliases: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          friendly_name: string
+          id: string
+          notes: string | null
+          platform: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type: string
+          friendly_name: string
+          id?: string
+          notes?: string | null
+          platform: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          friendly_name?: string
+          id?: string
+          notes?: string | null
+          platform?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kennel_keyword_ideas: {
         Row: {
           ad_group_id: string
@@ -2558,32 +2594,146 @@ export type Database = {
       kennel_keyword_settings: {
         Row: {
           auto_apply: boolean
+          auto_pause_enabled: boolean
+          bid_lower_gate_pct: number
+          bid_lower_step_pct: number
+          bid_optimization_enabled: boolean
           bid_raise_gate_pct: number
+          bid_raise_step_pct: number
+          budget_ceiling_cents: number
+          budget_floor_cents: number
+          budget_pacing_enabled: boolean
           engine_enabled: boolean
+          lookback_days: number
           max_daily_adds: number
+          max_daily_bid_changes: number
+          max_daily_budget_shift_pct: number
+          min_clicks_for_bid_change: number
           pause_threshold_cents: number
           pause_zero_conv_days: number
           platform: string
+          target_roas: number
           updated_at: string
         }
         Insert: {
           auto_apply?: boolean
+          auto_pause_enabled?: boolean
+          bid_lower_gate_pct?: number
+          bid_lower_step_pct?: number
+          bid_optimization_enabled?: boolean
           bid_raise_gate_pct?: number
+          bid_raise_step_pct?: number
+          budget_ceiling_cents?: number
+          budget_floor_cents?: number
+          budget_pacing_enabled?: boolean
           engine_enabled?: boolean
+          lookback_days?: number
           max_daily_adds?: number
+          max_daily_bid_changes?: number
+          max_daily_budget_shift_pct?: number
+          min_clicks_for_bid_change?: number
           pause_threshold_cents?: number
           pause_zero_conv_days?: number
           platform: string
+          target_roas?: number
           updated_at?: string
         }
         Update: {
           auto_apply?: boolean
+          auto_pause_enabled?: boolean
+          bid_lower_gate_pct?: number
+          bid_lower_step_pct?: number
+          bid_optimization_enabled?: boolean
           bid_raise_gate_pct?: number
+          bid_raise_step_pct?: number
+          budget_ceiling_cents?: number
+          budget_floor_cents?: number
+          budget_pacing_enabled?: boolean
           engine_enabled?: boolean
+          lookback_days?: number
           max_daily_adds?: number
+          max_daily_bid_changes?: number
+          max_daily_budget_shift_pct?: number
+          min_clicks_for_bid_change?: number
           pause_threshold_cents?: number
           pause_zero_conv_days?: number
           platform?: string
+          target_roas?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      kennel_optimizer_recommendations: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          apply_response: Json | null
+          clicks: number | null
+          conversions: number | null
+          created_at: string
+          current_value: number | null
+          delta_pct: number | null
+          entity_id: string
+          entity_type: string
+          id: string
+          idempotency_key: string
+          metric_window_days: number | null
+          platform: string
+          reasoning: string | null
+          recommended_value: number | null
+          revenue_cents: number | null
+          roas: number | null
+          rule_type: string
+          spend_cents: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          apply_response?: Json | null
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          current_value?: number | null
+          delta_pct?: number | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          idempotency_key: string
+          metric_window_days?: number | null
+          platform: string
+          reasoning?: string | null
+          recommended_value?: number | null
+          revenue_cents?: number | null
+          roas?: number | null
+          rule_type: string
+          spend_cents?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          apply_response?: Json | null
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          current_value?: number | null
+          delta_pct?: number | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          idempotency_key?: string
+          metric_window_days?: number | null
+          platform?: string
+          reasoning?: string | null
+          recommended_value?: number | null
+          revenue_cents?: number | null
+          roas?: number | null
+          rule_type?: string
+          spend_cents?: number | null
+          status?: string
           updated_at?: string
         }
         Relationships: []

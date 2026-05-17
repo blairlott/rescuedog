@@ -1,95 +1,64 @@
-# Kennel Phase 2 — Cross-Channel ROAS Optimization Engine
+## Instacart: friendly names + full optimization engine
 
-Revised from Claude's spec with your four answers locked in:
-- UTM tagger built as part of True ROAS foundation (GTM Tag 92 = May 15 cutoff)
-- Approvals route through existing `kennel_review_recommendation` RPC + UI; SMS/email notify only
-- Holdout group baked in from day one
-- Dog Mom isolated in its own ad set; separate A+ campaign for prospecting
+### Part 1 — Friendly campaign/ad_group/product names
 
-## Build order (sequential — each unlocks the next)
+**Pull richer names from the API first**
+- In `kennel-meta-browse`, expand the Instacart list mappers to surface every available human-readable field: `display_name`, `campaign_name`, `name_internal`, `product.brand_name`, `product.display_name`, `upc`. Pick first non-empty in priority order; fall back to ID only as last resort.
+- Add a `raw` debug field (gated to admins) so we can see exactly what the API returns and align with your screenshots later.
 
-### Ship 1 — True ROAS foundation (blocker for everything)
-- **DB**: `paid_link_tags` (utm builder registry), `channel_attribution_events` (raw clicks + conversions), `channel_performance_daily` (materialized view: spend, attributed revenue, true ROAS by channel/campaign/day), `holdout_assignments` (visitor_id → in/out, 5% suppression)
-- **Edge fn `kennel-utm-tagger`**: generates canonical UTMs for every paid destination URL, stores in registry, exposes `/build` endpoint the channel UIs call when creating ads
-- **Edge fn `kennel-attribution-rollup`**: nightly job — joins Vinoshipper orders to last-click UTM from `channel_attribution_events`, writes `channel_performance_daily`. Pre-May 15 orders flagged `attribution_quality='partial'`
-- **Holdout**: deterministic hash(visitor_id) % 100 < 5 → holdout. Suppressed from all paid audiences, tracked for incrementality reporting
-- **UI**: `/kennel/true-roas` dashboard — channel ROAS (platform-reported vs. true), holdout lift, attribution quality flag
+**Add a manual alias layer (CSV + inline rename)**
+- New table `kennel_entity_aliases` (platform, entity_type, entity_id, friendly_name, notes). Admin-only RLS via `is_ad_ops`.
+- Merge aliases into the list responses — alias wins over API name.
+- UI on `/kennel/channels?platform=instacart`:
+  - Inline pencil-icon "rename" on each campaign / ad_group / product row.
+  - "Import names" button → CSV uploader (`entity_type,entity_id,friendly_name`) with preview + dry-run + apply.
+  - "Export current list" button so you can grab IDs, paste into a sheet, fill names, re-upload.
+- After you send screenshots, we tune the API-name extraction rules.
 
-### Ship 2 — Meta CAPI sender (parallel with Ship 1, no dependency)
-- **Edge fn `meta-capi-sender`**: triggered on every new Vinoshipper order webhook
-- Sends `Purchase` event with hashed `em`, `fbc` (from existing Z3a cookie capture), `value`, `currency`, `order_id` as dedup key
-- Logs every send to `meta_capi_events` with response code for debugging
-- **Retry queue** via existing pgmq pattern for failed sends
+### Part 2 — Programmatic optimization (parity with Google)
 
-### Ship 3 — Customer Value Scorer + segments
-- **DB**: `customer_segments` (user_id, segment, score, predicted_ltv_90d, last_scored_at)
-- **Edge fn `customer-value-scorer`**: nightly — pulls Vinoshipper customer history, computes purchase count / AOV / wine club / recency / predicted 90d LTV, assigns segment (Champion / Loyalist / At-Risk / Lost), upserts
-- **UI**: `/kennel/segments` — segment counts, LTV distribution, sample customers
+**Keyword engine** — already wired for Instacart; verify end-to-end and surface it from the Instacart ad-group detail view (same panel component, same approval flow).
 
-### Ship 4 — Audience upload jobs (uses #2 + #3)
-- **Edge fn `audience-sync-google`**: builds Customer Match list from Champions + Loyalists, uploads via Google Ads API, sets +30% bid multiplier on Leads-Search-14
-- **Edge fn `audience-sync-meta`**: builds Champions custom audience + 1% LAL seed, uploads via Meta Marketing API monthly
-- **Edge fn `audience-sync-suppress`**: Lost + 30d-recent-purchasers → exclusion audiences on both platforms
-- Schedule: weekly Sunday 2am ET via pg_cron
+**Daily budget pacing (`kennel-budget-optimizer` edge function, cron-driven)**
+- Pulls 7-day rolling spend, revenue, ROAS per ad_group from `ad_metrics_daily`.
+- For each campaign with `engine_enabled`:
+  - Compute target = total campaign daily budget.
+  - Allocate proportionally to `roas × conversion_volume`, with min/max guardrails per ad_group (configurable: floor, ceiling, max daily shift %).
+  - Writes a `pacing_*` recommendation row (status=pending unless `auto_apply`).
+- Apply path: PATCH `/ad_groups/{id}` with new `daily_budget_cents`, logs to `ad_execution_log`.
 
-### Ship 5 — Reallocation engine + execution arbiter
-- **DB**: `reallocation_decisions` (rule_id, source_channel, dest_channel, amount_cents, pre_roas, post_roas, status, approved_by, executed_at), `budget_snapshots` (hourly state), `ad_execution_locks` (entity_key → locked_until, owner)
-- **Edge fn `kennel-reallocator`**: implements priority rules 0–5 from spec
-  - Emergency ROAS protection: real-time on webhook
-  - Routine: daily 5am ET only (revised from 2x/day to avoid learning-phase whiplash)
-  - Weekly: Monday 5am ET
-- **Arbiter**: shared lock table — keyword engine and reallocator both acquire `entity_key` lock before mutation, 1hr cooldown
-- **Approvals**: cross-platform moves + >$500 single-day shifts → insert into `ad_recommendations`, surface via existing `KeywordEnginePanel` pattern (rename → `AdOpsActionsPanel`), use existing `kennel_review_recommendation(_action, _notes)` RPC. Notification edge fn sends email/SMS but action happens in UI only
-- **Kill switch**: `app_settings.kennel_auto_execute = false` halts all auto-execution; reply-"pause" updates this setting
+**Auto-pause zero-ROAS products**
+- Same cron tick: any `ad_group_product` with spend ≥ threshold AND 0 conversions in lookback window → recommend `pause` (auto-apply if `auto_apply`).
+- Reuses existing `pause_threshold_cents` / `pause_zero_conv_days` settings on the keyword-engine settings row, repurposed as global engine settings.
 
-### Ship 6 — Google tROAS + LTV-as-conversion-value
-- **Edge fn `google-troas-setter`**: switches Leads-Search-14 to tROAS at 1800% start (not 1500% — that throttles), weekly step-down based on actual headroom
-- **OCI enhancement**: send predicted_ltv_90d from `customer_segments` as `conversion_value` to existing OCI upload (Z3) instead of order subtotal. Same for CAPI in Ship 2 (retro-update)
-- **Mission keyword guard**: hardcoded keyword list — any mutation requires `kennel_review_recommendation` approval, no exceptions
+**Bid optimization (raise winners / lower losers)**
+- For each ad_group_product with ≥ N clicks in window:
+  - ROAS ≥ target × (1 + raise_gate%) → bump bid_micros by step (e.g. +15%, capped).
+  - ROAS ≤ target × lower_gate% → cut bid (e.g. -20%, floored).
+  - Gated by `max_daily_bid_changes`.
+- All changes go through the same recommendations → execute pipeline (PATCH `/ad_groups/{id}` with new `default_bid_cents`).
 
-### Ship 7 — Campaign windows + Instacart reactivation
-- **DB**: `campaign_windows` (name, start_at, end_at, channels, holiday_tag, budget_floor_cents, manual_override)
-- **UI**: `/kennel/campaign-windows` CRUD
-- **Reallocator** reads windows for Rule 3 (Instacart holiday activation at $50/day floor)
+**Settings UI** (extend the existing Keyword Engine settings dialog into a generic "Engine settings" dialog)
+- Sections: Keywords · Budget pacing · Bid optimization · Auto-pause.
+- Per-platform `engine_enabled`, `auto_apply`, target ROAS, guardrails.
+- Surfaced on `/kennel/settings` plus the inline panel.
 
-### Ship 8 — Platform expansion scaffold (TikTok first)
-- Only enabled when Meta true ROAS > 4x for 30 consecutive days (gated by `channel_performance_daily` query)
-- Scaffold-only: connector stub, audience sync stub, no auto-spend until manual enable
+**Cron**
+- `pg_cron` schedules `kennel-budget-optimizer` every 6h.
+- All actions are idempotent (keyed by date + entity + rule) so a re-run never double-applies.
 
-## Technical details
+### Out of scope (call out, not building)
+- Creating new campaigns/ad_groups (still manual in Instacart UI).
+- Schedule/dayparting changes (Instacart Ads doesn't expose this on v3).
 
-**Arbiter pattern** (critical — shared between keyword engine and reallocator):
-```text
-acquire_lock(entity_key, owner, ttl) → bool
-  INSERT ... ON CONFLICT DO UPDATE WHERE locked_until < now()
-```
-Every mutation path (`kennel-keyword-engine`, `kennel-reallocator`, future fns) calls this before touching Google/Meta/Instacart APIs.
+### Order of execution
+1. Schema migration: `kennel_entity_aliases` + extend `kennel_engine_settings` with budget/bid fields.
+2. `kennel-meta-browse`: richer name extraction + alias merge + alias CRUD endpoints.
+3. UI: inline rename, CSV import/export modal on `/kennel/channels`.
+4. `kennel-budget-optimizer` edge function (pacing + auto-pause + bid opt).
+5. Wire Keyword Engine panel onto Instacart ad-group detail (if not already shown there).
+6. Engine settings dialog: budget + bid sections.
+7. Schedule cron (separate `supabase insert` call, not migration).
+8. Smoke test against your live advertiser; you send screenshots to align names.
 
-**Holdout integration**: existing `useAnalyticsTracking` hook checks `holdout_assignments` on first visit, sets `data-holdout` attr. Audience sync fns exclude holdout user_ids from every Customer Match / Custom Audience upload.
-
-**Attribution model v1**: last-click within 7d window, UTM-required. Orders without UTM match → `attribution_quality='unmatched'`, surfaced in dashboard. Multi-touch deferred to v2.
-
-**Tables added (8)**: `paid_link_tags`, `channel_attribution_events`, `channel_performance_daily` (matview), `holdout_assignments`, `customer_segments`, `meta_capi_events`, `reallocation_decisions`, `budget_snapshots`, `ad_execution_locks`, `campaign_windows`. All `is_ad_ops` RLS.
-
-**Edge functions added (9)**: `kennel-utm-tagger`, `kennel-attribution-rollup`, `meta-capi-sender`, `customer-value-scorer`, `audience-sync-google`, `audience-sync-meta`, `audience-sync-suppress`, `kennel-reallocator`, `google-troas-setter`.
-
-**Cron jobs (4)**: attribution rollup nightly 1am, customer scorer nightly 2am, audience sync Sunday 2am, reallocator daily 5am + Monday 5am weekly.
-
-## Out of scope (Phase 3)
-- Multi-touch attribution
-- Amazon DSP, Pinterest, Yahoo connectors (scaffold only when triggers hit)
-- Affiliate/Impact.com activation (separate workstream — coordinate with Ambassador program to prevent double-pay)
-- Meta CAPI for non-purchase events (AddToCart, InitiateCheckout)
-
-## Confirmed inputs (answered)
-
-1. **No Vinoshipper webhook → poll-based.** Z3a polls `POST /api/v3/p/orders/search` daily at 1:30am ET. CAPI piggybacks on that same cycle: when Z3a detects a new order, `meta-capi-sender` is invoked inline. Not real-time, but same-day, well within Meta's 7-day attribution window. Architectural impact:
-   - Ship 2 (`meta-capi-sender`) becomes a function the Z3a poller calls per new order, not an order-webhook handler.
-   - Ship 1 attribution rollup stays nightly 1am ET, ordered *before* Z3a (1:30am) so the rollup sees yesterday's clicks against yesterday's matched orders.
-2. **OCI is stalled on Google OAuth.** 50 rows total, 0 uploaded. 13 matched (one shared GCLID from a wine-club batch) eligible but blocked since May 16. 37 permanently unmatched (pre–GTM Tag 92). 0 with `fbc`. Implications:
-   - **Ship 6 LTV swap is hard-blocked until OAuth is reconnected.** Build the `google-troas-setter` + LTV-as-conversion-value code, but ship it dark (feature flag `app_settings.kennel_oci_enabled = false`) until Blair reconnects Google Ads OAuth.
-   - Ship 2 CAPI is the priority — it's the only conversion channel that will have signal in the next 30 days. Every Vinoshipper order from May 15 forward should land in Meta even if Google is still dark.
-3. **GTM Tag 92 UTM contract is locked**: `gclid`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term` — exactly these six, no custom names. `kennel-utm-tagger` already emits this set; verified in `supabase/functions/kennel-utm-tagger/index.ts`. Adding `gclid` passthrough to the tagger so Google-channel tagged URLs include a `{gclid}` ValueTrack placeholder Google will fill at click time.
-   - **Flag for Blair**: Tag 92 was published as v43 on May 15 — needs human verification that the published code reads all six params, not a simplified subset. If it drops `utm_content`/`utm_term`, those columns in `channel_attribution_events` will be NULL and we lose ad-level granularity (campaign-level still works).
-
-## Open questions remaining: none — ready to ship.
+After you approve I'll start with the migration.

@@ -53,6 +53,49 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// ---------------- Friendly-name helpers ----------------
+
+/**
+ * Pick the first non-empty string from a list of candidate fields.
+ * Used to surface the most human-readable name from the Instacart API,
+ * which often returns UUID-like ids in `name` but has nicer fields elsewhere.
+ */
+function firstString(...vals: unknown[]): string | undefined {
+  for (const v of vals) {
+    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  }
+  return undefined;
+}
+
+/** Quick test: is this name basically a UUID / opaque id? */
+function looksLikeId(name: string | undefined): boolean {
+  if (!name) return true;
+  const s = name.trim();
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return true;
+  if (/^\d{6,}$/.test(s)) return true;
+  return false;
+}
+
+/** Fetch friendly-name aliases for a set of entity ids, returns map id -> friendly_name. */
+async function fetchAliases(
+  admin: ReturnType<typeof createClient>,
+  platform: string,
+  entityType: string,
+  ids: string[],
+): Promise<Record<string, string>> {
+  if (ids.length === 0) return {};
+  const { data } = await admin
+    .from("kennel_entity_aliases")
+    .select("entity_id, friendly_name")
+    .eq("platform", platform)
+    .eq("entity_type", entityType)
+    .in("entity_id", ids);
+  const map: Record<string, string> = {};
+  for (const row of data ?? []) map[(row as any).entity_id] = (row as any).friendly_name;
+  return map;
+}
+
 async function metaGet(path: string, fields: string, token: string, extra: Record<string, string> = {}) {
   const qs = new URLSearchParams({ fields, access_token: token, limit: "100", ...extra });
   const res = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/${path}?${qs}`);
@@ -209,6 +252,75 @@ async function handle(req: Request): Promise<Response> {
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+  // ---------------- Friendly-name aliases (cross-platform) ----------------
+  if (action === "list_aliases") {
+    const { data, error } = await admin
+      .from("kennel_entity_aliases")
+      .select("*")
+      .eq("platform", platform)
+      .order("entity_type", { ascending: true })
+      .order("updated_at", { ascending: false });
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, aliases: data ?? [] });
+  }
+
+  if (action === "set_alias") {
+    const entity_type = String(body?.entity_type ?? "");
+    const entity_id = String(body?.entity_id ?? "");
+    const friendly_name = String(body?.friendly_name ?? "").trim();
+    if (!entity_type || !entity_id) return json({ error: "entity_type and entity_id required" }, 400);
+    if (!friendly_name) {
+      const { error } = await admin
+        .from("kennel_entity_aliases")
+        .delete()
+        .eq("platform", platform).eq("entity_type", entity_type).eq("entity_id", entity_id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ ok: true, cleared: true });
+    }
+    const { data, error } = await admin
+      .from("kennel_entity_aliases")
+      .upsert({ platform, entity_type, entity_id, friendly_name, notes: body?.notes ?? null, created_by: userId },
+              { onConflict: "platform,entity_type,entity_id" })
+      .select()
+      .single();
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, alias: data });
+  }
+
+  if (action === "bulk_set_aliases") {
+    const rows = Array.isArray(body?.rows) ? body.rows : [];
+    if (rows.length === 0) return json({ error: "rows required" }, 400);
+    if (rows.length > 5000) return json({ error: "max 5000 rows per import" }, 400);
+    const clean = rows
+      .map((r: any) => ({
+        platform,
+        entity_type: String(r.entity_type ?? "").toLowerCase(),
+        entity_id: String(r.entity_id ?? "").trim(),
+        friendly_name: String(r.friendly_name ?? "").trim(),
+        notes: r.notes ? String(r.notes) : null,
+        created_by: userId,
+      }))
+      .filter((r: any) => ["campaign", "adset", "ad", "keyword"].includes(r.entity_type) && r.entity_id && r.friendly_name);
+    if (clean.length === 0) return json({ error: "no valid rows after validation" }, 400);
+    const { error, count } = await admin
+      .from("kennel_entity_aliases")
+      .upsert(clean, { onConflict: "platform,entity_type,entity_id", count: "exact" });
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, imported: clean.length, total_rows: rows.length, skipped: rows.length - clean.length, count });
+  }
+
+  if (action === "delete_alias") {
+    const entity_type = String(body?.entity_type ?? "");
+    const entity_id = String(body?.entity_id ?? "");
+    if (!entity_type || !entity_id) return json({ error: "entity_type and entity_id required" }, 400);
+    const { error } = await admin
+      .from("kennel_entity_aliases")
+      .delete()
+      .eq("platform", platform).eq("entity_type", entity_type).eq("entity_id", entity_id);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true });
+  }
+
   // ---------------- Instacart Ads ----------------
   if (platform === "instacart") {
     const tk = await instacartAccessToken();
@@ -264,15 +376,22 @@ async function handle(req: Request): Promise<Response> {
       const r = await icGet(`/campaigns?advertiser_id=${advertiserId}&limit=100`);
       if (!r.ok) return json({ error: r.error, body: r.body }, 502);
       const raw = r.body?.campaigns ?? r.body?.data ?? r.body ?? [];
-      const items = (Array.isArray(raw) ? raw : []).map((c: any) => ({
-        id: String(c.id),
-        name: c.name,
-        status: mapStatus(c.status),
-        effective_status: mapStatus(c.status),
-        objective: c.objective ?? c.campaign_type,
-        daily_budget: c.daily_budget_cents ? String(c.daily_budget_cents) : (c.budget?.daily_cents ? String(c.budget.daily_cents) : undefined),
-        updated_time: c.updated_at,
-      }));
+      const baseItems = (Array.isArray(raw) ? raw : []).map((c: any) => {
+        const apiName = firstString(c.display_name, c.name, c.campaign_name, c.internal_name, c.label, c.title);
+        return {
+          id: String(c.id),
+          name: apiName ?? `Campaign ${c.id}`,
+          api_name: apiName,
+          status: mapStatus(c.status),
+          effective_status: mapStatus(c.status),
+          objective: c.objective ?? c.campaign_type,
+          daily_budget: c.daily_budget_cents ? String(c.daily_budget_cents) : (c.budget?.daily_cents ? String(c.budget.daily_cents) : undefined),
+          updated_time: c.updated_at,
+          ...(body?.debug ? { raw: c } : {}),
+        };
+      });
+      const aliasMap = await fetchAliases(admin, "instacart", "campaign", baseItems.map(i => i.id));
+      const items = baseItems.map(i => ({ ...i, name: aliasMap[i.id] ?? i.name, has_alias: !!aliasMap[i.id] }));
       return json({ ok: true, platform: "instacart", items });
     }
 
@@ -282,15 +401,22 @@ async function handle(req: Request): Promise<Response> {
       const r = await icGet(`/ad_groups?campaign_id=${campaignId}&limit=100`);
       if (!r.ok) return json({ error: r.error, body: r.body }, 502);
       const raw = r.body?.ad_groups ?? r.body?.data ?? r.body ?? [];
-      const items = (Array.isArray(raw) ? raw : []).map((g: any) => ({
-        id: String(g.id),
-        name: g.name,
-        status: mapStatus(g.status),
-        effective_status: mapStatus(g.status),
-        optimization_goal: g.optimization_goal ?? g.targeting_strategy,
-        daily_budget: g.daily_budget_cents ? String(g.daily_budget_cents) : undefined,
-        updated_time: g.updated_at,
-      }));
+      const baseItems = (Array.isArray(raw) ? raw : []).map((g: any) => {
+        const apiName = firstString(g.display_name, g.name, g.ad_group_name, g.internal_name, g.label);
+        return {
+          id: String(g.id),
+          name: apiName ?? `Ad group ${g.id}`,
+          api_name: apiName,
+          status: mapStatus(g.status),
+          effective_status: mapStatus(g.status),
+          optimization_goal: g.optimization_goal ?? g.targeting_strategy,
+          daily_budget: g.daily_budget_cents ? String(g.daily_budget_cents) : undefined,
+          updated_time: g.updated_at,
+          ...(body?.debug ? { raw: g } : {}),
+        };
+      });
+      const aliasMap = await fetchAliases(admin, "instacart", "adset", baseItems.map(i => i.id));
+      const items = baseItems.map(i => ({ ...i, name: aliasMap[i.id] ?? i.name, has_alias: !!aliasMap[i.id] }));
       return json({ ok: true, platform: "instacart", items });
     }
 
@@ -300,13 +426,29 @@ async function handle(req: Request): Promise<Response> {
       const r = await icGet(`/ad_group_products?ad_group_id=${adGroupId}&limit=200`);
       if (!r.ok) return json({ error: r.error, body: r.body }, 502);
       const raw = r.body?.ad_group_products ?? r.body?.data ?? r.body ?? [];
-      const items = (Array.isArray(raw) ? raw : []).map((a: any) => ({
-        id: String(a.id),
-        name: a.product_name ?? a.name ?? a.upc ?? `Product ${a.product_id ?? a.id}`,
-        status: mapStatus(a.status),
-        effective_status: mapStatus(a.status),
-        updated_time: a.updated_at,
-      }));
+      const baseItems = (Array.isArray(raw) ? raw : []).map((a: any) => {
+        const apiName = firstString(
+          a.product?.display_name,
+          a.product?.name,
+          a.product?.brand_name,
+          a.product_name,
+          a.display_name,
+          a.name,
+          a.upc,
+          a.product?.upc,
+        );
+        return {
+          id: String(a.id),
+          name: apiName ?? `Product ${a.product_id ?? a.id}`,
+          api_name: apiName,
+          status: mapStatus(a.status),
+          effective_status: mapStatus(a.status),
+          updated_time: a.updated_at,
+          ...(body?.debug ? { raw: a } : {}),
+        };
+      });
+      const aliasMap = await fetchAliases(admin, "instacart", "ad", baseItems.map(i => i.id));
+      const items = baseItems.map(i => ({ ...i, name: aliasMap[i.id] ?? i.name, has_alias: !!aliasMap[i.id] }));
       return json({ ok: true, platform: "instacart", items });
     }
 

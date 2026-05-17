@@ -35,6 +35,19 @@ type Settings = {
   pause_zero_conv_days: number;
   bid_raise_gate_pct: number;
   max_daily_adds: number;
+  budget_pacing_enabled?: boolean;
+  bid_optimization_enabled?: boolean;
+  auto_pause_enabled?: boolean;
+  target_roas?: number;
+  bid_raise_step_pct?: number;
+  bid_lower_step_pct?: number;
+  bid_lower_gate_pct?: number;
+  max_daily_bid_changes?: number;
+  max_daily_budget_shift_pct?: number;
+  budget_floor_cents?: number;
+  budget_ceiling_cents?: number;
+  lookback_days?: number;
+  min_clicks_for_bid_change?: number;
 };
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -113,6 +126,19 @@ export default function KeywordEnginePanel({ platform, campaignId, adGroupId }: 
           pause_zero_conv_days: settingsDraft.pause_zero_conv_days,
           bid_raise_gate_pct: settingsDraft.bid_raise_gate_pct,
           max_daily_adds: settingsDraft.max_daily_adds,
+          budget_pacing_enabled: settingsDraft.budget_pacing_enabled,
+          bid_optimization_enabled: settingsDraft.bid_optimization_enabled,
+          auto_pause_enabled: settingsDraft.auto_pause_enabled,
+          target_roas: settingsDraft.target_roas,
+          bid_raise_step_pct: settingsDraft.bid_raise_step_pct,
+          bid_lower_step_pct: settingsDraft.bid_lower_step_pct,
+          bid_lower_gate_pct: settingsDraft.bid_lower_gate_pct,
+          max_daily_bid_changes: settingsDraft.max_daily_bid_changes,
+          max_daily_budget_shift_pct: settingsDraft.max_daily_budget_shift_pct,
+          budget_floor_cents: settingsDraft.budget_floor_cents,
+          budget_ceiling_cents: settingsDraft.budget_ceiling_cents,
+          lookback_days: settingsDraft.lookback_days,
+          min_clicks_for_bid_change: settingsDraft.min_clicks_for_bid_change,
         }},
       });
       if (error) throw error;
@@ -265,6 +291,86 @@ export default function KeywordEnginePanel({ platform, campaignId, adGroupId }: 
                 <Label className="text-xs uppercase tracking-brand">Max daily auto-adds</Label>
                 <Input style={SHARP} type="number" value={settingsDraft.max_daily_adds}
                   onChange={(e) => setSettingsDraft({ ...settingsDraft, max_daily_adds: Number(e.target.value) })} />
+              </div>
+
+              <div className="border-t border-border pt-3 mt-3">
+                <div className="text-[10px] uppercase tracking-brand text-muted-foreground mb-2 font-bold">Budget pacing</div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs uppercase tracking-brand">Auto-redistribute daily budgets</Label>
+                  <Switch checked={!!settingsDraft.budget_pacing_enabled} onCheckedChange={(v) => setSettingsDraft({ ...settingsDraft, budget_pacing_enabled: v })} />
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-brand">Max shift / run (%)</Label>
+                    <Input style={SHARP} type="number" value={settingsDraft.max_daily_budget_shift_pct ?? 25}
+                      onChange={(e) => setSettingsDraft({ ...settingsDraft, max_daily_budget_shift_pct: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-brand">Lookback (days)</Label>
+                    <Input style={SHARP} type="number" value={settingsDraft.lookback_days ?? 7}
+                      onChange={(e) => setSettingsDraft({ ...settingsDraft, lookback_days: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-brand">Floor ($/day)</Label>
+                    <Input style={SHARP} type="number" value={(settingsDraft.budget_floor_cents ?? 500) / 100}
+                      onChange={(e) => setSettingsDraft({ ...settingsDraft, budget_floor_cents: Math.round(Number(e.target.value) * 100) })} />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-brand">Ceiling ($/day)</Label>
+                    <Input style={SHARP} type="number" value={(settingsDraft.budget_ceiling_cents ?? 50000) / 100}
+                      onChange={(e) => setSettingsDraft({ ...settingsDraft, budget_ceiling_cents: Math.round(Number(e.target.value) * 100) })} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-3 mt-3">
+                <div className="text-[10px] uppercase tracking-brand text-muted-foreground mb-2 font-bold">Bid optimization</div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs uppercase tracking-brand">Auto-tune bids</Label>
+                  <Switch checked={!!settingsDraft.bid_optimization_enabled} onCheckedChange={(v) => setSettingsDraft({ ...settingsDraft, bid_optimization_enabled: v })} />
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-brand">Target ROAS (x)</Label>
+                    <Input style={SHARP} type="number" step="0.1" value={settingsDraft.target_roas ?? 3}
+                      onChange={(e) => setSettingsDraft({ ...settingsDraft, target_roas: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-brand">Min clicks to act</Label>
+                    <Input style={SHARP} type="number" value={settingsDraft.min_clicks_for_bid_change ?? 25}
+                      onChange={(e) => setSettingsDraft({ ...settingsDraft, min_clicks_for_bid_change: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-brand">Raise step (%)</Label>
+                    <Input style={SHARP} type="number" value={settingsDraft.bid_raise_step_pct ?? 15}
+                      onChange={(e) => setSettingsDraft({ ...settingsDraft, bid_raise_step_pct: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-brand">Lower step (%)</Label>
+                    <Input style={SHARP} type="number" value={settingsDraft.bid_lower_step_pct ?? 20}
+                      onChange={(e) => setSettingsDraft({ ...settingsDraft, bid_lower_step_pct: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-brand">Lower gate (% of target)</Label>
+                    <Input style={SHARP} type="number" value={settingsDraft.bid_lower_gate_pct ?? 50}
+                      onChange={(e) => setSettingsDraft({ ...settingsDraft, bid_lower_gate_pct: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-brand">Max bid changes / run</Label>
+                    <Input style={SHARP} type="number" value={settingsDraft.max_daily_bid_changes ?? 25}
+                      onChange={(e) => setSettingsDraft({ ...settingsDraft, max_daily_bid_changes: Number(e.target.value) })} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-3 mt-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-xs uppercase tracking-brand">Auto-pause zero-ROAS</Label>
+                    <div className="text-[10px] text-muted-foreground">Uses spend threshold + lookback above</div>
+                  </div>
+                  <Switch checked={!!settingsDraft.auto_pause_enabled} onCheckedChange={(v) => setSettingsDraft({ ...settingsDraft, auto_pause_enabled: v })} />
+                </div>
               </div>
             </div>
           )}

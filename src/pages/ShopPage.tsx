@@ -23,6 +23,9 @@ const ShopPage = () => {
 
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
+          <p className="max-w-3xl mx-auto text-center text-sm md:text-base text-muted-foreground mb-8 leading-relaxed">
+            Winemaker-driven by <span className="font-bold text-foreground">Susana Rodriguez Vasquez</span> — varietally correct and intentionally made from vine to glass.
+          </p>
           <ShippingIncludedBanner />
           {isLoading ? (
             <div className="flex justify-center py-16">

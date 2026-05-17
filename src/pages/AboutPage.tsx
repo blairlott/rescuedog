@@ -85,7 +85,7 @@ const AboutPage = () => {
       fields: [
         { key: "heading", label: "Heading", type: "text", value: getVal("story", "heading", "Great Wine. Greater Purpose.") },
         { key: "paragraph1", label: "Paragraph 1", type: "textarea", value: getVal("story", "paragraph1", "Rescue Dog Wines Cofounders Blair and Laura Lott started planning their new life in wine country in 2015. They knew that they wanted to embrace sustainable growing practices and create a new, more rewarding lifestyle for themselves. In addition, the Lotts knew that they wanted enough land to grow wine grapes AND foster dogs.") },
-        { key: "paragraph2", label: "Paragraph 2", type: "textarea", value: getVal("story", "paragraph2", "During this period of exploring many of California's wine regions, it dawned on the Lotts that they could combine their two passions—and Rescue Dog Wines was born!") },
+        { key: "paragraph2", label: "Paragraph 2", type: "textarea", value: getVal("story", "paragraph2", "During this period of exploring many of California's wine regions, it dawned on the Lotts that they could combine their two passions—and Rescue Dog Wines was born! Our wines are winemaker-driven by Susana Rodriguez Vasquez, varietally correct, and intentionally made from vine to glass.") },
         { key: "paragraph3", label: "Paragraph 3", type: "textarea", value: getVal("story", "paragraph3", "Fast forward several years and Rescue Dog Wines is pleased to offer a full portfolio of wines, many from our neighbors' sustainable vineyards or our Lodi Rules Certified Green vineyard in Acampo, California. We're proud that 50% of our profits support rescue organizations.") },
         { key: "image", label: "Image URL", type: "url", value: getVal("story", "image", lauraBlair) },
       ],
@@ -155,7 +155,7 @@ const AboutPage = () => {
                   {getVal("story", "paragraph1", "Rescue Dog Wines Cofounders Blair and Laura Lott started planning their new life in wine country in 2015. They knew that they wanted to embrace sustainable growing practices and create a new, more rewarding lifestyle for themselves. In addition, the Lotts knew that they wanted enough land to grow wine grapes AND foster dogs.")}
                 </p>
                 <p className="text-foreground leading-relaxed mb-4">
-                  {getVal("story", "paragraph2", "During this period of exploring many of California's wine regions, it dawned on the Lotts that they could combine their two passions—and Rescue Dog Wines was born!")}
+                  {getVal("story", "paragraph2", "During this period of exploring many of California's wine regions, it dawned on the Lotts that they could combine their two passions—and Rescue Dog Wines was born! Our wines are winemaker-driven by Susana Rodriguez Vasquez, varietally correct, and intentionally made from vine to glass.")}
                 </p>
                 <p className="text-foreground leading-relaxed">
                   {getVal("story", "paragraph3", "Fast forward several years and Rescue Dog Wines is pleased to offer a full portfolio of wines, many from our neighbors' sustainable vineyards or our Lodi Rules Certified Green vineyard in Acampo, California. We're proud that 50% of our profits support rescue organizations.")}

@@ -88,9 +88,12 @@ async function googleAccessToken(): Promise<{ ok: true; token: string } | { ok: 
       grant_type: "refresh_token",
     }).toString(),
   });
-  const body = await res.json().catch(() => ({}));
+  const text = await res.text();
+  let body: any = {};
+  try { body = text ? JSON.parse(text) : {}; } catch { body = { raw: text }; }
   if (!res.ok || !body?.access_token) {
-    return { ok: false, error: body?.error_description ?? body?.error ?? `token HTTP ${res.status}` };
+    const parts = [body?.error, body?.error_description].filter(Boolean);
+    return { ok: false, error: parts.length ? parts.join(": ") : `token HTTP ${res.status}` };
   }
   return { ok: true, token: body.access_token as string };
 }

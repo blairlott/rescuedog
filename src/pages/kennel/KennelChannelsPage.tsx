@@ -671,6 +671,67 @@ export default function KennelChannelsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Friendly-name rename dialog */}
+      <Dialog open={!!aliasing} onOpenChange={(o) => !o && setAliasing(null)}>
+        <DialogContent style={SHARP} className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="uppercase tracking-brand">Friendly name</DialogTitle>
+          </DialogHeader>
+          {aliasing && (
+            <div className="space-y-3">
+              <div className="text-xs text-muted-foreground">
+                <div className="font-mono">{aliasing.id}</div>
+                {aliasing.api_name && <div>API name: <span className="italic">{aliasing.api_name}</span></div>}
+              </div>
+              <div>
+                <Label className="text-xs uppercase tracking-brand">Display as</Label>
+                <Input
+                  style={SHARP}
+                  autoFocus
+                  value={aliasDraft}
+                  placeholder="e.g. Cabernet · Fall Promo"
+                  onChange={(ev) => setAliasDraft(ev.target.value)}
+                />
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  Leave blank to clear the override and fall back to the API name.
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" style={SHARP} onClick={() => setAliasing(null)} disabled={aliasSaving}>Cancel</Button>
+            <Button style={SHARP} onClick={saveAlias} disabled={aliasSaving}>{aliasSaving ? "Saving…" : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CSV import dialog */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent style={SHARP} className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="uppercase tracking-brand">Import friendly names</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div>Paste CSV: <code className="bg-muted px-1">entity_type,entity_id,friendly_name</code></div>
+              <div><code className="bg-muted px-1">entity_type</code> is one of: <code>campaign</code>, <code>adset</code>, <code>ad</code>, <code>keyword</code></div>
+              <div>Use "Export CSV" to grab a starter file with current IDs.</div>
+            </div>
+            <textarea
+              className="w-full h-64 border border-border bg-background p-2 text-xs font-mono"
+              style={SHARP}
+              value={importText}
+              onChange={(ev) => setImportText(ev.target.value)}
+              placeholder={"entity_type,entity_id,friendly_name\nadset,abc-123,Cab Fall Promo\nad,xyz-789,Cab 750ml"}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" style={SHARP} onClick={() => setImportOpen(false)} disabled={importBusy}>Cancel</Button>
+            <Button style={SHARP} onClick={runImport} disabled={importBusy}>{importBusy ? "Importing…" : "Import"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { MetricCard } from "@/components/kennel/MetricCard";
 import { ChannelPerformanceTable, type ChannelRow } from "@/components/kennel/ChannelPerformanceTable";
 import { SpendChart, type SpendDatum } from "@/components/kennel/SpendChart";
 import { VinoshipperPanel } from "@/components/kennel/VinoshipperPanel";
+import { AiInsights } from "@/components/kennel/AiInsights";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw, Sparkles, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -256,6 +257,34 @@ export default function KennelDashboard() {
     return data.sync.length > 0 && data.sync.every(s => !s.last_primary_sync || new Date(s.last_primary_sync).getTime() < cutoff);
   }, [data]);
 
+  const aiSnapshot = useMemo(() => ({
+    period: periodMeta.label,
+    paid_media: aggregates ? {
+      spend: aggregates.spend,
+      attributed_revenue: aggregates.revenue,
+      roas: aggregates.roas,
+      conversions: aggregates.conversions,
+      cpa: aggregates.cpa,
+    } : null,
+    dtc_vinoshipper: { revenue: dtc.revenue, orders: dtc.orders, aov: dtc.orders > 0 ? dtc.revenue / dtc.orders : 0 },
+    brick_mortar: bm ? {
+      period_revenue: bm.periodRev,
+      lifetime_revenue: bm.lifetimeRev,
+      off_premise: bm.off,
+      on_premise: bm.on,
+      distributor_depletion: bm.depl,
+      top_states: bm.topStates,
+    } : null,
+    finance: fin?.hasData ? {
+      cogs: fin.cogs, cost_of_sales: fin.cos, opex: fin.opex, total_expense: fin.total,
+      lifetime: { cogs: fin.lifetimeCogs, cost_of_sales: fin.lifetimeCos, opex: fin.lifetimeOpex, total: fin.lifetimeTotal },
+    } : null,
+    channels: channelRows.map(c => ({
+      name: c.name, platform: c.platform, spend: c.spend, revenue: c.revenue,
+      roas: c.roas, conversions: c.conversions, cpa: c.cpa,
+    })),
+  }), [periodMeta.label, aggregates, dtc, bm, fin, channelRows]);
+
   const runBackfill = async () => {
     setSyncing(true);
     try {
@@ -321,6 +350,8 @@ export default function KennelDashboard() {
         <div className="text-muted-foreground text-sm">Loading…</div>
       ) : (
         <>
+          <AiInsights snapshot={aiSnapshot} rangeLabel={periodMeta.label} />
+
           <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Paid media (ad channels)</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

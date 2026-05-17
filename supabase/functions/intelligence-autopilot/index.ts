@@ -111,14 +111,24 @@ Deno.serve(async (req) => {
     steps.business = (await callFn("business-rollup", { since: new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10) })).body;
     steps.meta = (await callFn("kennel-ingest-meta", { days: 30 })).body;
     steps.google = (await callFn("kennel-ingest-google", { days: 30 })).body;
+    steps.instacart = (await callFn("kennel-ingest-instacart", { days: 30 })).body;
+    steps.backfill_daily = (await callFn("kennel-backfill-daily", { days: 7 })).body;
   }
 
   steps.anomalies = (await callFn("ad-intelligence", { action: "detect_anomalies", platform: "meta" })).body;
   (await callFn("ad-intelligence", { action: "detect_anomalies", platform: "google" }));
   (await callFn("ad-intelligence", { action: "detect_anomalies", platform: "instacart" }));
 
+  steps.attribution = (await callFn("kennel-attribution-mta", { days: 30 })).body;
+  steps.margin = (await callFn("kennel-margin-optimize")).body;
+  steps.geo_gap = (await callFn("kennel-geo-demand-gap")).body;
+
   steps.decisions_from_anomalies = await emitDecisionsFromAnomalies();
   steps.decisions_from_churn = await emitDecisionsFromChurn();
+
+  if (body.send_brief !== false) {
+    steps.brief = (await callFn("kennel-morning-brief", {})).body;
+  }
 
   return J(200, { ok: true, steps });
 });

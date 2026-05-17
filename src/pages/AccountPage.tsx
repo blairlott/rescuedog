@@ -326,7 +326,7 @@ const AccountPage = () => {
                 <div className="space-y-1.5">
                   <Label>Your Birthday</Label>
                   <Input type="date" value={profileForm.birth_date} onChange={e => setProfileForm(f => ({ ...f, birth_date: e.target.value }))} />
-                  <p className="text-xs text-muted-foreground">We'll send you a birthday bottle perk on the house.</p>
+                  <p className="text-xs text-muted-foreground">We'll send you a little something on your birthday.</p>
                 </div>
                 <Separator className="my-2" />
                 <div className="space-y-2">
@@ -334,7 +334,7 @@ const AccountPage = () => {
                     <PawPrint className="w-4 h-4 text-primary" /> Your Rescue Dog
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Tell us about your pup — we'll celebrate their birthday too with an exclusive member offer.
+                    Tell us about your pup — we love celebrating rescue birthdays and adopt-iversaries with The Pack.
                   </p>
                   <div className="space-y-1.5">
                     <Label>Pet Name</Label>

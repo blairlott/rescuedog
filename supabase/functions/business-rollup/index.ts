@@ -23,39 +23,83 @@ async function authz(req: Request) {
 }
 
 async function rollupVinoshipper(since: string) {
-  // vs_transactions has line-item granularity already in vs_products_lifetime;
-  // but the canonical revenue table is vs_transactions. We bucket by date+state+segment.
-  const { data, error } = await sb
-    .from("vs_transactions")
-    .select("transaction_date, customer_state, customer_email, active_club_member, transaction_type, store, order_type")
-    .gte("transaction_date", since)
-    .limit(50000);
-  if (error) throw error;
+  // Page through ALL historical vs_transactions (Supabase caps page size at 1000).
+  type Row = {
+    transaction_date: string | null;
+    customer_state: string | null;
+    customer_email: string | null;
+    active_club_member: boolean | null;
+    bottles: number | null;
+    order_total: number | null;
+    discount: number | null;
+    shipping_to_customer: number | null;
+    total_sales_tax: number | null;
+    producer_payment: number | null;
+    invoice: string | null;
+  };
+  const buckets = new Map<string, {
+    date: string; state: string; segment: string;
+    invoices: Set<string>; customers: Set<string>;
+    units: number; gross: number; discount: number; shipping: number; tax: number; net: number;
+  }>();
 
-  // Pull totals from a parallel summary if exists; otherwise count orders only.
-  const buckets = new Map<string, { date: string; state: string; segment: string; orders: number; customers: Set<string> }>();
-  for (const r of data ?? []) {
-    if (!r.transaction_date) continue;
-    const segment = r.active_club_member ? "club" : "returning";
-    const k = `${r.transaction_date}|${r.customer_state ?? ""}|${segment}`;
-    const b = buckets.get(k) ?? { date: r.transaction_date as string, state: (r.customer_state as string) ?? "", segment, orders: 0, customers: new Set<string>() };
-    b.orders += 1;
-    if (r.customer_email) b.customers.add(r.customer_email as string);
-    buckets.set(k, b);
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await sb
+      .from("vs_transactions")
+      .select(
+        "transaction_date, customer_state, customer_email, active_club_member, bottles, order_total, discount, shipping_to_customer, total_sales_tax, producer_payment, invoice",
+      )
+      .gte("transaction_date", since)
+      .order("transaction_date", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as Row[];
+    if (!rows.length) break;
+    for (const r of rows) {
+      if (!r.transaction_date) continue;
+      const segment = r.active_club_member ? "club" : "returning";
+      const k = `${r.transaction_date}|${r.customer_state ?? ""}|${segment}`;
+      const b = buckets.get(k) ?? {
+        date: r.transaction_date, state: r.customer_state ?? "", segment,
+        invoices: new Set<string>(), customers: new Set<string>(),
+        units: 0, gross: 0, discount: 0, shipping: 0, tax: 0, net: 0,
+      };
+      if (r.invoice) b.invoices.add(r.invoice);
+      if (r.customer_email) b.customers.add(r.customer_email.toLowerCase());
+      b.units += Number(r.bottles ?? 0);
+      b.gross += Number(r.order_total ?? 0);
+      b.discount += Number(r.discount ?? 0);
+      b.shipping += Number(r.shipping_to_customer ?? 0);
+      b.tax += Number(r.total_sales_tax ?? 0);
+      b.net += Number(r.producer_payment ?? r.order_total ?? 0);
+      buckets.set(k, b);
+    }
+    if (rows.length < PAGE) break;
   }
-  const rows = [...buckets.values()].map(b => ({
+
+  const out = [...buckets.values()].map(b => ({
     date: b.date,
     channel: "vinoshipper",
     state: b.state || null,
     customer_segment: b.segment,
-    orders: b.orders,
+    orders: b.invoices.size,
+    units: Math.round(b.units),
+    gross_revenue_cents: Math.round(b.gross * 100),
+    discount_cents: Math.round(b.discount * 100),
+    shipping_cents: Math.round(b.shipping * 100),
+    tax_cents: Math.round(b.tax * 100),
+    net_revenue_cents: Math.round(b.net * 100),
     unique_customers: b.customers.size,
     source: "rollup",
   }));
-  if (rows.length) {
-    await sb.from("business_revenue_facts").upsert(rows, { onConflict: "date,dim_hash" });
+
+  for (let i = 0; i < out.length; i += 500) {
+    const chunk = out.slice(i, i + 500);
+    const { error } = await sb.from("business_revenue_facts").upsert(chunk, { onConflict: "date,dim_hash" });
+    if (error) throw error;
   }
-  return rows.length;
+  return out.length;
 }
 
 async function rollupOrders(since: string) {

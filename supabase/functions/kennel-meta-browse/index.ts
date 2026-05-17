@@ -13,9 +13,6 @@ const INSTACART_TOKEN_URL = "https://api.ads.instacart.com/oauth/token";
 let _icTokenCache: { token: string; expires_at: number } | null = null;
 let _icAdvertiserCache: string | null = null;
 async function instacartAccessToken(): Promise<{ ok: true; token: string } | { ok: false; error: string }> {
-  const directToken = Deno.env.get("INSTACART_ADS_API_TOKEN") || Deno.env.get("INSTACART_ADS_TOKEN");
-  if (directToken) return { ok: true, token: directToken };
-
   const clientId = Deno.env.get("INSTACART_ADS_CLIENT_ID");
   const clientSecret = Deno.env.get("INSTACART_ADS_CLIENT_SECRET");
   const refreshToken = Deno.env.get("INSTACART_ADS_REFRESH_TOKEN");

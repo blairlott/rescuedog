@@ -6410,6 +6410,7 @@ export type Database = {
         }
         Returns: string
       }
+      can_view_kennel: { Args: { _user_id: string }; Returns: boolean }
       compliant_retailer_set: {
         Args: {
           _latitude: number
@@ -6592,6 +6593,7 @@ export type Database = {
         | "crm_user"
         | "ad_ops_manager"
         | "executive"
+        | "kennel_viewer"
       experiment_metric:
         | "revenue_per_visitor"
         | "conversion_rate"
@@ -6741,6 +6743,7 @@ export const Constants = {
         "crm_user",
         "ad_ops_manager",
         "executive",
+        "kennel_viewer",
       ],
       experiment_metric: [
         "revenue_per_visitor",

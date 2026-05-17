@@ -98,7 +98,13 @@ Deno.serve(async (req) => {
     const touched = new Set(rows.map((r) => r.channel_id));
     for (const cid of touched) {
       await supabase.from("channel_sync_status").upsert(
-        { channel_id: cid, last_sync_at: new Date().toISOString(), last_source: "lindy", last_status: "ok" },
+        {
+          channel_id: cid,
+          last_primary_sync: new Date().toISOString(),
+          last_sync_source: "lindy",
+          sync_status: "fresh",
+          error_message: null,
+        },
         { onConflict: "channel_id" },
       );
     }

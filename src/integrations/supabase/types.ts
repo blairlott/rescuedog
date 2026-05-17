@@ -2663,6 +2663,81 @@ export type Database = {
         }
         Relationships: []
       }
+      kennel_optimizer_recommendations: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          apply_response: Json | null
+          clicks: number | null
+          conversions: number | null
+          created_at: string
+          current_value: number | null
+          delta_pct: number | null
+          entity_id: string
+          entity_type: string
+          id: string
+          idempotency_key: string
+          metric_window_days: number | null
+          platform: string
+          reasoning: string | null
+          recommended_value: number | null
+          revenue_cents: number | null
+          roas: number | null
+          rule_type: string
+          spend_cents: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          apply_response?: Json | null
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          current_value?: number | null
+          delta_pct?: number | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          idempotency_key: string
+          metric_window_days?: number | null
+          platform: string
+          reasoning?: string | null
+          recommended_value?: number | null
+          revenue_cents?: number | null
+          roas?: number | null
+          rule_type: string
+          spend_cents?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          apply_response?: Json | null
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string
+          current_value?: number | null
+          delta_pct?: number | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          idempotency_key?: string
+          metric_window_days?: number | null
+          platform?: string
+          reasoning?: string | null
+          recommended_value?: number | null
+          revenue_cents?: number | null
+          roas?: number | null
+          rule_type?: string
+          spend_cents?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string

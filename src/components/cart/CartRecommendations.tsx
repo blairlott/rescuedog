@@ -8,6 +8,11 @@ import { toast } from "sonner";
 import { useCartSettings } from "@/hooks/useCartSettings";
 import { isAgeVerified } from "@/lib/ageVerification";
 import { isWineProduct } from "@/lib/productUtils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface CartRecommendationsProps {
   cartItems: CartItem[];
@@ -63,8 +68,11 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
   }
   const recommendations = pool.slice(0, 2);
 
-  const handleAdd = async (product: typeof recommendations[0]) => {
-    const variant = product.node.variants.edges[0]?.node;
+  const handleAdd = async (
+    product: typeof recommendations[0],
+    variantOverride?: typeof recommendations[0]["node"]["variants"]["edges"][number]["node"],
+  ) => {
+    const variant = variantOverride ?? product.node.variants.edges[0]?.node;
     if (!variant) return;
     await addItem({
       product,
@@ -145,6 +153,12 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
           const image = product.node.images.edges[0]?.node;
           const price = parseFloat(product.node.priceRange.minVariantPrice.amount);
           const discounted = isPairItBundle ? price * 0.9 : null;
+          // A variant is "selectable" if there's more than one in-stock variant
+          // OR the product exposes a Size option with more than one value. Wine
+          // is single-variant by convention, so this only ever fires for merch.
+          const variants = product.node.variants.edges.map(e => e.node).filter(v => v.availableForSale);
+          const sizeOption = product.node.options?.find(o => /size/i.test(o.name));
+          const needsSizeChoice = variants.length > 1 || (sizeOption && sizeOption.values.length > 1);
           return (
             <div key={product.node.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/50 border border-border">
               <div className="w-10 h-10 rounded overflow-hidden bg-secondary flex-shrink-0">
@@ -161,15 +175,61 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
                   <p className="text-xs text-muted-foreground">Add for +${price.toFixed(2)}</p>
                 )}
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs flex-shrink-0"
-                disabled={isLoading}
-                onClick={() => handleAdd(product)}
-              >
-                {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Plus className="w-3 h-3 mr-1" />Add</>}
-              </Button>
+              {needsSizeChoice ? (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs flex-shrink-0"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Plus className="w-3 h-3 mr-1" />Pick size</>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-56 p-3 space-y-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Choose a size
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {variants.map(v => {
+                        const sizeVal =
+                          v.selectedOptions?.find(o => /size/i.test(o.name))?.value ?? v.title;
+                        return (
+                          <Button
+                            key={v.id}
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={isLoading}
+                            onClick={(e) => {
+                              // Close popover by removing focus; Radix closes on outside click.
+                              (e.currentTarget.closest("[data-radix-popper-content-wrapper]") as HTMLElement | null)
+                                ?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+                              void handleAdd(product, v);
+                            }}
+                          >
+                            {sizeVal}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-snug">
+                      Size adjusts only this item — your other cart lines stay as-is.
+                    </p>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs flex-shrink-0"
+                  disabled={isLoading}
+                  onClick={() => handleAdd(product)}
+                >
+                  {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Plus className="w-3 h-3 mr-1" />Add</>}
+                </Button>
+              )}
             </div>
           );
         })}

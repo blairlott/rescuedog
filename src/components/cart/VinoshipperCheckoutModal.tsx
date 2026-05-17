@@ -78,6 +78,14 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
     orderId: string;
     total: number;
     bottles: number;
+    /**
+     * Snapshot of the merch handoff captured at the moment wine succeeds.
+     * We can't rely on the live `pendingMerchHandoff` prop here because the
+     * parent CartDrawer re-renders right after wine items are removed and
+     * passes `pendingMerchHandoff={null}` (no wine + merch → no dual), which
+     * would unmount the handoff screen mid-flow.
+     */
+    handoff: NonNullable<Props["pendingMerchHandoff"]>;
   }>(null);
   const [shipMethod, setShipMethod] = useState<"home" | "ups_ap">("home");
   const [accessPoint, setAccessPoint] = useState<AccessPoint | null>(null);
@@ -330,6 +338,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
           orderId: fakeOrderId,
           total: totalForRedirect,
           bottles: bottlesForRedirect,
+          handoff: pendingMerchHandoff,
         });
         // Pre-register a pending handoff row so the cron can email if abandoned.
         try {
@@ -367,12 +376,13 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   }, [open]);
 
   const handleContinueToMerch = () => {
-    if (!pendingMerchHandoff || !merchHandoffReady) return;
+    if (!merchHandoffReady) return;
+    const handoff = merchHandoffReady.handoff;
     // Fresh user gesture — popups are allowed here.
-    const win = window.open(pendingMerchHandoff.checkoutUrl, "_blank");
+    const win = window.open(handoff.checkoutUrl, "_blank");
     if (!win) {
       // Popup blocked — fall back to same-tab nav.
-      window.location.href = pendingMerchHandoff.checkoutUrl;
+      window.location.href = handoff.checkoutUrl;
       return;
     }
     onOpenChange(false);
@@ -384,7 +394,10 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] p-0 flex flex-col">
-        {merchHandoffReady && pendingMerchHandoff ? (
+        {merchHandoffReady ? (
+          (() => {
+            const handoff = merchHandoffReady.handoff;
+            return (
           <div className="p-6 space-y-5">
             <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
               <CheckCircle2 className="h-5 w-5" />
@@ -395,8 +408,8 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
             <div className="space-y-1">
               <h2 className="font-display text-xl">One more step — your merch</h2>
               <p className="text-sm text-muted-foreground">
-                Wine ships from our licensed partner. Your {pendingMerchHandoff.itemCount}{" "}
-                merch item{pendingMerchHandoff.itemCount === 1 ? "" : "s"} check out separately
+                Wine ships from our licensed partner. Your {handoff.itemCount}{" "}
+                merch item{handoff.itemCount === 1 ? "" : "s"} check out separately
                 through our secure merch checkout.
               </p>
             </div>
@@ -406,10 +419,10 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">
-                  {pendingMerchHandoff.itemCount} item{pendingMerchHandoff.itemCount === 1 ? "" : "s"}
+                  {handoff.itemCount} item{handoff.itemCount === 1 ? "" : "s"}
                 </span>
                 <span className="font-bold">
-                  ${(pendingMerchHandoff.subtotalCents / 100).toFixed(2)}
+                  ${(handoff.subtotalCents / 100).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -426,6 +439,8 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
               Opens in a new tab. If you don't complete it now, we'll email you a one-tap link to finish later.
             </p>
           </div>
+            );
+          })()
         ) : (
         <>
         <div className="overflow-y-auto p-6 pb-32 flex-1 space-y-4">

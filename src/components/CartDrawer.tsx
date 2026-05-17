@@ -28,6 +28,7 @@ import { Percent } from "lucide-react";
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
 import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
 import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInterstitial";
+import { CartLineSizePicker } from "@/components/cart/CartLineSizePicker";
 
 const LAST_ORDER_KEY = "rdw_last_order";
 const PENDING_WINE_KEY = "rdw_pending_wine_checkout";
@@ -449,6 +450,7 @@ export const CartDrawer = () => {
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-sm truncate">{item.product.node.title}</h4>
                           <p className="text-xs text-muted-foreground">{item.selectedOptions.map(o => o.value).join(' • ')}</p>
+                          <CartLineSizePicker item={item} />
                           <p className="font-semibold text-sm mt-1">${parseFloat(item.price.amount).toFixed(2)}</p>
                           <CartLineExtras item={item} />
                         </div>

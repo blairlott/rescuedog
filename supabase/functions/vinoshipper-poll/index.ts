@@ -37,6 +37,22 @@ function json(body: unknown, status = 200) {
   });
 }
 
+/** Coerce a value to number-or-null. Drops objects, strings, etc. */
+function num(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** First truthy numeric from a list of candidates. */
+function pickNum(...candidates: unknown[]): number | null {
+  for (const c of candidates) {
+    const n = num(c);
+    if (n !== null) return n;
+  }
+  return null;
+}
+
 /** Map a Vinoshipper order JSON into a vs_transactions row. */
 function mapOrder(o: any): Record<string, unknown> {
   const cust = o.customer ?? {};
@@ -79,11 +95,11 @@ function mapOrder(o: any): Record<string, unknown> {
     ship_to_city: shipAddr.city ?? null,
     ship_to_state: shipAddr.state ?? shipAddr.stateCode ?? null,
     ship_to_zip: shipAddr.zip ?? shipAddr.postalCode ?? null,
-    bottles: o.bottles ?? null,
-    gross_value: o.grossValue ?? o.subtotal ?? null,
-    discount: o.discount ?? null,
-    shipping_to_customer: o.shipping ?? null,
-    order_total: o.orderTotal ?? o.total ?? null,
+    bottles: num(o.bottles),
+    gross_value: pickNum(o.grossValue, o.subtotal, o.subTotal),
+    discount: pickNum(o.discount, o.discountTotal),
+    shipping_to_customer: pickNum(o.shippingTotal, o.shippingCost, o.shipping?.total, o.shipping?.cost),
+    order_total: pickNum(o.orderTotal, o.total, o.grandTotal),
     chain_status: o.chainStatus ?? o.status ?? null,
     raw: o,
   };
@@ -239,7 +255,7 @@ Deno.serve(async (req) => {
     let purchases = 0, subscribes = 0, ltvCents = 0;
     for (const o of newOrders) {
       const orderId = String(o.id ?? o.orderId ?? o.invoice);
-      const orderTotal = Number(o.orderTotal ?? o.total ?? 0);
+      const orderTotal = pickNum(o.orderTotal, o.total, o.grandTotal) ?? 0;
       const valueCents = Math.round(orderTotal * 100);
       if (valueCents <= 0) continue;
 

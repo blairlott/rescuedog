@@ -214,7 +214,9 @@ export default function KennelChannelsPage() {
     if (!current) return;
     const next = nextLevel[current.level];
     if (!next) return;
-    setTrail([...trail, { level: next, parent_id: e.id, label: e.name }]);
+    // Use raw entity_id (without format prefix) when drilling down — the
+    // Instacart API requires a plain UUID for campaign_id / ad_group_id.
+    setTrail([...trail, { level: next, parent_id: e.entity_id ?? e.id, label: e.name }]);
   };
 
   const jumpTo = (idx: number) => {

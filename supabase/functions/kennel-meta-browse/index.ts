@@ -22,25 +22,20 @@ async function instacartAccessToken(): Promise<{ ok: true; token: string } | { o
   if (_icTokenCache && _icTokenCache.expires_at > Date.now() + 30_000) {
     return { ok: true, token: _icTokenCache.token };
   }
-  // Instacart Ads API uses OAuth2 client_credentials grant (machine-to-machine).
-  // Fall back to refresh_token grant only if a refresh token is explicitly stored.
-  const body = refreshToken
-    ? new URLSearchParams({
-        grant_type: "refresh_token",
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-      })
-    : new URLSearchParams({
-        grant_type: "client_credentials",
-        client_id: clientId,
-        client_secret: clientSecret,
-        scope: "ads_api",
-      });
+  // Instacart Ads API: credentials go in JSON body (NOT Basic auth, NOT form-urlencoded).
+  // This matches the working workflows I1/I2/I3/Z7.
+  if (!refreshToken) {
+    return { ok: false, error: "INSTACART_ADS_REFRESH_TOKEN missing" };
+  }
   const res = await fetch(INSTACART_TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: body.toString(),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      grant_type: "refresh_token",
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+    }),
   });
   const b = await res.json().catch(() => ({}));
   if (!res.ok || !b?.access_token) {

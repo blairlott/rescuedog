@@ -6,7 +6,39 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const META_GRAPH_VERSION = "v21.0";
 const GOOGLE_ADS_VERSION = "v18";
-const INSTACART_BASE = "https://api.ads.instacart.com/api/v2";
+const INSTACART_BASE = "https://api.ads.instacart.com/api/v3";
+const INSTACART_TOKEN_URL = "https://api.ads.instacart.com/oauth/token";
+
+// In-memory cache per cold start.
+let _icTokenCache: { token: string; expires_at: number } | null = null;
+async function instacartAccessToken(): Promise<{ ok: true; token: string } | { ok: false; error: string }> {
+  const clientId = Deno.env.get("INSTACART_ADS_CLIENT_ID");
+  const clientSecret = Deno.env.get("INSTACART_ADS_CLIENT_SECRET");
+  const refreshToken = Deno.env.get("INSTACART_ADS_REFRESH_TOKEN");
+  if (!clientId || !clientSecret || !refreshToken) {
+    return { ok: false, error: "Instacart OAuth credentials missing (client id/secret/refresh token)" };
+  }
+  if (_icTokenCache && _icTokenCache.expires_at > Date.now() + 30_000) {
+    return { ok: true, token: _icTokenCache.token };
+  }
+  const res = await fetch(INSTACART_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+    }).toString(),
+  });
+  const b = await res.json().catch(() => ({}));
+  if (!res.ok || !b?.access_token) {
+    return { ok: false, error: b?.error_description ?? b?.error ?? `token HTTP ${res.status}` };
+  }
+  const ttlSec = Number(b.expires_in ?? 3600);
+  _icTokenCache = { token: b.access_token as string, expires_at: Date.now() + ttlSec * 1000 };
+  return { ok: true, token: b.access_token as string };
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -144,15 +176,18 @@ Deno.serve(async (req) => {
 
   // ---------------- Instacart Ads ----------------
   if (platform === "instacart") {
-    const icToken = Deno.env.get("INSTACART_ADS_API_TOKEN");
     const advertiserId = Deno.env.get("INSTACART_ADS_ADVERTISER_ID") ?? body?.advertiser_id;
-    if (!icToken || !advertiserId) {
-      return json({ ok: true, platform: "instacart", items: [], not_connected: true, message: "Instacart Ads credentials missing" });
+    const tk = await instacartAccessToken();
+    if (!tk.ok || !advertiserId) {
+      return json({
+        ok: true, platform: "instacart", items: [], not_connected: true,
+        message: !tk.ok ? tk.error : "INSTACART_ADS_ADVERTISER_ID missing",
+      });
     }
     const icHeaders = {
-      Authorization: `Bearer ${icToken}`,
+      Authorization: `Bearer ${tk.token}`,
       "Content-Type": "application/json",
-      "X-Advertiser-Id": String(advertiserId),
+      "Instacart-Ads-Advertiser-Id": String(advertiserId),
     };
 
     const icGet = async (path: string) => {

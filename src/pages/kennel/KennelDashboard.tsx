@@ -34,11 +34,16 @@ export default function KennelDashboard() {
       const fromDate = new Date();
       fromDate.setDate(fromDate.getDate() - range);
       const fromIso = fromDate.toISOString().slice(0, 10);
+      const fromTs = fromDate.toISOString();
 
-      const [channelsRes, perfRes, syncRes] = await Promise.all([
+      const [channelsRes, perfRes, syncRes, dtcRes] = await Promise.all([
         supabase.from("ad_channels" as any).select("id, name, platform").order("name"),
         supabase.from("ad_performance_daily" as any).select("channel_id, date, spend, impressions, clicks, conversions, revenue, roas, cpa").gte("date", fromIso).order("date"),
         supabase.from("channel_sync_status" as any).select("channel_id, last_primary_sync"),
+        supabase.from("meta_capi_events" as any)
+          .select("value_cents, order_id, sent_at, success, test_mode")
+          .eq("success", true).eq("test_mode", false)
+          .gte("sent_at", fromTs),
       ]);
       return {
         channels: ((channelsRes.data as any) || []) as Channel[],
@@ -47,9 +52,22 @@ export default function KennelDashboard() {
           spend: Number(r.spend), revenue: Number(r.revenue), roas: Number(r.roas), cpa: Number(r.cpa),
         })),
         sync: ((syncRes.data as any) || []) as SyncRow[],
+        dtc: ((dtcRes.data as any) || []) as { value_cents: number; order_id: string }[],
       };
     },
   });
+  const dtc = useMemo(() => {
+    if (!data) return { revenue: 0, orders: 0 };
+    const seen = new Set<string>();
+    let revenue = 0;
+    for (const r of data.dtc) {
+      if (seen.has(r.order_id)) continue;
+      seen.add(r.order_id);
+      revenue += Number(r.value_cents || 0) / 100;
+    }
+    return { revenue, orders: seen.size };
+  }, [data]);
+
 
   const aggregates = useMemo(() => {
     if (!data) return null;
@@ -146,12 +164,25 @@ export default function KennelDashboard() {
         <div className="text-muted-foreground text-sm">Loading…</div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <MetricCard label="Spend" value={`$${(aggregates?.spend ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-            <MetricCard label="Revenue" value={`$${(aggregates?.revenue ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-            <MetricCard label="ROAS" value={`${(aggregates?.roas ?? 0).toFixed(2)}x`} hint="Revenue ÷ Spend" />
-            <MetricCard label="Conversions" value={(aggregates?.conversions ?? 0).toLocaleString()} hint={`$${(aggregates?.cpa ?? 0).toFixed(2)} CPA`} />
-          </div>
+          <section className="space-y-2">
+            <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Paid media (ad channels)</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <MetricCard label="Ad Spend" value={`$${(aggregates?.spend ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Meta + Google + Instacart" />
+              <MetricCard label="Attributed Revenue" value={`$${(aggregates?.revenue ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="From ad platforms" />
+              <MetricCard label="ROAS" value={`${(aggregates?.roas ?? 0).toFixed(2)}x`} hint="Attributed ÷ Spend" />
+              <MetricCard label="Conversions" value={(aggregates?.conversions ?? 0).toLocaleString()} hint={`$${(aggregates?.cpa ?? 0).toFixed(2)} CPA`} />
+            </div>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">DTC sales (Vinoshipper)</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <MetricCard label="DTC Revenue" value={`$${dtc.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Vinoshipper orders" />
+              <MetricCard label="DTC Orders" value={dtc.orders.toLocaleString()} hint="From Z3a / CAPI feed" />
+              <MetricCard label="True ROAS" value={(aggregates?.spend ?? 0) > 0 ? `${(dtc.revenue / (aggregates?.spend ?? 1)).toFixed(2)}x` : "—"} hint="DTC Revenue ÷ Ad Spend" />
+              <MetricCard label="AOV" value={dtc.orders > 0 ? `$${(dtc.revenue / dtc.orders).toFixed(0)}` : "—"} hint="Average order value" />
+            </div>
+          </section>
 
           <SpendChart data={chartData} channels={channelNames} />
 

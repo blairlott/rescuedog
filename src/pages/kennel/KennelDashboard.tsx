@@ -39,7 +39,7 @@ export default function KennelDashboard() {
       fromDate.setDate(fromDate.getDate() - range);
       const fromIso = fromDate.toISOString().slice(0, 10);
 
-      const [channelsRes, perfRes, syncRes, dtcRes] = await Promise.all([
+      const [channelsRes, perfRes, syncRes, dtcRes, bmRes, bmLifetimeRes] = await Promise.all([
         supabase.from("ad_channels" as any).select("id, name, platform").order("name"),
         supabase.from("ad_performance_daily" as any).select("channel_id, date, spend, impressions, clicks, conversions, revenue, roas, cpa").gte("date", fromIso).order("date"),
         supabase.from("channel_sync_status" as any).select("channel_id, last_primary_sync"),
@@ -61,6 +61,17 @@ export default function KennelDashboard() {
           }
           return { data: acc };
         })(),
+        // Brick & mortar — period rows for state/channel breakdown
+        supabase
+          .from("business_revenue_facts" as any)
+          .select("date, channel, state, net_revenue_cents, units, orders")
+          .in("channel", ["brick_mortar_off", "brick_mortar_on", "distributor_depletion"])
+          .gte("date", fromIso),
+        // Brick & mortar — lifetime totals
+        supabase
+          .from("business_revenue_facts" as any)
+          .select("net_revenue_cents, units")
+          .in("channel", ["brick_mortar_off", "brick_mortar_on", "distributor_depletion"]),
       ]);
       return {
         channels: ((channelsRes.data as any) || []) as Channel[],
@@ -70,6 +81,8 @@ export default function KennelDashboard() {
         })),
         sync: ((syncRes.data as any) || []) as SyncRow[],
         dtc: ((dtcRes.data as any) || []) as { order_total: number; invoice: string }[],
+        bm: ((bmRes.data as any) || []) as { date: string; channel: string; state: string | null; net_revenue_cents: number; units: number; orders: number }[],
+        bmLifetime: ((bmLifetimeRes.data as any) || []) as { net_revenue_cents: number; units: number }[],
       };
     },
   });
@@ -82,6 +95,37 @@ export default function KennelDashboard() {
       if (r.invoice) invoices.add(r.invoice);
     }
     return { revenue, orders: invoices.size };
+  }, [data]);
+
+  const bm = useMemo(() => {
+    if (!data) return null;
+    const rows = data.bm ?? [];
+    let periodRev = 0, periodUnits = 0, periodOrders = 0;
+    const byChannel = new Map<string, number>();
+    const byState = new Map<string, number>();
+    for (const r of rows) {
+      const cents = Number(r.net_revenue_cents || 0);
+      periodRev += cents;
+      periodUnits += Number(r.units || 0);
+      periodOrders += Number(r.orders || 0);
+      byChannel.set(r.channel, (byChannel.get(r.channel) ?? 0) + cents);
+      if (r.state) byState.set(r.state, (byState.get(r.state) ?? 0) + cents);
+    }
+    const lifetimeRev = (data.bmLifetime ?? []).reduce((s, r) => s + Number(r.net_revenue_cents || 0), 0);
+    const lifetimeUnits = (data.bmLifetime ?? []).reduce((s, r) => s + Number(r.units || 0), 0);
+    const topStates = Array.from(byState.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    return {
+      periodRev: periodRev / 100,
+      periodUnits,
+      periodOrders,
+      lifetimeRev: lifetimeRev / 100,
+      lifetimeUnits,
+      off: (byChannel.get("brick_mortar_off") ?? 0) / 100,
+      on: (byChannel.get("brick_mortar_on") ?? 0) / 100,
+      depl: (byChannel.get("distributor_depletion") ?? 0) / 100,
+      topStates: topStates.map(([s, c]) => [s, c / 100] as [string, number]),
+      hasData: rows.length > 0 || lifetimeRev > 0,
+    };
   }, [data]);
 
 
@@ -233,6 +277,39 @@ export default function KennelDashboard() {
           <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Vinoshipper DTC (full history)</h2>
             <VinoshipperPanel rangeDays={range} />
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Brick &amp; mortar (Lindy)</h2>
+            {!bm?.hasData ? (
+              <div className="border-2 border-dashed border-border p-4 text-sm text-muted-foreground" style={{ borderRadius: 0 }}>
+                Awaiting first Lindy ingest. Once she posts to <code className="font-mono text-xs">/functions/v1/kennel-ingest-bm</code>, off-premise, on-premise, and distributor depletions roll up here — lifetime + period.
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <MetricCard label={`B&M Revenue (${range}d)`} value={`$${bm.periodRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`${bm.periodUnits.toLocaleString()} units · ${bm.periodOrders.toLocaleString()} invoices`} />
+                  <MetricCard label="B&M Lifetime" value={`$${bm.lifetimeRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`${bm.lifetimeUnits.toLocaleString()} units · life of brand`} />
+                  <MetricCard label="Off-premise" value={`$${bm.off.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Retail (period)" />
+                  <MetricCard label="On-premise + Depl." value={`$${(bm.on + bm.depl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Restaurants + distributor" />
+                </div>
+                {bm.topStates.length > 0 && (
+                  <div className="border-2 border-foreground p-4 mt-3" style={{ borderRadius: 0 }}>
+                    <h3 className="text-xs uppercase tracking-brand font-bold text-foreground mb-3">Top B&amp;M states ({range}d)</h3>
+                    <table className="w-full text-xs">
+                      <tbody>
+                        {bm.topStates.map(([state, rev]) => (
+                          <tr key={state} className="border-b border-border last:border-0">
+                            <td className="py-1.5 text-foreground font-bold">{state}</td>
+                            <td className="py-1.5 pl-2 text-right tabular-nums font-bold text-foreground">${rev.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
           </section>
 
           <SpendChart data={chartData} channels={channelNames} />

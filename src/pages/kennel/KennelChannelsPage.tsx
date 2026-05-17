@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,8 +67,20 @@ export default function KennelChannelsPage() {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [notConnected, setNotConnected] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const current: Crumb | null = trail[trail.length - 1] ?? null;
+
+  useEffect(() => {
+    const q = (searchParams.get("platform") ?? "").toLowerCase();
+    if (!q || platform) return;
+    const match = PLATFORMS.find(p => p.id === q || q.includes(p.id));
+    if (match) {
+      setPlatform(match.id);
+      setTrail([{ level: "campaign", label: `${match.id} · campaigns` }]);
+    }
+    // eslint-disable-next-line
+  }, [searchParams]);
 
   const load = async () => {
     if (!platform || !current) {
@@ -123,6 +136,7 @@ export default function KennelChannelsPage() {
     setPlatform(null);
     setTrail([]);
     setItems([]);
+    setSearchParams({});
   };
 
   const toggle = async (e: Entity) => {

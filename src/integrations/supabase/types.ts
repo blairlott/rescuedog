@@ -140,6 +140,54 @@ export type Database = {
           },
         ]
       }
+      ad_guardrails: {
+        Row: {
+          channel_id: string
+          daily_spend_cap_cents: number
+          max_bid_change_pct: number
+          max_budget_change_pct: number
+          pause_window: string | null
+          paused: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          channel_id: string
+          daily_spend_cap_cents?: number
+          max_bid_change_pct?: number
+          max_budget_change_pct?: number
+          pause_window?: string | null
+          paused?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          channel_id?: string
+          daily_spend_cap_cents?: number
+          max_bid_change_pct?: number
+          max_budget_change_pct?: number
+          pause_window?: string | null
+          paused?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_guardrails_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: true
+            referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_guardrails_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_performance_daily: {
         Row: {
           channel_id: string
@@ -276,6 +324,50 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_reconciliation_log: {
+        Row: {
+          channel_id: string | null
+          created_at: string
+          date: string
+          flagged: boolean
+          id: string
+          lindy_value: number | null
+          metric: string
+          native_value: number | null
+          variance_pct: number | null
+        }
+        Insert: {
+          channel_id?: string | null
+          created_at?: string
+          date: string
+          flagged?: boolean
+          id?: string
+          lindy_value?: number | null
+          metric: string
+          native_value?: number | null
+          variance_pct?: number | null
+        }
+        Update: {
+          channel_id?: string | null
+          created_at?: string
+          date?: string
+          flagged?: boolean
+          id?: string
+          lindy_value?: number | null
+          metric?: string
+          native_value?: number | null
+          variance_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_reconciliation_log_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "ad_channels"
             referencedColumns: ["id"]
           },
         ]

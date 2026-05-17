@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { MetricCard } from "@/components/kennel/MetricCard";
 import { ChannelPerformanceTable, type ChannelRow } from "@/components/kennel/ChannelPerformanceTable";
 import { SpendChart, type SpendDatum } from "@/components/kennel/SpendChart";
 import { VinoshipperPanel } from "@/components/kennel/VinoshipperPanel";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 type Range = 7 | 14 | 30;
 
@@ -27,7 +28,9 @@ interface SyncRow { channel_id: string; last_primary_sync: string | null; }
 
 export default function KennelDashboard() {
   const [range, setRange] = useState<Range>(30);
+  const [syncing, setSyncing] = useState(false);
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["kennel-dashboard", range],
@@ -35,16 +38,29 @@ export default function KennelDashboard() {
       const fromDate = new Date();
       fromDate.setDate(fromDate.getDate() - range);
       const fromIso = fromDate.toISOString().slice(0, 10);
-      const fromTs = fromDate.toISOString();
 
       const [channelsRes, perfRes, syncRes, dtcRes] = await Promise.all([
         supabase.from("ad_channels" as any).select("id, name, platform").order("name"),
         supabase.from("ad_performance_daily" as any).select("channel_id, date, spend, impressions, clicks, conversions, revenue, roas, cpa").gte("date", fromIso).order("date"),
         supabase.from("channel_sync_status" as any).select("channel_id, last_primary_sync"),
-        supabase.from("meta_capi_events" as any)
-          .select("value_cents, order_id, sent_at, success, test_mode")
-          .eq("success", true).eq("test_mode", false)
-          .gte("sent_at", fromTs),
+        // Real DTC revenue: page through Vinoshipper transactions (canonical source).
+        (async () => {
+          const PAGE = 1000;
+          const acc: { order_total: number; invoice: string }[] = [];
+          for (let from = 0; from < 50000; from += PAGE) {
+            const { data, error } = await supabase
+              .from("vs_transactions" as any)
+              .select("order_total, invoice")
+              .gte("transaction_date", fromIso)
+              .order("transaction_date", { ascending: true })
+              .range(from, from + PAGE - 1);
+            if (error) return { data: acc };
+            const rows = (data as any[]) ?? [];
+            acc.push(...rows);
+            if (rows.length < PAGE) break;
+          }
+          return { data: acc };
+        })(),
       ]);
       return {
         channels: ((channelsRes.data as any) || []) as Channel[],
@@ -53,20 +69,19 @@ export default function KennelDashboard() {
           spend: Number(r.spend), revenue: Number(r.revenue), roas: Number(r.roas), cpa: Number(r.cpa),
         })),
         sync: ((syncRes.data as any) || []) as SyncRow[],
-        dtc: ((dtcRes.data as any) || []) as { value_cents: number; order_id: string }[],
+        dtc: ((dtcRes.data as any) || []) as { order_total: number; invoice: string }[],
       };
     },
   });
   const dtc = useMemo(() => {
     if (!data) return { revenue: 0, orders: 0 };
-    const seen = new Set<string>();
+    const invoices = new Set<string>();
     let revenue = 0;
     for (const r of (data.dtc ?? [])) {
-      if (seen.has(r.order_id)) continue;
-      seen.add(r.order_id);
-      revenue += Number(r.value_cents || 0) / 100;
+      revenue += Number(r.order_total || 0);
+      if (r.invoice) invoices.add(r.invoice);
     }
-    return { revenue, orders: seen.size };
+    return { revenue, orders: invoices.size };
   }, [data]);
 
 
@@ -130,6 +145,25 @@ export default function KennelDashboard() {
     return data.sync.length > 0 && data.sync.every(s => !s.last_primary_sync || new Date(s.last_primary_sync).getTime() < cutoff);
   }, [data]);
 
+  const runBackfill = async () => {
+    setSyncing(true);
+    try {
+      toast.message("Pulling historical data…", { description: "Meta · Google · Instacart + Vinoshipper" });
+      const [adRes, bizRes] = await Promise.all([
+        supabase.functions.invoke("kennel-backfill-daily", { body: { days: 365 } }),
+        supabase.functions.invoke("business-rollup", { body: { since: "2019-01-01" } }),
+      ]);
+      if (adRes.error) throw adRes.error;
+      if (bizRes.error) throw bizRes.error;
+      toast.success("Historical data synced");
+      await qc.invalidateQueries({ queryKey: ["kennel-dashboard"] });
+    } catch (e: any) {
+      toast.error("Sync failed", { description: e?.message ?? String(e) });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-[1400px]">
       {lindyStale && (
@@ -145,7 +179,7 @@ export default function KennelDashboard() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Last {range} days · all channels</p>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
           {([7, 14, 30] as Range[]).map(r => (
             <Button
               key={r}
@@ -158,6 +192,17 @@ export default function KennelDashboard() {
               {r}d
             </Button>
           ))}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={runBackfill}
+            disabled={syncing}
+            style={{ borderRadius: 0 }}
+            className="uppercase tracking-brand text-xs ml-2"
+          >
+            <RefreshCw className={`h-3 w-3 mr-1 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing…" : "Sync history"}
+          </Button>
         </div>
       </header>
 

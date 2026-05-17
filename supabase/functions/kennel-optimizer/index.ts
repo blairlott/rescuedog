@@ -59,18 +59,15 @@ function isoDateOffset(days: number) {
   return d.toISOString().slice(0, 10);
 }
 
-/** Fetch Instacart performance report (best-effort, schema-tolerant). */
+/** Fetch Instacart performance report at campaign level (best-effort, schema-tolerant). */
 async function fetchInstacartReport(
   token: string,
   advertiserId: string,
-  level: "ad_group" | "ad_group_product",
   lookbackDays: number,
 ): Promise<{ ok: true; rows: any[] } | { ok: false; error: string }> {
   const endDate = isoDateOffset(0);
   const startDate = isoDateOffset(lookbackDays);
-  // Instacart Ads v3 reporting — best-effort URL; if your account uses a
-  // different report path, this returns empty rows gracefully.
-  const url = `${INSTACART_BASE}/reports?advertiser_id=${advertiserId}&level=${level}&start_date=${startDate}&end_date=${endDate}&granularity=total`;
+  const url = `${INSTACART_BASE}/reports?advertiser_id=${advertiserId}&level=campaign&start_date=${startDate}&end_date=${endDate}&granularity=total`;
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -82,6 +79,45 @@ async function fetchInstacartReport(
   if (!res.ok) return { ok: false, error: b?.error?.message ?? `report HTTP ${res.status}` };
   const rows = b?.rows ?? b?.data ?? b?.report ?? b ?? [];
   return { ok: true, rows: Array.isArray(rows) ? rows : [] };
+}
+
+/** Fan-out fetch of campaigns across all Instacart ad-format endpoints. */
+const IC_FORMAT_SOURCES: Array<{ format: string; path: string; listKeys: string[] }> = [
+  { format: "sponsored_product",  path: `/campaigns`,                    listKeys: ["campaigns"] },
+  { format: "display",            path: `/display_campaigns`,            listKeys: ["display_campaigns", "campaigns"] },
+  { format: "shoppable_display",  path: `/shoppable_display_campaigns`,  listKeys: ["shoppable_display_campaigns", "campaigns"] },
+  { format: "brand_page",         path: `/brand_pages`,                  listKeys: ["brand_pages", "data"] },
+  { format: "promotion",          path: `/promotions`,                   listKeys: ["promotions", "coupons", "data"] },
+  { format: "universal",          path: `/universal_campaigns`,          listKeys: ["universal_campaigns", "campaigns"] },
+  { format: "video",              path: `/video_campaigns`,              listKeys: ["video_campaigns", "campaigns"] },
+];
+const PATCH_PATH_BY_FORMAT: Record<string, string> = {
+  sponsored_product: "/campaigns",
+  display: "/display_campaigns",
+  shoppable_display: "/shoppable_display_campaigns",
+  brand_page: "/brand_pages",
+  promotion: "/promotions",
+  universal: "/universal_campaigns",
+  video: "/video_campaigns",
+};
+
+async function fetchInstacartCampaignsAllFormats(token: string, advertiserId: string) {
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    "Instacart-Ads-Advertiser-Id": advertiserId,
+  };
+  const out: Array<{ format: string; entity_id: string; raw: any }> = [];
+  for (const src of IC_FORMAT_SOURCES) {
+    const res = await fetch(`${INSTACART_BASE}${src.path}?advertiser_id=${advertiserId}&limit=200`, { headers });
+    if (!res.ok) continue; // soft-fail; format may not exist on this account
+    const b = await res.json().catch(() => ({}));
+    let raw: any = null;
+    for (const k of src.listKeys) { if (Array.isArray(b?.[k])) { raw = b[k]; break; } }
+    if (!Array.isArray(raw)) raw = Array.isArray(b?.data) ? b.data : (Array.isArray(b) ? b : []);
+    for (const c of raw) out.push({ format: src.format, entity_id: String(c.id), raw: c });
+  }
+  return out;
 }
 
 /** Normalize a report row into a uniform shape. */
@@ -163,188 +199,58 @@ Deno.serve(async (req) => {
     notes: [] as string[],
   };
 
-  // --- Ad-group level: budget pacing ---
-  if (s.budget_pacing_enabled) {
-    const rep = await fetchInstacartReport(tk.token, advertiserId, "ad_group", s.lookback_days);
-    if (!rep.ok) {
-      summary.notes.push(`ad_group report failed: ${rep.error}`);
-    } else {
-      const rows = rep.rows.map(normalizeRow).filter(r => r.entity_id && r.spend_cents > 0);
-      // Group by campaign — fetch ad groups so we know campaign mapping + current budgets.
-      const agRes = await fetch(`${INSTACART_BASE}/ad_groups?advertiser_id=${advertiserId}&limit=200`, {
-        headers: { Authorization: `Bearer ${tk.token}`, "Instacart-Ads-Advertiser-Id": advertiserId },
-      });
-      const agBody = await agRes.json().catch(() => ({}));
-      const adGroups: any[] = agBody?.ad_groups ?? agBody?.data ?? [];
-      const agById = new Map(adGroups.map(g => [String(g.id), g]));
-
-      // Group metrics by campaign_id
-      const byCampaign = new Map<string, { rows: typeof rows; total_spend: number; total_rev: number }>();
-      for (const r of rows) {
-        const ag = agById.get(r.entity_id);
-        if (!ag) continue;
-        const cid = String(ag.campaign_id ?? ag.campaign?.id ?? "");
-        if (!cid) continue;
-        const bucket = byCampaign.get(cid) ?? { rows: [] as typeof rows, total_spend: 0, total_rev: 0 };
-        bucket.rows.push(r);
-        bucket.total_spend += r.spend_cents;
-        bucket.total_rev += r.revenue_cents;
-        byCampaign.set(cid, bucket);
-      }
-
-      for (const [cid, bucket] of byCampaign) {
-        if (bucket.total_spend < 100) continue; // < $1 spent total, skip
-        // For each ad_group, target share = roas * conversions, fall back to spend share.
-        const totalScore = bucket.rows.reduce((sum, r) => sum + Math.max(0.0001, r.roas * Math.max(1, r.conversions)), 0);
-        if (totalScore <= 0) continue;
-        // Sum current daily budgets as the pool to redistribute.
-        const pool = bucket.rows.reduce((sum, r) => {
-          const ag = agById.get(r.entity_id);
-          return sum + Number(ag?.daily_budget_cents ?? 0);
-        }, 0);
-        if (pool <= 0) continue;
-
-        for (const r of bucket.rows) {
-          const ag = agById.get(r.entity_id);
-          const current = Number(ag?.daily_budget_cents ?? 0);
-          if (current <= 0) continue;
-          const score = Math.max(0.0001, r.roas * Math.max(1, r.conversions));
-          const ideal = Math.round((score / totalScore) * pool);
-          const maxShift = Math.round(current * (s.max_daily_budget_shift_pct / 100));
-          let recommended = Math.max(current - maxShift, Math.min(current + maxShift, ideal));
-          recommended = Math.max(s.budget_floor_cents, Math.min(s.budget_ceiling_cents, recommended));
-          if (Math.abs(recommended - current) < Math.max(100, current * 0.05)) continue; // <5% or <$1: skip noise
-
-          const deltaPct = ((recommended - current) / current) * 100;
-          const idem = `${today}|instacart|budget_pacing|adset|${r.entity_id}`;
-          const reasoning = `7d ROAS ${r.roas.toFixed(2)}x · spend $${(r.spend_cents/100).toFixed(0)} · rev $${(r.revenue_cents/100).toFixed(0)} · campaign share ${(score/totalScore*100).toFixed(0)}%`;
-
-          const { data: existing } = await admin
-            .from("kennel_optimizer_recommendations")
-            .select("id").eq("idempotency_key", idem).maybeSingle();
-          if (existing) { summary.skipped_existing++; continue; }
-
-          let status = "pending";
-          let applyResp: any = null;
-          if (s.auto_apply && !dryRun) {
-            const result = await patchInstacart(tk.token, advertiserId, `/ad_groups/${r.entity_id}`, { daily_budget_cents: recommended });
-            status = result.ok ? "applied" : "failed";
-            applyResp = { status: result.status, body: result.body };
-            if (result.ok) summary.applied++; else summary.errors++;
-          } else { summary.queued++; }
-
-          await admin.from("kennel_optimizer_recommendations").insert({
-            platform: "instacart", rule_type: "budget_pacing",
-            entity_type: "adset", entity_id: r.entity_id,
-            current_value: current, recommended_value: recommended, delta_pct: deltaPct,
-            metric_window_days: s.lookback_days,
-            spend_cents: r.spend_cents, revenue_cents: r.revenue_cents,
-            roas: r.roas, clicks: r.clicks, conversions: r.conversions,
-            reasoning, status,
-            applied_at: status === "applied" ? new Date().toISOString() : null,
-            apply_response: applyResp,
-            idempotency_key: idem,
-          });
-          summary.budget_recs++;
-
-          if (status === "applied") {
-            await admin.from("ad_execution_log").insert({
-              action: "optimizer_budget", actor_id: null, actor_kind: "system",
-              request_payload: { platform: "instacart", entity_id: r.entity_id, recommended, current },
-              response_payload: applyResp, success: true,
-            });
-          }
-        }
-      }
-    }
+  // Flat hierarchy: pace budget / tune bid / auto-pause at CAMPAIGN level,
+  // across every ad format (sponsored_product, display, brand_page, etc.).
+  const rep = await fetchInstacartReport(tk.token, advertiserId, s.lookback_days);
+  if (!rep.ok) {
+    summary.notes.push(`campaign report failed: ${rep.error}`);
+    return json({ ok: true, platform, dry_run: dryRun, summary });
   }
+  const rows = rep.rows.map(normalizeRow).filter(r => r.entity_id);
 
-  // --- Ad-group-product level: bid opt + auto-pause ---
-  if (s.bid_optimization_enabled || s.auto_pause_enabled) {
-    const rep = await fetchInstacartReport(tk.token, advertiserId, "ad_group_product", s.lookback_days);
-    if (!rep.ok) {
-      summary.notes.push(`ad_group_product report failed: ${rep.error}`);
-    } else {
-      const rows = rep.rows.map(normalizeRow).filter(r => r.entity_id);
-      // Cap bid changes per run
-      let bidChangesLeft = s.max_daily_bid_changes;
+  // Fetch all campaigns across formats so we know current budget/bid + which
+  // endpoint to PATCH for each entity_id.
+  const campaigns = await fetchInstacartCampaignsAllFormats(tk.token, advertiserId);
+  const campaignById = new Map(campaigns.map(c => [c.entity_id, c]));
 
-      for (const r of rows) {
-        // ---- Auto-pause zero-ROAS ----
-        if (s.auto_pause_enabled && r.spend_cents >= s.pause_threshold_cents && r.conversions === 0) {
-          const idem = `${today}|instacart|pause_zero_roas|ad|${r.entity_id}`;
-          const { data: existing } = await admin
-            .from("kennel_optimizer_recommendations")
-            .select("id").eq("idempotency_key", idem).maybeSingle();
-          if (!existing) {
-            let status = "pending"; let applyResp: any = null;
-            const reasoning = `Spent $${(r.spend_cents/100).toFixed(2)} over ${s.lookback_days}d with 0 conversions`;
-            if (s.auto_apply && !dryRun) {
-              const result = await patchInstacart(tk.token, advertiserId, `/ad_group_products/${r.entity_id}`, { status: "paused" });
-              status = result.ok ? "applied" : "failed";
-              applyResp = { status: result.status, body: result.body };
-              if (result.ok) summary.applied++; else summary.errors++;
-            } else { summary.queued++; }
-            await admin.from("kennel_optimizer_recommendations").insert({
-              platform: "instacart", rule_type: "pause_zero_roas",
-              entity_type: "ad", entity_id: r.entity_id,
-              spend_cents: r.spend_cents, revenue_cents: r.revenue_cents,
-              roas: 0, clicks: r.clicks, conversions: 0,
-              metric_window_days: s.lookback_days, reasoning, status,
-              applied_at: status === "applied" ? new Date().toISOString() : null,
-              apply_response: applyResp, idempotency_key: idem,
-            });
-            summary.pause_recs++;
-            continue; // don't also bid-tune a paused product
-          }
-        }
+  // --- Budget pacing across all campaigns (proportional to roas * conversions) ---
+  if (s.budget_pacing_enabled) {
+    const eligible = rows.filter(r => campaignById.has(r.entity_id) && Number(campaignById.get(r.entity_id)!.raw?.daily_budget_cents ?? 0) > 0);
+    const totalScore = eligible.reduce((sum, r) => sum + Math.max(0.0001, r.roas * Math.max(1, r.conversions)), 0);
+    const pool = eligible.reduce((sum, r) => sum + Number(campaignById.get(r.entity_id)!.raw?.daily_budget_cents ?? 0), 0);
+    if (totalScore > 0 && pool > 0) {
+      for (const r of eligible) {
+        const c = campaignById.get(r.entity_id)!;
+        const current = Number(c.raw?.daily_budget_cents ?? 0);
+        const score = Math.max(0.0001, r.roas * Math.max(1, r.conversions));
+        const ideal = Math.round((score / totalScore) * pool);
+        const maxShift = Math.round(current * (s.max_daily_budget_shift_pct / 100));
+        let recommended = Math.max(current - maxShift, Math.min(current + maxShift, ideal));
+        recommended = Math.max(s.budget_floor_cents, Math.min(s.budget_ceiling_cents, recommended));
+        if (Math.abs(recommended - current) < Math.max(100, current * 0.05)) continue;
 
-        // ---- Bid optimization ----
-        if (!s.bid_optimization_enabled) continue;
-        if (r.clicks < s.min_clicks_for_bid_change) continue;
-        if (bidChangesLeft <= 0) continue;
+        const deltaPct = ((recommended - current) / current) * 100;
+        const idem = `${today}|instacart|budget_pacing|campaign|${c.format}|${r.entity_id}`;
+        const reasoning = `${s.lookback_days}d ROAS ${r.roas.toFixed(2)}x · spend $${(r.spend_cents/100).toFixed(0)} · rev $${(r.revenue_cents/100).toFixed(0)} · share ${(score/totalScore*100).toFixed(0)}% · ${c.format}`;
 
-        const raiseThreshold = s.target_roas * (1 + s.bid_raise_gate_pct / 100);
-        const lowerThreshold = s.target_roas * (s.bid_lower_gate_pct / 100);
-
-        let ruleType: "bid_raise" | "bid_lower" | null = null;
-        let stepPct = 0;
-        if (r.roas >= raiseThreshold) { ruleType = "bid_raise"; stepPct = s.bid_raise_step_pct; }
-        else if (r.roas <= lowerThreshold && r.spend_cents > 0) { ruleType = "bid_lower"; stepPct = -s.bid_lower_step_pct; }
-        if (!ruleType) continue;
-
-        // Fetch current bid
-        const pRes = await fetch(`${INSTACART_BASE}/ad_group_products/${r.entity_id}`, {
-          headers: { Authorization: `Bearer ${tk.token}`, "Instacart-Ads-Advertiser-Id": advertiserId },
-        });
-        const pBody = await pRes.json().catch(() => ({}));
-        const product = pBody?.ad_group_product ?? pBody?.data ?? pBody;
-        const currentBid = Number(product?.bid_override ?? product?.default_bid ?? product?.bid ?? 0);
-        if (!Number.isFinite(currentBid) || currentBid <= 0) continue;
-
-        const recommendedBid = Math.max(0.05, Number((currentBid * (1 + stepPct / 100)).toFixed(2)));
-        if (Math.abs(recommendedBid - currentBid) < 0.01) continue;
-
-        const idem = `${today}|instacart|${ruleType}|ad|${r.entity_id}`;
         const { data: existing } = await admin
           .from("kennel_optimizer_recommendations")
           .select("id").eq("idempotency_key", idem).maybeSingle();
         if (existing) { summary.skipped_existing++; continue; }
 
-        const reasoning = `${s.lookback_days}d ROAS ${r.roas.toFixed(2)}x vs target ${s.target_roas.toFixed(2)}x · ${r.clicks} clicks`;
         let status = "pending"; let applyResp: any = null;
+        const patchBase = PATCH_PATH_BY_FORMAT[c.format] ?? "/campaigns";
         if (s.auto_apply && !dryRun) {
-          const result = await patchInstacart(tk.token, advertiserId, `/ad_group_products/${r.entity_id}`, { bid_override: recommendedBid });
+          const result = await patchInstacart(tk.token, advertiserId, `${patchBase}/${r.entity_id}`, { daily_budget_cents: recommended });
           status = result.ok ? "applied" : "failed";
           applyResp = { status: result.status, body: result.body };
-          if (result.ok) { summary.applied++; bidChangesLeft--; } else summary.errors++;
-        } else { summary.queued++; bidChangesLeft--; }
+          if (result.ok) summary.applied++; else summary.errors++;
+        } else { summary.queued++; }
 
         await admin.from("kennel_optimizer_recommendations").insert({
-          platform: "instacart", rule_type: ruleType,
-          entity_type: "ad", entity_id: r.entity_id,
-          current_value: currentBid, recommended_value: recommendedBid,
-          delta_pct: stepPct,
+          platform: "instacart", rule_type: "budget_pacing",
+          entity_type: "campaign", entity_id: r.entity_id,
+          current_value: current, recommended_value: recommended, delta_pct: deltaPct,
           metric_window_days: s.lookback_days,
           spend_cents: r.spend_cents, revenue_cents: r.revenue_cents,
           roas: r.roas, clicks: r.clicks, conversions: r.conversions,
@@ -352,9 +258,93 @@ Deno.serve(async (req) => {
           applied_at: status === "applied" ? new Date().toISOString() : null,
           apply_response: applyResp, idempotency_key: idem,
         });
-        summary.bid_recs++;
+        summary.budget_recs++;
       }
     }
+  }
+
+  // --- Bid optimization + auto-pause (campaign level) ---
+  let bidChangesLeft = s.max_daily_bid_changes;
+  for (const r of rows) {
+    const c = campaignById.get(r.entity_id);
+    if (!c) continue;
+    const patchBase = PATCH_PATH_BY_FORMAT[c.format] ?? "/campaigns";
+
+    // Auto-pause zero-ROAS
+    if (s.auto_pause_enabled && r.spend_cents >= s.pause_threshold_cents && r.conversions === 0) {
+      const idem = `${today}|instacart|pause_zero_roas|campaign|${c.format}|${r.entity_id}`;
+      const { data: existing } = await admin
+        .from("kennel_optimizer_recommendations")
+        .select("id").eq("idempotency_key", idem).maybeSingle();
+      if (!existing) {
+        let status = "pending"; let applyResp: any = null;
+        const reasoning = `Spent $${(r.spend_cents/100).toFixed(2)} over ${s.lookback_days}d with 0 conversions · ${c.format}`;
+        if (s.auto_apply && !dryRun) {
+          const result = await patchInstacart(tk.token, advertiserId, `${patchBase}/${r.entity_id}`, { status: "paused" });
+          status = result.ok ? "applied" : "failed";
+          applyResp = { status: result.status, body: result.body };
+          if (result.ok) summary.applied++; else summary.errors++;
+        } else { summary.queued++; }
+        await admin.from("kennel_optimizer_recommendations").insert({
+          platform: "instacart", rule_type: "pause_zero_roas",
+          entity_type: "campaign", entity_id: r.entity_id,
+          spend_cents: r.spend_cents, revenue_cents: r.revenue_cents,
+          roas: 0, clicks: r.clicks, conversions: 0,
+          metric_window_days: s.lookback_days, reasoning, status,
+          applied_at: status === "applied" ? new Date().toISOString() : null,
+          apply_response: applyResp, idempotency_key: idem,
+        });
+        summary.pause_recs++;
+        continue;
+      }
+    }
+
+    // Bid optimization (only formats that expose a bid)
+    if (!s.bid_optimization_enabled) continue;
+    if (r.clicks < s.min_clicks_for_bid_change) continue;
+    if (bidChangesLeft <= 0) continue;
+    const currentBid = Number(c.raw?.default_bid ?? c.raw?.bid ?? c.raw?.bid_cents / 100 ?? 0);
+    if (!Number.isFinite(currentBid) || currentBid <= 0) continue;
+
+    const raiseThreshold = s.target_roas * (1 + s.bid_raise_gate_pct / 100);
+    const lowerThreshold = s.target_roas * (s.bid_lower_gate_pct / 100);
+    let ruleType: "bid_raise" | "bid_lower" | null = null;
+    let stepPct = 0;
+    if (r.roas >= raiseThreshold) { ruleType = "bid_raise"; stepPct = s.bid_raise_step_pct; }
+    else if (r.roas <= lowerThreshold && r.spend_cents > 0) { ruleType = "bid_lower"; stepPct = -s.bid_lower_step_pct; }
+    if (!ruleType) continue;
+
+    const recommendedBid = Math.max(0.05, Number((currentBid * (1 + stepPct / 100)).toFixed(2)));
+    if (Math.abs(recommendedBid - currentBid) < 0.01) continue;
+
+    const idem = `${today}|instacart|${ruleType}|campaign|${c.format}|${r.entity_id}`;
+    const { data: existing } = await admin
+      .from("kennel_optimizer_recommendations")
+      .select("id").eq("idempotency_key", idem).maybeSingle();
+    if (existing) { summary.skipped_existing++; continue; }
+
+    const reasoning = `${s.lookback_days}d ROAS ${r.roas.toFixed(2)}x vs target ${s.target_roas.toFixed(2)}x · ${r.clicks} clicks · ${c.format}`;
+    let status = "pending"; let applyResp: any = null;
+    if (s.auto_apply && !dryRun) {
+      const result = await patchInstacart(tk.token, advertiserId, `${patchBase}/${r.entity_id}`, { default_bid: recommendedBid });
+      status = result.ok ? "applied" : "failed";
+      applyResp = { status: result.status, body: result.body };
+      if (result.ok) { summary.applied++; bidChangesLeft--; } else summary.errors++;
+    } else { summary.queued++; bidChangesLeft--; }
+
+    await admin.from("kennel_optimizer_recommendations").insert({
+      platform: "instacart", rule_type: ruleType,
+      entity_type: "campaign", entity_id: r.entity_id,
+      current_value: currentBid, recommended_value: recommendedBid,
+      delta_pct: stepPct,
+      metric_window_days: s.lookback_days,
+      spend_cents: r.spend_cents, revenue_cents: r.revenue_cents,
+      roas: r.roas, clicks: r.clicks, conversions: r.conversions,
+      reasoning, status,
+      applied_at: status === "applied" ? new Date().toISOString() : null,
+      apply_response: applyResp, idempotency_key: idem,
+    });
+    summary.bid_recs++;
   }
 
   return json({ ok: true, platform, dry_run: dryRun, summary });

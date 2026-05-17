@@ -17,14 +17,28 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const url = new URL(req.url);
-  const code = url.searchParams.get("code");
-  const error = url.searchParams.get("error");
-  const redirect_uri = url.searchParams.get("redirect_uri") ?? DEFAULT_REDIRECT;
+  // Accept code via query (GET) or JSON body (POST from the rescuedogwines.com catcher).
+  let code = url.searchParams.get("code");
+  let error = url.searchParams.get("error");
+  let redirect_uri = url.searchParams.get("redirect_uri") ?? "https://rescuedogwines.com/";
+  let wantsJson = url.searchParams.get("format") === "json";
+
+  if (req.method === "POST") {
+    wantsJson = true;
+    try {
+      const body = await req.json();
+      code = body?.code ?? code;
+      error = body?.error ?? error;
+      redirect_uri = body?.redirect_uri ?? redirect_uri;
+    } catch { /* ignore */ }
+  }
 
   if (error) {
+    if (wantsJson) return new Response(JSON.stringify({ ok: false, error }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     return html(`<h1 class="err">Instacart returned an error</h1><pre>${error}</pre>`, 400);
   }
   if (!code) {
+    if (wantsJson) return new Response(JSON.stringify({ ok: false, error: "missing code" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     return html(`<h1 class="err">Missing <code>code</code> query param</h1>
 <p class="muted">This endpoint should be hit by Instacart's OAuth redirect.</p>`, 400);
   }
@@ -32,6 +46,7 @@ Deno.serve(async (req) => {
   const client_id = Deno.env.get("INSTACART_ADS_CLIENT_ID");
   const client_secret = Deno.env.get("INSTACART_ADS_CLIENT_SECRET");
   if (!client_id || !client_secret) {
+    if (wantsJson) return new Response(JSON.stringify({ ok: false, error: "missing credentials" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     return html(`<h1 class="err">Missing client credentials</h1>`, 500);
   }
 
@@ -51,6 +66,7 @@ Deno.serve(async (req) => {
   try { body = JSON.parse(bodyText); } catch { /* keep raw */ }
 
   if (!r.ok || !body?.refresh_token) {
+    if (wantsJson) return new Response(JSON.stringify({ ok: false, status: r.status, body: bodyText, redirect_uri }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     return html(`<h1 class="err">Token exchange failed (HTTP ${r.status})</h1>
 <p class="muted">Most common cause: <code>redirect_uri</code> here doesn't match the one registered in Instacart Ads Manager.</p>
 <pre>${bodyText.slice(0, 1000)}</pre>
@@ -79,6 +95,11 @@ Deno.serve(async (req) => {
     }
   } catch { /* non-fatal */ }
 
+  if (wantsJson) {
+    return new Response(JSON.stringify({ ok: true, refresh_token: body.refresh_token, expires_in: body.expires_in }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   return html(`<h1 class="ok">Instacart connected ✓</h1>
 <p>New <code>refresh_token</code>:</p>
 <pre>${body.refresh_token}</pre>

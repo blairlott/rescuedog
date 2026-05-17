@@ -49,9 +49,9 @@ function googleHeaders(tok: string) {
 let _icTok: { token: string; exp: number } | null = null;
 async function instacartAccessToken(): Promise<string | null> {
   if (_icTok && _icTok.exp > Date.now() + 30_000) return _icTok.token;
-  const cid = Deno.env.get("INSTACART_ADS_CLIENT_ID");
-  const cs = Deno.env.get("INSTACART_ADS_CLIENT_SECRET");
-  const rt = Deno.env.get("INSTACART_ADS_REFRESH_TOKEN");
+  const cid = Deno.env.get("INSTACART_ADS_CLIENT_ID")?.trim();
+  const cs = Deno.env.get("INSTACART_ADS_CLIENT_SECRET")?.trim();
+  const rt = Deno.env.get("INSTACART_ADS_REFRESH_TOKEN")?.trim();
   if (!cid || !cs || !rt) return null;
   // Instacart Ads API: credentials in JSON body (matches working I1/I2/I3/Z7).
   const r = await fetch(INSTACART_TOKEN_URL, {

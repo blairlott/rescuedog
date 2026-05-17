@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ChevronRight, Pause, Play, RefreshCw, Home, Pencil, Upload, Download, Tag, Sparkles } from "lucide-react";
 import KeywordEnginePanel from "@/components/kennel/KeywordEnginePanel";
+import IntelligencePanel from "@/components/kennel/IntelligencePanel";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -639,6 +640,10 @@ export default function KennelChannelsPage() {
           campaignId={trail[trail.length - 2]?.parent_id}
           adGroupId={current.parent_id!}
         />
+      )}
+
+      {platform && current?.level === "campaign" && (
+        <IntelligencePanel platform={platform} />
       )}
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>

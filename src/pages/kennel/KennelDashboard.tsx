@@ -279,6 +279,39 @@ export default function KennelDashboard() {
             <VinoshipperPanel rangeDays={range} />
           </section>
 
+          <section className="space-y-2">
+            <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Brick &amp; mortar (Lindy)</h2>
+            {!bm?.hasData ? (
+              <div className="border-2 border-dashed border-border p-4 text-sm text-muted-foreground" style={{ borderRadius: 0 }}>
+                Awaiting first Lindy ingest. Once she posts to <code className="font-mono text-xs">/functions/v1/kennel-ingest-bm</code>, off-premise, on-premise, and distributor depletions roll up here — lifetime + period.
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <MetricCard label={`B&M Revenue (${range}d)`} value={`$${bm.periodRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`${bm.periodUnits.toLocaleString()} units · ${bm.periodOrders.toLocaleString()} invoices`} />
+                  <MetricCard label="B&M Lifetime" value={`$${bm.lifetimeRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint={`${bm.lifetimeUnits.toLocaleString()} units · life of brand`} />
+                  <MetricCard label="Off-premise" value={`$${bm.off.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Retail (period)" />
+                  <MetricCard label="On-premise + Depl." value={`$${(bm.on + bm.depl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Restaurants + distributor" />
+                </div>
+                {bm.topStates.length > 0 && (
+                  <div className="border-2 border-foreground p-4 mt-3" style={{ borderRadius: 0 }}>
+                    <h3 className="text-xs uppercase tracking-brand font-bold text-foreground mb-3">Top B&amp;M states ({range}d)</h3>
+                    <table className="w-full text-xs">
+                      <tbody>
+                        {bm.topStates.map(([state, rev]) => (
+                          <tr key={state} className="border-b border-border last:border-0">
+                            <td className="py-1.5 text-foreground font-bold">{state}</td>
+                            <td className="py-1.5 pl-2 text-right tabular-nums font-bold text-foreground">${rev.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+
           <SpendChart data={chartData} channels={channelNames} />
 
           <section>

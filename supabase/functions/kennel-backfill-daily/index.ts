@@ -202,7 +202,12 @@ Deno.serve(async (req) => {
       const upserted = await writeDaily(sb, rows);
       result.platforms[platform] = { rows: rows.length, upserted };
       await sb.from("channel_sync_status").upsert(
-        { channel_id: cid, last_primary_sync: new Date().toISOString(), last_status: "ok" },
+        {
+          channel_id: cid,
+          last_primary_sync: new Date().toISOString(),
+          last_sync_source: "backup_cron",
+          sync_status: "fresh",
+        },
         { onConflict: "channel_id" },
       );
     } catch (e: any) {

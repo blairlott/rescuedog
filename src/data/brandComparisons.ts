@@ -439,6 +439,87 @@ export const BRAND_COMPARISONS: BrandComparison[] = [
       },
     ],
   },
+  {
+    slug: "bar-dog",
+    competitor: "Bar Dog",
+    competitorTagline: "Dog-labeled California red, ~$15/bottle",
+    pricePoint: "$15–$22",
+    category: "Dog-branded wine alternatives",
+    keywords: [
+      "Bar Dog wine alternative",
+      "wines like Bar Dog",
+      "Bar Dog Cabernet alternative",
+      "dog label wine that gives back",
+      "charity wine like Bar Dog",
+    ],
+    seoTitle: "Wines Like Bar Dog — The Dog Wine That Actually Funds Rescue",
+    seoDescription:
+      "Bar Dog alternative from Lodi. Same dog-on-the-label appeal, small-batch and independently owned, with 50% of profits supporting 501(c)(3) dog rescue partners.",
+    hero: {
+      eyebrow: "Bar Dog alternative",
+      headline: "A dog on the label is nice. Funding rescue is better.",
+      sub: "Bar Dog put a friendly pup on a $15 California red and built a following. Rescue Dog Wines goes further: every label is a real adoptable dog, every bottle is small-batch Lodi, and 50% of profits go to 501(c)(3) dog-rescue partners.",
+    },
+    specs: [
+      { attribute: "Origin", rdw: "Lodi, CA (single appellation)", them: "California (multi-source)", advantageRdw: true },
+      { attribute: "Production scale", rdw: "Small-batch craft", them: "Large-scale production", advantageRdw: true },
+      { attribute: "Owned by", rdw: "Independent rescue-mission winery", them: "Vintage Wine Estates portfolio brand" },
+      { attribute: "Dog connection", rdw: "Real rescue dogs on every label with adoption stories", them: "Branded dog illustration", advantageRdw: true },
+      { attribute: "Profit to charity", rdw: "50% of profits to dog rescue", them: "Occasional cause-marketing donations only", advantageRdw: true },
+      { attribute: "Sustainability", rdw: "Lodi Rules certified region", them: "Not publicly certified" },
+      { attribute: "Price range", rdw: "$18–$28 (member pricing 20% off)", them: "$13–$18" },
+      { attribute: "Wine Club benefit", rdw: "20% off + member-only releases", them: "No DTC dog-rescue club" },
+    ],
+    reasons: [
+      {
+        title: "Same dog energy — built on a real rescue mission.",
+        body: "Bar Dog uses dog branding as marketing. Rescue Dog Wines was founded around dog rescue: every label features a real adoptable dog, and 50% of profits fund vetted 501(c)(3) rescue partners.",
+      },
+      {
+        title: "Small-batch Lodi over portfolio-scale California.",
+        body: "Bar Dog is one of many labels inside the Vintage Wine Estates portfolio. We're a single independent winery making small-batch, single-appellation Lodi wines — one mission, one focus.",
+      },
+      {
+        title: "Every bottle is a measurable rescue contribution.",
+        body: "Bar Dog runs occasional cause-marketing campaigns. We commit 50% of profits to dog rescue on every bottle, every order — no campaign window required.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Is there a dog-branded wine that actually donates to rescue?",
+        answer:
+          "Yes — Rescue Dog Wines was built specifically for this. 50% of profits fund 501(c)(3) dog-rescue partners on every bottle, and every label features a real adoptable rescue dog with its story.",
+      },
+      {
+        question: "Who owns Bar Dog wine?",
+        answer:
+          "Bar Dog is a label within the Vintage Wine Estates portfolio. Rescue Dog Wines is independently owned with a charter to direct 50% of profits to 501(c)(3) dog-rescue partners.",
+      },
+      {
+        question: "How is Rescue Dog Wines different from Bar Dog?",
+        answer:
+          "Both feature dogs on the label. The difference is the mission: Rescue Dog Wines is a small-batch, single-appellation Lodi winery that routes 50% of profits to dog rescue — not a portfolio brand using dog imagery for marketing.",
+      },
+    ],
+    disclosure: COMMON_DISCLOSURE,
+    sources: [
+      {
+        label: "Bar Dog Wine — brand overview",
+        publisher: "Bar Dog Wine (official)",
+        url: "https://www.bardogwine.com/",
+      },
+      {
+        label: "Vintage Wine Estates brand portfolio",
+        publisher: "Vintage Wine Estates (official)",
+        url: "https://www.vintagewineestates.com/our-brands",
+      },
+      {
+        label: "Lodi Rules — Certified Sustainable Winegrowing",
+        publisher: "Lodi Winegrape Commission",
+        url: "https://www.lodirules.com/",
+      },
+    ],
+  },
 ];
 
 

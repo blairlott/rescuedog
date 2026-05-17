@@ -6,13 +6,13 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useState, useEffect } from "react";
 
 const NAV = [
-  { to: "/kennel", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/kennel/true-roas", label: "True ROAS", icon: TrendingUp, end: false },
-  { to: "/kennel/capi", label: "Meta CAPI", icon: Send, end: false },
-  { to: "/kennel/recommendations", label: "Recommendations", icon: Lightbulb, end: false },
-  { to: "/kennel/channels", label: "Channels", icon: Network, end: false },
-  { to: "/kennel/log", label: "Execution log", icon: ScrollText, end: false },
-  { to: "/kennel/settings", label: "Settings", icon: Settings, end: false },
+  { to: "/kennel", label: "Dashboard", icon: LayoutDashboard, end: true, viewerOk: true },
+  { to: "/kennel/true-roas", label: "True ROAS", icon: TrendingUp, end: false, viewerOk: true },
+  { to: "/kennel/capi", label: "Meta CAPI", icon: Send, end: false, viewerOk: false },
+  { to: "/kennel/recommendations", label: "Recommendations", icon: Lightbulb, end: false, viewerOk: false },
+  { to: "/kennel/channels", label: "Channels", icon: Network, end: false, viewerOk: true },
+  { to: "/kennel/log", label: "Execution log", icon: ScrollText, end: false, viewerOk: true },
+  { to: "/kennel/settings", label: "Settings", icon: Settings, end: false, viewerOk: false },
 ];
 
 export function KennelLayout() {
@@ -80,7 +80,7 @@ export function KennelLayout() {
           </div>
         </Link>
         <nav className="flex-1 p-2 space-y-1">
-          {NAV.map((item) => (
+          {NAV.filter((item) => item.viewerOk || roleInfo?.isAdOps).map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

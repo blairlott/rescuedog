@@ -226,8 +226,6 @@ async function handle(req: Request): Promise<Response> {
     // Resolve advertiser ID: secret -> body -> auto-discover via /advertisers
     let advertiserId: string | undefined =
       Deno.env.get("INSTACART_ADS_ADVERTISER_ID") || body?.advertiser_id || _icAdvertiserCache || undefined;
-    // The current secret may still hold the OAuth client_id (43-char base64-ish); treat that as invalid.
-    if (advertiserId && advertiserId.length > 30) advertiserId = undefined;
     if (!advertiserId) {
       const dRes = await fetch(`${INSTACART_BASE}/advertisers`, {
         headers: { Authorization: `Bearer ${tk.token}`, "Content-Type": "application/json" },

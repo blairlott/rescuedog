@@ -253,6 +253,40 @@ Deno.serve(async (req) => {
       return json({ ok: result.ok, response: result.body });
     }
 
+    if (action === "update_entity") {
+      const entityType = body?.entity_type;
+      const entityId = body?.entity_id;
+      const fields = (body?.fields ?? {}) as Record<string, unknown>;
+      if (!entityId || !["campaign", "adset", "ad"].includes(entityType)) {
+        return json({ error: "entity_id and entity_type required" }, 400);
+      }
+      const allow: Record<string, string[]> = {
+        campaign: ["name", "daily_budget_cents", "total_budget_cents", "start_date", "end_date"],
+        adset: ["name", "daily_budget_cents", "default_bid"],
+        ad: ["bid_override"],
+      };
+      const clean: Record<string, unknown> = {};
+      for (const k of allow[entityType]) {
+        if (fields[k] !== undefined && fields[k] !== "" && fields[k] !== null) clean[k] = fields[k];
+      }
+      if (Object.keys(clean).length === 0) return json({ error: "no editable fields supplied" }, 400);
+      const path =
+        entityType === "campaign" ? `/campaigns/${entityId}`
+        : entityType === "adset" ? `/ad_groups/${entityId}`
+        : `/ad_group_products/${entityId}`;
+      const result = await icPatch(path, clean);
+      await admin.from("ad_execution_log").insert({
+        recommendation_id: null,
+        action: "update",
+        actor_id: userId,
+        actor_kind: "user",
+        request_payload: { platform: "instacart", entity_type: entityType, entity_id: entityId, fields: clean },
+        response_payload: { status: result.status, body: result.body },
+        success: result.ok,
+      });
+      return json({ ok: result.ok, response: result.body });
+    }
+
     return json({ error: `unknown action: ${action}` }, 400);
   }
 

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCartStore } from "@/stores/cartStore";
 import { toast } from "sonner";
 import { NextShipmentCustomizer } from "./NextShipmentCustomizer";
+import { NextShipmentCountdown } from "./NextShipmentCountdown";
 
 const frequencyLabel: Record<string, string> = {
   monthly: "Monthly",
@@ -68,6 +69,8 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Members-first countdown — drives anticipation for the next release */}
+      <NextShipmentCountdown nextShipmentDate={membership.next_shipment_date} />
       {/* Status Banner */}
       <div className="border border-primary bg-primary/5 p-6 mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

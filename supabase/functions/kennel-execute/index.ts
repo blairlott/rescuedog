@@ -257,9 +257,13 @@ async function runExecute(admin: any, recId: string, actorId: string | null, act
   }
 
   const platform = (rec.payload?.platform ?? "").toString().toLowerCase();
-  let dispatch: MetaDispatchResult;
+  let dispatch: DispatchResult;
   if (platform === "meta" || platform === "facebook") {
     dispatch = await dispatchMeta(rec.payload);
+  } else if (platform === "google") {
+    dispatch = await dispatchGoogle(rec.payload);
+  } else if (platform === "instacart") {
+    dispatch = await dispatchInstacart(rec.payload);
   } else {
     dispatch = {
       dispatched: false, ok: true,
@@ -273,6 +277,23 @@ async function runExecute(admin: any, recId: string, actorId: string | null, act
     ? dispatch.error
     : null;
 
+  // Compute delta + impact for guardrail tracking.
+  const change = rec.payload?.change ?? {};
+  const current = rec.payload?.current ?? {};
+  const before = current?.daily_budget_cents ?? null;
+  const after = change?.daily_budget_cents ?? null;
+  const deltaCents = (before != null && after != null) ? (after - before) : null;
+  const deltaPct = (before && deltaCents != null) ? (deltaCents / before) * 100 : null;
+
+  // Find current baseline row (best-effort)
+  let baselineId: string | null = null;
+  try {
+    const { data: b } = await admin.from("guardrail_baseline").select("id")
+      .eq("platform", platform).eq("is_current", true)
+      .eq("campaign_id", rec.payload?.entity_id ?? null).maybeSingle();
+    baselineId = b?.id ?? null;
+  } catch (_) { /* ignore */ }
+
   await admin.from("ad_recommendations").update({
     status: dispatch.ok ? "executed" : (autoRejectReason ? "rejected" : "failed"),
     executed_at: dispatch.ok ? new Date().toISOString() : null,
@@ -285,7 +306,30 @@ async function runExecute(admin: any, recId: string, actorId: string | null, act
     request_payload: { notes, auto: actorKind === "auto", platform, dispatch_request: dispatch.request ?? null },
     response_payload: { dispatched: dispatch.dispatched, status: dispatch.status ?? null, response: dispatch.response ?? null, error: dispatch.error ?? null },
     success: dispatch.ok,
+    platform,
+    campaign_id: rec.payload?.entity_id ?? null,
+    before_value: current ?? null,
+    after_value: change ?? null,
+    delta_pct: deltaPct,
+    spend_impact_cents: deltaCents,
+    executor: actorKind === "auto" ? "auto" : "manual_approval",
+    baseline_id: baselineId,
+    guardrail_results: { passed: dispatch.ok, error: dispatch.error ?? null },
   });
+
+  // Fire alert on auto-executed changes
+  if (actorKind === "auto") {
+    await fireAlert(admin, {
+      event_type: "auto_executed",
+      channel: platform,
+      action: rec.title ?? "budget change",
+      spend_impact_cents: deltaCents,
+      confidence: Number(rec.confidence ?? 0),
+      deep_link: `https://rescuedog.lovable.app/kennel/log?execution=${recId}`,
+      message: dispatch.ok ? "Auto-executed and platform confirmed." : `FAILED: ${dispatch.error ?? "unknown"}`,
+    });
+  }
+
   return { ok: dispatch.ok, dispatched: dispatch.dispatched, response: dispatch.response, error: dispatch.error };
 }
 

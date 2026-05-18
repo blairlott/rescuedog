@@ -145,18 +145,16 @@ async function sendSmsViaTwilio(to: string[], body: string): Promise<{ ok: boole
   }
 }
 
-// Primary: Twilio direct. Fallback: Lindy-watched email inbox (used if Twilio not configured or send fails).
+// Lindy-watched email inbox is the sole SMS dispatch path. Twilio remains as opt-in fallback only if configured.
 async function sendSms(to: string[], body: string, payload: any): Promise<{ ok: boolean; sid?: string; id?: string; provider: string; error?: string; fallback_error?: string }> {
+  const lindy = await sendSmsViaLindyEmail(to, body, payload);
+  if (lindy.ok) return { ok: true, id: lindy.id, provider: "lindy_email" };
   if (TWILIO_KEY && LOVABLE_API_KEY) {
     const tw = await sendSmsViaTwilio(to, body);
-    if (tw.ok) return { ok: true, sid: tw.sid, provider: "twilio" };
-    const lindy = await sendSmsViaLindyEmail(to, body, payload);
-    if (lindy.ok) return { ok: true, id: lindy.id, provider: "lindy_email_fallback", fallback_error: tw.error };
-    return { ok: false, provider: "twilio", error: tw.error, fallback_error: lindy.error };
+    if (tw.ok) return { ok: true, sid: tw.sid, provider: "twilio_fallback", fallback_error: lindy.error };
+    return { ok: false, provider: "twilio_fallback", error: tw.error, fallback_error: lindy.error };
   }
-  const lindy = await sendSmsViaLindyEmail(to, body, payload);
-  if (lindy.ok) return { ok: true, id: lindy.id, provider: "lindy_email_fallback", fallback_error: "twilio not configured" };
-  return { ok: false, provider: "lindy_email_fallback", error: lindy.error };
+  return { ok: false, provider: "lindy_email", error: lindy.error };
 }
 
 Deno.serve(async (req) => {

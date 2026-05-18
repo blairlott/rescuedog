@@ -365,6 +365,13 @@ Deno.serve(async (req) => {
   if (action === "execute" || action === "approve") {
     const { data: killRow } = await admin.from("ad_settings").select("value").eq("key", "kill_switch").maybeSingle();
     if (killRow?.value === true) return json({ error: "kill switch is engaged" }, 423);
+    // Per-channel kill switch
+    const { data: recRow } = await admin.from("ad_recommendations").select("payload").eq("id", recommendation_id).maybeSingle();
+    const plat = (recRow?.payload?.platform ?? "").toString().toLowerCase();
+    if (plat) {
+      const { data: pkRow } = await admin.from("ad_settings").select("value").eq("key", `kill_switch_${plat}`).maybeSingle();
+      if (pkRow?.value === true) return json({ error: `kill switch engaged for ${plat}` }, 423);
+    }
   }
 
   if (action === "approve" || action === "reject") {

@@ -226,6 +226,7 @@ function AppContent() {
       </Route>
       <Route path="/intelligence" element={<KennelGuard><ExecutiveCommandCenter /></KennelGuard>} />
       {v2Routes()}
+      {v3Routes()}
       <Route path="*" element={<NotFound />} />
     </Routes>
     </Suspense>

@@ -34,6 +34,12 @@ Single Vinoshipper checkout handles wine AND non-wine. Non-wine line items are f
           └── PUT /orders/{id}/tracking on VS (so customer sees unified shipment)
 ```
 
+## 2a. Payment model (confirmed)
+- **VS Injector** charges the customer's card for the full order (wine + merch). VS is Merchant of Record.
+- **Dropship partners (Printify, Printful, partner_direct)** bill **our** card-on-file stored in each partner's dashboard when they fulfill the PO. No money moves between us and VS for the merch line; no payout/settlement logic in the bridge.
+- Bridge sends partners a **PO only** (SKU + qty + ship-to). No payment token, no invoice handshake.
+- Reconciliation = partner monthly statement vs. VS merch revenue, done in accounting — not in code.
+
 ## 3. Data model (no schema changes required)
 Existing tables cover everything:
 - `dropship_partners` — vendor_type, vendor_credentials, simulation_mode, fulfills_from_us
@@ -48,6 +54,7 @@ Existing tables cover everything:
 | Partner out of stock | merch-curation-scan flags SKU; bridge writes `dropship_orders.status='blocked'` and emails ops |
 | Customer returns merch | Refund issued via VS (they hold the funds); ops reclaims from partner per their policy |
 | Sales tax on non-alcohol merch | Confirm VS remits or whether separate state filing required (open question for accountant) |
+| Partner card-on-file declined | Partner notifies via email + API status; bridge marks `dropship_orders.status='payment_failed'` and alerts ops to update card in partner dashboard |
 
 ## 5. Open questions for VS rep
 1. Does VS issue a 1099-K split between alcohol and non-alcohol receipts?

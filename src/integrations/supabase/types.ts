@@ -168,36 +168,63 @@ export type Database = {
           action: string
           actor_id: string | null
           actor_kind: string
+          after_value: Json | null
+          baseline_id: string | null
+          before_value: Json | null
+          campaign_id: string | null
           created_at: string
+          delta_pct: number | null
           error_message: string | null
+          executor: string | null
+          guardrail_results: Json | null
           id: string
+          platform: string | null
           recommendation_id: string | null
           request_payload: Json | null
           response_payload: Json | null
+          spend_impact_cents: number | null
           success: boolean
         }
         Insert: {
           action: string
           actor_id?: string | null
           actor_kind?: string
+          after_value?: Json | null
+          baseline_id?: string | null
+          before_value?: Json | null
+          campaign_id?: string | null
           created_at?: string
+          delta_pct?: number | null
           error_message?: string | null
+          executor?: string | null
+          guardrail_results?: Json | null
           id?: string
+          platform?: string | null
           recommendation_id?: string | null
           request_payload?: Json | null
           response_payload?: Json | null
+          spend_impact_cents?: number | null
           success?: boolean
         }
         Update: {
           action?: string
           actor_id?: string | null
           actor_kind?: string
+          after_value?: Json | null
+          baseline_id?: string | null
+          before_value?: Json | null
+          campaign_id?: string | null
           created_at?: string
+          delta_pct?: number | null
           error_message?: string | null
+          executor?: string | null
+          guardrail_results?: Json | null
           id?: string
+          platform?: string | null
           recommendation_id?: string | null
           request_payload?: Json | null
           response_payload?: Json | null
+          spend_impact_cents?: number | null
           success?: boolean
         }
         Relationships: [
@@ -206,6 +233,13 @@ export type Database = {
             columns: ["actor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_execution_log_baseline_id_fkey"
+            columns: ["baseline_id"]
+            isOneToOne: false
+            referencedRelation: "guardrail_baseline"
             referencedColumns: ["id"]
           },
           {
@@ -293,6 +327,8 @@ export type Database = {
           auto_execute_min_confidence: number
           channel_id: string
           daily_spend_cap_cents: number
+          daily_spend_cap_multiplier: number
+          max_24h_cumulative_delta_pct: number
           max_bid_change_pct: number
           max_budget_change_pct: number
           pause_window: string | null
@@ -307,6 +343,8 @@ export type Database = {
           auto_execute_min_confidence?: number
           channel_id: string
           daily_spend_cap_cents?: number
+          daily_spend_cap_multiplier?: number
+          max_24h_cumulative_delta_pct?: number
           max_bid_change_pct?: number
           max_budget_change_pct?: number
           pause_window?: string | null
@@ -321,6 +359,8 @@ export type Database = {
           auto_execute_min_confidence?: number
           channel_id?: string
           daily_spend_cap_cents?: number
+          daily_spend_cap_multiplier?: number
+          max_24h_cumulative_delta_pct?: number
           max_bid_change_pct?: number
           max_budget_change_pct?: number
           pause_window?: string | null
@@ -739,6 +779,45 @@ export type Database = {
           },
         ]
       }
+      alert_dispatch_log: {
+        Row: {
+          channel: string | null
+          channels_sent: string[]
+          created_at: string
+          email_message_id: string | null
+          error: string | null
+          event_type: string
+          id: string
+          payload: Json
+          sms_sid: string | null
+          success: boolean
+        }
+        Insert: {
+          channel?: string | null
+          channels_sent?: string[]
+          created_at?: string
+          email_message_id?: string | null
+          error?: string | null
+          event_type: string
+          id?: string
+          payload?: Json
+          sms_sid?: string | null
+          success?: boolean
+        }
+        Update: {
+          channel?: string | null
+          channels_sent?: string[]
+          created_at?: string
+          email_message_id?: string | null
+          error?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          sms_sid?: string | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       ambassador_event_rsvps: {
         Row: {
           attended: boolean
@@ -923,6 +1002,36 @@ export type Database = {
         }
         Relationships: []
       }
+      attribution_dedup_log: {
+        Row: {
+          contributing_channels: Json
+          conversion_id: string
+          dedup_at: string
+          id: string
+          revenue_cents: number | null
+          rule: string
+          winning_channel: string
+        }
+        Insert: {
+          contributing_channels?: Json
+          conversion_id: string
+          dedup_at?: string
+          id?: string
+          revenue_cents?: number | null
+          rule?: string
+          winning_channel: string
+        }
+        Update: {
+          contributing_channels?: Json
+          conversion_id?: string
+          dedup_at?: string
+          id?: string
+          revenue_cents?: number | null
+          rule?: string
+          winning_channel?: string
+        }
+        Relationships: []
+      }
       attribution_paths: {
         Row: {
           computed_at: string
@@ -959,6 +1068,36 @@ export type Database = {
           time_decay_credit?: Json | null
           touchpoints?: Json
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      audience_bid_modifiers: {
+        Row: {
+          active: boolean
+          audience_key: string
+          channel: string
+          id: string
+          modifier_pct: number
+          rationale: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          audience_key: string
+          channel: string
+          id?: string
+          modifier_pct?: number
+          rationale?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          audience_key?: string
+          channel?: string
+          id?: string
+          modifier_pct?: number
+          rationale?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1695,6 +1834,39 @@ export type Database = {
         }
         Relationships: []
       }
+      creative_fatigue: {
+        Row: {
+          channel: string
+          computed_at: string
+          creative_id: string
+          ctr_30d_baseline: number
+          ctr_7d: number
+          fatigue_score: number
+          id: string
+          impressions_7d: number
+        }
+        Insert: {
+          channel: string
+          computed_at?: string
+          creative_id: string
+          ctr_30d_baseline?: number
+          ctr_7d?: number
+          fatigue_score?: number
+          id?: string
+          impressions_7d?: number
+        }
+        Update: {
+          channel?: string
+          computed_at?: string
+          creative_id?: string
+          ctr_30d_baseline?: number
+          ctr_7d?: number
+          fatigue_score?: number
+          id?: string
+          impressions_7d?: number
+        }
+        Relationships: []
+      }
       customer_cohorts: {
         Row: {
           acquisition_month: string | null
@@ -1875,6 +2047,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      customer_signals: {
+        Row: {
+          churn_risk_score: number
+          email: string
+          id: string
+          last_order_at: string | null
+          ltv_cents: number
+          purchase_count: number
+          source: string
+          state: string | null
+          tier: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          churn_risk_score?: number
+          email: string
+          id?: string
+          last_order_at?: string | null
+          ltv_cents?: number
+          purchase_count?: number
+          source?: string
+          state?: string | null
+          tier?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          churn_risk_score?: number
+          email?: string
+          id?: string
+          last_order_at?: string | null
+          ltv_cents?: number
+          purchase_count?: number
+          source?: string
+          state?: string | null
+          tier?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      dayparting_recommendations: {
+        Row: {
+          basis_conversions: number
+          campaign_id: string | null
+          channel: string
+          computed_at: string
+          day_of_week: number
+          hour_of_day: number
+          id: string
+          recommended_bid_modifier_pct: number
+        }
+        Insert: {
+          basis_conversions?: number
+          campaign_id?: string | null
+          channel: string
+          computed_at?: string
+          day_of_week: number
+          hour_of_day: number
+          id?: string
+          recommended_bid_modifier_pct?: number
+        }
+        Update: {
+          basis_conversions?: number
+          campaign_id?: string | null
+          channel?: string
+          computed_at?: string
+          day_of_week?: number
+          hour_of_day?: number
+          id?: string
+          recommended_bid_modifier_pct?: number
+        }
+        Relationships: []
       }
       depletion_report_lines: {
         Row: {
@@ -3009,6 +3256,36 @@ export type Database = {
         }
         Relationships: []
       }
+      frequency_cap_status: {
+        Row: {
+          capped: boolean
+          channel: string
+          computed_at: string
+          id: string
+          impressions_7d: number
+          last_seen: string | null
+          visitor_key: string
+        }
+        Insert: {
+          capped?: boolean
+          channel: string
+          computed_at?: string
+          id?: string
+          impressions_7d?: number
+          last_seen?: string | null
+          visitor_key: string
+        }
+        Update: {
+          capped?: boolean
+          channel?: string
+          computed_at?: string
+          id?: string
+          impressions_7d?: number
+          last_seen?: string | null
+          visitor_key?: string
+        }
+        Relationships: []
+      }
       gift_certificates: {
         Row: {
           code: string
@@ -3071,6 +3348,53 @@ export type Database = {
           vinoshipper_gift_id?: string | null
         }
         Relationships: []
+      }
+      guardrail_baseline: {
+        Row: {
+          baseline_daily_budget_cents: number | null
+          baseline_mtd_spend_cents: number | null
+          campaign_id: string | null
+          captured_at: string
+          channel_id: string | null
+          id: string
+          is_current: boolean
+          metadata: Json
+          platform: string
+          source: string
+        }
+        Insert: {
+          baseline_daily_budget_cents?: number | null
+          baseline_mtd_spend_cents?: number | null
+          campaign_id?: string | null
+          captured_at?: string
+          channel_id?: string | null
+          id?: string
+          is_current?: boolean
+          metadata?: Json
+          platform: string
+          source?: string
+        }
+        Update: {
+          baseline_daily_budget_cents?: number | null
+          baseline_mtd_spend_cents?: number | null
+          campaign_id?: string | null
+          captured_at?: string
+          channel_id?: string | null
+          id?: string
+          is_current?: boolean
+          metadata?: Json
+          platform?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guardrail_baseline_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       harvest_jobs: {
         Row: {
@@ -3228,6 +3552,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      incrementality_tests: {
+        Row: {
+          channel: string
+          control_conversions: number
+          created_at: string
+          end_at: string | null
+          exposed_conversions: number
+          holdout_pct: number
+          id: string
+          lift_pct: number | null
+          name: string
+          notes: string | null
+          p_value: number | null
+          start_at: string
+          status: string
+        }
+        Insert: {
+          channel: string
+          control_conversions?: number
+          created_at?: string
+          end_at?: string | null
+          exposed_conversions?: number
+          holdout_pct?: number
+          id?: string
+          lift_pct?: number | null
+          name: string
+          notes?: string | null
+          p_value?: number | null
+          start_at: string
+          status?: string
+        }
+        Update: {
+          channel?: string
+          control_conversions?: number
+          created_at?: string
+          end_at?: string | null
+          exposed_conversions?: number
+          holdout_pct?: number
+          id?: string
+          lift_pct?: number | null
+          name?: string
+          notes?: string | null
+          p_value?: number | null
+          start_at?: string
+          status?: string
+        }
+        Relationships: []
       }
       kennel_entity_aliases: {
         Row: {
@@ -3529,6 +3901,54 @@ export type Database = {
           vinoshipper_created_at?: string | null
           vinoshipper_customer_id?: string | null
           welcome_series_started_at?: string | null
+        }
+        Relationships: []
+      }
+      local_delivery_events: {
+        Row: {
+          capi_status: string | null
+          created_at: string
+          customer_email_hash: string | null
+          external_event_id: string
+          id: string
+          occurred_at: string
+          oci_status: string | null
+          platform: string
+          processed_at: string | null
+          qty: number | null
+          raw: Json
+          revenue_cents: number | null
+          sku: string | null
+        }
+        Insert: {
+          capi_status?: string | null
+          created_at?: string
+          customer_email_hash?: string | null
+          external_event_id: string
+          id?: string
+          occurred_at?: string
+          oci_status?: string | null
+          platform: string
+          processed_at?: string | null
+          qty?: number | null
+          raw?: Json
+          revenue_cents?: number | null
+          sku?: string | null
+        }
+        Update: {
+          capi_status?: string | null
+          created_at?: string
+          customer_email_hash?: string | null
+          external_event_id?: string
+          id?: string
+          occurred_at?: string
+          oci_status?: string | null
+          platform?: string
+          processed_at?: string | null
+          qty?: number | null
+          raw?: Json
+          revenue_cents?: number | null
+          sku?: string | null
         }
         Relationships: []
       }
@@ -4429,6 +4849,39 @@ export type Database = {
           vinoshipper_order_id?: string | null
           vinoshipper_status?: string
           wine_subtotal_cents?: number
+        }
+        Relationships: []
+      }
+      pacing_forecast: {
+        Row: {
+          budget_cents: number
+          channel: string
+          computed_at: string
+          id: string
+          month: string
+          on_pace: boolean
+          projected_eom_spend_cents: number
+          spend_to_date_cents: number
+        }
+        Insert: {
+          budget_cents?: number
+          channel: string
+          computed_at?: string
+          id?: string
+          month: string
+          on_pace?: boolean
+          projected_eom_spend_cents?: number
+          spend_to_date_cents?: number
+        }
+        Update: {
+          budget_cents?: number
+          channel?: string
+          computed_at?: string
+          id?: string
+          month?: string
+          on_pace?: boolean
+          projected_eom_spend_cents?: number
+          spend_to_date_cents?: number
         }
         Relationships: []
       }

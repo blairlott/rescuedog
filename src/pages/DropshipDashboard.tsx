@@ -7,6 +7,7 @@ import { PayoutsTab } from "@/components/dropship/PayoutsTab";
 import { EventsTab } from "@/components/dropship/EventsTab";
 import { CurationTab } from "@/components/dropship/CurationTab";
 import { MarketplaceTab } from "@/components/dropship/MarketplaceTab";
+import { HealthTrackingTab } from "@/components/dropship/HealthTrackingTab";
 import { Truck } from "lucide-react";
 
 export default function DropshipDashboard() {
@@ -31,8 +32,9 @@ export default function DropshipDashboard() {
           <p className="text-sm text-muted-foreground">Manage merch fulfillment partners, SKUs, orders, and payouts.</p>
         </div>
       </header>
-      <Tabs defaultValue="orders">
+      <Tabs defaultValue="health">
         <TabsList>
+          <TabsTrigger value="health">Health & Tracking</TabsTrigger>
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="partners">Partners</TabsTrigger>
           <TabsTrigger value="skus">SKUs</TabsTrigger>
@@ -41,6 +43,7 @@ export default function DropshipDashboard() {
           <TabsTrigger value="payouts">Payouts</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
+        <TabsContent value="health" className="mt-6"><HealthTrackingTab /></TabsContent>
         <TabsContent value="orders" className="mt-6"><OrdersTab /></TabsContent>
         <TabsContent value="partners" className="mt-6"><PartnersTab /></TabsContent>
         <TabsContent value="skus" className="mt-6"><SkusTab /></TabsContent>

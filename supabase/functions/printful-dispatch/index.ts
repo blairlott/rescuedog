@@ -89,7 +89,8 @@ Deno.serve(async (req) => {
         recipient: input.recipient,
         items: input.items.map((i) => ({
           sync_variant_id: typeof i.variant_id === "number" ? i.variant_id : undefined,
-          external_variant_id: typeof i.variant_id === "string" ? i.variant_id : undefined,
+          external_variant_id:
+            typeof i.variant_id === "string" ? i.variant_id : i.sku,
           quantity: i.quantity,
         })),
       }),

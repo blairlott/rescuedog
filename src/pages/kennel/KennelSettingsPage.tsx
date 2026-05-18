@@ -10,7 +10,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ShieldAlert, Power, UserPlus, Eye } from "lucide-react";
+import { ShieldAlert, Power, UserPlus, Eye, Bell, Camera, Send } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 
@@ -30,6 +30,9 @@ export default function KennelSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [killConfirm, setKillConfirm] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [emailRecipients, setEmailRecipients] = useState("");
+  const [smsRecipients, setSmsRecipients] = useState("");
+  const [busyAction, setBusyAction] = useState<string | null>(null);
   const { data: roleInfo } = useUserRole();
   const isOwner = !!roleInfo?.isOwner;
 
@@ -42,6 +45,9 @@ export default function KennelSettingsPage() {
     const sMap: Record<string, any> = {};
     (s as SettingRow[] ?? []).forEach((r) => (sMap[r.key] = r.value));
     setSettings(sMap);
+    const recips = sMap["alert_recipients"] ?? {};
+    setEmailRecipients(Array.isArray(recips.email) ? recips.email.join(", ") : "");
+    setSmsRecipients(Array.isArray(recips.sms) ? recips.sms.join(", ") : "");
     const nameById = Object.fromEntries((c ?? []).map((x: any) => [x.id, x.name]));
     setGuardrails(((g as Guardrail[]) ?? []).map((x) => ({ ...x, channel_name: nameById[x.channel_id] })));
     setLoading(false);
@@ -69,6 +75,48 @@ export default function KennelSettingsPage() {
   const confFloor = Number(settings.confidence_floor ?? 0.6);
   const dailyCap = Number(settings.daily_spend_cap_cents ?? 500000);
   const mode = String(settings.ingestion_mode ?? "lindy_primary");
+  const maxSingleDelta = Number(settings.max_single_exec_delta_pct ?? 25);
+  const max24hDelta = Number(settings.max_24h_cumulative_delta_pct ?? 60);
+  const globalCapMult = Number(settings.daily_spend_cap_multiplier ?? 1.5);
+  const perChannelCapMult = Number(settings.per_channel_spend_cap_multiplier ?? 1.75);
+
+  const saveRecipients = async () => {
+    const email = emailRecipients.split(",").map((s) => s.trim()).filter(Boolean);
+    const sms = smsRecipients.split(",").map((s) => s.trim()).filter(Boolean);
+    await saveSetting("alert_recipients", { email, sms });
+  };
+
+  const runBaselineCapture = async () => {
+    setBusyAction("baseline");
+    try {
+      const { error } = await supabase.functions.invoke("kennel-baseline-capture", { body: {} });
+      if (error) throw error;
+      toast.success("Baseline captured");
+    } catch (e: any) {
+      toast.error(e.message ?? "Capture failed");
+    } finally { setBusyAction(null); }
+  };
+
+  const sendTestAlert = async () => {
+    setBusyAction("test");
+    try {
+      const { data, error } = await supabase.functions.invoke("kennel-alert-dispatch", {
+        body: {
+          event_type: "manual_test",
+          channel: "meta",
+          action: "test",
+          spend_impact_cents: 0,
+          confidence: 1,
+          message: "This is a test alert from Kennel Settings.",
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.ok === false) throw new Error((data as any)?.email?.error || (data as any)?.sms?.error || "Dispatch failed");
+      toast.success("Test alert dispatched");
+    } catch (e: any) {
+      toast.error(e.message ?? "Send failed");
+    } finally { setBusyAction(null); }
+  };
 
   return (
     <div className="p-6 max-w-[1400px] space-y-8" style={BRAND_FONT}>
@@ -174,6 +222,82 @@ export default function KennelSettingsPage() {
             className="mt-2"
           />
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2 border-t border-border">
+          <div>
+            <Label className="text-xs uppercase tracking-brand">Max single-exec Δ%</Label>
+            <Input type="number" min={1} max={100} style={SHARP} className="mt-2"
+              value={maxSingleDelta}
+              onChange={(e) => setSettings((p) => ({ ...p, max_single_exec_delta_pct: Number(e.target.value) }))}
+              onBlur={() => saveSetting("max_single_exec_delta_pct", Number(maxSingleDelta))}
+            />
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-brand">Max 24h cumulative Δ%</Label>
+            <Input type="number" min={1} max={500} style={SHARP} className="mt-2"
+              value={max24hDelta}
+              onChange={(e) => setSettings((p) => ({ ...p, max_24h_cumulative_delta_pct: Number(e.target.value) }))}
+              onBlur={() => saveSetting("max_24h_cumulative_delta_pct", Number(max24hDelta))}
+            />
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-brand">Global cap × baseline</Label>
+            <Input type="number" step="0.05" min={1} max={5} style={SHARP} className="mt-2"
+              value={globalCapMult}
+              onChange={(e) => setSettings((p) => ({ ...p, daily_spend_cap_multiplier: Number(e.target.value) }))}
+              onBlur={() => saveSetting("daily_spend_cap_multiplier", Number(globalCapMult))}
+            />
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-brand">Per-channel cap × baseline</Label>
+            <Input type="number" step="0.05" min={1} max={5} style={SHARP} className="mt-2"
+              value={perChannelCapMult}
+              onChange={(e) => setSettings((p) => ({ ...p, per_channel_spend_cap_multiplier: Number(e.target.value) }))}
+              onBlur={() => saveSetting("per_channel_spend_cap_multiplier", Number(perChannelCapMult))}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="border border-border bg-card p-5 space-y-4" style={SHARP}>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-sm uppercase font-bold tracking-brand flex items-center gap-2">
+            <Bell className="h-4 w-4" /> Alerts & baselines
+          </h2>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" style={SHARP}
+              disabled={busyAction === "baseline"} onClick={runBaselineCapture}>
+              <Camera className="h-3 w-3 mr-1" /> Capture baseline now
+            </Button>
+            <Button size="sm" variant="outline" style={SHARP}
+              disabled={busyAction === "test"} onClick={sendTestAlert}>
+              <Send className="h-3 w-3 mr-1" /> Send test alert
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label className="text-xs uppercase tracking-brand">Email recipients (comma-separated)</Label>
+            <Input style={SHARP} className="mt-2"
+              value={emailRecipients}
+              onChange={(e) => setEmailRecipients(e.target.value)}
+              onBlur={saveRecipients}
+              placeholder="alerts@rescuedogwines.com, blair@…"
+            />
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-brand">SMS recipients (E.164, comma-separated)</Label>
+            <Input style={SHARP} className="mt-2"
+              value={smsRecipients}
+              onChange={(e) => setSmsRecipients(e.target.value)}
+              onBlur={saveRecipients}
+              placeholder="+14043120550, +1…"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Baseline capture runs automatically at 08:00 UTC. SMS requires the Twilio connector to be authorized.
+        </p>
       </section>
 
       <section className="border border-border bg-card p-5 space-y-3" style={SHARP}>

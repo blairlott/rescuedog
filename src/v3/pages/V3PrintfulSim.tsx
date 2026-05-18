@@ -149,7 +149,11 @@ export default function V3PrintfulSim() {
       cost_cents: 0,
       retail_cents: 0,
     };
-    const { data, error } = await supabase.from("dropship_skus" as any).insert(row).select().single();
+    const { data, error } = await supabase
+      .from("dropship_skus" as any)
+      .upsert(row, { onConflict: "sku" })
+      .select()
+      .single();
     setMapDraft((m) => ({ ...m, [v.sync_variant_id]: { ...d, saving: false, saved: !error } }));
     append(error ? "mapping FAILED" : "mapping saved", error ?? data);
   };
@@ -193,7 +197,9 @@ export default function V3PrintfulSim() {
         cost_cents: 0,
         retail_cents: 0,
       };
-      const { error } = await supabase.from("dropship_skus" as any).insert(row);
+      const { error } = await supabase
+        .from("dropship_skus" as any)
+        .upsert(row, { onConflict: "sku" });
       setMapDraft((m) => ({
         ...m,
         [v.sync_variant_id]: { vs_product_id: hit.id, title: hit.name || v.name || "", saving: false, saved: !error },

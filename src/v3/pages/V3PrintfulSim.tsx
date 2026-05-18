@@ -174,12 +174,21 @@ export default function V3PrintfulSim() {
             />
           </label>
           <label className="text-sm">
-            Printful variant id (sync_variant_id or external)
+            Printful variant id
             <input
               className="block w-full border px-2 py-1 mt-1"
               value={variantId}
               onChange={(e) => setVariantId(e.target.value)}
-              placeholder="required for live mode"
+              placeholder="sync id, external id, or template catalog variant"
+            />
+          </label>
+          <label className="text-sm">
+            Product template id
+            <input
+              className="block w-full border px-2 py-1 mt-1"
+              value={productTemplateId}
+              onChange={(e) => setProductTemplateId(e.target.value)}
+              placeholder="only for template orders"
             />
           </label>
           <label className="text-sm">
@@ -193,6 +202,7 @@ export default function V3PrintfulSim() {
               <option value="sync">sync_variant_id (your store variant)</option>
               <option value="external">external_variant_id (your SKU/external id)</option>
               <option value="catalog">catalog variant_id (Printful catalog, no store)</option>
+              <option value="template">product_template_id + catalog variant_id</option>
             </select>
           </label>
           <label className="text-sm">
@@ -217,6 +227,9 @@ export default function V3PrintfulSim() {
         <div className="flex gap-2 flex-wrap">
           <button onClick={listVariants} className="border px-3 py-2 text-sm">
             List my Printful variants
+          </button>
+          <button onClick={listTemplates} className="border px-3 py-2 text-sm">
+            List product templates
           </button>
           <button onClick={dispatch} className="bg-primary text-primary-foreground px-3 py-2 text-sm">
             Dispatch to Printful

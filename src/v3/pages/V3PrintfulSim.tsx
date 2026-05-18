@@ -39,8 +39,15 @@ export default function V3PrintfulSim() {
           zip: "78701",
           email: "test@example.com",
         },
-        items: [{ sku: "RDW-HAT-RED", quantity: 1 }],
-        // overridden below
+        items: [
+          {
+            sku,
+            quantity: 1,
+            ...(variantId
+              ? { variant_id: /^\d+$/.test(variantId) ? Number(variantId) : variantId }
+              : {}),
+          },
+        ],
       },
     });
     if (error) return append("dispatch FAILED", error);

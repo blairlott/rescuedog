@@ -20,6 +20,8 @@ Reference for the alerts, execution, and intelligence stack added in Phase 2.
 | `kennel-reconcile` | Nightly variance check between platform spend and Vinoshipper actuals. | pg_cron `kennel-reconcile-nightly` @ 03:10 UTC. |
 | `kennel-pacing` | Daily EOM spend projection. `mtd / days_elapsed * days_in_month` vs `ad_settings.monthly_budget_cents` (global) and `monthly_budget_<channel>_cents`. Fires `pacing` alert when ratio > `pacing_alert_threshold` (default 1.10). `?dry_run=true` to inspect without alerting. | pg_cron `kennel-pacing-daily` @ `0 9 * * *`. |
 | `kennel-attribution-dedup` | Nightly last-click 7d dedup. For each VS order, picks the most recent click/conversion event within 7d and credits ONLY that channel in `channel_performance_daily`. Overrides naive rollup totals. | pg_cron `kennel-attribution-dedup-nightly` @ `30 3 * * *`. |
+| `kennel-creative-fatigue` | Per (channel, ad_id) 7d vs 30d CTR decay → `creative_fatigue` rows. When fatigue ≥ 0.40 and 7d impressions ≥ 1000, also writes an `ad_recommendations` row (`kind=creative_refresh`, `source=native`, idempotent on `ingest_request_id=fatigue:<platform>:<ad_id>:<date>`) so it surfaces in the Recommendations queue. | pg_cron `kennel-creative-fatigue-daily` @ `30 7 * * *`. |
+| `kennel-dayparting` | Per (channel, campaign, dow, hour) bid modifier from 28d of `ad_performance_facts`. `pct = clamp((cr_slot / cr_channel) - 1, ±50%)`. Requires slot ≥ 50 clicks and ≥ 3 conversions before emitting. Writes `dayparting_recommendations`. | pg_cron `kennel-dayparting-daily` @ `45 7 * * *`. |
 | `kennel-ingest` | HMAC-signed (`x-kennel-signature: sha256=…`) batched performance + recommendations push from Lindy. | External Lindy push. |
 
 ## Schema (Phase 2A core)
@@ -80,6 +82,9 @@ All required secrets are already configured. New additions in Phase 2:
 | `kennel-reconcile-nightly` | `10 3 * * *` |
 | `kennel-attribution-dedup-nightly` | `30 3 * * *` |
 | `kennel-pacing-daily` | `0 9 * * *` |
+| `kennel-creative-fatigue-daily` | `30 7 * * *` |
+| `kennel-dayparting-daily` | `45 7 * * *` |
+| `kennel-delivery-fanout-5min` | `*/5 * * * *` |
 | `kennel-sync-native-6h` | `0 */6 * * *` |
 
 ## Phase 2C webhook receivers (planned)

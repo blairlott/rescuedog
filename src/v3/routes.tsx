@@ -9,6 +9,7 @@ const V3Cart = lazy(() => import("./pages/V3Cart"));
 const V3CheckoutSuccess = lazy(() => import("./pages/V3CheckoutSuccess"));
 const V3AdminMigration = lazy(() => import("./pages/V3AdminMigration"));
 const V3PrintfulSim = lazy(() => import("./pages/V3PrintfulSim"));
+const V3PartnersRedirect = lazy(() => import("./pages/V3PartnersRedirect"));
 
 export function v3Routes() {
   if (!V3_DROPSHIP_ENABLED) return null;
@@ -20,5 +21,6 @@ export function v3Routes() {
     <Route key="v3-success" path="/v3/checkout/success" element={<V3CheckoutSuccess />} />,
     <Route key="v3-mig" path="/v3/admin/migration" element={<V3AdminMigration />} />,
     <Route key="v3-pf-sim" path="/v3/admin/printful-sim" element={<V3PrintfulSim />} />,
+    <Route key="v3-partners" path="/v3/admin/partners" element={<V3PartnersRedirect />} />,
   ];
 }

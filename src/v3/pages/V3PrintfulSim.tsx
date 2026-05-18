@@ -18,6 +18,7 @@ export default function V3PrintfulSim() {
   const [tracking, setTracking] = useState("1Z999AA10123456784");
   const [sku, setSku] = useState("RDW-HAT-RED");
   const [variantId, setVariantId] = useState("");
+  const [variantIdType, setVariantIdType] = useState<"auto" | "sync" | "external" | "catalog">("auto");
   const [log, setLog] = useState<string[]>([]);
   const [liveMode, setLiveMode] = useState(false);
   const simulate = !liveMode;
@@ -43,9 +44,11 @@ export default function V3PrintfulSim() {
           {
             sku,
             quantity: 1,
+            variant_id_type: variantIdType,
             ...(variantId
               ? { variant_id: /^\d+$/.test(variantId) ? Number(variantId) : variantId }
               : {}),
+            ...(variantIdType === "catalog" ? { name: sku, retail_price: "0.01" } : {}),
           },
         ],
       },
@@ -141,6 +144,19 @@ export default function V3PrintfulSim() {
               onChange={(e) => setVariantId(e.target.value)}
               placeholder="required for live mode"
             />
+          </label>
+          <label className="text-sm">
+            ID type
+            <select
+              className="block w-full border px-2 py-1 mt-1 bg-background"
+              value={variantIdType}
+              onChange={(e) => setVariantIdType(e.target.value as typeof variantIdType)}
+            >
+              <option value="auto">Auto (lookup SKU in store)</option>
+              <option value="sync">sync_variant_id (your store variant)</option>
+              <option value="external">external_variant_id (your SKU/external id)</option>
+              <option value="catalog">catalog variant_id (Printful catalog, no store)</option>
+            </select>
           </label>
         </div>
         {partnerOrderId && (

@@ -329,6 +329,16 @@ Deno.serve(async (req) => {
           apply_response: applyResp, idempotency_key: idem,
         });
         summary.pause_recs++;
+        // High-signal anomaly: spending with zero conversions triggered an auto-pause (or queued one).
+        await fireAlert({
+          event_type: "anomaly",
+          channel: "instacart",
+          action: status === "applied" ? "auto_paused_zero_roas" : "pause_recommended_zero_roas",
+          spend_impact_cents: -r.spend_cents,
+          confidence: 0.95,
+          deep_link: `https://rescuedog.lovable.app/kennel/recommendations`,
+          message: `${c.format} campaign ${r.entity_id}: ${reasoning}`,
+        });
         continue;
       }
     }

@@ -11,6 +11,7 @@ const V3AdminMigration = lazy(() => import("./pages/V3AdminMigration"));
 const V3PrintfulSim = lazy(() => import("./pages/V3PrintfulSim"));
 const V3PrintfulMappings = lazy(() => import("./pages/V3PrintfulMappings"));
 const V3PartnersRedirect = lazy(() => import("./pages/V3PartnersRedirect"));
+const V3VsLiveTest = lazy(() => import("./pages/V3VsLiveTest"));
 
 export function v3Routes() {
   if (!V3_DROPSHIP_ENABLED) return null;
@@ -24,5 +25,6 @@ export function v3Routes() {
     <Route key="v3-pf-sim" path="/v3/admin/printful-sim" element={<V3PrintfulSim />} />,
     <Route key="v3-pf-map" path="/v3/admin/printful-sim/mappings" element={<V3PrintfulMappings />} />,
     <Route key="v3-partners" path="/v3/admin/partners" element={<V3PartnersRedirect />} />,
+    <Route key="v3-vs-live" path="/v3/admin/vs-live-test" element={<V3VsLiveTest />} />,
   ];
 }

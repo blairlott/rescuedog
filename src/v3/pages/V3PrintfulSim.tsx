@@ -224,6 +224,7 @@ export default function V3PrintfulSim() {
               <thead className="bg-muted sticky top-0">
                 <tr>
                   <th className="text-left p-2">sync_variant_id</th>
+                  <th className="text-left p-2">store_id</th>
                   <th className="text-left p-2">external_id</th>
                   <th className="text-left p-2">name</th>
                   <th />
@@ -233,6 +234,7 @@ export default function V3PrintfulSim() {
                 {variants.map((v) => (
                   <tr key={v.sync_variant_id} className="border-t border-border">
                     <td className="p-2 font-mono">{v.sync_variant_id}</td>
+                    <td className="p-2 font-mono">{v.store_id ?? "—"}</td>
                     <td className="p-2 font-mono">{v.external_id ?? "—"}</td>
                     <td className="p-2">{v.name ?? v.sku ?? "—"}</td>
                     <td className="p-2 text-right">
@@ -240,6 +242,8 @@ export default function V3PrintfulSim() {
                         className="underline"
                         onClick={() => {
                           setVariantId(String(v.sync_variant_id));
+                          setVariantIdType("sync");
+                          if (v.store_id) setPrintfulStoreId(String(v.store_id));
                         }}
                       >
                         use

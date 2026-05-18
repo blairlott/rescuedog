@@ -75,3 +75,4 @@
 - [v2 Review Process](mem://plans/v2-review-process) — Lindy (ops/compliance) + Claude (technical) review gates before v2 cutover
 - [v3 VS Dropship Bridge Spec](mem://specs/v3-vs-dropship-bridge-spec) — Vinoshipper as merchant-of-record for wine + non-wine; server-side fork to dropship partners
 - [v3 Shopify→VS Merch Migration](mem://plans/v3-shopify-to-vs-merch-migration) — How existing dropship_partners/skus port from Shopify storefront to VS Injector
+- [Partner Ops Rules](mem://features/partner-ops-rules) — Lindy-triggered vs-tracking-verify, marketplace approval flow, wine 3PL relay exemption, promotion gates

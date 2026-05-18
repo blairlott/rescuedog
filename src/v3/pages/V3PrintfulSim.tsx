@@ -21,7 +21,8 @@ export default function V3PrintfulSim() {
   const [variantIdType, setVariantIdType] = useState<"auto" | "sync" | "external" | "catalog">("auto");
   const [log, setLog] = useState<string[]>([]);
   const [liveMode, setLiveMode] = useState(false);
-  const [variants, setVariants] = useState<Array<{ sync_variant_id: number; external_id: string | null; sku: string | null; name?: string }>>([]);
+  const [printfulStoreId, setPrintfulStoreId] = useState("");
+  const [variants, setVariants] = useState<Array<{ sync_variant_id: number; external_id: string | null; sku: string | null; name?: string; store_id?: number }>>([]);
   const simulate = !liveMode;
 
   const append = (label: string, payload: unknown) =>
@@ -29,7 +30,8 @@ export default function V3PrintfulSim() {
 
   const listVariants = async () => {
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    const url = `https://${projectId}.supabase.co/functions/v1/printful-dispatch?action=list_variants`;
+    const storeParam = printfulStoreId.trim() ? `&store_id=${encodeURIComponent(printfulStoreId.trim())}` : "";
+    const url = `https://${projectId}.supabase.co/functions/v1/printful-dispatch?action=list_variants${storeParam}`;
     const { data: sess } = await supabase.auth.getSession();
     const res = await fetch(url, {
       headers: {
@@ -56,6 +58,7 @@ export default function V3PrintfulSim() {
           zip: "78701",
           email: "test@example.com",
         },
+        ...(printfulStoreId.trim() ? { printful_store_id: printfulStoreId.trim() } : {}),
         items: [
           {
             sku,
@@ -173,6 +176,15 @@ export default function V3PrintfulSim() {
               <option value="external">external_variant_id (your SKU/external id)</option>
               <option value="catalog">catalog variant_id (Printful catalog, no store)</option>
             </select>
+          </label>
+          <label className="text-sm">
+            Printful store id
+            <input
+              className="block w-full border px-2 py-1 mt-1"
+              value={printfulStoreId}
+              onChange={(e) => setPrintfulStoreId(e.target.value)}
+              placeholder="optional; auto-scans stores"
+            />
           </label>
         </div>
         {partnerOrderId && (

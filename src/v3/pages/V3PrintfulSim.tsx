@@ -16,6 +16,8 @@ export default function V3PrintfulSim() {
   const [vsOrderId, setVsOrderId] = useState("sim-vs-001");
   const [partnerOrderId, setPartnerOrderId] = useState<string>("");
   const [tracking, setTracking] = useState("1Z999AA10123456784");
+  const [sku, setSku] = useState("RDW-HAT-RED");
+  const [variantId, setVariantId] = useState("");
   const [log, setLog] = useState<string[]>([]);
   const [liveMode, setLiveMode] = useState(false);
   const simulate = !liveMode;
@@ -38,6 +40,7 @@ export default function V3PrintfulSim() {
           email: "test@example.com",
         },
         items: [{ sku: "RDW-HAT-RED", quantity: 1 }],
+        // overridden below
       },
     });
     if (error) return append("dispatch FAILED", error);

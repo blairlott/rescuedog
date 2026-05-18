@@ -60,12 +60,13 @@ Deno.serve(async (req) => {
     }
   }
 
-  const normalized = products.map((p) => ({
+  const normalized = products.map((p: any) => ({
     id: String(p.id ?? p.productId ?? p.product_id ?? ""),
-    sku: (p.sku ?? p.SKU ?? p.code ?? "") + "",
-    name: p.name ?? p.title ?? p.product_name ?? "",
-    type: p.type ?? p.product_type ?? (p.wine === false ? "non_wine" : undefined),
-  })).filter((p) => p.id);
+    sku: String(p.summary?.sku ?? p.detail?.sku ?? p.sku ?? p.SKU ?? p.code ?? ""),
+    name: p.summary?.name ?? p.detail?.fullName ?? p.name ?? p.title ?? "",
+    type: p.taxonomy?.packagedAlcohol === false ? "non_wine" : (p.taxonomy?.packagedAlcohol ? "wine" : undefined),
+    status: p.status,
+  })).filter((p: any) => p.id);
 
   return new Response(JSON.stringify({ ok: true, count: normalized.length, products: normalized, attempts }), {
     status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },

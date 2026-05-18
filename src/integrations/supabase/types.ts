@@ -2263,6 +2263,9 @@ export type Database = {
           updated_at: string
           vendor_order_id: string | null
           vinoshipper_order_id: string | null
+          vs_tracking_mismatch: string | null
+          vs_tracking_relayed_at: string | null
+          vs_tracking_verified_at: string | null
         }
         Insert: {
           carrier?: string | null
@@ -2287,6 +2290,9 @@ export type Database = {
           updated_at?: string
           vendor_order_id?: string | null
           vinoshipper_order_id?: string | null
+          vs_tracking_mismatch?: string | null
+          vs_tracking_relayed_at?: string | null
+          vs_tracking_verified_at?: string | null
         }
         Update: {
           carrier?: string | null
@@ -2311,6 +2317,9 @@ export type Database = {
           updated_at?: string
           vendor_order_id?: string | null
           vinoshipper_order_id?: string | null
+          vs_tracking_mismatch?: string | null
+          vs_tracking_relayed_at?: string | null
+          vs_tracking_verified_at?: string | null
         }
         Relationships: [
           {
@@ -2331,6 +2340,8 @@ export type Database = {
           created_at: string
           fulfills_from_us: boolean
           id: string
+          last_health_check_at: string | null
+          last_health_status: string | null
           name: string
           notes: string | null
           notify_on_new_order: boolean
@@ -2351,6 +2362,8 @@ export type Database = {
           created_at?: string
           fulfills_from_us?: boolean
           id?: string
+          last_health_check_at?: string | null
+          last_health_status?: string | null
           name: string
           notes?: string | null
           notify_on_new_order?: boolean
@@ -2371,6 +2384,8 @@ export type Database = {
           created_at?: string
           fulfills_from_us?: boolean
           id?: string
+          last_health_check_at?: string | null
+          last_health_status?: string | null
           name?: string
           notes?: string | null
           notify_on_new_order?: boolean
@@ -5378,6 +5393,78 @@ export type Database = {
           year?: string | null
         }
         Relationships: []
+      }
+      vs_tracking_relay_log: {
+        Row: {
+          attempt_at: string
+          carrier: string | null
+          created_at: string
+          dropship_order_id: string | null
+          http_status: number | null
+          id: string
+          mismatch_reason: string | null
+          partner_id: string | null
+          relay_ok: boolean
+          request_payload: Json | null
+          response_payload: Json | null
+          simulated: boolean
+          tracking_number: string | null
+          verified_at: string | null
+          verified_ok: boolean | null
+          vinoshipper_order_id: string | null
+        }
+        Insert: {
+          attempt_at?: string
+          carrier?: string | null
+          created_at?: string
+          dropship_order_id?: string | null
+          http_status?: number | null
+          id?: string
+          mismatch_reason?: string | null
+          partner_id?: string | null
+          relay_ok?: boolean
+          request_payload?: Json | null
+          response_payload?: Json | null
+          simulated?: boolean
+          tracking_number?: string | null
+          verified_at?: string | null
+          verified_ok?: boolean | null
+          vinoshipper_order_id?: string | null
+        }
+        Update: {
+          attempt_at?: string
+          carrier?: string | null
+          created_at?: string
+          dropship_order_id?: string | null
+          http_status?: number | null
+          id?: string
+          mismatch_reason?: string | null
+          partner_id?: string | null
+          relay_ok?: boolean
+          request_payload?: Json | null
+          response_payload?: Json | null
+          simulated?: boolean
+          tracking_number?: string | null
+          verified_at?: string | null
+          verified_ok?: boolean | null
+          vinoshipper_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vs_tracking_relay_log_dropship_order_id_fkey"
+            columns: ["dropship_order_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vs_tracking_relay_log_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "dropship_partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vs_transactions: {
         Row: {

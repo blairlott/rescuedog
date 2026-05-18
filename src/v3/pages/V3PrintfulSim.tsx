@@ -286,6 +286,41 @@ export default function V3PrintfulSim() {
             </table>
           </div>
         )}
+        {templates.length > 0 && (
+          <div className="mt-3 border border-border max-h-64 overflow-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-muted sticky top-0">
+                <tr>
+                  <th className="text-left p-2">template_id</th>
+                  <th className="text-left p-2">catalog variant_ids</th>
+                  <th className="text-left p-2">title</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {templates.map((t) => (
+                  <tr key={t.id} className="border-t border-border">
+                    <td className="p-2 font-mono">{t.id}</td>
+                    <td className="p-2 font-mono">{t.available_variant_ids?.join(", ") ?? "—"}</td>
+                    <td className="p-2">{t.title ?? "—"}</td>
+                    <td className="p-2 text-right">
+                      <button
+                        className="underline"
+                        onClick={() => {
+                          setProductTemplateId(String(t.id));
+                          setVariantId(String(t.available_variant_ids?.[0] ?? ""));
+                          setVariantIdType("template");
+                        }}
+                      >
+                        use
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className="border p-4">

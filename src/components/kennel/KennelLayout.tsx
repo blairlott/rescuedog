@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X } from "lucide-react";
+import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -20,6 +20,31 @@ export function KennelLayout() {
   const location = useLocation();
   const { data: roleInfo } = useUserRole();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [killActive, setKillActive] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadKill = async () => {
+      const { data } = await supabase
+        .from("ad_settings")
+        .select("key,value")
+        .or("key.eq.kill_switch,key.like.kill_switch_%");
+      if (cancelled) return;
+      const on: string[] = [];
+      (data ?? []).forEach((r: any) => {
+        if (r.value === true) {
+          on.push(r.key === "kill_switch" ? "GLOBAL" : r.key.replace("kill_switch_", "").toUpperCase());
+        }
+      });
+      setKillActive(on);
+    };
+    loadKill();
+    const ch = supabase
+      .channel("kennel-kill-switch")
+      .on("postgres_changes", { event: "*", schema: "public", table: "ad_settings" }, () => loadKill())
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, []);
 
   // Close mobile drawer on route change
   useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
@@ -111,6 +136,23 @@ export function KennelLayout() {
         </div>
       </aside>
       <main className="flex-1 overflow-auto pt-12 md:pt-0 min-w-0">
+        {killActive.length > 0 && (
+          <div
+            className="sticky top-0 z-30 flex items-center gap-2 px-4 md:px-6 py-2 bg-destructive text-destructive-foreground border-b-2 border-foreground"
+            style={{ borderRadius: 0 }}
+          >
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            <span className="text-xs uppercase tracking-brand font-bold">
+              Kill switch engaged · {killActive.join(" · ")} · no auto-execute or approve will run
+            </span>
+            <Link
+              to="/kennel/settings"
+              className="ml-auto text-[10px] uppercase tracking-brand underline shrink-0"
+            >
+              Manage
+            </Link>
+          </div>
+        )}
         {crumbs.length > 0 && (
           <nav
             aria-label="Breadcrumb"

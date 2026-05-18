@@ -11,6 +11,9 @@ import { toast } from "sonner";
 import { ChevronRight, Pause, Play, RefreshCw, Home, Pencil, Upload, Download, Tag, Sparkles } from "lucide-react";
 import KeywordEnginePanel from "@/components/kennel/KeywordEnginePanel";
 import IntelligencePanel from "@/components/kennel/IntelligencePanel";
+import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
+import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
+import { RefreshButton } from "@/components/kennel/RefreshButton";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -469,7 +472,15 @@ export default function KennelChannelsPage() {
         <Button size="sm" variant="outline" style={SHARP} onClick={load} disabled={loading}>
           <RefreshCw className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
         </Button>
+        <RefreshButton label="Refresh data" invalidateKeys={["forecast"]} className="ml-2" />
       </div>
+
+      {current?.level === "campaign" && (platform === "meta" || platform === "google" || platform === "instacart") && (
+        <div className="space-y-4 mb-4">
+          <StrategyMixPanel scope={`platform:${platform}`} />
+          <ForecastTimeline lockPlatform={platform} />
+        </div>
+      )}
 
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <h2 className="text-2xl font-bold uppercase tracking-brand">{headerLabel}</h2>

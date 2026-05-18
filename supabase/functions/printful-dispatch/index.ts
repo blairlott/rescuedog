@@ -100,19 +100,31 @@ Deno.serve(async (req) => {
     printfulRaw = data;
   }
 
-  // Upsert dropship_orders so the webhook can correlate later.
-  await supabase.from("dropship_orders").upsert(
-    {
-      vinoshipper_order_id: String(input.vs_order_id),
-      partner_order_id: printfulOrderId,
-      partner_external_id: externalId,
-      partner_type: "printful",
-      status: simulate ? "simulated_dispatched" : "dispatched",
-      simulated: simulate,
-      payload: printfulRaw,
-    },
-    { onConflict: "partner_external_id" },
-  );
+  // Look up the Printful partner row (required FK on dropship_orders).
+  const { data: partner } = await supabase
+    .from("dropship_partners")
+    .select("id")
+    .eq("vendor_type", "printful")
+    .maybeSingle();
+
+  if (!partner) {
+    return json({ error: "no_printful_partner_row" }, 500);
+  }
+
+  await supabase.from("dropship_orders").insert({
+    partner_id: partner.id,
+    vinoshipper_order_id: String(input.vs_order_id),
+    partner_order_id: printfulOrderId,
+    vendor_order_id: externalId,
+    status: simulate ? "simulated" : "submitted",
+    fulfillment_status_detail: "dispatched",
+    simulated: simulate,
+    customer_name: input.recipient.name,
+    customer_email: input.recipient.email ?? null,
+    shipping_address: input.recipient as unknown as Record<string, unknown>,
+    submitted_at: new Date().toISOString(),
+    notes: JSON.stringify(printfulRaw),
+  });
 
   return json({ ok: true, simulated: simulate, printful_order_id: printfulOrderId, raw: printfulRaw });
 });

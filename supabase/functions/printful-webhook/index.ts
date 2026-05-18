@@ -57,12 +57,12 @@ Deno.serve(async (req) => {
   );
 
   // Find the parent VS order via our dropship_orders row.
+  const partnerOrderId = String(evt.data.order.id);
+  const externalId = evt.data.order.external_id ?? "";
   const { data: row } = await supabase
     .from("dropship_orders")
     .select("id,vinoshipper_order_id,simulated,status")
-    .or(
-      `partner_order_id.eq.${String(evt.data.order.id)},partner_external_id.eq.${evt.data.order.external_id ?? ""}`,
-    )
+    .or(`partner_order_id.eq.${partnerOrderId},vendor_order_id.eq.${externalId}`)
     .maybeSingle();
 
   if (!row) {
@@ -71,12 +71,13 @@ Deno.serve(async (req) => {
   }
 
   const simulate = evt.simulate === true || row.simulated === true || !vsLiveMode();
-  const updates: Record<string, unknown> = { payload: evt };
+  const updates: Record<string, unknown> = { notes: JSON.stringify(evt) };
 
   let vsRelay: unknown = null;
   if (evt.type === "package_shipped" && evt.data.shipment) {
-    updates.status = simulate ? "simulated_shipped" : "shipped";
+    updates.fulfillment_status_detail = "shipped";
     updates.tracking_number = evt.data.shipment.tracking_number ?? null;
+    updates.tracking_url = evt.data.shipment.tracking_url ?? null;
     updates.carrier = evt.data.shipment.carrier ?? null;
     updates.shipped_at = evt.data.shipment.ship_date ?? new Date().toISOString();
 
@@ -98,11 +99,12 @@ Deno.serve(async (req) => {
       }
     }
   } else if (evt.type === "package_returned") {
-    updates.status = "returned";
+    updates.fulfillment_status_detail = "cancelled";
   } else if (evt.type === "order_failed") {
-    updates.status = "failed";
-  } else if (evt.type === "order_updated" && evt.data.order.status) {
-    updates.partner_status = evt.data.order.status;
+    updates.fulfillment_status_detail = "failed";
+  } else if (evt.type === "order_updated" && evt.data.order.status === "delivered") {
+    updates.fulfillment_status_detail = "delivered";
+    updates.delivered_at = new Date().toISOString();
   }
 
   await supabase.from("dropship_orders").update(updates).eq("id", row.id);

@@ -17,6 +17,8 @@ export default function V3PrintfulSim() {
   const [partnerOrderId, setPartnerOrderId] = useState<string>("");
   const [tracking, setTracking] = useState("1Z999AA10123456784");
   const [log, setLog] = useState<string[]>([]);
+  const [liveMode, setLiveMode] = useState(false);
+  const simulate = !liveMode;
 
   const append = (label: string, payload: unknown) =>
     setLog((l) => [`[${new Date().toLocaleTimeString()}] ${label}\n${JSON.stringify(payload, null, 2)}`, ...l]);
@@ -25,7 +27,7 @@ export default function V3PrintfulSim() {
     const { data, error } = await supabase.functions.invoke("printful-dispatch", {
       body: {
         vs_order_id: vsOrderId,
-        simulate: true,
+        simulate,
         recipient: {
           name: "Test Rescue",
           address1: "1 Bone Lane",
@@ -47,7 +49,7 @@ export default function V3PrintfulSim() {
     const { data, error } = await supabase.functions.invoke("printful-webhook", {
       body: {
         type: "package_shipped",
-        simulate: true,
+        simulate,
         data: {
           order: { id: partnerOrderId, external_id: `vs_${vsOrderId}` },
           shipment: {
@@ -67,7 +69,7 @@ export default function V3PrintfulSim() {
     const { data, error } = await supabase.functions.invoke("printful-webhook", {
       body: {
         type: "order_updated",
-        simulate: true,
+        simulate,
         data: { order: { id: partnerOrderId, external_id: `vs_${vsOrderId}`, status: "delivered" } },
       },
     });
@@ -86,6 +88,16 @@ export default function V3PrintfulSim() {
 
       <section className="border p-4 space-y-3">
         <h2 className="font-semibold">1. Inputs</h2>
+        <label className="flex items-center gap-2 text-sm border p-2 bg-muted">
+          <input
+            type="checkbox"
+            checked={liveMode}
+            onChange={(e) => setLiveMode(e.target.checked)}
+          />
+          <span className="font-medium">
+            LIVE MODE {liveMode ? "ON — real Printful API calls will be made" : "OFF (simulated)"}
+          </span>
+        </label>
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm">
             VS order id

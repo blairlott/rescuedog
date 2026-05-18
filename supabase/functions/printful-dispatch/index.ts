@@ -47,6 +47,17 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const url = new URL(req.url);
+  const apiKeyEarly = Deno.env.get("PRINTFUL_API_KEY");
+
+  // Debug helper: GET ?action=list_variants → list all sync_variant_ids in the
+  // connected Printful store so the UI can pick a valid one.
+  if (req.method === "GET" && url.searchParams.get("action") === "list_variants") {
+    if (!apiKeyEarly) return json({ error: "no_api_key" }, 400);
+    const variants = await fetchAllSyncVariants(apiKeyEarly);
+    return json({ ok: true, count: variants.length, variants });
+  }
+
   let body: unknown;
   try { body = await req.json(); } catch {
     return json({ error: "invalid json" }, 400);
@@ -56,7 +67,7 @@ Deno.serve(async (req) => {
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
   const input = parsed.data;
 
-  const apiKey = Deno.env.get("PRINTFUL_API_KEY");
+  const apiKey = apiKeyEarly;
   const simulate = input.simulate === true || !apiKey;
 
   const supabase = createClient(
@@ -141,12 +152,37 @@ type PrintfulLine = z.infer<typeof LineSchema>;
 type StoreVariant = { sync_variant_id?: number; external_id?: string | null; sku?: string | null };
 
 async function listStoreVariants(apiKey: string): Promise<StoreVariant[]> {
-  const res = await fetch(`${PRINTFUL_BASE}/store/variants?limit=100`, {
+  return fetchAllSyncVariants(apiKey);
+}
+
+async function fetchAllSyncVariants(apiKey: string): Promise<StoreVariant[]> {
+  // Printful: list sync products, then expand each to get sync_variants.
+  const out: StoreVariant[] = [];
+  const listRes = await fetch(`${PRINTFUL_BASE}/store/products?limit=100`, {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return Array.isArray(data?.result) ? data.result : [];
+  if (!listRes.ok) return out;
+  const listData = await listRes.json();
+  const products: Array<{ id: number; name: string }> = listData?.result ?? [];
+  for (const p of products) {
+    const detRes = await fetch(`${PRINTFUL_BASE}/store/products/${p.id}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!detRes.ok) continue;
+    const det = await detRes.json();
+    const variants: Array<{ id: number; external_id?: string; sku?: string; name?: string }> =
+      det?.result?.sync_variants ?? [];
+    for (const v of variants) {
+      out.push({
+        sync_variant_id: v.id,
+        external_id: v.external_id ?? null,
+        sku: v.sku ?? null,
+        // @ts-ignore extra field for UI display
+        name: `${p.name} — ${v.name ?? ""}`.trim(),
+      });
+    }
+  }
+  return out;
 }
 
 async function toPrintfulOrderItem(

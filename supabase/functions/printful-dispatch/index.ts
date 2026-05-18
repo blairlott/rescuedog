@@ -1,0 +1,125 @@
+// printful-dispatch
+//
+// Sends a purchase order to Printful for the non-wine line items split out by
+// vs-dropship-bridge. Operates in SIMULATION mode when PRINTFUL_API_KEY is
+// missing OR when body.simulate === true. In simulation it fabricates a
+// printful order id, writes a `dropship_orders` row, and returns the same
+// shape the real API would.
+//
+// Auth: this fn is invoked server-to-server by vs-dropship-bridge OR by the
+// /v3/admin/printful-sim UI for manual testing.
+
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { z } from "npm:zod@3";
+
+const PRINTFUL_BASE = "https://api.printful.com";
+
+const LineSchema = z.object({
+  sku: z.string().min(1),
+  variant_id: z.union([z.string(), z.number()]).optional(),
+  quantity: z.number().int().positive(),
+});
+
+const BodySchema = z.object({
+  vs_order_id: z.union([z.string(), z.number()]),
+  external_id: z.string().min(1).optional(),
+  recipient: z.object({
+    name: z.string(),
+    address1: z.string(),
+    address2: z.string().optional().nullable(),
+    city: z.string(),
+    state_code: z.string(),
+    country_code: z.string().default("US"),
+    zip: z.string(),
+    email: z.string().email().optional(),
+    phone: z.string().optional(),
+  }),
+  items: z.array(LineSchema).min(1),
+  simulate: z.boolean().optional(),
+});
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  let body: unknown;
+  try { body = await req.json(); } catch {
+    return json({ error: "invalid json" }, 400);
+  }
+
+  const parsed = BodySchema.safeParse(body);
+  if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
+  const input = parsed.data;
+
+  const apiKey = Deno.env.get("PRINTFUL_API_KEY");
+  const simulate = input.simulate === true || !apiKey;
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  const externalId = input.external_id ?? `vs_${input.vs_order_id}`;
+
+  let printfulOrderId: string;
+  let printfulRaw: unknown;
+
+  if (simulate) {
+    printfulOrderId = `sim_${crypto.randomUUID().slice(0, 8)}`;
+    printfulRaw = {
+      simulated: true,
+      id: printfulOrderId,
+      external_id: externalId,
+      status: "draft",
+      items: input.items,
+      recipient: input.recipient,
+      created_at: new Date().toISOString(),
+    };
+  } else {
+    const res = await fetch(`${PRINTFUL_BASE}/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        external_id: externalId,
+        recipient: input.recipient,
+        items: input.items.map((i) => ({
+          sync_variant_id: typeof i.variant_id === "number" ? i.variant_id : undefined,
+          external_variant_id: typeof i.variant_id === "string" ? i.variant_id : undefined,
+          quantity: i.quantity,
+        })),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) return json({ error: "printful_error", details: data }, 502);
+    printfulOrderId = String(data?.result?.id ?? "");
+    printfulRaw = data;
+  }
+
+  // Upsert dropship_orders so the webhook can correlate later.
+  await supabase.from("dropship_orders").upsert(
+    {
+      vinoshipper_order_id: String(input.vs_order_id),
+      partner_order_id: printfulOrderId,
+      partner_external_id: externalId,
+      partner_type: "printful",
+      status: simulate ? "simulated_dispatched" : "dispatched",
+      simulated: simulate,
+      payload: printfulRaw,
+    },
+    { onConflict: "partner_external_id" },
+  );
+
+  return json({ ok: true, simulated: simulate, printful_order_id: printfulOrderId, raw: printfulRaw });
+});
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}

@@ -186,6 +186,28 @@ Deno.serve(async (req) => {
   const s = settingsRow as unknown as Settings;
   if (!s.engine_enabled) return json({ ok: true, skipped: true, reason: "engine disabled" });
 
+  // Strategy Mix overrides from ad_settings. Per-platform key takes precedence over global.
+  const stratKeys = [`strategy_mode_${platform}`, "strategy_mode"];
+  const { data: stratRows } = await admin
+    .from("ad_settings")
+    .select("key, value")
+    .in("key", stratKeys);
+  const stratMap = new Map<string, any>((stratRows ?? []).map((r: any) => [r.key, r.value]));
+  const strat = stratMap.get(stratKeys[0]) ?? stratMap.get(stratKeys[1]);
+  if (strat && typeof strat === "object") {
+    const goal = Number(strat.goal ?? 50);
+    const risk = Number(strat.risk ?? 50);
+    const pace = Number(strat.pace ?? 50);
+    // Goal slider → target ROAS floor (max ROAS 4.0x → max reach 1.5x)
+    s.target_roas = 4.0 - (goal / 100) * 2.5;
+    // Risk slider → max budget swing (10% .. 40%)
+    s.max_daily_budget_shift_pct = 10 + (risk / 100) * 30;
+    // Pace slider → daily spend cap multiplier (0.8x .. 2.0x of current ceiling)
+    s.budget_ceiling_cents = Math.round(s.budget_ceiling_cents * (0.8 + (pace / 100) * 1.2));
+    if (typeof strat.auto_apply === "boolean") s.auto_apply = strat.auto_apply;
+    summary.notes.push(`strategy_mix: goal=${goal} risk=${risk} pace=${pace} → target_roas=${s.target_roas.toFixed(2)}x, swing=±${s.max_daily_budget_shift_pct.toFixed(0)}%, auto_apply=${s.auto_apply}`);
+  }
+
   const tk = await instacartAccessToken();
   if (!tk.ok) return json({ error: tk.error }, 502);
 

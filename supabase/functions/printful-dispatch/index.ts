@@ -242,7 +242,11 @@ async function toPrintfulOrderItem(
   const rawVariantId = item.variant_id == null ? "" : String(item.variant_id).trim();
   const base = { quantity: item.quantity };
 
-  if (type === "sync") return { ...base, sync_variant_id: Number(rawVariantId) };
+  if (type === "sync") {
+    const storeVariants = await storeVariantsPromise;
+    const byId = storeVariants.find((v) => String(v.sync_variant_id) === rawVariantId);
+    return { ...base, sync_variant_id: Number(rawVariantId), store_id: byId?.store_id };
+  }
   if (type === "external") return { ...base, external_variant_id: rawVariantId };
   if (type === "catalog") {
     return {
@@ -255,8 +259,11 @@ async function toPrintfulOrderItem(
 
   const storeVariants = await storeVariantsPromise;
   const bySku = storeVariants.find((v) => v.sku === item.sku || v.external_id === item.sku);
-  if (bySku?.sync_variant_id) return { ...base, sync_variant_id: bySku.sync_variant_id };
-  if (rawVariantId && /^\d+$/.test(rawVariantId)) return { ...base, sync_variant_id: Number(rawVariantId) };
+  if (bySku?.sync_variant_id) return { ...base, sync_variant_id: bySku.sync_variant_id, store_id: bySku.store_id };
+  if (rawVariantId && /^\d+$/.test(rawVariantId)) {
+    const byId = storeVariants.find((v) => String(v.sync_variant_id) === rawVariantId);
+    return { ...base, sync_variant_id: Number(rawVariantId), store_id: byId?.store_id };
+  }
   if (rawVariantId) return { ...base, external_variant_id: rawVariantId };
   return { ...base, external_variant_id: item.sku };
 }

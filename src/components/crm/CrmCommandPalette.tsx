@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Heart, LayoutDashboard, Map, Route, Truck, Users, Search } from "lucide-react";
+import { Building2, Heart, LayoutDashboard, Map, Route, Users, Search } from "lucide-react";
 
 type Result = { id: string; label: string; sub?: string; to: string; icon: any };
 
@@ -50,7 +50,6 @@ export function CrmCommandPalette() {
     { id: "n-map", label: "Map", to: "/crm/map", icon: Map },
     { id: "n-routes", label: "Route Planner", to: "/crm/routes", icon: Route },
     { id: "n-amb", label: "Ambassador Command Center", to: "/crm/ambassadors", icon: Heart },
-    { id: "n-drop", label: "Drop-Ship", to: "/crm/dropship", icon: Truck },
     { id: "n-users", label: "Users & Approvals", to: "/crm/admin", icon: Users },
   ];
 

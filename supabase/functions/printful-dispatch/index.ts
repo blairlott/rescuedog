@@ -27,6 +27,7 @@ const LineSchema = z.object({
 const BodySchema = z.object({
   vs_order_id: z.union([z.string(), z.number()]),
   external_id: z.string().min(1).optional(),
+  printful_store_id: z.union([z.string(), z.number()]).optional(),
   recipient: z.object({
     name: z.string(),
     address1: z.string(),
@@ -54,8 +55,9 @@ Deno.serve(async (req) => {
   // connected Printful store so the UI can pick a valid one.
   if (req.method === "GET" && url.searchParams.get("action") === "list_variants") {
     if (!apiKeyEarly) return json({ error: "no_api_key" }, 400);
-    const variants = await fetchAllSyncVariants(apiKeyEarly);
-    return json({ ok: true, count: variants.length, variants });
+    const storeId = cleanId(url.searchParams.get("store_id") ?? Deno.env.get("PRINTFUL_STORE_ID"));
+    const result = await fetchAllSyncVariants(apiKeyEarly, storeId);
+    return json({ ok: true, count: result.variants.length, ...result });
   }
 
   let body: unknown;
@@ -92,13 +94,17 @@ Deno.serve(async (req) => {
       created_at: new Date().toISOString(),
     };
   } else {
-    const storeVariants = listStoreVariants(apiKey);
-    const items = await Promise.all(input.items.map((i) => toPrintfulOrderItem(i, storeVariants)));
+    const requestedStoreId = cleanId(input.printful_store_id ?? Deno.env.get("PRINTFUL_STORE_ID"));
+    const storeVariants = listStoreVariants(apiKey, requestedStoreId);
+    const resolvedItems = await Promise.all(input.items.map((i) => toPrintfulOrderItem(i, storeVariants)));
+    const items = resolvedItems.map(({ store_id: _storeId, ...item }) => item);
+    const resolvedStoreId = requestedStoreId ?? resolvedItems.find((i) => i.store_id)?.store_id;
     const res = await fetch(`${PRINTFUL_BASE}/orders`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        ...(resolvedStoreId ? { "X-PF-Store-Id": String(resolvedStoreId) } : {}),
       },
       body: JSON.stringify({
         external_id: externalId,

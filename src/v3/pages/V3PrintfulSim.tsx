@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -25,6 +25,8 @@ export default function V3PrintfulSim() {
   const [printfulStoreId, setPrintfulStoreId] = useState("");
   const [variants, setVariants] = useState<Array<{ sync_variant_id: number; external_id: string | null; sku: string | null; name?: string; store_id?: number }>>([]);
   const [templates, setTemplates] = useState<Array<{ id: number; title?: string; available_variant_ids?: number[]; mockup_file_url?: string }>>([]);
+  const [mapDraft, setMapDraft] = useState<Record<number, { vs_product_id: string; title: string; saving?: boolean; saved?: boolean }>>({});
+  const PRINTFUL_PARTNER_ID = "70b93ed3-b26a-4ca0-b461-b1b0b44dd318";
   const simulate = !liveMode;
 
   const append = (label: string, payload: unknown) =>
@@ -124,6 +126,30 @@ export default function V3PrintfulSim() {
       },
     });
     append(error ? "delivered FAILED" : "order_updated → delivered", error ?? data);
+  };
+
+  const saveMapping = async (v: { sync_variant_id: number; external_id: string | null; sku: string | null; name?: string }) => {
+    const d = mapDraft[v.sync_variant_id];
+    if (!d?.vs_product_id?.trim()) {
+      append("mapping FAILED", { error: "Vinoshipper product id is required" });
+      return;
+    }
+    setMapDraft((m) => ({ ...m, [v.sync_variant_id]: { ...d, saving: true } }));
+    const row = {
+      partner_id: PRINTFUL_PARTNER_ID,
+      sku: v.external_id || v.sku || `pf-${v.sync_variant_id}`,
+      partner_sku: v.sku,
+      product_title: (d.title?.trim() || v.name || `Printful ${v.sync_variant_id}`).slice(0, 200),
+      vinoshipper_product_id: d.vs_product_id.trim(),
+      vendor_variant_id: String(v.sync_variant_id),
+      fulfillment_mode: "printful" as const,
+      is_active: true,
+      cost_cents: 0,
+      retail_cents: 0,
+    };
+    const { data, error } = await supabase.from("dropship_skus" as any).insert(row).select().single();
+    setMapDraft((m) => ({ ...m, [v.sync_variant_id]: { ...d, saving: false, saved: !error } }));
+    append(error ? "mapping FAILED" : "mapping saved", error ?? data);
   };
 
   return (
@@ -263,24 +289,62 @@ export default function V3PrintfulSim() {
               </thead>
               <tbody>
                 {variants.map((v) => (
-                  <tr key={v.sync_variant_id} className="border-t border-border">
-                    <td className="p-2 font-mono">{v.sync_variant_id}</td>
-                    <td className="p-2 font-mono">{v.store_id ?? "—"}</td>
-                    <td className="p-2 font-mono">{v.external_id ?? "—"}</td>
-                    <td className="p-2">{v.name ?? v.sku ?? "—"}</td>
-                    <td className="p-2 text-right">
-                      <button
-                        className="underline"
-                        onClick={() => {
-                          setVariantId(String(v.sync_variant_id));
-                          setVariantIdType("sync");
-                          if (v.store_id) setPrintfulStoreId(String(v.store_id));
-                        }}
-                      >
-                        use
-                      </button>
-                    </td>
-                  </tr>
+                  <Fragment key={v.sync_variant_id}>
+                    <tr className="border-t border-border">
+                      <td className="p-2 font-mono">{v.sync_variant_id}</td>
+                      <td className="p-2 font-mono">{v.store_id ?? "—"}</td>
+                      <td className="p-2 font-mono">{v.external_id ?? "—"}</td>
+                      <td className="p-2">{v.name ?? v.sku ?? "—"}</td>
+                      <td className="p-2 text-right whitespace-nowrap">
+                        <button
+                          className="underline mr-3"
+                          onClick={() => {
+                            setVariantId(String(v.sync_variant_id));
+                            setVariantIdType("sync");
+                            if (v.store_id) setPrintfulStoreId(String(v.store_id));
+                          }}
+                        >
+                          use
+                        </button>
+                      </td>
+                    </tr>
+                    <tr className="border-t border-border bg-muted/30">
+                      <td colSpan={5} className="p-2">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-muted-foreground">Map to VS →</span>
+                          <input
+                            className="border px-2 py-1 w-40"
+                            placeholder="VS product id"
+                            value={mapDraft[v.sync_variant_id]?.vs_product_id ?? ""}
+                            onChange={(e) =>
+                              setMapDraft((m) => ({
+                                ...m,
+                                [v.sync_variant_id]: { ...(m[v.sync_variant_id] ?? { vs_product_id: "", title: "" }), vs_product_id: e.target.value, saved: false },
+                              }))
+                            }
+                          />
+                          <input
+                            className="border px-2 py-1 flex-1"
+                            placeholder={`Title (default: ${v.name ?? v.sku ?? v.sync_variant_id})`}
+                            value={mapDraft[v.sync_variant_id]?.title ?? ""}
+                            onChange={(e) =>
+                              setMapDraft((m) => ({
+                                ...m,
+                                [v.sync_variant_id]: { ...(m[v.sync_variant_id] ?? { vs_product_id: "", title: "" }), title: e.target.value, saved: false },
+                              }))
+                            }
+                          />
+                          <button
+                            onClick={() => saveMapping(v)}
+                            disabled={mapDraft[v.sync_variant_id]?.saving}
+                            className="bg-primary text-primary-foreground px-3 py-1 disabled:opacity-40"
+                          >
+                            {mapDraft[v.sync_variant_id]?.saving ? "…" : mapDraft[v.sync_variant_id]?.saved ? "Saved ✓" : "Save mapping"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

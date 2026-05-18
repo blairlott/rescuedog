@@ -39,7 +39,7 @@ export const ADMIN_AREAS: AdminArea[] = [
   },
   {
     key: "dropship",
-    to: "/crm/dropship",
+    to: "/dropship",
     title: "Dropship",
     desc: "Partners, orders, payouts.",
     icon: Truck,

@@ -21,9 +21,6 @@ export default function CrmLayout() {
     { to: "/crm", label: "Dashboard", icon: LayoutDashboard },
     { to: "/crm/map", label: "Map", icon: Map },
     { to: "/crm/routes", label: "Route Planner", icon: Route },
-    ...(roleInfo?.isAdminOrOwner || (roleInfo?.roles as string[] | undefined)?.includes("dropship_manager")
-      ? [{ to: "/crm/dropship", label: "Drop-Ship", icon: Truck }]
-      : []),
     ...(roleInfo?.isAmbassadorManager ? [{ to: "/crm/ambassadors", label: "Ambassadors", icon: Heart }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/margin", label: "Margin", icon: TrendingUp }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/compliance", label: "Compliance", icon: ShieldCheck }] : []),

@@ -50,7 +50,6 @@ export function CrmCommandPalette() {
     { id: "n-map", label: "Map", to: "/crm/map", icon: Map },
     { id: "n-routes", label: "Route Planner", to: "/crm/routes", icon: Route },
     { id: "n-amb", label: "Ambassador Command Center", to: "/crm/ambassadors", icon: Heart },
-    { id: "n-drop", label: "Drop-Ship", to: "/crm/dropship", icon: Truck },
     { id: "n-users", label: "Users & Approvals", to: "/crm/admin", icon: Users },
   ];
 

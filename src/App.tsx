@@ -207,13 +207,14 @@ function AppContent() {
         <Route path="map" element={<CrmMapPage />} />
         <Route path="routes" element={<CrmRoutePlanner />} />
         <Route path="admin" element={<CrmAdminPage />} />
-        <Route path="dropship" element={<DropshipDashboard />} />
+        <Route path="dropship" element={<Navigate to="/dropship" replace />} />
         <Route path="margin" element={<CrmMarginPage />} />
         <Route path="ambassadors" element={<CrmAmbassadorsPage />} />
         <Route path="compliance" element={<CrmCompliancePage />} />
         <Route path="leads" element={<CrmLeadsPage />} />
         <Route path="legacy-migration" element={<CrmLegacyMigrationPage />} />
       </Route>
+      <Route path="/dropship" element={<DropshipDashboard />} />
       <Route path="/kennel" element={<KennelGuard><KennelLayout /></KennelGuard>}>
         <Route index element={<KennelDashboard />} />
         <Route path="true-roas" element={<KennelTrueRoasPage />} />

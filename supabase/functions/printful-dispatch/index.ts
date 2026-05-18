@@ -227,6 +227,20 @@ async function fetchStoreProducts(apiKey: string, storeId?: number) {
   return products;
 }
 
+async function fetchAllProductTemplates(apiKey: string) {
+  const templates: Array<Record<string, unknown>> = [];
+  for (let offset = 0; offset < 1000; offset += 100) {
+    const res = await fetch(`${PRINTFUL_BASE}/product-templates?limit=100&offset=${offset}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) break;
+    const data = await res.json();
+    templates.push(...(data?.result?.items ?? []));
+    if (!data?.paging || templates.length >= Number(data.paging.total ?? 0)) break;
+  }
+  return templates;
+}
+
 function printfulFetch(apiKey: string, path: string, storeId?: number) {
   return fetch(`${PRINTFUL_BASE}${path}`, {
     headers: {

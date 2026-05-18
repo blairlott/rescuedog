@@ -64,6 +64,24 @@ Deno.serve(async (req) => {
       case "printify":
       case "printful":
       case "gooten": {
+        // Validate every item has a partner_sku/vendor_variant_id before contacting vendor.
+        const unmapped = (items || []).filter((it: any) => !(it.partner_sku || it.sku));
+        if (!items || items.length === 0 || unmapped.length > 0) {
+          await admin.from("dropship_orders")
+            .update({ status: "exception", fulfillment_status_detail: "blocked_no_mapping" })
+            .eq("id", order_id);
+          await admin.from("dropship_events").insert({
+            event_type: "dispatch_blocked",
+            order_id,
+            partner_id: partner.id,
+            message: `Blocked ${partner.vendor_type} dispatch — ${unmapped.length || "all"} item(s) missing vendor mapping.`,
+            payload: { unmapped_count: unmapped.length, total_items: items?.length || 0 },
+          });
+          return new Response(
+            JSON.stringify({ error: "dropship_mapping_missing", blocked: true, unmapped_count: unmapped.length }),
+            { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
         const apiKey = Deno.env.get(`${partner.vendor_type.toUpperCase()}_API_KEY`);
         simulated = partner.simulation_mode || !apiKey;
         dispatched_via = partner.vendor_type;

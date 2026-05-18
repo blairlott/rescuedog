@@ -21,10 +21,26 @@ export default function V3PrintfulSim() {
   const [variantIdType, setVariantIdType] = useState<"auto" | "sync" | "external" | "catalog">("auto");
   const [log, setLog] = useState<string[]>([]);
   const [liveMode, setLiveMode] = useState(false);
+  const [variants, setVariants] = useState<Array<{ sync_variant_id: number; external_id: string | null; sku: string | null; name?: string }>>([]);
   const simulate = !liveMode;
 
   const append = (label: string, payload: unknown) =>
     setLog((l) => [`[${new Date().toLocaleTimeString()}] ${label}\n${JSON.stringify(payload, null, 2)}`, ...l]);
+
+  const listVariants = async () => {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const url = `https://${projectId}.supabase.co/functions/v1/printful-dispatch?action=list_variants`;
+    const { data: sess } = await supabase.auth.getSession();
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${sess.session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+    });
+    const data = await res.json();
+    setVariants(data?.variants ?? []);
+    append("list_variants", data);
+  };
 
   const dispatch = async () => {
     const { data, error } = await supabase.functions.invoke("printful-dispatch", {
@@ -169,6 +185,9 @@ export default function V3PrintfulSim() {
       <section className="border p-4 space-y-3">
         <h2 className="font-semibold">2. Run steps in order</h2>
         <div className="flex gap-2 flex-wrap">
+          <button onClick={listVariants} className="border px-3 py-2 text-sm">
+            List my Printful variants
+          </button>
           <button onClick={dispatch} className="bg-primary text-primary-foreground px-3 py-2 text-sm">
             Dispatch to Printful
           </button>
@@ -187,6 +206,39 @@ export default function V3PrintfulSim() {
             Simulate delivered
           </button>
         </div>
+        {variants.length > 0 && (
+          <div className="mt-3 border border-border max-h-64 overflow-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-muted sticky top-0">
+                <tr>
+                  <th className="text-left p-2">sync_variant_id</th>
+                  <th className="text-left p-2">external_id</th>
+                  <th className="text-left p-2">name</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {variants.map((v) => (
+                  <tr key={v.sync_variant_id} className="border-t border-border">
+                    <td className="p-2 font-mono">{v.sync_variant_id}</td>
+                    <td className="p-2 font-mono">{v.external_id ?? "—"}</td>
+                    <td className="p-2">{v.name ?? v.sku ?? "—"}</td>
+                    <td className="p-2 text-right">
+                      <button
+                        className="underline"
+                        onClick={() => {
+                          setVariantId(String(v.sync_variant_id));
+                        }}
+                      >
+                        use
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className="border p-4">

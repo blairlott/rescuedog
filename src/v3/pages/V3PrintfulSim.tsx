@@ -26,6 +26,8 @@ export default function V3PrintfulSim() {
   const [variants, setVariants] = useState<Array<{ sync_variant_id: number; external_id: string | null; sku: string | null; name?: string; store_id?: number }>>([]);
   const [templates, setTemplates] = useState<Array<{ id: number; title?: string; available_variant_ids?: number[]; mockup_file_url?: string }>>([]);
   const [mapDraft, setMapDraft] = useState<Record<number, { vs_product_id: string; title: string; saving?: boolean; saved?: boolean }>>({});
+  const [vsProducts, setVsProducts] = useState<Array<{ id: string; sku: string; name: string; type?: string }>>([]);
+  const [autoLinkLog, setAutoLinkLog] = useState<{ matched: number; missing: string[] } | null>(null);
   const PRINTFUL_PARTNER_ID = "70b93ed3-b26a-4ca0-b461-b1b0b44dd318";
   const simulate = !liveMode;
 
@@ -152,6 +154,56 @@ export default function V3PrintfulSim() {
     append(error ? "mapping FAILED" : "mapping saved", error ?? data);
   };
 
+  const loadVsProducts = async () => {
+    const { data, error } = await supabase.functions.invoke("vinoshipper-list-products", { body: {} });
+    if (error) return append("vs list FAILED", error);
+    setVsProducts(data?.products ?? []);
+    append("vs products loaded", { count: data?.count, sample: (data?.products ?? []).slice(0, 3) });
+  };
+
+  const autoLinkBySku = async () => {
+    if (vsProducts.length === 0) { await loadVsProducts(); }
+    const list = vsProducts.length > 0 ? vsProducts : (await (async () => {
+      const { data } = await supabase.functions.invoke("vinoshipper-list-products", { body: {} });
+      return (data?.products ?? []) as typeof vsProducts;
+    })());
+    const bySku = new Map(list.map((p) => [p.sku.trim().toLowerCase(), p]));
+    let matched = 0;
+    const missing: string[] = [];
+    for (const v of variants) {
+      const keys = [v.sku, v.external_id].filter(Boolean).map((s) => String(s).trim().toLowerCase());
+      const hit = keys.map((k) => bySku.get(k)).find(Boolean);
+      if (!hit) {
+        missing.push(`${v.sync_variant_id} (${v.sku ?? v.external_id ?? "no sku"})`);
+        continue;
+      }
+      setMapDraft((m) => ({
+        ...m,
+        [v.sync_variant_id]: { vs_product_id: hit.id, title: hit.name || v.name || "", saving: true },
+      }));
+      const row = {
+        partner_id: PRINTFUL_PARTNER_ID,
+        sku: v.external_id || v.sku || `pf-${v.sync_variant_id}`,
+        partner_sku: v.sku,
+        product_title: (hit.name || v.name || `Printful ${v.sync_variant_id}`).slice(0, 200),
+        vinoshipper_product_id: hit.id,
+        vendor_variant_id: String(v.sync_variant_id),
+        fulfillment_mode: "printful" as const,
+        is_active: true,
+        cost_cents: 0,
+        retail_cents: 0,
+      };
+      const { error } = await supabase.from("dropship_skus" as any).insert(row);
+      setMapDraft((m) => ({
+        ...m,
+        [v.sync_variant_id]: { vs_product_id: hit.id, title: hit.name || v.name || "", saving: false, saved: !error },
+      }));
+      if (!error) matched += 1;
+    }
+    setAutoLinkLog({ matched, missing });
+    append("auto-link by SKU complete", { matched, missing_count: missing.length, missing });
+  };
+
   return (
     <main className="mx-auto max-w-4xl p-8 space-y-6">
       <header>
@@ -254,6 +306,16 @@ export default function V3PrintfulSim() {
           <button onClick={listVariants} className="border px-3 py-2 text-sm">
             List my Printful variants
           </button>
+          <button onClick={loadVsProducts} className="border px-3 py-2 text-sm">
+            List Vinoshipper products
+          </button>
+          <button
+            onClick={autoLinkBySku}
+            disabled={variants.length === 0}
+            className="bg-primary text-primary-foreground px-3 py-2 text-sm disabled:opacity-40"
+          >
+            Auto-link all by SKU
+          </button>
           <button onClick={listTemplates} className="border px-3 py-2 text-sm">
             List product templates
           </button>
@@ -275,6 +337,49 @@ export default function V3PrintfulSim() {
             Simulate delivered
           </button>
         </div>
+        {autoLinkLog && (
+          <div className="mt-3 border border-border p-3 text-xs space-y-1">
+            <div>
+              <strong>Auto-link result:</strong> {autoLinkLog.matched} mapped,{" "}
+              {autoLinkLog.missing.length} unmatched
+            </div>
+            {autoLinkLog.missing.length > 0 && (
+              <div className="text-muted-foreground">
+                Unmatched Printful variants (no VS product with matching SKU):
+                <ul className="list-disc pl-5 mt-1">
+                  {autoLinkLog.missing.map((m) => <li key={m}>{m}</li>)}
+                </ul>
+                <p className="mt-2">
+                  Fix: in Vinoshipper, create a non-wine product for each item and set its SKU to match the Printful SKU/external_id shown above, then re-run.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+        {vsProducts.length > 0 && (
+          <div className="mt-3 border border-border max-h-64 overflow-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-muted sticky top-0">
+                <tr>
+                  <th className="text-left p-2">VS product id</th>
+                  <th className="text-left p-2">SKU</th>
+                  <th className="text-left p-2">name</th>
+                  <th className="text-left p-2">type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vsProducts.map((p) => (
+                  <tr key={p.id} className="border-t border-border">
+                    <td className="p-2 font-mono">{p.id}</td>
+                    <td className="p-2 font-mono">{p.sku || "—"}</td>
+                    <td className="p-2">{p.name || "—"}</td>
+                    <td className="p-2">{p.type ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         {variants.length > 0 && (
           <div className="mt-3 border border-border max-h-64 overflow-auto">
             <table className="w-full text-xs">

@@ -1,4 +1,5 @@
 import { Fragment, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -217,6 +218,12 @@ export default function V3PrintfulSim() {
         <p className="text-sm text-muted-foreground mt-1">
           Tests the full <code>VS order → printful-dispatch → partner ships → printful-webhook → VS tracking relay</code> loop
           using fabricated payloads. Safe to run repeatedly — no real Printful or Vinoshipper writes.
+        </p>
+        <p className="text-sm mt-2">
+          Just need to edit VS↔variant mappings?{" "}
+          <Link to="/v3/admin/printful-sim/mappings" className="underline font-medium">
+            Open the focused Mappings editor →
+          </Link>
         </p>
       </header>
 

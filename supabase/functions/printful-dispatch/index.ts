@@ -18,6 +18,9 @@ const PRINTFUL_BASE = "https://api.printful.com";
 const LineSchema = z.object({
   sku: z.string().min(1),
   variant_id: z.union([z.string(), z.number()]).optional(),
+  variant_id_type: z.enum(["auto", "sync", "external", "catalog"]).optional().default("auto"),
+  name: z.string().min(1).optional(),
+  retail_price: z.string().min(1).optional(),
   quantity: z.number().int().positive(),
 });
 
@@ -78,6 +81,8 @@ Deno.serve(async (req) => {
       created_at: new Date().toISOString(),
     };
   } else {
+    const storeVariants = listStoreVariants(apiKey);
+    const items = await Promise.all(input.items.map((i) => toPrintfulOrderItem(i, storeVariants)));
     const res = await fetch(`${PRINTFUL_BASE}/orders`, {
       method: "POST",
       headers: {
@@ -87,12 +92,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         external_id: externalId,
         recipient: input.recipient,
-        items: input.items.map((i) => ({
-          sync_variant_id: typeof i.variant_id === "number" ? i.variant_id : undefined,
-          external_variant_id:
-            typeof i.variant_id === "string" ? i.variant_id : i.sku,
-          quantity: i.quantity,
-        })),
+        items,
       }),
     });
     const data = await res.json();
@@ -135,4 +135,43 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+type PrintfulLine = z.infer<typeof LineSchema>;
+type StoreVariant = { sync_variant_id?: number; external_id?: string | null; sku?: string | null };
+
+async function listStoreVariants(apiKey: string): Promise<StoreVariant[]> {
+  const res = await fetch(`${PRINTFUL_BASE}/store/variants?limit=100`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data?.result) ? data.result : [];
+}
+
+async function toPrintfulOrderItem(
+  item: PrintfulLine,
+  storeVariantsPromise: Promise<StoreVariant[]>,
+) {
+  const type = item.variant_id_type ?? "auto";
+  const rawVariantId = item.variant_id == null ? "" : String(item.variant_id).trim();
+  const base = { quantity: item.quantity };
+
+  if (type === "sync") return { ...base, sync_variant_id: Number(rawVariantId) };
+  if (type === "external") return { ...base, external_variant_id: rawVariantId };
+  if (type === "catalog") {
+    return {
+      ...base,
+      variant_id: Number(rawVariantId),
+      name: item.name ?? item.sku,
+      retail_price: item.retail_price ?? "0.01",
+    };
+  }
+
+  const storeVariants = await storeVariantsPromise;
+  const bySku = storeVariants.find((v) => v.sku === item.sku || v.external_id === item.sku);
+  if (bySku?.sync_variant_id) return { ...base, sync_variant_id: bySku.sync_variant_id };
+  if (rawVariantId && /^\d+$/.test(rawVariantId)) return { ...base, sync_variant_id: Number(rawVariantId) };
+  if (rawVariantId) return { ...base, external_variant_id: rawVariantId };
+  return { ...base, external_variant_id: item.sku };
 }

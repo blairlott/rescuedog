@@ -43,6 +43,12 @@ export default function V3PrintfulMappings() {
   const [loadingExisting, setLoadingExisting] = useState(true);
   const [autoStatus, setAutoStatus] = useState<{ matched: number; missing: string[] } | null>(null);
   const [filter, setFilter] = useState<"all" | "mapped" | "unmapped">("all");
+  const [testRun, setTestRun] = useState<{
+    running: boolean;
+    log: Array<{ step: string; ok: boolean; detail: unknown }>;
+    vsOrderId?: string;
+    printfulOrderId?: string;
+  }>({ running: false, log: [] });
 
   const existingByVendorVariant = useMemo(() => {
     const m = new Map<string, ExistingMapping>();
@@ -184,6 +190,105 @@ export default function V3PrintfulMappings() {
     loadExisting();
   };
 
+  const createTestOrder = async () => {
+    setTestRun({ running: true, log: [] });
+    const pushStep = (step: string, ok: boolean, detail: unknown) =>
+      setTestRun((s) => ({ ...s, log: [...s.log, { step, ok, detail }] }));
+
+    // 1. Pick a mapped Printful row (must have vendor_variant_id + vs product id).
+    const usable = existing.find(
+      (e) => e.is_active && e.vendor_variant_id && e.vinoshipper_product_id,
+    );
+    if (!usable) {
+      pushStep("pick mapped Printful sku", false, {
+        error: "No usable Printful mapping. Save at least one variant with a VS productId first.",
+      });
+      setTestRun((s) => ({ ...s, running: false }));
+      return;
+    }
+    pushStep("pick mapped Printful sku", true, {
+      sku: usable.sku,
+      sync_variant_id: usable.vendor_variant_id,
+      vs_product_id: usable.vinoshipper_product_id,
+    });
+
+    // 2. Pick a wine row for context (informational — Printful won't ship it).
+    const { data: wine } = await supabase
+      .from("wine_products")
+      .select("id, name, vinoshipper_product_id")
+      .not("vinoshipper_product_id", "is", null)
+      .limit(1)
+      .maybeSingle();
+    pushStep("pick context wine", true, wine ?? { note: "no wine_products row found — merch-only test" });
+
+    // 3. Synthesize a VS order id (unique so dispatch insert doesn't collide).
+    const vsOrderId = `sim-vs-${Date.now()}`;
+    setTestRun((s) => ({ ...s, vsOrderId }));
+
+    // 4. Dispatch to Printful (simulated).
+    const dispatchBody = {
+      vs_order_id: vsOrderId,
+      simulate: true,
+      recipient: {
+        name: "Test Rescue Dog",
+        address1: "1 Bone Lane",
+        city: "Austin",
+        state_code: "TX",
+        country_code: "US",
+        zip: "78701",
+        email: "test+printful@rescuedogwines.com",
+      },
+      items: [{
+        sku: usable.sku,
+        variant_id: /^\d+$/.test(usable.vendor_variant_id!) ? Number(usable.vendor_variant_id) : usable.vendor_variant_id,
+        variant_id_type: "sync" as const,
+        name: usable.product_title ?? usable.sku,
+        quantity: 1,
+      }],
+    };
+    const { data: dispatch, error: dErr } = await supabase.functions.invoke("printful-dispatch", { body: dispatchBody });
+    if (dErr || !dispatch?.ok) {
+      pushStep("dispatch → Printful (simulated)", false, dErr ?? dispatch);
+      setTestRun((s) => ({ ...s, running: false }));
+      return;
+    }
+    const printfulOrderId = dispatch.printful_order_id as string;
+    setTestRun((s) => ({ ...s, printfulOrderId }));
+    pushStep("dispatch → Printful (simulated)", true, { printful_order_id: printfulOrderId, wine_in_order: !!wine });
+
+    // 5. Fire package_shipped webhook (simulated VS tracking relay).
+    const tracking = `TEST${Date.now()}`;
+    const { data: shipped, error: sErr } = await supabase.functions.invoke("printful-webhook", {
+      body: {
+        type: "package_shipped",
+        simulate: true,
+        data: {
+          order: { id: printfulOrderId, external_id: `vs_${vsOrderId}` },
+          shipment: {
+            carrier: "USPS",
+            service: "Ground Advantage",
+            tracking_number: tracking,
+            tracking_url: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${tracking}`,
+            ship_date: new Date().toISOString(),
+          },
+        },
+      },
+    });
+    pushStep("webhook → package_shipped → VS relay", !sErr && shipped?.ok, sErr ?? shipped);
+
+    // 6. Fire delivered.
+    const { data: delivered, error: delErr } = await supabase.functions.invoke("printful-webhook", {
+      body: {
+        type: "order_updated",
+        simulate: true,
+        data: { order: { id: printfulOrderId, external_id: `vs_${vsOrderId}`, status: "delivered" } },
+      },
+    });
+    pushStep("webhook → delivered", !delErr && delivered?.ok, delErr ?? delivered);
+
+    setTestRun((s) => ({ ...s, running: false }));
+  };
+
   const visible = variants.filter((v) => {
     if (filter === "all") return true;
     const hasMap = existingByVendorVariant.has(String(v.sync_variant_id));
@@ -191,6 +296,7 @@ export default function V3PrintfulMappings() {
   });
 
   const mappedCount = variants.filter((v) => existingByVendorVariant.has(String(v.sync_variant_id))).length;
+  const hasUsableMapping = existing.some((e) => e.is_active && e.vendor_variant_id && e.vinoshipper_product_id);
 
   return (
     <main className="mx-auto max-w-6xl p-8 space-y-6">

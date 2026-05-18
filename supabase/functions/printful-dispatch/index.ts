@@ -18,6 +18,9 @@ const PRINTFUL_BASE = "https://api.printful.com";
 const LineSchema = z.object({
   sku: z.string().min(1),
   variant_id: z.union([z.string(), z.number()]).optional(),
+  variant_id_type: z.enum(["auto", "sync", "external", "catalog"]).optional().default("auto"),
+  name: z.string().min(1).optional(),
+  retail_price: z.string().min(1).optional(),
   quantity: z.number().int().positive(),
 });
 
@@ -78,6 +81,8 @@ Deno.serve(async (req) => {
       created_at: new Date().toISOString(),
     };
   } else {
+    const storeVariants = listStoreVariants(apiKey);
+    const items = await Promise.all(input.items.map((i) => toPrintfulOrderItem(i, storeVariants)));
     const res = await fetch(`${PRINTFUL_BASE}/orders`, {
       method: "POST",
       headers: {
@@ -87,12 +92,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         external_id: externalId,
         recipient: input.recipient,
-        items: input.items.map((i) => ({
-          sync_variant_id: typeof i.variant_id === "number" ? i.variant_id : undefined,
-          external_variant_id:
-            typeof i.variant_id === "string" ? i.variant_id : i.sku,
-          quantity: i.quantity,
-        })),
+        items,
       }),
     });
     const data = await res.json();

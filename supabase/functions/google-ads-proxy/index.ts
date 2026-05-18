@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     if (loginCustomerId) headers['login-customer-id'] = loginCustomerId;
 
     const adsRes = await fetch(
-      `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:searchStream`,
       {
         method: 'POST',
         headers,

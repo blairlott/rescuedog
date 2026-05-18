@@ -319,6 +319,62 @@ export type Database = {
           },
         ]
       }
+      ad_frequency_rollup: {
+        Row: {
+          campaign_id: string
+          campaign_name: string | null
+          channel_id: string
+          computed_at: string
+          conversions_30d: number
+          conversions_7d: number
+          id: string
+          imp_per_conv_30d: number | null
+          imp_per_conv_7d: number | null
+          impressions_30d: number
+          impressions_7d: number
+          platform: string
+          saturation_score: number
+        }
+        Insert: {
+          campaign_id: string
+          campaign_name?: string | null
+          channel_id: string
+          computed_at?: string
+          conversions_30d?: number
+          conversions_7d?: number
+          id?: string
+          imp_per_conv_30d?: number | null
+          imp_per_conv_7d?: number | null
+          impressions_30d?: number
+          impressions_7d?: number
+          platform: string
+          saturation_score?: number
+        }
+        Update: {
+          campaign_id?: string
+          campaign_name?: string | null
+          channel_id?: string
+          computed_at?: string
+          conversions_30d?: number
+          conversions_7d?: number
+          id?: string
+          imp_per_conv_30d?: number | null
+          imp_per_conv_7d?: number | null
+          impressions_30d?: number
+          impressions_7d?: number
+          platform?: string
+          saturation_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_frequency_rollup_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_guardrails: {
         Row: {
           auto_execute_enabled: boolean
@@ -6165,6 +6221,45 @@ export type Database = {
           updated_at?: string
           vinoshipper_fee?: number | null
           vinoshipper_funds?: number | null
+        }
+        Relationships: []
+      }
+      weather_signals: {
+        Row: {
+          computed_at: string
+          condition: string | null
+          dma: string
+          forecast_date: string
+          id: string
+          max_temp_f: number | null
+          min_temp_f: number | null
+          payload: Json
+          region: string | null
+          signal_kind: string
+        }
+        Insert: {
+          computed_at?: string
+          condition?: string | null
+          dma: string
+          forecast_date: string
+          id?: string
+          max_temp_f?: number | null
+          min_temp_f?: number | null
+          payload?: Json
+          region?: string | null
+          signal_kind: string
+        }
+        Update: {
+          computed_at?: string
+          condition?: string | null
+          dma?: string
+          forecast_date?: string
+          id?: string
+          max_temp_f?: number | null
+          min_temp_f?: number | null
+          payload?: Json
+          region?: string | null
+          signal_kind?: string
         }
         Relationships: []
       }

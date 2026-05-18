@@ -8,4 +8,4 @@
  * Off by default. Flip via VITE_V3_DROPSHIP_ENABLED=true in preview/dev.
  */
 export const V3_DROPSHIP_ENABLED =
-  (import.meta.env.VITE_V3_DROPSHIP_ENABLED ?? "false") === "true";
+  (import.meta.env.VITE_V3_DROPSHIP_ENABLED ?? "true") !== "false";

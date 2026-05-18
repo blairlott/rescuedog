@@ -356,6 +356,47 @@ export default function V3PrintfulMappings() {
       </section>
 
       <section className="border p-4 space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-semibold text-sm">End-to-end Printful test order</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Picks the first usable Printful mapping plus a context wine product, then runs
+              <code> dispatch → package_shipped → delivered </code>
+              against simulated VS payloads. Safe to run repeatedly. No real Printful or Vinoshipper writes.
+            </p>
+          </div>
+          <button
+            onClick={createTestOrder}
+            disabled={testRun.running || !hasUsableMapping}
+            className="bg-primary text-primary-foreground px-3 py-2 text-sm disabled:opacity-40 whitespace-nowrap"
+            title={!hasUsableMapping ? "Save at least one mapping first" : "Run the full dispatch loop"}
+          >
+            {testRun.running ? "Running…" : "Create test order"}
+          </button>
+        </div>
+        {testRun.log.length > 0 && (
+          <div className="border border-border bg-muted/30 p-3 text-xs space-y-2">
+            {testRun.vsOrderId && (
+              <div className="font-mono">
+                vs_order_id: <strong>{testRun.vsOrderId}</strong>
+                {testRun.printfulOrderId && <> · printful_order_id: <strong>{testRun.printfulOrderId}</strong></>}
+              </div>
+            )}
+            <ol className="space-y-2">
+              {testRun.log.map((s, i) => (
+                <li key={i} className="border-l-2 pl-2" style={{ borderColor: s.ok ? "rgb(34 197 94)" : "rgb(239 68 68)" }}>
+                  <div className="font-medium">{s.ok ? "✓" : "✗"} {s.step}</div>
+                  <pre className="mt-1 text-[10px] whitespace-pre-wrap break-words text-muted-foreground">
+                    {JSON.stringify(s.detail, null, 2)}
+                  </pre>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </section>
+
+      <section className="border p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-sm">
             {loadingExisting ? "Loading saved mappings…" : (

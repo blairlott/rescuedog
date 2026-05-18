@@ -99,6 +99,14 @@ All four receivers share `_shared/local-delivery.ts`:
 - Dedup on `(platform, external_event_id)` via upsert.
 - Writes `capi_status='pending'`, `oci_status='pending'`. A downstream worker (TBD) handles the actual Meta CAPI / Google OCI fanout.
 
+### Fanout worker — `kennel-delivery-fanout`
+
+Drains `local_delivery_events` rows where `capi_status='pending'` OR `oci_status='pending'` (batch 200, oldest first).
+
+- **Meta CAPI**: posts `Purchase` event with `event_id = "<platform>:<external_event_id>"` for dedup, `action_source = "physical_store"`, hashed email as the only matchable identifier. Stamps `capi_status` to `sent`, `failed: <reason>`, or `skipped_no_secret`.
+- **Google OCI**: stamps `oci_status = "skipped_no_gclid"` — OCI requires a `gclid` we cannot recover from delivery-platform payloads. Revisit when a platform exposes click ids.
+- **Cron**: `kennel-delivery-fanout-5min` @ `*/5 * * * *`.
+
 ### Expected request shapes
 
 Best-effort field mapping; refine after the first real payload arrives from each platform:

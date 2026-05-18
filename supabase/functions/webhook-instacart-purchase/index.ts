@@ -1,49 +1,42 @@
-// Webhook receiver for instacart purchase events. Verifies signature when secret present,
-// dedupes by external_event_id, fans out to Meta CAPI + Google OCI helpers (stubbed where helpers are TBD).
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
-const PLATFORM = "instacart";
-
-function json(b: unknown, s = 200) {
-  return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
-
-async function sha256hex(s: string) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
+// Instacart purchase webhook.
+// Header: X-Instacart-Signature (sha256 hex of body using INSTACART_WEBHOOK_SECRET).
+// Body shape (assumed, refine after IC sandbox sample arrives):
+//   { event_id, occurred_at, customer: { email }, line_items: [{ sku, qty }], total_cents }
+import { cors, json, verifyHmac, hashEmail, persistDeliveryEvent } from "../_shared/local-delivery.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  if (req.method !== "POST") return json(405, { error: "method not allowed" });
 
-  // TODO: verify platform-specific signature header (HMAC-SHA256 of body using shared secret)
-  // const sig = req.headers.get("x-instacart-signature");
-  // const secret = Deno.env.get("instacartUPPER_WEBHOOK_SECRET");
+  const raw = await req.text();
+  const sig = req.headers.get("x-instacart-signature") ?? req.headers.get("x-signature");
+  const ok = await verifyHmac(
+    raw, sig, Deno.env.get("INSTACART_WEBHOOK_SECRET"),
+    { allowTest: new URL(req.url).searchParams.get("test") === "true" },
+  );
+  if (!ok) return json(401, { error: "invalid signature" });
 
   let body: any;
-  try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+  try { body = JSON.parse(raw); } catch { return json(400, { error: "invalid json" }); }
 
-  const externalId = String(body?.event_id ?? body?.id ?? crypto.randomUUID());
-  const email = String(body?.customer_email ?? body?.email ?? "").toLowerCase();
-  const emailHash = email ? await sha256hex(email) : null;
+  const external_event_id = String(body.event_id ?? body.id ?? "");
+  if (!external_event_id) return json(400, { error: "missing event_id" });
 
-  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-  const { data: row, error } = await admin.from("local_delivery_events").upsert({
-    platform: PLATFORM,
-    external_event_id: externalId,
-    customer_email_hash: emailHash,
-    sku: body?.sku ?? null,
-    qty: body?.qty ?? null,
-    revenue_cents: body?.revenue_cents ?? null,
-    occurred_at: body?.occurred_at ?? new Date().toISOString(),
-    raw: body,
-  }, { onConflict: "platform,external_event_id" }).select().single();
-
-  if (error) return json({ error: error.message }, 500);
-
-  // TODO: fan out to Meta CAPI + Google OCI (using existing Z3/vinoshipper-poll helpers)
-  return json({ ok: true, id: row?.id, dedup: !!row });
+  const li = Array.isArray(body.line_items) && body.line_items[0] ? body.line_items[0] : {};
+  try {
+    const saved = await persistDeliveryEvent({
+      platform: "instacart",
+      external_event_id,
+      customer_email_hash: await hashEmail(body.customer?.email ?? body.email ?? null),
+      sku: li.sku ?? null,
+      qty: typeof li.qty === "number" ? li.qty : null,
+      revenue_cents: typeof body.total_cents === "number" ? body.total_cents : null,
+      occurred_at: body.occurred_at ?? new Date().toISOString(),
+      raw: body,
+    });
+    return json(200, { ok: true, id: saved?.id });
+  } catch (e: any) {
+    console.error("[webhook-instacart-purchase]", e);
+    return json(500, { error: String(e?.message ?? e) });
+  }
 });

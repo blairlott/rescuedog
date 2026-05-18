@@ -24,6 +24,108 @@ type MetaDispatchResult = {
   error?: string;
 };
 
+type DispatchResult = MetaDispatchResult;
+
+async function dispatchGoogle(payload: any): Promise<DispatchResult> {
+  const token = Deno.env.get("GOOGLE_ADS_REFRESH_TOKEN");
+  const devToken = Deno.env.get("GOOGLE_ADS_DEVELOPER_TOKEN");
+  if (!token || !devToken) {
+    return { dispatched: false, ok: false, error: "Google Ads credentials missing" };
+  }
+  const campaignId = payload?.entity_id;
+  const change = payload?.change ?? {};
+  if (!campaignId) return { dispatched: false, ok: false, error: "payload.entity_id required for google" };
+  if (typeof change.daily_budget_cents !== "number") {
+    return { dispatched: false, ok: false, error: "only daily_budget_cents supported for google in v1" };
+  }
+  // Proxy through existing google-ads-proxy edge function which already handles OAuth refresh.
+  try {
+    const proxyUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/google-ads-proxy`;
+    const res = await fetch(proxyUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({
+        op: "campaign_budget_mutate",
+        campaign_id: campaignId,
+        amount_micros: change.daily_budget_cents * 10_000, // cents → micros
+      }),
+    });
+    const j = await res.json().catch(() => ({}));
+    return {
+      dispatched: true,
+      ok: res.ok,
+      status: res.status,
+      request: { campaignId, amount_micros: change.daily_budget_cents * 10_000 },
+      response: j,
+      rollback_state: payload?.current ?? {},
+      error: res.ok ? undefined : `google ${res.status}: ${JSON.stringify(j)}`,
+    };
+  } catch (e: any) {
+    return { dispatched: false, ok: false, error: e?.message ?? String(e) };
+  }
+}
+
+async function dispatchInstacart(payload: any): Promise<DispatchResult> {
+  const apiToken = Deno.env.get("INSTACART_ADS_API_TOKEN");
+  const advertiserId = Deno.env.get("INSTACART_ADS_ADVERTISER_ID");
+  if (!apiToken || !advertiserId) {
+    return { dispatched: false, ok: false, error: "Instacart Ads credentials missing" };
+  }
+  const change = payload?.change ?? {};
+  const campaignId = payload?.entity_id;
+  if (!campaignId) return { dispatched: false, ok: false, error: "payload.entity_id required for instacart" };
+  // v1: bid adjustments only. Daily budget change still echoed for parity.
+  try {
+    const body: Record<string, unknown> = {};
+    if (typeof change.bid_cents === "number") body.bid_cents = change.bid_cents;
+    if (typeof change.daily_budget_cents === "number") body.daily_budget_cents = change.daily_budget_cents;
+    const res = await fetch(`https://ads.instacart.com/api/v2/advertisers/${advertiserId}/campaigns/${campaignId}`, {
+      method: "PATCH",
+      headers: { "Authorization": `Bearer ${apiToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const j = await res.json().catch(() => ({}));
+    return {
+      dispatched: true,
+      ok: res.ok,
+      status: res.status,
+      request: body,
+      response: j,
+      rollback_state: payload?.current ?? {},
+      error: res.ok ? undefined : `instacart ${res.status}: ${JSON.stringify(j)}`,
+    };
+  } catch (e: any) {
+    return { dispatched: false, ok: false, error: e?.message ?? String(e) };
+  }
+}
+
+// Fire-and-forget alert dispatch
+async function fireAlert(admin: any, body: Record<string, unknown>) {
+  try {
+    const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/kennel-alert-dispatch`;
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+      body: JSON.stringify(body),
+    });
+  } catch (_) { /* non-fatal */ }
+}
+
+// Check 24h cumulative delta % for this platform/campaign against baseline.
+async function cumulative24hDelta(admin: any, platform: string, campaignId: string | null, baselineCents: number | null): Promise<{ pct: number; sumDeltaCents: number }> {
+  if (!baselineCents || baselineCents <= 0) return { pct: 0, sumDeltaCents: 0 };
+  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  let q = admin.from("ad_execution_log").select("delta_pct, spend_impact_cents").eq("platform", platform).eq("success", true).gte("created_at", since);
+  if (campaignId) q = q.eq("campaign_id", campaignId);
+  const { data } = await q;
+  const sumDeltaCents = (data ?? []).reduce((s: number, r: any) => s + Math.abs(r.spend_impact_cents ?? 0), 0);
+  const pct = (sumDeltaCents / baselineCents) * 100;
+  return { pct, sumDeltaCents };
+}
+
 /**
  * Dispatch a Meta Marketing API change for a campaign or adset.
  * Expected recommendation.payload shape:

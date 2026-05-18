@@ -45,10 +45,10 @@ type MismatchOrder = {
 
 type Application = {
   id: string;
-  company_name: string;
+  business_name: string;
   contact_name: string | null;
   contact_email: string | null;
-  partner_type: string | null;
+  business_type: string | null;
   status: string;
   created_at: string;
 };
@@ -86,7 +86,7 @@ export function HealthTrackingTab() {
         .limit(25),
       supabase
         .from("marketplace_partner_applications")
-        .select("id,company_name,contact_name,contact_email,partner_type,status,created_at")
+        .select("id,business_name,contact_name,contact_email,business_type,status,created_at")
         .order("created_at", { ascending: false })
         .limit(20),
     ]);
@@ -348,12 +348,12 @@ export function HealthTrackingTab() {
               <tbody>
                 {applications.map((a) => (
                   <tr key={a.id} className="border-b">
-                    <td className="py-1.5 font-medium">{a.company_name}</td>
+                    <td className="py-1.5 font-medium">{a.business_name}</td>
                     <td className="text-muted-foreground">
                       {a.contact_name}
                       {a.contact_email ? <span className="block">{a.contact_email}</span> : null}
                     </td>
-                    <td className="text-muted-foreground">{a.partner_type ?? "—"}</td>
+                    <td className="text-muted-foreground">{a.business_type ?? "—"}</td>
                     <td>
                       <Badge variant={a.status === "approved" ? "default" : a.status === "rejected" ? "destructive" : "secondary"}>
                         {a.status}

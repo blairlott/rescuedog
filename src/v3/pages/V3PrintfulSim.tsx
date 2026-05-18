@@ -1,4 +1,5 @@
 import { Fragment, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -149,7 +150,11 @@ export default function V3PrintfulSim() {
       cost_cents: 0,
       retail_cents: 0,
     };
-    const { data, error } = await supabase.from("dropship_skus" as any).insert(row).select().single();
+    const { data, error } = await supabase
+      .from("dropship_skus" as any)
+      .upsert(row, { onConflict: "sku" })
+      .select()
+      .single();
     setMapDraft((m) => ({ ...m, [v.sync_variant_id]: { ...d, saving: false, saved: !error } }));
     append(error ? "mapping FAILED" : "mapping saved", error ?? data);
   };
@@ -193,7 +198,9 @@ export default function V3PrintfulSim() {
         cost_cents: 0,
         retail_cents: 0,
       };
-      const { error } = await supabase.from("dropship_skus" as any).insert(row);
+      const { error } = await supabase
+        .from("dropship_skus" as any)
+        .upsert(row, { onConflict: "sku" });
       setMapDraft((m) => ({
         ...m,
         [v.sync_variant_id]: { vs_product_id: hit.id, title: hit.name || v.name || "", saving: false, saved: !error },
@@ -211,6 +218,12 @@ export default function V3PrintfulSim() {
         <p className="text-sm text-muted-foreground mt-1">
           Tests the full <code>VS order → printful-dispatch → partner ships → printful-webhook → VS tracking relay</code> loop
           using fabricated payloads. Safe to run repeatedly — no real Printful or Vinoshipper writes.
+        </p>
+        <p className="text-sm mt-2">
+          Just need to edit VS↔variant mappings?{" "}
+          <Link to="/v3/admin/printful-sim/mappings" className="underline font-medium">
+            Open the focused Mappings editor →
+          </Link>
         </p>
       </header>
 

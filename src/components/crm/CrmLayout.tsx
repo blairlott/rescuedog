@@ -3,7 +3,7 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Truck, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2 } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2 } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
 import { CrmBreadcrumbs } from "@/components/crm/CrmBreadcrumbs";

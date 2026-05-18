@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Heart, LayoutDashboard, Map, Route, Truck, Users, Search } from "lucide-react";
+import { Building2, Heart, LayoutDashboard, Map, Route, Users, Search } from "lucide-react";
 
 type Result = { id: string; label: string; sub?: string; to: string; icon: any };
 

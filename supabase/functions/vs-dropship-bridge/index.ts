@@ -175,7 +175,27 @@ Deno.serve(async (req) => {
           .filter((it) => it.variant_id);
 
         if (items.length === 0) {
-          dispatched.push({ partnerId, vendor: "printful", skipped: true, reason: "no_vendor_variant_ids" });
+          // Block dispatch — record an exception order so ops sees it instead of silent skip.
+          await supabase.from("dropship_orders").insert({
+            partner_id: partnerId,
+            vinoshipper_order_id: String(order.id),
+            status: "exception",
+            fulfillment_status_detail: "blocked_no_mapping",
+            simulated: partner.simulation_mode ?? false,
+            customer_name: customerName,
+            customer_email: customerEmail,
+            shipping_address: shipping as unknown as Record<string, unknown>,
+            subtotal_cents: subtotalCents,
+            cost_cents: costCents,
+          });
+          dispatched.push({
+            partnerId,
+            vendor: "printful",
+            ok: false,
+            blocked: true,
+            reason: "no_vendor_variant_ids",
+            vs_product_ids: rows.map((r) => r.line.productId),
+          });
           continue;
         }
 

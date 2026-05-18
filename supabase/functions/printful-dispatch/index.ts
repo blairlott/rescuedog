@@ -18,7 +18,8 @@ const PRINTFUL_BASE = "https://api.printful.com";
 const LineSchema = z.object({
   sku: z.string().min(1),
   variant_id: z.union([z.string(), z.number()]).optional(),
-  variant_id_type: z.enum(["auto", "sync", "external", "catalog"]).optional().default("auto"),
+  product_template_id: z.union([z.string(), z.number()]).optional(),
+  variant_id_type: z.enum(["auto", "sync", "external", "catalog", "template"]).optional().default("auto"),
   name: z.string().min(1).optional(),
   retail_price: z.string().min(1).optional(),
   quantity: z.number().int().positive(),
@@ -58,6 +59,12 @@ Deno.serve(async (req) => {
     const storeId = cleanId(url.searchParams.get("store_id") ?? Deno.env.get("PRINTFUL_STORE_ID"));
     const result = await fetchAllSyncVariants(apiKeyEarly, storeId);
     return json({ ok: true, count: result.variants.length, ...result });
+  }
+
+  if (req.method === "GET" && url.searchParams.get("action") === "list_templates") {
+    if (!apiKeyEarly) return json({ error: "no_api_key" }, 400);
+    const templates = await fetchAllProductTemplates(apiKeyEarly);
+    return json({ ok: true, count: templates.length, templates });
   }
 
   let body: unknown;
@@ -248,6 +255,11 @@ async function toPrintfulOrderItem(
     return { ...base, sync_variant_id: Number(rawVariantId), store_id: byId?.store_id };
   }
   if (type === "external") return { ...base, external_variant_id: rawVariantId };
+  if (type === "template") {
+    const templateId = cleanId(item.product_template_id);
+    if (!templateId || !rawVariantId) throw new Error("template orders require product_template_id and catalog variant_id");
+    return { ...base, product_template_id: Number(templateId), variant_id: Number(rawVariantId) };
+  }
   if (type === "catalog") {
     return {
       ...base,

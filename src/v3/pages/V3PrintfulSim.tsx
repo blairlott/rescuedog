@@ -18,11 +18,13 @@ export default function V3PrintfulSim() {
   const [tracking, setTracking] = useState("1Z999AA10123456784");
   const [sku, setSku] = useState("RDW-HAT-RED");
   const [variantId, setVariantId] = useState("");
-  const [variantIdType, setVariantIdType] = useState<"auto" | "sync" | "external" | "catalog">("auto");
+  const [productTemplateId, setProductTemplateId] = useState("");
+  const [variantIdType, setVariantIdType] = useState<"auto" | "sync" | "external" | "catalog" | "template">("auto");
   const [log, setLog] = useState<string[]>([]);
   const [liveMode, setLiveMode] = useState(false);
   const [printfulStoreId, setPrintfulStoreId] = useState("");
   const [variants, setVariants] = useState<Array<{ sync_variant_id: number; external_id: string | null; sku: string | null; name?: string; store_id?: number }>>([]);
+  const [templates, setTemplates] = useState<Array<{ id: number; title?: string; available_variant_ids?: number[]; mockup_file_url?: string }>>([]);
   const simulate = !liveMode;
 
   const append = (label: string, payload: unknown) =>
@@ -42,6 +44,21 @@ export default function V3PrintfulSim() {
     const data = await res.json();
     setVariants(data?.variants ?? []);
     append("list_variants", data);
+  };
+
+  const listTemplates = async () => {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const url = `https://${projectId}.supabase.co/functions/v1/printful-dispatch?action=list_templates`;
+    const { data: sess } = await supabase.auth.getSession();
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${sess.session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+    });
+    const data = await res.json();
+    setTemplates(data?.templates ?? []);
+    append("list_templates", data);
   };
 
   const dispatch = async () => {
@@ -67,6 +84,7 @@ export default function V3PrintfulSim() {
             ...(variantId
               ? { variant_id: /^\d+$/.test(variantId) ? Number(variantId) : variantId }
               : {}),
+            ...(productTemplateId.trim() ? { product_template_id: Number(productTemplateId.trim()) } : {}),
             ...(variantIdType === "catalog" ? { name: sku, retail_price: "0.01" } : {}),
           },
         ],

@@ -18,10 +18,13 @@ export default function V3PrintfulSim() {
   const [tracking, setTracking] = useState("1Z999AA10123456784");
   const [sku, setSku] = useState("RDW-HAT-RED");
   const [variantId, setVariantId] = useState("");
-  const [variantIdType, setVariantIdType] = useState<"auto" | "sync" | "external" | "catalog">("auto");
+  const [productTemplateId, setProductTemplateId] = useState("");
+  const [variantIdType, setVariantIdType] = useState<"auto" | "sync" | "external" | "catalog" | "template">("auto");
   const [log, setLog] = useState<string[]>([]);
   const [liveMode, setLiveMode] = useState(false);
-  const [variants, setVariants] = useState<Array<{ sync_variant_id: number; external_id: string | null; sku: string | null; name?: string }>>([]);
+  const [printfulStoreId, setPrintfulStoreId] = useState("");
+  const [variants, setVariants] = useState<Array<{ sync_variant_id: number; external_id: string | null; sku: string | null; name?: string; store_id?: number }>>([]);
+  const [templates, setTemplates] = useState<Array<{ id: number; title?: string; available_variant_ids?: number[]; mockup_file_url?: string }>>([]);
   const simulate = !liveMode;
 
   const append = (label: string, payload: unknown) =>
@@ -29,7 +32,8 @@ export default function V3PrintfulSim() {
 
   const listVariants = async () => {
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    const url = `https://${projectId}.supabase.co/functions/v1/printful-dispatch?action=list_variants`;
+    const storeParam = printfulStoreId.trim() ? `&store_id=${encodeURIComponent(printfulStoreId.trim())}` : "";
+    const url = `https://${projectId}.supabase.co/functions/v1/printful-dispatch?action=list_variants${storeParam}`;
     const { data: sess } = await supabase.auth.getSession();
     const res = await fetch(url, {
       headers: {
@@ -40,6 +44,21 @@ export default function V3PrintfulSim() {
     const data = await res.json();
     setVariants(data?.variants ?? []);
     append("list_variants", data);
+  };
+
+  const listTemplates = async () => {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    const url = `https://${projectId}.supabase.co/functions/v1/printful-dispatch?action=list_templates`;
+    const { data: sess } = await supabase.auth.getSession();
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${sess.session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+    });
+    const data = await res.json();
+    setTemplates(data?.templates ?? []);
+    append("list_templates", data);
   };
 
   const dispatch = async () => {
@@ -56,6 +75,7 @@ export default function V3PrintfulSim() {
           zip: "78701",
           email: "test@example.com",
         },
+        ...(printfulStoreId.trim() ? { printful_store_id: printfulStoreId.trim() } : {}),
         items: [
           {
             sku,
@@ -64,6 +84,7 @@ export default function V3PrintfulSim() {
             ...(variantId
               ? { variant_id: /^\d+$/.test(variantId) ? Number(variantId) : variantId }
               : {}),
+            ...(productTemplateId.trim() ? { product_template_id: Number(productTemplateId.trim()) } : {}),
             ...(variantIdType === "catalog" ? { name: sku, retail_price: "0.01" } : {}),
           },
         ],
@@ -153,12 +174,21 @@ export default function V3PrintfulSim() {
             />
           </label>
           <label className="text-sm">
-            Printful variant id (sync_variant_id or external)
+            Printful variant id
             <input
               className="block w-full border px-2 py-1 mt-1"
               value={variantId}
               onChange={(e) => setVariantId(e.target.value)}
-              placeholder="required for live mode"
+              placeholder="sync id, external id, or template catalog variant"
+            />
+          </label>
+          <label className="text-sm">
+            Product template id
+            <input
+              className="block w-full border px-2 py-1 mt-1"
+              value={productTemplateId}
+              onChange={(e) => setProductTemplateId(e.target.value)}
+              placeholder="only for template orders"
             />
           </label>
           <label className="text-sm">
@@ -172,7 +202,17 @@ export default function V3PrintfulSim() {
               <option value="sync">sync_variant_id (your store variant)</option>
               <option value="external">external_variant_id (your SKU/external id)</option>
               <option value="catalog">catalog variant_id (Printful catalog, no store)</option>
+              <option value="template">product_template_id + catalog variant_id</option>
             </select>
+          </label>
+          <label className="text-sm">
+            Printful store id
+            <input
+              className="block w-full border px-2 py-1 mt-1"
+              value={printfulStoreId}
+              onChange={(e) => setPrintfulStoreId(e.target.value)}
+              placeholder="optional; auto-scans stores"
+            />
           </label>
         </div>
         {partnerOrderId && (
@@ -187,6 +227,9 @@ export default function V3PrintfulSim() {
         <div className="flex gap-2 flex-wrap">
           <button onClick={listVariants} className="border px-3 py-2 text-sm">
             List my Printful variants
+          </button>
+          <button onClick={listTemplates} className="border px-3 py-2 text-sm">
+            List product templates
           </button>
           <button onClick={dispatch} className="bg-primary text-primary-foreground px-3 py-2 text-sm">
             Dispatch to Printful
@@ -212,6 +255,7 @@ export default function V3PrintfulSim() {
               <thead className="bg-muted sticky top-0">
                 <tr>
                   <th className="text-left p-2">sync_variant_id</th>
+                  <th className="text-left p-2">store_id</th>
                   <th className="text-left p-2">external_id</th>
                   <th className="text-left p-2">name</th>
                   <th />
@@ -221,6 +265,7 @@ export default function V3PrintfulSim() {
                 {variants.map((v) => (
                   <tr key={v.sync_variant_id} className="border-t border-border">
                     <td className="p-2 font-mono">{v.sync_variant_id}</td>
+                    <td className="p-2 font-mono">{v.store_id ?? "—"}</td>
                     <td className="p-2 font-mono">{v.external_id ?? "—"}</td>
                     <td className="p-2">{v.name ?? v.sku ?? "—"}</td>
                     <td className="p-2 text-right">
@@ -228,6 +273,43 @@ export default function V3PrintfulSim() {
                         className="underline"
                         onClick={() => {
                           setVariantId(String(v.sync_variant_id));
+                          setVariantIdType("sync");
+                          if (v.store_id) setPrintfulStoreId(String(v.store_id));
+                        }}
+                      >
+                        use
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {templates.length > 0 && (
+          <div className="mt-3 border border-border max-h-64 overflow-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-muted sticky top-0">
+                <tr>
+                  <th className="text-left p-2">template_id</th>
+                  <th className="text-left p-2">catalog variant_ids</th>
+                  <th className="text-left p-2">title</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {templates.map((t) => (
+                  <tr key={t.id} className="border-t border-border">
+                    <td className="p-2 font-mono">{t.id}</td>
+                    <td className="p-2 font-mono">{t.available_variant_ids?.join(", ") ?? "—"}</td>
+                    <td className="p-2">{t.title ?? "—"}</td>
+                    <td className="p-2 text-right">
+                      <button
+                        className="underline"
+                        onClick={() => {
+                          setProductTemplateId(String(t.id));
+                          setVariantId(String(t.available_variant_ids?.[0] ?? ""));
+                          setVariantIdType("template");
                         }}
                       >
                         use

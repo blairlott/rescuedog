@@ -125,6 +125,23 @@ export default function V3PrintfulSim() {
               onChange={(e) => setTracking(e.target.value)}
             />
           </label>
+          <label className="text-sm">
+            SKU
+            <input
+              className="block w-full border px-2 py-1 mt-1"
+              value={sku}
+              onChange={(e) => setSku(e.target.value)}
+            />
+          </label>
+          <label className="text-sm">
+            Printful variant id (sync_variant_id or external)
+            <input
+              className="block w-full border px-2 py-1 mt-1"
+              value={variantId}
+              onChange={(e) => setVariantId(e.target.value)}
+              placeholder="required for live mode"
+            />
+          </label>
         </div>
         {partnerOrderId && (
           <p className="text-xs text-muted-foreground">

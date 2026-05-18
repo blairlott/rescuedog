@@ -3,7 +3,7 @@ import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 export type FactRow = {
   channel_id: string;
-  platform: "google" | "meta" | "instacart";
+  platform: "google" | "meta" | "instacart" | "yahoo";
   date: string;
   hour?: number | null;
   campaign_id?: string | null;
@@ -40,7 +40,7 @@ export function makeAdminClient(): SupabaseClient {
 
 export async function ensureChannel(
   sb: SupabaseClient,
-  platform: "google" | "meta" | "instacart",
+  platform: "google" | "meta" | "instacart" | "yahoo",
 ): Promise<string | null> {
   const { data } = await sb.from("ad_channels").select("id").eq("platform", platform).limit(1).maybeSingle();
   if (data?.id) return data.id as string;

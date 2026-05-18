@@ -150,3 +150,12 @@ Pulls 48h forecast per DMA from OpenWeather (5d/3h endpoint, free tier) and writ
 - Writes `weather_signals` (upsert on `dma, forecast_date, signal_kind`) AND `ad_recommendations` (`kind=geo_bid_boost`, channel = Meta, idempotent on `ingest_request_id="weather:<kind>:<dma>:<date>"`).
 - Requires `OPENWEATHER_API_KEY`. Without it, returns `skipped: no_openweather_api_key` (200).
 - Cron: `kennel-weather-signals-6h` @ `15 */6 * * *`.
+## Yahoo DSP — `kennel-ingest-yahoo` (stub)
+
+Scaffold only; not live. Inserted `ad_channels` row `('yahoo','Yahoo DSP', is_active=false)` and `ad_settings.kill_switch_yahoo=false`. The edge function returns `skipped: no_yahoo_dsp_credentials` until all three secrets are set:
+
+- `YAHOO_DSP_CLIENT_ID`
+- `YAHOO_DSP_CLIENT_SECRET`
+- `YAHOO_DSP_ADVERTISER_ID`
+
+Once a seat is provisioned, fill in `fetchReportRows()` (Yahoo's report API is async submit → poll → CSV download) and flip the channel to `is_active=true`. All downstream intelligence (creative-fatigue, dayparting, frequency-rollup, pacing, alerts) runs against `ad_performance_facts` and will pick up Yahoo rows automatically. Execute path is not implemented — Yahoo will be dispatched-only at first, matching Google and Instacart.

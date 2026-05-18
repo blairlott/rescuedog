@@ -18,6 +18,8 @@ Reference for the alerts, execution, and intelligence stack added in Phase 2.
 | `kennel-alert-health` | Hourly self-check on `alert_dispatch_log`. If <50% success in the last 60 min OR last 3 dispatches failed, sends a direct Resend email bypassing Lindy. Suppressed for 6h after firing. | pg_cron `kennel-alert-health-hourly` @ `0 * * * *`. |
 | `kennel-optimizer` | Generates recommendations across channels using strategy mix + signals. | pg_cron `kennel-optimizer-instacart-6h` + autopilot jobs. |
 | `kennel-reconcile` | Nightly variance check between platform spend and Vinoshipper actuals. | pg_cron `kennel-reconcile-nightly` @ 03:10 UTC. |
+| `kennel-pacing` | Daily EOM spend projection. `mtd / days_elapsed * days_in_month` vs `ad_settings.monthly_budget_cents` (global) and `monthly_budget_<channel>_cents`. Fires `pacing` alert when ratio > `pacing_alert_threshold` (default 1.10). `?dry_run=true` to inspect without alerting. | pg_cron `kennel-pacing-daily` @ `0 9 * * *`. |
+| `kennel-attribution-dedup` | Nightly last-click 7d dedup. For each VS order, picks the most recent click/conversion event within 7d and credits ONLY that channel in `channel_performance_daily`. Overrides naive rollup totals. | pg_cron `kennel-attribution-dedup-nightly` @ `30 3 * * *`. |
 | `kennel-ingest` | HMAC-signed (`x-kennel-signature: sha256=…`) batched performance + recommendations push from Lindy. | External Lindy push. |
 
 ## Schema (Phase 2A core)
@@ -76,6 +78,8 @@ All required secrets are already configured. New additions in Phase 2:
 | `kennel-autopilot-midday` | `0 14 * * *` |
 | `kennel-optimizer-instacart-6h` | `0 */6 * * *` |
 | `kennel-reconcile-nightly` | `10 3 * * *` |
+| `kennel-attribution-dedup-nightly` | `30 3 * * *` |
+| `kennel-pacing-daily` | `0 9 * * *` |
 | `kennel-sync-native-6h` | `0 */6 * * *` |
 
 ## Phase 2C webhook receivers (planned)

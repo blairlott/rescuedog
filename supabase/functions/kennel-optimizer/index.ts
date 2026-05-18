@@ -293,6 +293,29 @@ Deno.serve(async (req) => {
           apply_response: applyResp, idempotency_key: idem,
         });
         summary.budget_recs++;
+        // Pacing alert: significant budget shift (applied) OR Tier-A pending rec awaiting review.
+        const absDelta = Math.abs(deltaPct);
+        if (status === "applied" && absDelta >= 25) {
+          await fireAlert({
+            event_type: "pacing",
+            channel: "instacart",
+            action: `budget_paced ${deltaPct > 0 ? "+" : ""}${deltaPct.toFixed(0)}%`,
+            spend_impact_cents: recommended - current,
+            confidence: 0.85,
+            deep_link: `https://rescuedog.lovable.app/kennel/recommendations`,
+            message: `${c.format} ${r.entity_id}: $${(current/100).toFixed(0)} → $${(recommended/100).toFixed(0)} · ${reasoning}`,
+          });
+        } else if (status === "pending" && absDelta >= 30) {
+          await fireAlert({
+            event_type: "recommendation",
+            channel: "instacart",
+            action: `budget_pacing ${deltaPct > 0 ? "+" : ""}${deltaPct.toFixed(0)}% · needs approval`,
+            spend_impact_cents: recommended - current,
+            confidence: 0.85,
+            deep_link: `https://rescuedog.lovable.app/kennel/recommendations`,
+            message: `Tier-A: ${c.format} ${r.entity_id} · ${reasoning}`,
+          });
+        }
       }
     }
   }

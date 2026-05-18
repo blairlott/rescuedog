@@ -124,6 +124,61 @@ Deno.serve(async (req) => {
       const wineVsIds = data.items.filter(i => i.product_kind === "wine" && i.vinoshipper_product_id).map(i => i.vinoshipper_product_id!);
       const merchSkus = data.items.filter(i => i.product_kind === "merch" && i.product_sku).map(i => i.product_sku!);
       const merchIds = data.items.filter(i => i.product_kind === "merch" && i.product_id).map(i => i.product_id!);
+      const merchVsIds = data.items.filter(i => i.product_kind === "merch" && i.vinoshipper_product_id).map(i => i.vinoshipper_product_id!);
+
+      // ── Printful mapping validation ────────────────────────────────────
+      // Every merch line must resolve to a dropship_skus row. If that row's
+      // fulfillment_mode is "printful", it MUST be linked to a Printful partner
+      // and carry a vendor_variant_id (sync_variant_id). Otherwise we'd accept
+      // payment for an item we can't physically dispatch.
+      const merchItems = data.items.filter(i => i.product_kind === "merch");
+      if (merchItems.length > 0) {
+        const orFilters: string[] = [];
+        if (merchSkus.length) orFilters.push(`sku.in.(${merchSkus.map(s => `"${s}"`).join(",")})`);
+        if (merchVsIds.length) orFilters.push(`vinoshipper_product_id.in.(${merchVsIds.map(s => `"${s}"`).join(",")})`);
+
+        const { data: mappings } = orFilters.length
+          ? await supabase
+              .from("dropship_skus")
+              .select("sku, vinoshipper_product_id, partner_id, fulfillment_mode, vendor_variant_id, is_active")
+              .or(orFilters.join(","))
+          : { data: [] as any[] };
+
+        const activeMappings = (mappings ?? []).filter((m: any) => m.is_active !== false);
+        const partnerIds = [...new Set(activeMappings.map((m: any) => m.partner_id).filter(Boolean))];
+        const { data: partners } = partnerIds.length
+          ? await supabase.from("dropship_partners").select("id, vendor_type").in("id", partnerIds)
+          : { data: [] as any[] };
+        const vendorTypeById = new Map((partners ?? []).map((p: any) => [p.id, p.vendor_type]));
+
+        const unmapped: Array<{ sku?: string | null; vinoshipper_product_id?: string | null; reason: string }> = [];
+        for (const item of merchItems) {
+          const match = activeMappings.find((m: any) =>
+            (item.product_sku && m.sku === item.product_sku) ||
+            (item.vinoshipper_product_id && String(m.vinoshipper_product_id) === String(item.vinoshipper_product_id))
+          );
+          if (!match) {
+            unmapped.push({ sku: item.product_sku, vinoshipper_product_id: item.vinoshipper_product_id, reason: "no_dropship_mapping" });
+            continue;
+          }
+          if (match.fulfillment_mode === "printful") {
+            const vendorType = vendorTypeById.get(match.partner_id);
+            if (vendorType !== "printful") {
+              unmapped.push({ sku: item.product_sku, vinoshipper_product_id: item.vinoshipper_product_id, reason: "printful_mode_wrong_partner_type" });
+            } else if (!match.vendor_variant_id) {
+              unmapped.push({ sku: item.product_sku, vinoshipper_product_id: item.vinoshipper_product_id, reason: "printful_missing_sync_variant_id" });
+            }
+          }
+        }
+        if (unmapped.length > 0) {
+          console.warn("[unified-checkout] blocking checkout — unmapped Printful items", unmapped);
+          return jsonResp({
+            error: "Some items can't be fulfilled — missing Printful mapping. Please contact support.",
+            code: "dropship_mapping_missing",
+            details: unmapped,
+          }, 422);
+        }
+      }
 
       const [wineCostMap, dropshipCostMap, merchCostMap] = await Promise.all([
         wineVsIds.length

@@ -333,6 +333,26 @@ Deno.serve(async (req) => {
           console.error("[server-conversions] exception", e);
           notes += " | conv error: " + String(e);
         }
+        // Fork non-wine line items to dropship partners (Printful, etc.).
+        // Fire-and-forget: never block the webhook ack on partner dispatch.
+        try {
+          const { error: bridgeErr } = await supabase.functions.invoke("vs-dropship-bridge", {
+            body: {
+              identifier: payload.identifier,
+              subject: payload.subject,
+              event: payload.event,
+            },
+          });
+          if (bridgeErr) {
+            console.error("[vs-dropship-bridge] invoke err", bridgeErr);
+            notes += " | bridge err: " + String(bridgeErr.message ?? bridgeErr);
+          } else {
+            notes += " | bridge invoked";
+          }
+        } catch (e) {
+          console.error("[vs-dropship-bridge] exception", e);
+          notes += " | bridge exception: " + String(e);
+        }
         break;
       case "CLUB_MEMBERSHIP":
         // TODO: GET /club-memberships/{id}, then update wine_club_memberships

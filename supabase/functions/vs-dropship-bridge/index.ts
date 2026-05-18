@@ -266,7 +266,7 @@ function buildRecipient(order: VsOrder) {
   const c = order.customer ?? {};
   const first = pick(a, ["firstName", "first_name"]) ?? pick(c, ["firstName", "first_name"]) ?? "";
   const last = pick(a, ["lastName", "last_name"]) ?? pick(c, ["lastName", "last_name"]) ?? "";
-  const name = pick(a, ["name", "fullName"]) ?? `${first} ${last}`.trim() || "Customer";
+  const name = pick(a, ["name", "fullName"]) ?? (`${first} ${last}`.trim() || "Customer");
   return {
     name,
     address1: pick(a, ["street1", "address1", "street", "line1"]) ?? "",

@@ -74,15 +74,20 @@ Deno.serve(async (req) => {
   const updates: Record<string, unknown> = { notes: JSON.stringify(evt) };
 
   let vsRelay: unknown = null;
+  let relayHttpStatus: number | null = null;
+  let relayOk = false;
   if (evt.type === "package_shipped" && evt.data.shipment) {
     updates.fulfillment_status_detail = "shipped";
     updates.tracking_number = evt.data.shipment.tracking_number ?? null;
     updates.tracking_url = evt.data.shipment.tracking_url ?? null;
     updates.carrier = evt.data.shipment.carrier ?? null;
     updates.shipped_at = evt.data.shipment.ship_date ?? new Date().toISOString();
+    updates.vs_tracking_relayed_at = new Date().toISOString();
 
     if (simulate) {
       vsRelay = { simulated: true, would_put: `/orders/${row.vinoshipper_order_id}/tracking` };
+      relayHttpStatus = 200;
+      relayOk = true;
     } else {
       try {
         vsRelay = await vsFetch(`/orders/${row.vinoshipper_order_id}/tracking`, {
@@ -93,11 +98,28 @@ Deno.serve(async (req) => {
             trackingUrl: evt.data.shipment.tracking_url,
           },
         });
+        relayHttpStatus = 200;
+        relayOk = true;
       } catch (err) {
         console.error("[printful-webhook] VS relay failed", err);
         vsRelay = { error: String(err) };
+        relayHttpStatus = 500;
+        relayOk = false;
       }
     }
+
+    // Log every relay attempt to the audit table
+    await supabase.from("vs_tracking_relay_log").insert({
+      dropship_order_id: row.id,
+      vinoshipper_order_id: row.vinoshipper_order_id,
+      tracking_number: evt.data.shipment.tracking_number ?? null,
+      carrier: evt.data.shipment.carrier ?? null,
+      http_status: relayHttpStatus,
+      relay_ok: relayOk,
+      request_payload: evt.data.shipment as Record<string, unknown>,
+      response_payload: vsRelay as Record<string, unknown>,
+      simulated: simulate,
+    });
   } else if (evt.type === "package_returned") {
     updates.fulfillment_status_detail = "cancelled";
   } else if (evt.type === "order_failed") {

@@ -99,6 +99,7 @@ const KennelCapiPage = lazy(() => import("./pages/kennel/KennelCapiPage"));
 const KennelMethodologyPage = lazy(() => import("./pages/kennel/KennelMethodologyPage"));
 const ExecutiveCommandCenter = lazy(() => import("./pages/intelligence/ExecutiveCommandCenter"));
 import { v2Routes } from "./v2/routes";
+import { v3Routes } from "./v3/routes";
 
 const queryClient = new QueryClient();
 
@@ -225,6 +226,7 @@ function AppContent() {
       </Route>
       <Route path="/intelligence" element={<KennelGuard><ExecutiveCommandCenter /></KennelGuard>} />
       {v2Routes()}
+      {v3Routes()}
       <Route path="*" element={<NotFound />} />
     </Routes>
     </Suspense>

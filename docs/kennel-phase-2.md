@@ -86,6 +86,8 @@ All required secrets are already configured. New additions in Phase 2:
 | `kennel-dayparting-daily` | `45 7 * * *` |
 | `kennel-delivery-fanout-5min` | `*/5 * * * *` |
 | `kennel-sync-native-6h` | `0 */6 * * *` |
+| `kennel-frequency-rollup-daily` | `0 8 * * *` |
+| `kennel-weather-signals-6h` | `15 */6 * * *` |
 
 ## Phase 2C webhook receivers (planned)
 

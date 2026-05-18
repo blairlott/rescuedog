@@ -155,40 +155,83 @@ function json(body: unknown, status = 200) {
 }
 
 type PrintfulLine = z.infer<typeof LineSchema>;
-type StoreVariant = { sync_variant_id?: number; external_id?: string | null; sku?: string | null };
+type PrintfulStore = { id: number; name?: string; type?: string };
+type StoreVariant = { sync_variant_id?: number; external_id?: string | null; sku?: string | null; store_id?: number };
 
-async function listStoreVariants(apiKey: string): Promise<StoreVariant[]> {
-  return fetchAllSyncVariants(apiKey);
+async function listStoreVariants(apiKey: string, storeId?: string | number): Promise<StoreVariant[]> {
+  return (await fetchAllSyncVariants(apiKey, storeId)).variants;
 }
 
-async function fetchAllSyncVariants(apiKey: string): Promise<StoreVariant[]> {
-  // Printful: list sync products, then expand each to get sync_variants.
+async function fetchAllSyncVariants(apiKey: string, requestedStoreId?: string | number) {
+  // Printful account-level tokens need X-PF-Store-Id; scan all accessible stores
+  // unless the caller supplies one explicitly.
   const out: StoreVariant[] = [];
-  const listRes = await fetch(`${PRINTFUL_BASE}/store/products?limit=100`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
-  if (!listRes.ok) return out;
-  const listData = await listRes.json();
-  const products: Array<{ id: number; name: string }> = listData?.result ?? [];
-  for (const p of products) {
-    const detRes = await fetch(`${PRINTFUL_BASE}/store/products/${p.id}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-    if (!detRes.ok) continue;
-    const det = await detRes.json();
-    const variants: Array<{ id: number; external_id?: string; sku?: string; name?: string }> =
-      det?.result?.sync_variants ?? [];
-    for (const v of variants) {
-      out.push({
-        sync_variant_id: v.id,
-        external_id: v.external_id ?? null,
-        sku: v.sku ?? null,
-        // @ts-ignore extra field for UI display
-        name: `${p.name} — ${v.name ?? ""}`.trim(),
-      });
+  const stores = await fetchStores(apiKey);
+  const targets = requestedStoreId
+    ? [{ id: Number(requestedStoreId), name: `Store ${requestedStoreId}` }]
+    : stores.length > 0
+      ? stores
+      : [{ id: 0, name: "Default token store" }];
+  const debug: Array<Record<string, unknown>> = [];
+
+  for (const store of targets) {
+    const products = await fetchStoreProducts(apiKey, store.id || undefined);
+    debug.push({ store_id: store.id || null, store_name: store.name ?? null, products: products.length });
+    for (const p of products) {
+      const detRes = await printfulFetch(apiKey, `/store/products/${p.id}`, store.id || undefined);
+      if (!detRes.ok) continue;
+      const det = await detRes.json();
+      const variants: Array<{ id: number; external_id?: string; sku?: string; name?: string }> =
+        det?.result?.sync_variants ?? [];
+      for (const v of variants) {
+        out.push({
+          sync_variant_id: v.id,
+          external_id: v.external_id ?? null,
+          sku: v.sku ?? null,
+          store_id: store.id || undefined,
+          // @ts-ignore extra field for UI display
+          name: `${store.name ? `${store.name} / ` : ""}${p.name} — ${v.name ?? ""}`.trim(),
+        });
+      }
     }
   }
-  return out;
+
+  return { stores, debug, variants: out };
+}
+
+async function fetchStores(apiKey: string): Promise<PrintfulStore[]> {
+  const res = await fetch(`${PRINTFUL_BASE}/stores`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data?.result ?? [];
+}
+
+async function fetchStoreProducts(apiKey: string, storeId?: number) {
+  const products: Array<{ id: number; name: string }> = [];
+  for (let offset = 0; offset < 1000; offset += 100) {
+    const res = await printfulFetch(apiKey, `/store/products?limit=100&offset=${offset}`, storeId);
+    if (!res.ok) break;
+    const data = await res.json();
+    products.push(...(data?.result ?? []));
+    if (!data?.paging || products.length >= Number(data.paging.total ?? 0)) break;
+  }
+  return products;
+}
+
+function printfulFetch(apiKey: string, path: string, storeId?: number) {
+  return fetch(`${PRINTFUL_BASE}${path}`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      ...(storeId ? { "X-PF-Store-Id": String(storeId) } : {}),
+    },
+  });
+}
+
+function cleanId(value: unknown) {
+  const id = value == null ? "" : String(value).trim();
+  return id.length > 0 ? id : undefined;
 }
 
 async function toPrintfulOrderItem(

@@ -446,6 +446,17 @@ Deno.serve(async (req) => {
       response_payload: { dispatched: dispatch.dispatched, response: dispatch.response ?? null, error: dispatch.error ?? null },
       success: dispatch.ok,
     });
+    await fireAlert(admin, {
+      event_type: "rollback",
+      channel: (rec.payload?.platform ?? "—").toString(),
+      action: `rollback · ${rec.title ?? rec.payload?.entity_id ?? recommendation_id}`,
+      spend_impact_cents: rec.spend_impact_cents ?? 0,
+      confidence: Number(rec.confidence ?? 0),
+      deep_link: `https://rescuedog.lovable.app/kennel/log?execution=${recommendation_id}`,
+      message: dispatch.ok
+        ? `Rollback executed by user.`
+        : `ROLLBACK FAILED: ${dispatch.error ?? "unknown"}`,
+    });
     return json({ ok: dispatch.ok, dispatched: dispatch.dispatched, response: dispatch.response, error: dispatch.error });
   }
 

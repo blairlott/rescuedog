@@ -59,6 +59,18 @@ function isoDateOffset(days: number) {
   return d.toISOString().slice(0, 10);
 }
 
+// Fire-and-forget alert dispatch
+async function fireAlert(body: Record<string, unknown>) {
+  try {
+    const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/kennel-alert-dispatch`;
+    await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+      body: JSON.stringify(body),
+    });
+  } catch (_) { /* non-fatal */ }
+}
+
 /** Fetch Instacart performance report at campaign level (best-effort, schema-tolerant). */
 async function fetchInstacartReport(
   token: string,
@@ -317,6 +329,16 @@ Deno.serve(async (req) => {
           apply_response: applyResp, idempotency_key: idem,
         });
         summary.pause_recs++;
+        // High-signal anomaly: spending with zero conversions triggered an auto-pause (or queued one).
+        await fireAlert({
+          event_type: "anomaly",
+          channel: "instacart",
+          action: status === "applied" ? "auto_paused_zero_roas" : "pause_recommended_zero_roas",
+          spend_impact_cents: -r.spend_cents,
+          confidence: 0.95,
+          deep_link: `https://rescuedog.lovable.app/kennel/recommendations`,
+          message: `${c.format} campaign ${r.entity_id}: ${reasoning}`,
+        });
         continue;
       }
     }

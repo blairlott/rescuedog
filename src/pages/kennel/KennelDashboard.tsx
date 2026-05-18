@@ -7,6 +7,9 @@ import { ChannelPerformanceTable, type ChannelRow } from "@/components/kennel/Ch
 import { SpendChart, type SpendDatum } from "@/components/kennel/SpendChart";
 import { VinoshipperPanel } from "@/components/kennel/VinoshipperPanel";
 import { AiInsights } from "@/components/kennel/AiInsights";
+import { RefreshButton } from "@/components/kennel/RefreshButton";
+import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
+import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw, Sparkles, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -343,6 +346,7 @@ export default function KennelDashboard() {
             <RefreshCw className={`h-3 w-3 mr-1 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Syncing…" : "Sync history"}
           </Button>
+          <RefreshButton invalidateKeys={["kennel-dashboard", "vs-mirror", "forecast"]} className="ml-2" />
         </div>
       </header>
 
@@ -350,6 +354,8 @@ export default function KennelDashboard() {
         <div className="text-muted-foreground text-sm">Loading…</div>
       ) : (
         <>
+          <StrategyMixPanel scope="global" />
+
           <AiInsights snapshot={aiSnapshot} rangeLabel={periodMeta.label} />
 
           <section className="space-y-2">
@@ -429,6 +435,8 @@ export default function KennelDashboard() {
           </section>
 
           <SpendChart data={chartData} channels={channelNames} />
+
+          <ForecastTimeline />
 
           <section>
             <h2 className="text-sm uppercase tracking-brand font-bold text-foreground mb-3">Channel breakdown</h2>

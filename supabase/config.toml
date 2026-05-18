@@ -31,3 +31,15 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.kennel-sync-native]
     verify_jwt = false
+  [functions.kennel-alert-dispatch]
+    verify_jwt = false
+  [functions.kennel-baseline-capture]
+    verify_jwt = false
+  [functions.webhook-instacart-purchase]
+    verify_jwt = false
+  [functions.webhook-doordash]
+    verify_jwt = false
+  [functions.webhook-gopuff]
+    verify_jwt = false
+  [functions.webhook-ubereats]
+    verify_jwt = false

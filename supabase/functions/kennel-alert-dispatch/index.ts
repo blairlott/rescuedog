@@ -10,9 +10,8 @@ function json(b: unknown, s = 200) {
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
 const TWILIO_KEY = Deno.env.get("TWILIO_API_KEY");
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-const LINDY_WEBHOOK = Deno.env.get("LINDY_ALERT_WEBHOOK_URL");
-const LINDY_TOKEN = Deno.env.get("LINDY_PROXY_TOKEN");
 const ADMIN_URL = "https://rescuedog.lovable.app";
+const LINDY_WATCH_ADDRESS = "blair.lott@rescuedogwines.com";
 
 const ALLOWED_EVENTS = ["anomaly","recommendation","auto_executed","rollback","pacing","manual_test"];
 
@@ -78,29 +77,41 @@ async function sendEmail(to: string[], subject: string, html: string): Promise<{
   }
 }
 
-async function sendSmsViaLindy(to: string[], body: string, payload: any): Promise<{ ok: boolean; id?: string; error?: string }> {
-  if (!LINDY_WEBHOOK) return { ok: false, error: "LINDY_ALERT_WEBHOOK_URL missing" };
+async function sendSmsViaLindyEmail(to: string[], smsBody: string, payload: any): Promise<{ ok: boolean; id?: string; error?: string }> {
+  if (!RESEND_KEY) return { ok: false, error: "RESEND_API_KEY missing" };
   if (to.length === 0) return { ok: false, error: "no sms recipients" };
+  const event_type = payload?.event_type ?? "alert";
+  const channel = payload?.channel ?? "—";
+  const action = payload?.action ?? "—";
+  const subject = `[KENNEL-SMS] ${event_type} · ${channel} · ${action}`;
+  const json = {
+    event_type,
+    channel: payload?.channel ?? null,
+    action: payload?.action ?? null,
+    spend_impact_cents: payload?.spend_impact_cents ?? null,
+    confidence: payload?.confidence ?? null,
+    recipients: to,
+    sms_body: smsBody,
+    deep_link: payload?.deep_link ?? `${ADMIN_URL}/kennel`,
+  };
+  const jsonStr = JSON.stringify(json, null, 2);
+  const html = `<pre style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;white-space:pre-wrap;">${jsonStr.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!))}</pre>`;
+  const text = `\`\`\`json\n${jsonStr}\n\`\`\``;
   try {
-    const res = await fetch(LINDY_WEBHOOK, {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(LINDY_TOKEN ? { "Authorization": `Bearer ${LINDY_TOKEN}` } : {}),
-      },
+      headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        channel: "sms",
-        recipients: to,
-        body,
-        event: payload,
-        source: "kennel-alert-dispatch",
+        from: "Kennel Alerts <alerts@rescuedogwines.com>",
+        to: [LINDY_WATCH_ADDRESS],
+        subject,
+        html,
+        text,
       }),
     });
-    const text = await res.text();
-    if (!res.ok) return { ok: false, error: `lindy ${res.status}: ${text.slice(0, 200)}` };
-    let parsed: any = {};
-    try { parsed = JSON.parse(text); } catch { /* webhook may return plain text */ }
-    return { ok: true, id: parsed?.id ?? parsed?.run_id ?? undefined };
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: `lindy_email ${res.status}: ${JSON.stringify(j)}` };
+    return { ok: true, id: j.id };
   } catch (e: any) {
     return { ok: false, error: e?.message ?? String(e) };
   }
@@ -134,17 +145,17 @@ async function sendSmsViaTwilio(to: string[], body: string): Promise<{ ok: boole
   }
 }
 
-// Primary: Lindy webhook. Fallback: Twilio direct (only if Lindy fails and Twilio is configured).
+// Primary: Lindy-watched email inbox. Fallback: Twilio direct (only if email send fails and Twilio is configured).
 async function sendSms(to: string[], body: string, payload: any): Promise<{ ok: boolean; sid?: string; id?: string; provider: string; error?: string; fallback_error?: string }> {
-  const lindy = await sendSmsViaLindy(to, body, payload);
-  if (lindy.ok) return { ok: true, id: lindy.id, provider: "lindy" };
+  const lindy = await sendSmsViaLindyEmail(to, body, payload);
+  if (lindy.ok) return { ok: true, id: lindy.id, provider: "lindy_email" };
   // Fallback to Twilio if available
   if (TWILIO_KEY && LOVABLE_API_KEY) {
     const tw = await sendSmsViaTwilio(to, body);
     if (tw.ok) return { ok: true, sid: tw.sid, provider: "twilio_fallback", fallback_error: lindy.error };
     return { ok: false, provider: "twilio_fallback", error: tw.error, fallback_error: lindy.error };
   }
-  return { ok: false, provider: "lindy", error: lindy.error };
+  return { ok: false, provider: "lindy_email", error: lindy.error };
 }
 
 Deno.serve(async (req) => {

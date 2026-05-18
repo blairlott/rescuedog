@@ -16,6 +16,8 @@ export default function V3PrintfulSim() {
   const [vsOrderId, setVsOrderId] = useState("sim-vs-001");
   const [partnerOrderId, setPartnerOrderId] = useState<string>("");
   const [tracking, setTracking] = useState("1Z999AA10123456784");
+  const [sku, setSku] = useState("RDW-HAT-RED");
+  const [variantId, setVariantId] = useState("");
   const [log, setLog] = useState<string[]>([]);
   const [liveMode, setLiveMode] = useState(false);
   const simulate = !liveMode;
@@ -37,7 +39,15 @@ export default function V3PrintfulSim() {
           zip: "78701",
           email: "test@example.com",
         },
-        items: [{ sku: "RDW-HAT-RED", quantity: 1 }],
+        items: [
+          {
+            sku,
+            quantity: 1,
+            ...(variantId
+              ? { variant_id: /^\d+$/.test(variantId) ? Number(variantId) : variantId }
+              : {}),
+          },
+        ],
       },
     });
     if (error) return append("dispatch FAILED", error);
@@ -113,6 +123,23 @@ export default function V3PrintfulSim() {
               className="block w-full border px-2 py-1 mt-1"
               value={tracking}
               onChange={(e) => setTracking(e.target.value)}
+            />
+          </label>
+          <label className="text-sm">
+            SKU
+            <input
+              className="block w-full border px-2 py-1 mt-1"
+              value={sku}
+              onChange={(e) => setSku(e.target.value)}
+            />
+          </label>
+          <label className="text-sm">
+            Printful variant id (sync_variant_id or external)
+            <input
+              className="block w-full border px-2 py-1 mt-1"
+              value={variantId}
+              onChange={(e) => setVariantId(e.target.value)}
+              placeholder="required for live mode"
             />
           </label>
         </div>

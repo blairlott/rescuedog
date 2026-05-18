@@ -128,3 +128,25 @@ Best-effort field mapping; refine after the first real payload arrives from each
 ## Where to change thresholds
 
 Settings UI (`/kennel/settings`) → falls back to writing the relevant `ad_settings` row. Per-channel guardrails edit `ad_guardrails` directly.
+
+## Frequency rollup — `kennel-frequency-rollup`
+
+Per `(channel_id, campaign_id)` saturation proxy over the last 7d vs 30d:
+
+- Reads `ad_performance_facts` (no per-visitor source exists; campaign-level is the honest grain).
+- Computes `imp_per_conv_7d` and `imp_per_conv_30d`; `ratio = ipc7 / ipc30`.
+- Gates: `imp_7d ≥ 5000` AND `conv_30d ≥ 5`.
+- Writes `ad_frequency_rollup` (upsert on `channel_id, campaign_id`).
+- If `ratio ≥ 1.5`, emits `ad_recommendations` (`kind=frequency_cap`, `source=native`, idempotent on `ingest_request_id="freq:<platform>:<campaign>:<date>"`).
+- Cron: `kennel-frequency-rollup-daily` @ `0 8 * * *`.
+
+## Weather signals — `kennel-weather-signals`
+
+Pulls 48h forecast per DMA from OpenWeather (5d/3h endpoint, free tier) and writes geo-bias signals:
+
+- Default DMA list: 15 top US wine markets (NYC, LA, SF, Chicago, Philly, DC, Boston, Miami, Dallas, Houston, Denver, Seattle, Portland, Phoenix, Atlanta). Overridable via POST body `{ dmas: [{ dma, region, lat, lon }] }`.
+- Heat signal: `max_temp_f ≥ 85` → `signal_kind=heat_wave`, payload suggests `chilled_white_rosé` bias `+20%`.
+- Cold signal: `min_temp_f ≤ 35` → `signal_kind=cold_snap`, payload suggests `red_wine_cozy` bias `+15%`.
+- Writes `weather_signals` (upsert on `dma, forecast_date, signal_kind`) AND `ad_recommendations` (`kind=geo_bid_boost`, channel = Meta, idempotent on `ingest_request_id="weather:<kind>:<dma>:<date>"`).
+- Requires `OPENWEATHER_API_KEY`. Without it, returns `skipped: no_openweather_api_key` (200).
+- Cron: `kennel-weather-signals-6h` @ `15 */6 * * *`.

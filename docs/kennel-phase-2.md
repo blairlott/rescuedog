@@ -89,6 +89,27 @@ All required secrets are already configured. New additions in Phase 2:
 - Write to `local_delivery_events`, then fan out to existing Meta CAPI / Google OCI helpers.
 - URLs follow `https://eskqaxmypgvwtsffcbsw.supabase.co/functions/v1/<name>`.
 
+### Receiver contract (live)
+
+All four receivers share `_shared/local-delivery.ts`:
+
+- HMAC-SHA256 verification of the raw body using a per-platform secret (`INSTACART_WEBHOOK_SECRET`, `DOORDASH_WEBHOOK_SECRET`, `GOPUFF_WEBHOOK_SECRET`, `UBEREATS_WEBHOOK_SECRET`). Header preference: platform-specific (`x-<platform>-signature`) then generic `x-signature`. Accepts either `sha256=<hex>` or raw hex.
+- When the secret is unset, all requests are rejected unless `?test=true` is on the URL (smoke-test escape hatch).
+- Email is SHA-256 hashed (lowercased) before storage; never persisted in plaintext. Raw payload is kept in `raw` for replay/debug.
+- Dedup on `(platform, external_event_id)` via upsert.
+- Writes `capi_status='pending'`, `oci_status='pending'`. A downstream worker (TBD) handles the actual Meta CAPI / Google OCI fanout.
+
+### Expected request shapes
+
+Best-effort field mapping; refine after the first real payload arrives from each platform:
+
+| Platform | external_event_id | revenue source | timestamp |
+|---|---|---|---|
+| instacart | `event_id` | `total_cents` | `occurred_at` |
+| doordash | `order_id` | `subtotal_cents` ⊃ `total_cents` | `placed_at` |
+| gopuff | `order_id` | `total_cents` | `placed_at` |
+| ubereats | `event_id` / `meta.resource_id` | `order.payment.charges.total.amount` × 100 | `event_time` |
+
 ## Where to change thresholds
 
 Settings UI (`/kennel/settings`) → falls back to writing the relevant `ad_settings` row. Per-channel guardrails edit `ad_guardrails` directly.

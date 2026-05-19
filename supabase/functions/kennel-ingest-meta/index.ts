@@ -5,7 +5,9 @@ import { CORS, J, FactRow, isAuthorized, makeAdminClient, writeFacts, ensureChan
 
 const VER = "v21.0";
 const TOKEN = Deno.env.get("META_ADS_ACCESS_TOKEN");
-const ACCOUNT = Deno.env.get("META_ADS_ACCOUNT_ID");
+// Normalize: strip optional `act_` prefix so we can always prepend it ourselves.
+// Tolerates secrets stored as either "act_23490172" or "23490172".
+const ACCOUNT = (Deno.env.get("META_ADS_ACCOUNT_ID") ?? "").replace(/^act_/, "");
 
 async function insights(level: "campaign" | "adset" | "ad", breakdown: string, days: number) {
   const fields = [

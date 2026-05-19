@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Sliders, RotateCcw, Save, FlaskConical } from "lucide-react";
+import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2 } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -498,7 +498,56 @@ export function MixingBoardPanel() {
     setDraftDow({});
     setDraftMo({});
     setDraftGeo({});
+    setActivePreset("custom");
   };
+
+  /** Scenario presets — apply a multiplier to every baseline value as a draft. */
+  type Preset = "boost" | "hold" | "pull" | "auto" | "custom";
+  const [activePreset, setActivePreset] = useState<Preset>("custom");
+
+  const applyPreset = (preset: Preset) => {
+    if (preset === "auto") {
+      // Revert all faders to the auto-computed baseline (drop any override).
+      const dow: Record<number, number> = {};
+      const mo: Record<number, number> = {};
+      const geo: Record<string, number> = {};
+      (data?.dow ?? []).forEach(r => { dow[r.day_of_week] = Number(r.modifier); });
+      (data?.mo ?? []).forEach(r => { mo[r.month] = Number(r.budget_index); });
+      (data?.geo ?? []).forEach(r => { geo[r.state] = Number(r.modifier); });
+      setDraftDow(dow); setDraftMo(mo); setDraftGeo(geo);
+      setActivePreset("auto");
+      return;
+    }
+    if (preset === "hold") {
+      // Neutralize every fader to 1.0×.
+      const dow: Record<number, number> = {};
+      const mo: Record<number, number> = {};
+      const geo: Record<string, number> = {};
+      (data?.dow ?? []).forEach(r => { dow[r.day_of_week] = 1.0; });
+      (data?.mo ?? []).forEach(r => { mo[r.month] = 1.0; });
+      (data?.geo ?? []).forEach(r => { geo[r.state] = 1.0; });
+      setDraftDow(dow); setDraftMo(mo); setDraftGeo(geo);
+      setActivePreset("hold");
+      return;
+    }
+    // Boost = baseline × 1.2 clamped; Pull = baseline × 0.8 clamped.
+    const mult = preset === "boost" ? 1.2 : 0.8;
+    const dow: Record<number, number> = {};
+    const mo: Record<number, number> = {};
+    const geo: Record<string, number> = {};
+    (data?.dow ?? []).forEach(r => { dow[r.day_of_week] = clamp(Number(r.modifier) * mult, 0.5, 2.0); });
+    (data?.mo ?? []).forEach(r => { mo[r.month] = clamp(Number(r.budget_index) * mult, 0.3, 3.0); });
+    (data?.geo ?? []).forEach(r => { geo[r.state] = clamp(Number(r.modifier) * mult, 0.5, 2.0); });
+    setDraftDow(dow); setDraftMo(mo); setDraftGeo(geo);
+    setActivePreset(preset);
+  };
+
+  // Drop the preset highlight as soon as the user drags a fader manually.
+  useEffect(() => {
+    if (activePreset === "custom") return;
+    // No-op: applyPreset sets drafts which triggers this effect; we only flip back to
+    // "custom" via the Fader onChange path below.
+  }, [activePreset]);
 
   const saveDraft = async () => {
     setSaving(true);
@@ -555,6 +604,20 @@ export function MixingBoardPanel() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Wrap state-setters so any manual drag flips us back to "Custom".
+  const setDow = (i: number, v: number) => {
+    setDraftDow(p => ({ ...p, [i]: v }));
+    if (activePreset !== "custom") setActivePreset("custom");
+  };
+  const setMo = (m: number, v: number) => {
+    setDraftMo(p => ({ ...p, [m]: v }));
+    if (activePreset !== "custom") setActivePreset("custom");
+  };
+  const setGeo = (s: string, v: number) => {
+    setDraftGeo(p => ({ ...p, [s]: v }));
+    if (activePreset !== "custom") setActivePreset("custom");
   };
 
   const riskTotals = (data?.risk ?? []).reduce(
@@ -629,7 +692,7 @@ export function MixingBoardPanel() {
                     max={2.0}
                     active={i === todayDow}
                     sublabel={r?.sample_days ? `${r.sample_days}d` : undefined}
-                    onChange={(next) => setDraftDow(p => ({ ...p, [i]: next }))}
+                    onChange={(next) => setDow(i, next)}
                     tooltip={{
                       title: `${dayName} bid modifier`,
                       body: (
@@ -665,7 +728,7 @@ export function MixingBoardPanel() {
                     min={0.3}
                     max={3.0}
                     active={month === todayMo}
-                    onChange={(next) => setDraftMo(p => ({ ...p, [month]: next }))}
+                    onChange={(next) => setMo(month, next)}
                     tooltip={{
                       title: `${monthName} budget index`,
                       body: (
@@ -698,7 +761,7 @@ export function MixingBoardPanel() {
                   min={0.5}
                   max={2.0}
                   sublabel={g.tier ?? undefined}
-                  onChange={(next) => setDraftGeo(p => ({ ...p, [g.state]: next }))}
+                  onChange={(next) => setGeo(g.state, next)}
                   tooltip={{
                     title: `${g.state} geo bid modifier`,
                     body: (
@@ -767,6 +830,50 @@ export function MixingBoardPanel() {
               </div>
             </TooltipContent>
           </Tooltip>
+        </div>
+
+        {/* SCENARIO PRESETS */}
+        <div className="mt-4 flex flex-wrap items-center gap-2 border border-white/10 bg-black/40 p-2" style={{ borderRadius: 0 }}>
+          <span className="text-[10px] uppercase tracking-brand font-bold text-white/60 px-1">
+            Scenario
+          </span>
+          {([
+            { id: "boost", label: "Boost +20%", icon: TrendingUp, hint: "Multiply every baseline by 1.2× (clamped)" },
+            { id: "hold",  label: "Hold 1.00×", icon: Minus,      hint: "Flatten every fader to neutral 1.0×" },
+            { id: "pull",  label: "Pull −20%", icon: TrendingDown, hint: "Multiply every baseline by 0.8× (clamped)" },
+            { id: "auto",  label: "Auto",       icon: Wand2,       hint: "Revert to nightly auto-computed values" },
+          ] as const).map(p => {
+            const Icon = p.icon;
+            const isActive = activePreset === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => applyPreset(p.id)}
+                title={p.hint}
+                className={`flex items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-brand font-bold border transition-colors ${
+                  isActive
+                    ? "bg-[hsl(45,95%,55%)] text-black border-[hsl(45,95%,55%)]"
+                    : "bg-transparent text-white/70 border-white/20 hover:bg-white/10 hover:text-white"
+                }`}
+                style={{ borderRadius: 0 }}
+              >
+                <Icon className="h-3 w-3" />
+                {p.label}
+              </button>
+            );
+          })}
+          <div className={`flex items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-brand font-bold border ${
+            activePreset === "custom"
+              ? "bg-white/10 text-white border-white/40"
+              : "text-white/40 border-white/10"
+          }`} style={{ borderRadius: 0 }}>
+            <Sliders className="h-3 w-3" />
+            Custom
+          </div>
+          <span className="ml-auto text-[9px] uppercase tracking-brand text-white/40">
+            Compare signals below — nothing saves until you hit Save.
+          </span>
         </div>
 
         {/* WHAT-IF PREVIEW BAR */}

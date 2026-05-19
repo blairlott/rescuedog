@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
@@ -40,6 +40,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const { isMember, discountPercent } = useIsMember();
   const { purchaseAllowed } = useGeo();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
   const { node } = product;
   const image = node.images.edges[0]?.node;
@@ -145,16 +146,17 @@ export function ProductCard({ product }: ProductCardProps) {
 
         {/* Lock overlay for non-members */}
         {locked && (
-          <Link
-            to="/club"
-            onClick={(e) => e.stopPropagation()}
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/club"); }}
             className="absolute inset-0 bg-background/70 backdrop-blur-[2px] flex flex-col items-center justify-center text-center p-4 z-20"
+            aria-label="Join the wine club to unlock"
           >
             <Lock className="w-6 h-6 text-primary mb-2" />
             <p className="text-xs font-bold uppercase tracking-brand text-foreground mb-1">Members only</p>
             <p className="text-[11px] text-muted-foreground mb-3">Join the wine club to unlock</p>
             <span className="inline-block bg-primary text-primary-foreground text-[11px] font-bold uppercase tracking-brand px-3 py-1.5">Join the club →</span>
-          </Link>
+          </button>
         )}
 
         {/* Favorite heart button */}
@@ -209,9 +211,13 @@ export function ProductCard({ product }: ProductCardProps) {
             <p className="text-[10px] text-muted-foreground italic">Not valid with any other offer</p>
           ) : !isMember && isWine ? (
             <p className="text-[11px] text-muted-foreground">
-              <Link to="/club" onClick={(e) => e.stopPropagation()} className="hover:text-primary transition-colors">
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/club"); }}
+                className="hover:text-primary transition-colors underline-offset-2 hover:underline"
+              >
                 Club Price: ${(priceNum * 0.8).toFixed(2)}
-              </Link>
+              </button>
             </p>
           ) : null}
         </div>

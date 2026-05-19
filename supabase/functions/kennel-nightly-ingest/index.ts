@@ -24,14 +24,27 @@ async function withRetry<T>(fn: () => Promise<T>, max = 3): Promise<{ value?: T;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  // Auth: ingest secret header OR service-role JWT
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+  // Auth: (a) ingest secret header, (b) service-role JWT, or (c) authenticated ad_ops user
   const secret = Deno.env.get("KENNEL_INGEST_SECRET") ?? "";
   const headerSecret = req.headers.get("x-kennel-ingest-secret") ?? "";
   const auth = req.headers.get("Authorization") ?? "";
-  const isService = auth === `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
-  if (!isService && (!secret || headerSecret !== secret)) return J(401, { error: "unauthorized" });
-
-  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const isService = auth === `Bearer ${SERVICE_KEY}`;
+  const hasSecret = secret && headerSecret === secret;
+  let isAdOps = false;
+  if (!isService && !hasSecret && auth.startsWith("Bearer ")) {
+    const token = auth.slice(7);
+    const { data: userRes } = await admin.auth.getUser(token);
+    const uid = userRes?.user?.id;
+    if (uid) {
+      const { data: ok } = await admin.rpc("is_ad_ops", { _user_id: uid });
+      isAdOps = !!ok;
+    }
+  }
+  if (!isService && !hasSecret && !isAdOps) return J(401, { error: "unauthorized" });
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
   const days = Math.min(Math.max(Number(body?.days ?? 7), 1), 30);
 

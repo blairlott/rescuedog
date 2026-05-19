@@ -29,7 +29,7 @@ import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundle
 import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
 import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInterstitial";
 import { CartLineSizePicker } from "@/components/cart/CartLineSizePicker";
-import { addLinesAndOpenCart } from "@/lib/vinoshipperInjector";
+import { addLinesAndGoToHostedCart } from "@/lib/vinoshipperInjector";
 
 const LAST_ORDER_KEY = "rdw_last_order";
 const PENDING_WINE_KEY = "rdw_pending_wine_checkout";
@@ -298,11 +298,10 @@ export const CartDrawer = () => {
       return;
     }
 
-    logCheckoutEvent("wine_injector_open", { lines: vsLines.length });
+    logCheckoutEvent("wine_injector_hosted_cart", { lines: vsLines.length });
     try {
-      await addLinesAndOpenCart(vsLines);
-      // Close our drawer once VS's cart is on screen.
       setIsOpen(false);
+      await addLinesAndGoToHostedCart(vsLines);
     } catch (err) {
       console.error("[checkout] VS injector failed:", err);
       logCheckoutEvent("wine_injector_failed", { error: String(err) });

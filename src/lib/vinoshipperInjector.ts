@@ -1,7 +1,7 @@
 /**
  * Thin wrapper around the Vinoshipper Injector global.
  *
- * The injector script lives in index.html and exposes `window.top.Vinoshipper`
+ * The injector script lives in index.html and exposes `window.Vinoshipper`
  * after it fires the `vinoshipper:loaded` event. We use:
  *   - onProductAdd(productId, qty) → Promise — pushes a line into VS's cart
  *   - cartOpen() — opens their slide-out cart (already themed on our domain)

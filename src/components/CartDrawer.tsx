@@ -355,7 +355,8 @@ export const CartDrawer = () => {
       setIsOpen(false);
       // A/B attribution: stash variant + GA4 client_id before VS takes over,
       // so the webhook can stitch the resulting purchase to the right arm.
-      recordCheckoutIntent({ email: buyerEmail ?? null, cartId: null });
+      const { data: authUserForAb } = await supabase.auth.getUser();
+      recordCheckoutIntent({ email: authUserForAb?.user?.email ?? null, cartId: null });
       await addLinesAndGoToHostedCart(vsLines);
     } catch (err) {
       console.error("[checkout] VS injector failed:", err);

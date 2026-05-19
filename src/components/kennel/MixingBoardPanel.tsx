@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2, ListTree, ArrowRight, Columns2, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2, ListTree, ArrowRight, Columns2, AlertTriangle, ShieldCheck, FileDown, FileText } from "lucide-react";
+import jsPDF from "jspdf";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -762,6 +763,205 @@ export function MixingBoardPanel() {
     }
   };
 
+  // ---- EXPORT: shareable scenario report (CSV + PDF) ----
+  const scenarioMeta = () => {
+    const ts = new Date();
+    const fname = `kennel-scenario-${ts.toISOString().replace(/[:.]/g, "-").slice(0, 19)}`;
+    return {
+      timestamp: ts.toISOString(),
+      pretty: ts.toLocaleString(),
+      preset: activePreset,
+      fname,
+    };
+  };
+
+  const exportCsv = () => {
+    const meta = scenarioMeta();
+    const k = data?.kpi;
+    const esc = (s: any) => {
+      const v = String(s ?? "");
+      return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+    };
+    const lines: string[] = [];
+    lines.push(`# Kennel Optimization Console — What-If Scenario`);
+    lines.push(`# Generated,${esc(meta.pretty)}`);
+    lines.push(`# Timestamp ISO,${meta.timestamp}`);
+    lines.push(`# Scenario preset,${meta.preset}`);
+    lines.push(`# Total adjustments,${deltas.length}`);
+    lines.push("");
+    lines.push("Section,Group,Parameter,Baseline,New,Delta %,Expected impact");
+    if (deltas.length === 0) {
+      lines.push(`Adjustments,—,No changes,—,—,—,Baseline unchanged`);
+    } else {
+      for (const d of deltas) {
+        lines.push([
+          "Adjustments",
+          d.group,
+          d.label,
+          d.baseline.toFixed(2) + "x",
+          d.next.toFixed(2) + "x",
+          (d.pctChange >= 0 ? "+" : "") + d.pctChange.toFixed(1) + "%",
+          d.impacts.join("; "),
+        ].map(esc).join(","));
+      }
+    }
+    lines.push("");
+    lines.push("Section,Metric,Baseline,Projected,Delta");
+    lines.push(`Signals,Today's blended index,${preview.blendedBase.toFixed(2)}x,${preview.blended.toFixed(2)}x,${((preview.blendedDelta - 1) * 100).toFixed(1)}%`);
+    lines.push(`Signals,Daily ad spend,$${preview.dailySpend.toFixed(0)},$${preview.projDailySpend.toFixed(0)},$${(preview.projDailySpend - preview.dailySpend).toFixed(0)}`);
+    lines.push(`Signals,Geo lift,1.00x,${preview.geoLift.toFixed(2)}x,${((preview.geoLift - 1) * 100).toFixed(1)}%`);
+    lines.push(`Signals,True ROAS,${preview.trueRoas.toFixed(2)}x,${preview.projRoas.toFixed(2)}x,${(preview.projRoas - preview.trueRoas).toFixed(2)}x`);
+    if (k) {
+      lines.push("");
+      lines.push("Section,KPI,Value,Target");
+      lines.push(`KPIs (trailing 30d),True ROAS,${k.trueRoas.toFixed(2)}x,3.00x`);
+      lines.push(`KPIs (trailing 30d),CTR,${(k.ctr * 100).toFixed(2)}%,2.00%`);
+      lines.push(`KPIs (trailing 30d),CVR,${(k.cvr * 100).toFixed(2)}%,3.00%`);
+      lines.push(`KPIs (trailing 30d),AOV,$${k.aov.toFixed(0)},$120`);
+      lines.push(`KPIs (trailing 30d),CAC,$${k.cac.toFixed(0)},$40`);
+      lines.push(`KPIs (trailing 30d),Repeat Rate,${(k.repeatRate * 100).toFixed(2)}%,25.00%`);
+      lines.push(`KPIs (trailing 30d),Daily Spend,$${k.dailySpend.toFixed(0)},—`);
+    }
+    if (warnings.length) {
+      lines.push("");
+      lines.push("Section,Level,Warning,Detail");
+      for (const w of warnings) {
+        lines.push(["Guardrails", w.level, w.label, w.detail].map(esc).join(","));
+      }
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${meta.fname}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported");
+  };
+
+  const exportPdf = () => {
+    const meta = scenarioMeta();
+    const k = data?.kpi;
+    const doc = new jsPDF({ unit: "pt", format: "letter" });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const M = 48;
+    let y = M;
+
+    const ensure = (need: number) => {
+      if (y + need > H - M) { doc.addPage(); y = M; }
+    };
+    const hr = () => {
+      ensure(10);
+      doc.setDrawColor(220);
+      doc.line(M, y, W - M, y);
+      y += 10;
+    };
+    const h1 = (s: string) => { ensure(24); doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(20); doc.text(s, M, y); y += 20; };
+    const h2 = (s: string) => { ensure(18); doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(195, 0, 23); doc.text(s.toUpperCase(), M, y); y += 14; doc.setTextColor(20); };
+    const p = (s: string, opts?: { color?: [number, number, number]; size?: number }) => {
+      ensure(14);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(opts?.size ?? 10);
+      if (opts?.color) doc.setTextColor(...opts.color);
+      else doc.setTextColor(40);
+      const lines = doc.splitTextToSize(s, W - M * 2);
+      doc.text(lines, M, y);
+      y += 12 * lines.length;
+      doc.setTextColor(40);
+    };
+    const row = (cols: string[], widths: number[], bold = false) => {
+      ensure(14);
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      doc.setFontSize(9);
+      let x = M;
+      cols.forEach((c, i) => {
+        const lines = doc.splitTextToSize(c, widths[i] - 4);
+        doc.text(lines, x, y);
+        x += widths[i];
+      });
+      y += 12;
+    };
+
+    // Header
+    h1("Kennel · Optimization What-If Scenario");
+    p(`Generated ${meta.pretty}`, { color: [110, 110, 110] });
+    p(`Scenario preset: ${meta.preset}   ·   Adjustments: ${deltas.length}   ·   Guardrail warnings: ${warnings.length}`, { color: [110, 110, 110] });
+    hr();
+
+    // Projected signals
+    h2("Projected signals vs baseline");
+    const sigW = [200, 120, 120, (W - M * 2) - 440];
+    row(["Metric", "Baseline", "Projected", "Delta"], sigW, true);
+    row(["Today's blended index", `${preview.blendedBase.toFixed(2)}x`, `${preview.blended.toFixed(2)}x`, `${preview.blendedDelta >= 1 ? "+" : ""}${((preview.blendedDelta - 1) * 100).toFixed(0)}%`], sigW);
+    row(["Daily ad spend", `$${preview.dailySpend.toFixed(0)}`, `$${preview.projDailySpend.toFixed(0)}`, `${preview.projDailySpend - preview.dailySpend >= 0 ? "+" : ""}$${(preview.projDailySpend - preview.dailySpend).toFixed(0)}`], sigW);
+    row(["Geo lift (rev-weighted)", "1.00x", `${preview.geoLift.toFixed(2)}x`, `${preview.geoLift >= 1 ? "+" : ""}${((preview.geoLift - 1) * 100).toFixed(0)}%`], sigW);
+    row(["Projected ROAS", `${preview.trueRoas.toFixed(2)}x`, `${preview.projRoas.toFixed(2)}x`, `${preview.projRoas - preview.trueRoas >= 0 ? "+" : ""}${(preview.projRoas - preview.trueRoas).toFixed(2)}x`], sigW);
+    y += 6;
+    hr();
+
+    // Adjustments
+    h2(`Parameter adjustments (${deltas.length})`);
+    if (deltas.length === 0) {
+      p("No changes — every fader matches the baseline.", { color: [110, 110, 110] });
+    } else {
+      const adjW = [55, 130, 70, 70, 60, (W - M * 2) - 385];
+      row(["Group", "Parameter", "Baseline", "New", "Delta", "Expected impact"], adjW, true);
+      for (const d of deltas) {
+        row([
+          d.group,
+          d.label,
+          `${d.baseline.toFixed(2)}x`,
+          `${d.next.toFixed(2)}x`,
+          `${d.pctChange >= 0 ? "+" : ""}${d.pctChange.toFixed(0)}%`,
+          d.impacts.join("; "),
+        ], adjW);
+      }
+    }
+    y += 6;
+    hr();
+
+    // KPIs
+    if (k) {
+      h2("Master KPIs · trailing 30 days");
+      const kW = [200, 140, 140];
+      row(["KPI", "Value", "Target"], kW, true);
+      row(["True ROAS", `${k.trueRoas.toFixed(2)}x`, "3.00x"], kW);
+      row(["CTR", `${(k.ctr * 100).toFixed(2)}%`, "2.00%"], kW);
+      row(["CVR", `${(k.cvr * 100).toFixed(2)}%`, "3.00%"], kW);
+      row(["AOV", `$${k.aov.toFixed(0)}`, "$120"], kW);
+      row(["CAC (lower better)", `$${k.cac.toFixed(0)}`, "$40"], kW);
+      row(["Repeat Rate", `${(k.repeatRate * 100).toFixed(2)}%`, "25.00%"], kW);
+      row(["Daily Spend (30d avg)", `$${k.dailySpend.toFixed(0)}`, "—"], kW);
+      y += 6;
+      hr();
+    }
+
+    // Guardrails
+    if (warnings.length) {
+      h2(`Guardrail warnings (${warnings.length})`);
+      const wW = [60, 200, (W - M * 2) - 260];
+      row(["Level", "Warning", "Detail"], wW, true);
+      for (const w of warnings) {
+        row([w.level.toUpperCase(), w.label, w.detail], wW);
+      }
+    }
+
+    // Footer page numbers
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Rescue Dog Wines · Kennel Optimization Console · ${meta.pretty}`, M, H - 24);
+      doc.text(`Page ${i} of ${pages}`, W - M, H - 24, { align: "right" });
+    }
+
+    doc.save(`${meta.fname}.pdf`);
+    toast.success("PDF exported");
+  };
+
   const clearAllOverrides = async () => {
     setSaving(true);
     try {
@@ -1230,6 +1430,26 @@ export function MixingBoardPanel() {
               >
                 <RotateCcw className="h-3 w-3 mr-1" />
                 Reset draft
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white hover:bg-white/10"
+                onClick={exportCsv}
+                title="Download scenario as CSV"
+              >
+                <FileText className="h-3 w-3 mr-1" />
+                Export CSV
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white hover:bg-white/10"
+                onClick={exportPdf}
+                title="Download shareable PDF report"
+              >
+                <FileDown className="h-3 w-3 mr-1" />
+                Export PDF
               </Button>
               <Button
                 size="sm"

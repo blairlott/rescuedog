@@ -90,7 +90,7 @@ export function DualCheckoutConfirm({
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {wineCount} bottle{wineCount !== 1 ? "s" : ""} · ${wineTotal.toFixed(2)} ·
-                charged by Vinoshipper (our licensed shipper). 21+ ID required at delivery.
+                charged by Vinoshipper. 21+ ID required at delivery.
               </p>
             </div>
           </div>

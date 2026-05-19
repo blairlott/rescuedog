@@ -88,22 +88,65 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
       const ids = (channels ?? [])
         .filter((c: any) => activePlatform === "all" ? true : c.platform === activePlatform)
         .map((c: any) => c.id);
-      if (ids.length === 0) return [] as Point[];
-      const { data: rows } = await supabase
-        .from("ad_performance_daily" as any)
-        .select("date, spend, revenue, channel_id")
-        .in("channel_id", ids)
-        .gte("date", isoDay(start))
-        .lte("date", isoDay(today))
-        .order("date", { ascending: true });
-      // Aggregate by date.
+      const startIso = isoDay(start);
+      const todayIso = isoDay(today);
+      const spanDays = Math.max(1, daysBetween(start, today));
+      const bucketMonthly = spanDays > 120;
+      const keyOf = (date: string) => bucketMonthly ? date.slice(0, 7) : date;
+
+      // 1) Paid spend + paid-attributed revenue from ad_performance_daily.
       const map = new Map<string, { spend: number; revenue: number }>();
-      for (const r of (rows ?? []) as any[]) {
-        const cur = map.get(r.date) ?? { spend: 0, revenue: 0 };
-        cur.spend += Number(r.spend) || 0;
-        cur.revenue += Number(r.revenue) || 0;
-        map.set(r.date, cur);
+      if (ids.length > 0) {
+        // Page through to bypass the 1000-row default cap.
+        let from = 0;
+        const pageSize = 1000;
+        while (true) {
+          const { data: rows } = await supabase
+            .from("ad_performance_daily" as any)
+            .select("date, spend, revenue, channel_id")
+            .in("channel_id", ids)
+            .gte("date", startIso)
+            .lte("date", todayIso)
+            .order("date", { ascending: true })
+            .range(from, from + pageSize - 1);
+          if (!rows || rows.length === 0) break;
+          for (const r of rows as any[]) {
+            const k = keyOf(r.date);
+            const cur = map.get(k) ?? { spend: 0, revenue: 0 };
+            cur.spend += Number(r.spend) || 0;
+            cur.revenue += Number(r.revenue) || 0;
+            map.set(k, cur);
+          }
+          if (rows.length < pageSize) break;
+          from += pageSize;
+        }
       }
+
+      // 2) Life-of-brand revenue from business_revenue_facts (only when viewing "all").
+      //    This gives us actual revenue going back to 2019 even if paid ads don't.
+      if (activePlatform === "all") {
+        let from = 0;
+        const pageSize = 1000;
+        while (true) {
+          const { data: rows } = await supabase
+            .from("business_revenue_facts" as any)
+            .select("date, net_revenue_cents")
+            .gte("date", startIso)
+            .lte("date", todayIso)
+            .order("date", { ascending: true })
+            .range(from, from + pageSize - 1);
+          if (!rows || rows.length === 0) break;
+          for (const r of rows as any[]) {
+            const k = keyOf(r.date);
+            const cur = map.get(k) ?? { spend: 0, revenue: 0 };
+            cur.revenue += (Number(r.net_revenue_cents) || 0) / 100;
+            map.set(k, cur);
+          }
+          if (rows.length < pageSize) break;
+          from += pageSize;
+        }
+      }
+
       return Array.from(map.entries())
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([date, v]) => ({

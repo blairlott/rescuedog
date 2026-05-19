@@ -262,11 +262,11 @@ export default function KennelCapiPage() {
                 <ShieldCheck className="h-3 w-3" /> Google OAuth
               </div>
               <div className="text-xs text-muted-foreground truncate">
-                {oauthHealth == null
-                  ? "Click check to probe the refresh token."
-                  : oauthHealth.healthy === true
-                  ? `Healthy · customer ${oauthHealth.customer_id}`
-                  : `Failed · ${oauthHealth.hint ?? oauthHealth.error}`}
+                {(() => {
+                  if (!oauthHealth) return "Click check to probe the refresh token.";
+                  if (oauthHealth.healthy) return `Healthy · customer ${oauthHealth.customer_id}`;
+                  return `Failed · ${oauthHealth.hint ?? oauthHealth.error}`;
+                })()}
               </div>
             </div>
             <Button size="sm" variant="outline" style={SHARP} onClick={checkGoogleHealth} disabled={checkingHealth}>

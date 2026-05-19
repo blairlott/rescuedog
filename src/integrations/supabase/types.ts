@@ -3735,6 +3735,39 @@ export type Database = {
         }
         Relationships: []
       }
+      kennel_bid_modifiers: {
+        Row: {
+          computed_at: string
+          day_of_week: number
+          modifier: number
+          notes: string | null
+          sample_avg_revenue_cents: number | null
+          sample_days: number | null
+          source_window_days: number
+          updated_at: string
+        }
+        Insert: {
+          computed_at?: string
+          day_of_week: number
+          modifier?: number
+          notes?: string | null
+          sample_avg_revenue_cents?: number | null
+          sample_days?: number | null
+          source_window_days?: number
+          updated_at?: string
+        }
+        Update: {
+          computed_at?: string
+          day_of_week?: number
+          modifier?: number
+          notes?: string | null
+          sample_avg_revenue_cents?: number | null
+          sample_days?: number | null
+          source_window_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kennel_entity_aliases: {
         Row: {
           created_at: string

@@ -29,6 +29,7 @@ import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundle
 import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
 import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInterstitial";
 import { CartLineSizePicker } from "@/components/cart/CartLineSizePicker";
+import { addLinesAndOpenCart } from "@/lib/vinoshipperInjector";
 
 const LAST_ORDER_KEY = "rdw_last_order";
 const PENDING_WINE_KEY = "rdw_pending_wine_checkout";
@@ -268,21 +269,53 @@ export const CartDrawer = () => {
     await updateQuantity(target.variantId, target.quantity + bottlesToCase);
   };
 
-  const handleCheckoutWines = () => {
+  const handleCheckoutWines = async () => {
     // Snapshot for "re-order last shipment"
     try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items, savedAt: new Date().toISOString() })); } catch {}
-    const url = getCheckoutUrl();
-    if (!url) {
-      toast.error("Wine checkout unavailable", {
-        description: "We couldn't reach Vinoshipper. Please refresh and try again.",
-      });
+
+    // Build Vinoshipper Injector lines from current wine cart. Each wine row
+    // carries its numeric VS product ID (backfilled from the cart URL slug).
+    const vsLines = wineItems
+      .map((i) => {
+        const raw = i.product.node.vinoshipperProductId;
+        const pid = raw ? Number(raw) : NaN;
+        return { productId: pid, quantity: i.quantity };
+      })
+      .filter((l) => Number.isFinite(l.productId) && l.quantity > 0);
+
+    if (vsLines.length === 0) {
+      // Fallback — no IDs mapped, fall back to legacy deep-link so the
+      // customer still has *some* path to check out.
+      const url = getCheckoutUrl();
+      if (!url) {
+        toast.error("Wine checkout unavailable", {
+          description: "We couldn't reach Vinoshipper. Please refresh and try again.",
+        });
+        return;
+      }
+      logCheckoutEvent("wine_handoff_deeplink_fallback", { url });
+      window.location.href = url;
       return;
     }
-    logCheckoutEvent("wine_handoff", { url });
-    setIsOpen(false);
-    // Same-tab handoff so the preview (and embedded contexts) doesn't try to
-    // pop a new window — Vinoshipper takes over the current tab.
-    window.location.href = url;
+
+    logCheckoutEvent("wine_injector_open", { lines: vsLines.length });
+    try {
+      await addLinesAndOpenCart(vsLines);
+      // Close our drawer once VS's cart is on screen.
+      setIsOpen(false);
+    } catch (err) {
+      console.error("[checkout] VS injector failed:", err);
+      logCheckoutEvent("wine_injector_failed", { error: String(err) });
+      // Last-ditch: deep-link so the order can still happen.
+      const url = getCheckoutUrl();
+      if (url) {
+        window.location.href = url;
+        return;
+      }
+      toast.error("Wine checkout unavailable", {
+        description: "Please refresh and try again.",
+      });
+    }
   };
 
   const handleCheckoutMerch = () => {

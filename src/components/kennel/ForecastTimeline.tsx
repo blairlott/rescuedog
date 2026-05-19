@@ -7,7 +7,7 @@ import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ReferenceLine, ReferenceArea,
 } from "recharts";
-import { TrendingUp, RefreshCw } from "lucide-react";
+import { TrendingUp, RefreshCw, Info } from "lucide-react";
 import {
   DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween, formatAxisDate, pickBucket,
 } from "./DateRangeControls";
@@ -258,13 +258,14 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
           <span className="text-[10px] uppercase tracking-brand text-muted-foreground">
             · {isoDay(start)} → {isoDay(end)} · {lookbackDays}d hist / {horizonDays}d horizon
           </span>
-          {data?.generated_at && (
-            <span className="text-[10px] uppercase tracking-brand text-muted-foreground">
-              · model {data.confidence ? `${Math.round(data.confidence * 100)}% conf` : ""}
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-1 flex-wrap">
+          {data?.generated_at && (
+            <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-2">
+              {data.confidence ? `${Math.round(data.confidence * 100)}% conf · ` : ""}
+              {relativeTime(data.generated_at)}
+            </span>
+          )}
           {!lockPlatform && (
             <div className="flex gap-1 mr-2">
               {PLATFORM_OPTS.map((p) => (
@@ -314,6 +315,18 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
         </div>
       ) : (
         <>
+          <div className="border-2 border-foreground bg-muted/40 p-3 mb-4 flex items-start gap-3" style={{ borderRadius: 0 }}>
+            <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <div className="flex-1 text-[11px] text-foreground leading-relaxed">
+              <div className="uppercase tracking-brand font-bold mb-1">Naive trend + day-of-week seasonality — not MMM</div>
+              <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                <li>Linear regression on the lookback window plus a 7-day seasonality pattern. Strategy-mode sliders tilt spend, revenue, and ROAS within ±15–30%.</li>
+                <li>Range bands are ±1.96σ on residuals — directional confidence, not a guarantee.</li>
+                <li>Long horizons (1–3 years) extrapolate trend confidently — treat as a planning baseline, not a budget commit.</li>
+                <li>Actuals before today come from <strong>ad_performance_daily</strong> (paid spend/revenue) plus <strong>business_revenue_facts</strong> when viewing All.</li>
+              </ul>
+            </div>
+          </div>
           {summary && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <Stat
@@ -358,7 +371,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                   x2={forecastEndDate}
                   fill="hsl(var(--primary) / 0.06)"
                   stroke="none"
-                  label={{ value: "FORECAST", position: "insideTopRight", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  label={{ value: "FORECAST →", position: "insideTopRight", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 />
                 <ReferenceLine
                   yAxisId="left"
@@ -366,7 +379,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                   stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   strokeDasharray="4 3"
-                  label={{ value: "▼ TODAY", position: "insideTop", fontSize: 11, fill: "hsl(var(--primary))", fontWeight: 700, offset: 4 }}
+                  label={{ value: "TODAY", position: "insideBottomLeft", fontSize: 10, fill: "hsl(var(--primary))", fontWeight: 700, offset: 6 }}
                 />
                 <Area yAxisId="left" dataKey="revenue_upper" stroke="none" fill="hsl(var(--primary) / 0.15)" name="Revenue range" stackId="band" />
                 <Area yAxisId="left" dataKey="revenue_lower" stroke="none" fill="hsl(var(--background))" stackId="band" legendType="none" />
@@ -393,4 +406,17 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
       {hint && <div className="text-[10px] text-muted-foreground mt-0.5">{hint}</div>}
     </div>
   );
+}
+
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const diff = Date.now() - then;
+  const min = Math.round(diff / 60000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.round(hr / 24);
+  return `${day}d ago`;
 }

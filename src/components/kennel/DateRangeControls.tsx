@@ -43,11 +43,11 @@ export function defaultEnd(): Date {
 
 /** Quick presets — useful shortcuts, not the only way to pick a range. */
 const PRESETS: { label: string; start: () => Date; end: () => Date }[] = [
-  { label: "Life · +3y", start: () => MIN_START, end: () => maxEnd() },
-  { label: "3y · +3y",   start: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() - 3); return d; }, end: () => maxEnd() },
-  { label: "1y · +3y",   start: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() - 1); return d; }, end: () => maxEnd() },
-  { label: "90d · +1y",  start: () => { const d = todayUTC(); d.setUTCDate(d.getUTCDate() - 90); return d; }, end: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() + 1); return d; } },
-  { label: "+3y plan",   start: () => todayUTC(), end: () => maxEnd() },
+  { label: "All time → 3y forecast", start: () => MIN_START, end: () => maxEnd() },
+  { label: "Last 3y → 3y forecast",  start: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() - 3); return d; }, end: () => maxEnd() },
+  { label: "Last 1y → 3y forecast",  start: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() - 1); return d; }, end: () => maxEnd() },
+  { label: "Last 90d → 1y forecast", start: () => { const d = todayUTC(); d.setUTCDate(d.getUTCDate() - 90); return d; }, end: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() + 1); return d; } },
+  { label: "Plan next 3y",           start: () => todayUTC(), end: () => maxEnd() },
 ];
 
 export function DateRangeControls({
@@ -180,7 +180,7 @@ function DateRangePopover({
                 defaultMonth={start}
                 captionLayout="dropdown-buttons"
                 fromYear={2018}
-                toYear={new Date().getFullYear()}
+                toYear={toYear}
                 initialFocus
                 className={cn("p-3 pointer-events-auto")}
               />
@@ -200,6 +200,11 @@ function DateRangePopover({
               />
             )}
             <div className="flex justify-end border-t border-border px-3 py-2 gap-2">
+              <Button size="sm" variant="ghost"
+                onClick={() => { setStart(defaultStart()); setEnd(defaultEnd()); }}
+                style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7">
+                Reset
+              </Button>
               <Button size="sm" variant="ghost" onClick={() => setOpen(false)}
                 style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7">
                 Done

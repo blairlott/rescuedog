@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { Gift, ChevronDown } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useGiftWrapSettings, GIFT_WRAP_DEFAULTS } from "@/hooks/useGiftWrapSettings";
 

@@ -430,11 +430,11 @@ export default function KennelDashboard() {
         <div className="text-muted-foreground text-sm">Loading…</div>
       ) : (
         <>
-          <ForecastTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} />
+          <ForecastTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} hidePicker />
 
-          <BrickMortarTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} />
+          <BrickMortarTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} hidePicker />
 
-          <BrandLiftTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} />
+          <BrandLiftTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} hidePicker />
 
           <StrategyMixPanel scope="global" />
 

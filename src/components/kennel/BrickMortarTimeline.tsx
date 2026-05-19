@@ -204,12 +204,13 @@ export function BrickMortarTimeline() {
       </header>
 
       <CaveatBanner
-        title="Directional only — not source of truth"
+        title="QuickBooks = source of truth · Depletions = market-level only"
         items={[
-          "QuickBooks: ledger-based revenue, refreshed nightly; only entries tagged as wholesale/B&M are counted.",
-          "Depletion reports: distributor PDFs arrive 30–60 days late and are parsed via Lindy/AI — historical periods will keep filling in.",
-          "Instacart: ad-attributed revenue from Instacart Ads (a hybrid of digital + retail) — included here as the closest brick-and-mortar signal we have.",
-          "Not yet wired: Nielsen scan data, retail-media platforms, and Yahoo DSP — once available, this tile will split into pure off-premise vs. on-premise vs. retail-media-driven.",
+          "QuickBooks is the source of truth for actual wholesale/B&M dollars — ledger-based, refreshed nightly, only entries tagged wholesale/B&M are counted here.",
+          "Depletion reports are market-level only (state/distributor totals — no account or SKU-by-store breakdown). They arrive 30–60 days late via distributor PDFs parsed through Lindy/AI, and are shown as a directional cross-check against QB — not a per-account velocity.",
+          "Because depletions are market-level, account-level velocity metrics (CPPW, TDP, sell-through by store) are not computable today and won't be until scan data (Nielsen/Circana) or distributor account-level feeds land.",
+          "Instacart: ad-attributed revenue from Instacart Ads (hybrid digital + retail) — included as the closest brick-and-mortar signal we currently have.",
+          "Not yet wired: Nielsen scan, retail-media platforms, Yahoo DSP — once available this tile will split into off-premise vs. on-premise vs. retail-media-driven, and unlock true store-level velocity.",
         ]}
       />
 
@@ -218,10 +219,10 @@ export function BrickMortarTimeline() {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <Stat label={`Trailing ${lookback.label} (modeled)`} value={`$${Math.round(data.total).toLocaleString()}`} />
-            <Stat label="Avg / day" value={`$${Math.round(data.dailyAvg).toLocaleString()}`} />
+            <Stat label={`QB trailing ${lookback.label}`} value={`$${Math.round(data.total).toLocaleString()}`} hint="source of truth" />
+            <Stat label="Avg / day" value={`$${Math.round(data.dailyAvg).toLocaleString()}`} hint="qb + dep + instacart" />
             <Stat label={`Projected ${horizon.label}`} value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={growth.label.toLowerCase()} />
-            <Stat label="QB / dep lines" value={`${data.qbRows} / ${data.depRows}`} hint="rows ingested" />
+            <Stat label="QB / dep lines" value={`${data.qbRows} / ${data.depRows}`} hint="dep = market-level" />
           </div>
           <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>

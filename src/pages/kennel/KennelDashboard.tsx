@@ -65,6 +65,19 @@ export default function KennelDashboard() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
+  // Pending recommendations badge — polls + realtime
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ["kennel-pending-recs-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("ad_recommendations" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count ?? 0;
+    },
+    refetchInterval: 60_000,
+  });
+
   const { data, isLoading } = useQuery({
     queryKey: ["kennel-dashboard", range],
     queryFn: async () => {
@@ -323,6 +336,24 @@ export default function KennelDashboard() {
           <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
           <span><strong className="uppercase tracking-brand">Lindy silent &gt;25h.</strong> Verify ingestion mode in Settings.</span>
         </div>
+      )}
+      {pendingCount > 0 && (
+        <Link
+          to="/kennel/recommendations"
+          className="border-2 border-primary bg-primary/10 hover:bg-primary/20 transition-colors p-3 flex items-center justify-between gap-2 text-sm group"
+          style={{ borderRadius: 0 }}
+        >
+          <span className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <strong className="uppercase tracking-brand text-foreground">
+              {pendingCount} recommendation{pendingCount === 1 ? "" : "s"} awaiting approval
+            </strong>
+            <span className="text-muted-foreground hidden sm:inline">— review &amp; approve to push changes live.</span>
+          </span>
+          <span className="flex items-center gap-1 uppercase tracking-brand text-xs font-bold text-primary group-hover:underline">
+            Review <ChevronRight className="h-3 w-3" />
+          </span>
+        </Link>
       )}
       <header className="flex items-start md:items-end justify-between flex-wrap gap-3">
         <div>

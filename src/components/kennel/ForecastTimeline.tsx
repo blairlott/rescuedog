@@ -473,6 +473,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                 <Bar yAxisId="left" dataKey="shipping" fill="hsl(var(--muted-foreground) / 0.35)" name="Shipping cost" />
                 <Line yAxisId="left" type="monotone" dataKey="spend" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Spend" />
                 <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Revenue" />
+                <Line yAxisId="left" type="monotone" dataKey="net_revenue" stroke="hsl(150 60% 35%)" strokeWidth={2} dot={false} name="Net revenue (rev − ad spend)" />
                 <Line yAxisId="right" type="monotone" dataKey="roas" stroke="hsl(220 70% 45%)" strokeWidth={2} strokeDasharray="4 4" dot={false} name="ROAS" />
               </ComposedChart>
             </ResponsiveContainer>

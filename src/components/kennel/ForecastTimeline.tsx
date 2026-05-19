@@ -188,16 +188,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     const future = Array.from(futMap.values())
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((p) => ({ ...p, roas: p.spend > 0 ? p.revenue / p.spend : 0 }));
-    const todayMarker = {
-      date: todayKey,
-      spend: null,
-      revenue: null,
-      revenue_lower: null,
-      revenue_upper: null,
-      roas: null,
-      todayMarker: 1,
-    } as unknown as Point & { todayMarker: number };
-    return [...hist, todayMarker, ...future];
+    return [...hist, ...future];
   }, [data, history, horizonDays, todayKey, bucket]);
 
   // Boundary tick = today, bucketed the same way as the x-axis so it lines up with a real tick.
@@ -211,6 +202,15 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     return firstFuture?.date ?? lastHist?.date ?? todayKey;
   }, [chartData, todayKey]);
   const forecastEndDate = chartData.length ? chartData[chartData.length - 1].date : boundaryDate;
+  const todayMarkerRatio = useMemo(() => {
+    if (chartData.length <= 1) return null;
+    const exactIndex = chartData.findIndex((p) => p.date === todayKey);
+    if (exactIndex >= 0) return exactIndex / (chartData.length - 1);
+    const futureIndex = chartData.findIndex((p) => p.date > todayKey);
+    if (futureIndex < 0) return 1;
+    if (futureIndex === 0) return 0;
+    return (futureIndex - 0.5) / (chartData.length - 1);
+  }, [chartData, todayKey]);
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;

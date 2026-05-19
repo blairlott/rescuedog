@@ -8,7 +8,7 @@ import {
 import { Store, Info } from "lucide-react";
 import {
   DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay,
-  monthKey, pickBucket, daysBetween,
+  monthKey, pickBucket, daysBetween, formatAxisDate,
 } from "./DateRangeControls";
 
 type DayPoint = {
@@ -221,7 +221,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
             <ResponsiveContainer>
               <ComposedChart data={chart.points} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={32} tickFormatter={formatAxisDate} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
                 <Tooltip
                   contentStyle={{ borderRadius: 0, border: "2px solid hsl(var(--foreground))", fontSize: 12 }}
@@ -419,7 +419,7 @@ export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: se
             <ResponsiveContainer>
               <ComposedChart data={chart.points} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={32} tickFormatter={formatAxisDate} />
                 <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
                 <Tooltip

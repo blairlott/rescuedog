@@ -464,7 +464,7 @@ export function MixingBoardPanel() {
   const saveDraft = async () => {
     setSaving(true);
     try {
-      const ops: Promise<any>[] = [];
+      const ops: PromiseLike<any>[] = [];
       for (const [k, v] of Object.entries(draftDow)) {
         ops.push(
           supabase.from("kennel_bid_modifiers" as any)

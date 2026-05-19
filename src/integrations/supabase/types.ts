@@ -3657,6 +3657,45 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_credential_events: {
+        Row: {
+          actor_email: string | null
+          actor_id: string | null
+          credential_id: string | null
+          credential_key: string
+          event_type: string
+          id: string
+          notes: string | null
+          occurred_at: string
+          provider: string
+          scope: string
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
+          credential_id?: string | null
+          credential_key: string
+          event_type: string
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          provider: string
+          scope: string
+        }
+        Update: {
+          actor_email?: string | null
+          actor_id?: string | null
+          credential_id?: string | null
+          credential_key?: string
+          event_type?: string
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          provider?: string
+          scope?: string
+        }
+        Relationships: []
+      }
       integration_credentials: {
         Row: {
           created_at: string

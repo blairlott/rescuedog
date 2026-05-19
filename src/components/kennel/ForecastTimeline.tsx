@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -158,6 +158,16 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
       setBusy(false);
     }
   };
+
+  // Auto-regenerate the forecast whenever the date range or platform changes.
+  // Debounce so dragging the date inputs doesn't fire on every keystroke.
+  const firstRunRef = useRef(true);
+  useEffect(() => {
+    if (firstRunRef.current) { firstRunRef.current = false; return; }
+    const t = setTimeout(() => { generate(); }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isoDay(start), isoDay(end), activePlatform]);
 
   return (
     <section className="border-2 border-foreground p-4" style={{ borderRadius: 0 }}>

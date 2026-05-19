@@ -10,6 +10,8 @@ import { BidModifiersPanel } from "@/components/kennel/BidModifiersPanel";
 import { GeoModifiersPanel } from "@/components/kennel/GeoModifiersPanel";
 import { SeasonalityPanel } from "@/components/kennel/SeasonalityPanel";
 import { RetentionRiskPanel } from "@/components/kennel/RetentionRiskPanel";
+import { IngestionStatusPanel } from "@/components/kennel/IngestionStatusPanel";
+import { CronStatusPanel } from "@/components/kennel/CronStatusPanel";
 import { MixingBoardPanel } from "@/components/kennel/MixingBoardPanel";
 import { AiInsights } from "@/components/kennel/AiInsights";
 import { RefreshButton } from "@/components/kennel/RefreshButton";
@@ -447,6 +449,12 @@ export default function KennelDashboard() {
             <SeasonalityPanel />
             <GeoModifiersPanel />
             <RetentionRiskPanel />
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Data pipeline health</h2>
+            <IngestionStatusPanel />
+            <CronStatusPanel />
           </section>
 
           <section className="space-y-2">

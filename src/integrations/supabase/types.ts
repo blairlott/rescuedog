@@ -3921,6 +3921,39 @@ export type Database = {
         }
         Relationships: []
       }
+      kennel_ingest_runs: {
+        Row: {
+          attempts: number
+          duration_ms: number | null
+          error: string | null
+          id: string
+          payload: Json | null
+          run_at: string
+          status: string
+          target: string
+        }
+        Insert: {
+          attempts?: number
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          payload?: Json | null
+          run_at?: string
+          status: string
+          target: string
+        }
+        Update: {
+          attempts?: number
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          payload?: Json | null
+          run_at?: string
+          status?: string
+          target?: string
+        }
+        Relationships: []
+      }
       kennel_keyword_ideas: {
         Row: {
           ad_group_id: string
@@ -7639,6 +7672,25 @@ export type Database = {
           last_run_status: string
           schedule: string
         }[]
+      }
+      kennel_ingest_runs_recent: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          duration_ms: number | null
+          error: string | null
+          id: string
+          payload: Json | null
+          run_at: string
+          status: string
+          target: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "kennel_ingest_runs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       kennel_review_recommendation: {
         Args: { _action: string; _notes?: string; _rec_id: string }

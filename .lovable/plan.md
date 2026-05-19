@@ -1,70 +1,132 @@
-## Goal
+# Kennel Phase 3.1 — Meta Audiences + Intelligence Layer (revised)
 
-Give Blair a simple admin view of the `oci_upload_log` table so he can watch Lindy's Google Ads OCI uploads land in real time, spot partial failures fast, and confirm the 13 stuck conversions clear once OAuth is reconnected.
+Incorporates Claude's review. No auto-rec-creation in this round; Action button is human-click only.
 
-## Placement: Kennel, not CRM
+## Pre-build confirmations
+1. Query `vs_transactions` schema (columns for SKU/line items, qty, ship state/zip, cart type, order total, email, timestamp) + earliest order date.
+2. Confirm ≥30 days history exists for baselines.
+3. Request `META_SYSTEM_USER_TOKEN` + `KENNEL_EXTERNAL_SIGNAL_SECRET` secrets (Blair generates Meta token separately).
 
-OCI uploads are ad-attribution telemetry, not sales-rep data. They belong with the rest of the Kennel ad-ops tooling (which already has `/kennel/log` for the cron job log, `/kennel/capi` for Meta CAPI, etc.), behind `KennelGuard` and gated by `is_ad_ops()`. Adding it to `/crm` would force a sales rep persona into an ads-attribution screen.
+## Schema (single migration)
 
-Route: **`/kennel/oci-log`**
+### `sku_catalog` (NEW — varietal/color truth table)
+- `sku text PK, varietal text, color text ('red'|'white'|'rose'|'sparkling'|'other'), style text, active bool default true`
+- RLS: ad_ops/admin write, kennel_viewer read
+- Seed with current RDW SKUs (I'll query `wine_products` + `vs_transactions` distinct SKUs to seed)
 
-## Files
+### `meta_audiences`
+- `id, segment_key text unique, segment_name, segment_query text, segment_kind text ('user_list'|'meta_rule_based')`
+- `meta_audience_id, meta_audience_name, meta_lookalike_id, lal_ratio numeric default 0.01`
+- `enabled bool, create_lal bool, sync_cadence text ('weekly'|'monthly')`
+- `last_sync_at, member_count int, notes text`
+- **RLS**: SELECT for `can_view_kennel`; INSERT/UPDATE/DELETE only for `is_ad_ops` (which already includes admin/owner)
 
-1. **`src/pages/kennel/KennelOciLogPage.tsx`** (new)
-   - Header: "Google Ads OCI Uploads"
-   - Sub-copy: "Offline click conversions pushed to Google Ads by Lindy's Z3 worker."
-   - Filters bar:
-     - Status pill toggle: `All` / `Uploaded` / `Partial Failure` / `Error` (default `All`)
-     - Date range: last 24h / 7d / 30d (default 7d)
-     - Search by `order_id` (text input, debounced)
-   - Summary tiles (top of page):
-     - Total rows in window
-     - Uploaded count (green)
-     - Partial-failure count (amber)
-     - Error count (red)
-     - Sum of `conversion_value` for status=`uploaded`
-   - Table (paginated 50/page):
-     - `uploaded_at` (relative + tooltip absolute)
-     - `status` badge
-     - `order_id` (mono)
-     - `gclid` (truncated, click-to-copy)
-     - `conversion_value` + `currency`
-     - `conversion_action_id` (mono)
-     - `error_message` (truncated; click row to expand `raw_response` JSON viewer)
-   - Empty state copy: "No uploads yet. Lindy's Z3 worker will start populating this after the next post-purchase batch."
+### `meta_audience_sync_runs`
+- `id, segment_id fk, started_at, completed_at`
+- `records_pushed int, status text ('success'|'error'|'skipped_too_small'|'skipped_no_token')`
+- `executed_sql text` (exact SQL run, for audit)
+- `error_message text`
+- RLS: read = `can_view_kennel`; writes service-role only
 
-2. **`src/lib/kennel/ociLog.ts`** (new) — thin data layer:
-   - `fetchOciLog({status, since, search, limit, offset})` → returns rows + total count via Supabase client + RLS (admins/owners only — already enforced by the migration).
-   - `fetchOciLogSummary({since})` → returns the 4 summary counts + value sum.
+### `kennel_insights`
+- `id, created_at, insight_type, scope_key text, title, summary, data jsonb`
+- `severity text ('info'|'warning'|'opportunity'|'high'|'medium'|'low')`
+- `source text ('internal'|'lindy_external'), urgency text, source_url text, expires_at`
+- `actioned bool default false, actioned_at, actioned_by uuid`
+- **Unique index**: `(insight_type, scope_key, date_trunc('day', created_at))` for dedupe
+- For trend-type insights, `data` MUST include `daily_values: number[14]` (UI sparklines read this directly)
+- RLS: read = `can_view_kennel`; insert/update = `is_ad_ops` + service-role; Lindy webhook uses service-role
 
-3. **`src/App.tsx`** — add inside the `/kennel` block:
-   ```tsx
-   <Route path="oci-log" element={<KennelOciLogPage />} />
-   ```
-   plus the lazy import.
+### Read-only SQL executor
+- Postgres role `meta_segment_runner` with SELECT only on `vs_transactions` + `sku_catalog`
+- SECURITY DEFINER function `run_meta_segment_sql(_sql text)` that:
+  - rejects anything not starting with `SELECT`
+  - `SET LOCAL statement_timeout='30s'`
+  - `SET LOCAL transaction_read_only=on`
+  - executes as `meta_segment_runner` via `SET LOCAL ROLE`
+  - returns `(email text, phone text, first_name text, last_name text, city text, state text, zip text)`
+- Only ad_ops can EXECUTE this function
 
-4. **Kennel sidebar/nav** — locate the existing Kennel nav component (sibling of `KennelLayout`) and add an "OCI Uploads" entry next to "Log". Visible only when `is_ad_ops()` returns true (the layout already does that gate).
+## Edge functions
 
-## RLS
+### `meta-audience-segments`
+- GET list / POST create / PATCH update / DELETE
+- ad_ops-only (verify via `is_ad_ops`)
+- Validates SQL passes `run_meta_segment_sql` dry-run (LIMIT 1) before save
 
-Already covered by the Phase-2 migration:
-```sql
-create policy "admins read oci upload log"
-  on public.oci_upload_log for select
-  using (public.is_admin_or_owner(auth.uid()));
-```
-No additional policy needed. The page surfaces a clear "You don't have access" state if the query returns 0 rows due to RLS rather than empty data.
+### `meta-audience-sync`
+- Pulls segment via `run_meta_segment_sql`
+- SHA-256 hash email (lowercase+trim) and phone (E.164 digits-only)
+- POSTs to `/v21.0/act_{ID}/customaudiences/{aud}/users` in 10k batches
+- Creates audience first if `meta_audience_id` null
+- **LAL guard**: if `member_count < 100` AND `create_lal=true`, skip LAL, log `status='skipped_too_small'`
+- If `META_SYSTEM_USER_TOKEN` missing → log `skipped_no_token`, return 200 with warning
+- Writes full `executed_sql` to `meta_audience_sync_runs`
 
-## Out of scope (intentional)
+### `kennel-trend-scan` (nightly 03:30 UTC)
+- **Rising SKU**: 7d order count vs prior 30d daily-avg per SKU; flag >25% lift (no impressions denominator)
+- **Geo spike**: 7d vs prior 30d state+zip; flag >2x
+- **Peak windows**: top-3 (dow, hour) by order count, rolling 90d
+- **Cohort reactivation**: customers tagged Lapsed who ordered in last 7d; flag if >5
+- **Fast 2nd-order velocity**: median time-to-2nd-order, 30d vs 90d
+- **AOV trend**: 7d rolling vs 30d baseline, ±10%
+- **SKU affinity**: top-3 co-occurrence pairs within 30d
+- All trend insights write `daily_values: number[14]` to `data`
+- Upsert deduped on `(insight_type, scope_key, current_date)`
 
-- No re-upload / retry button — Lindy owns the trigger; this is read-only.
-- No CSV export in v1 (can add later if Blair asks).
-- No realtime subscription — page polls on filter change; uploads are batch, not streaming.
-- No Phase-1 GTM verification embedded here — that's a one-time GTM Preview task, not an ongoing dashboard.
+### `kennel-external-signal` (POST)
+- Auth: `x-kennel-signature` HMAC using **`KENNEL_EXTERNAL_SIGNAL_SECRET`** (not the ingest secret)
+- Zod-validated payload (signal_type, title, summary, source_url?, urgency, suggested_action?, expires_at?)
+- Writes to `kennel_insights` with `source='lindy_external'`
 
-## Verification
+### `kennel-export` update
+- Add `kennel_insights` to `DATASETS` map so Lindy can read nightly
 
-1. Visit `/kennel/oci-log` as admin → empty state shown.
-2. After a Lindy upload (or a manual `supabase--curl_edge_functions` test with `dry_run:false`), refresh → rows appear with correct status.
-3. Trigger a deliberately invalid row (bad `conversion_action_id`) → status `error`, `error_message` shows the API response.
-4. Verify a non-admin user gets the "no access" state.
+## Cron (pg_cron via insert tool)
+- `kennel-trend-scan-nightly`: `30 3 * * *`
+- `meta-audience-sync-weekly`: `0 4 * * 1` → loops segments where `sync_cadence='weekly'` (Recent Buyers, Lapsed, Abandoned Checkout)
+- `meta-audience-sync-monthly`: `0 4 1 * *` → loops segments where `sync_cadence='monthly'` (VIPs, varietal, stable ones)
+
+## Seed segments (with revised defaults)
+| segment_key | cadence | lal_ratio | create_lal |
+|---|---|---|---|
+| all_wine_buyers_24mo | monthly | 0.03 | true |
+| wine_club_members | monthly | — | false |
+| high_historical_revenue (renamed from "VIPs > $500 LTV") | monthly | 0.01 | true |
+| top_quintile_historical_revenue | monthly | 0.01 | true |
+| lapsed_buyers_90d | weekly | — | false |
+| recent_buyers_30d | weekly | — | false (exclusion list) |
+| high_aov_single_buyers | monthly | 0.03 | true |
+| red_wine_buyers | monthly | 0.05 | true |
+| white_rose_buyers | monthly | 0.05 | true |
+| case_buyers | monthly | 0.05 | true (LAL skipped if <100) |
+| fast_second_order | monthly | 0.03 | true (LAL skipped if <100) |
+| meta_video_75_180d | — | — | false (meta_rule_based) |
+| meta_abandoned_checkout_14d | weekly | — | false (meta_rule_based) |
+| meta_pdp_visitors_30d | weekly | — | false (meta_rule_based) |
+
+Color/varietal segments JOIN `sku_catalog` (no hardcoded SKU strings).
+
+## UI
+
+### `/crm/meta-audiences` (CrmLayout, ad_ops only)
+- Segment table: name, kind, cadence, member count, last sync, LAL status, "Sync Now", Meta Ads Manager deep link
+- Expandable sync history per segment (last 5 runs incl. `executed_sql` preview + status badges)
+- Add/edit modal with SQL editor (validates via dry-run before save)
+- Global "Sync All" button
+- Banner if `META_SYSTEM_USER_TOKEN` missing
+
+### `/kennel/insights` (kennel nav, can_view_kennel)
+- Card feed, severity→recency sort
+- Filter bar: type, severity, source, actioned/unactioned
+- 14-day inline SVG sparklines for trend cards (reads `data.daily_values`)
+- External signals card group with urgency badge + source URL
+- **Action button = mark actioned only** (no auto-rec creation this round, per Claude's sequencing note)
+- Add nav entries to CRM + Kennel sidebars; register routes in `App.tsx`
+
+## What you'll get
+- 4 edge functions + cron + 2 routes
+- Lindy handoff message with HMAC contract for `kennel-external-signal`
+- Status banner if Meta token not yet set
+
+Proceeding on green light. Step 1 = schema migration (after I query `vs_transactions` to confirm column names so the segment SQL is correct on first try).

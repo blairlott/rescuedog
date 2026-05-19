@@ -198,6 +198,13 @@ Deno.serve(async (req) => {
   const s = settingsRow as unknown as Settings;
   if (!s.engine_enabled) return json({ ok: true, skipped: true, reason: "engine disabled" });
 
+  const today = isoDateOffset(0);
+  const summary = {
+    budget_recs: 0, bid_recs: 0, pause_recs: 0,
+    applied: 0, queued: 0, skipped_existing: 0, errors: 0,
+    notes: [] as string[],
+  };
+
   // Strategy Mix overrides from ad_settings. Per-platform key takes precedence over global.
   const stratKeys = [`strategy_mode_${platform}`, "strategy_mode"];
   const { data: stratRows } = await admin
@@ -225,13 +232,6 @@ Deno.serve(async (req) => {
 
   const advertiserId = Deno.env.get("INSTACART_ADS_ADVERTISER_ID")?.trim();
   if (!advertiserId) return json({ error: "INSTACART_ADS_ADVERTISER_ID missing" }, 400);
-
-  const today = isoDateOffset(0);
-  const summary = {
-    budget_recs: 0, bid_recs: 0, pause_recs: 0,
-    applied: 0, queued: 0, skipped_existing: 0, errors: 0,
-    notes: [] as string[],
-  };
 
   // Flat hierarchy: pace budget / tune bid / auto-pause at CAMPAIGN level,
   // across every ad format (sponsored_product, display, brand_page, etc.).

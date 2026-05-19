@@ -412,7 +412,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
             </div>
           </div>
           {summary && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
               <Stat
                 label={`Actual Spend · ${isoDay(start).slice(0,7)} → today`}
                 value={`$${summary.histSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
@@ -422,6 +422,16 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                 label={`Actual Revenue · ${isoDay(start).slice(0,7)} → today`}
                 value={`$${summary.histRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                 hint={`Net $${summary.histNet.toLocaleString(undefined, { maximumFractionDigits: 0 })} (rev − ad spend)`}
+              />
+              <Stat
+                label={`Total Expenses · ${isoDay(start).slice(0,7)} → today`}
+                value={`$${summary.histSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                hint="Ad spend only (pick-pack & Vinoshipper fees pending)"
+              />
+              <Stat
+                label={`Net Revenue · ${isoDay(start).slice(0,7)} → today`}
+                value={`$${summary.histNet.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                hint={`${summary.histRev > 0 ? ((summary.histNet / summary.histRev) * 100).toFixed(1) : "0.0"}% margin`}
               />
               <Stat
                 label={`Forecast Spend · next ${horizonDays}d`}

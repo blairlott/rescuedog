@@ -47,13 +47,9 @@ export function CartUpsellBanner({ totalBottles, cartTotal }: CartUpsellBannerPr
             <p className="font-semibold">
               🎉 Full case! You qualify for {effectiveCaseDiscount}% off at checkout{isMember ? " (Wine Club rate — auto-applied)" : ""}.
             </p>
-            {!isMember && caseDiscountCode && (
+            {!isMember && (
               <p className="mt-1 text-[12px] font-normal">
-                We'll auto-apply code{" "}
-                <span className="font-mono font-bold tracking-wider bg-green-600 text-white px-1.5 py-0.5">
-                  {caseDiscountCode}
-                </span>{" "}
-                at checkout.
+                Discount applied automatically at checkout — no code needed.
               </p>
             )}
           </div>

@@ -21,6 +21,7 @@ import { IngestSnapshotWidget } from "@/components/kennel/IngestSnapshotWidget";
 import { RefreshButton } from "@/components/kennel/RefreshButton";
 import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
 import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
+import { BrickMortarTimeline, BrandLiftTimeline } from "@/components/kennel/BrickMortarTimeline";
 import { SortableDashboard, type SortableItem } from "@/components/kennel/SortableDashboard";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -442,6 +443,10 @@ export default function KennelDashboard() {
       ) : (
         <>
           <ForecastTimeline />
+
+          <BrickMortarTimeline />
+
+          <BrandLiftTimeline />
 
           <StrategyMixPanel scope="global" />
 

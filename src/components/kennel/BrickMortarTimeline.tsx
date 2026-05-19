@@ -321,7 +321,7 @@ export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: se
     queryFn: async () => {
       const channelsRes = await supabase
         .from("ad_channels" as any)
-        .select("id, platform, objective");
+        .select("id, platform");
       const channels = (channelsRes.data ?? []) as any[];
       const channelMap = new Map(channels.map((c) => [c.id, c]));
       const dtcIds = channels.filter((c) => ["meta", "google"].includes(c.platform)).map((c) => c.id);
@@ -506,6 +506,20 @@ export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: se
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+          <TileAiGuidance
+            tileId="brand-lift"
+            rangeLabel={rangeLabel(start, end)}
+            tileData={{
+              model: "literature-prior halo coefficient, not measured incrementality or MMM",
+              growth_mode: growthKey,
+              halo_coefficient: HALO_COEFFICIENT,
+              observed_dtc_spend: chart.totalSpend,
+              observed_modeled_lift: chart.totalLift,
+              observed_dtc_revenue: chart.totalDtcRev,
+              projected_dtc_spend: chart.projSpend,
+              projected_modeled_lift: chart.projLift,
+            }}
+          />
         </>
       )}
     </section>

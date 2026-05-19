@@ -69,6 +69,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
   const spanDays = Math.max(1, daysBetween(start, end));
   const bucket = pickBucket(spanDays);
   const keyOf = (date: string) => bucket === "day" ? date : date.slice(0, 7);
+  const todayKey = useMemo(() => keyOf(isoDay(today)), [today, bucket]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["forecast", activePlatform, horizonDays, lookbackDays],
@@ -165,7 +166,6 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
   });
 
   const chartData = useMemo(() => {
-    const todayIso = isoDay(today);
     const hist = (history ?? []).filter((p) => p.date <= todayKey);
     // Re-bucket the forecast series so its granularity matches history (avoids a daily/monthly
     // x-axis cliff at the "today" boundary on long ranges).
@@ -202,7 +202,6 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
 
   // Boundary tick = today, bucketed the same way as the x-axis so it lines up with a real tick.
   // (Comparing "2026-05" > "2026-05-19" lexicographically gives the wrong answer — always compare in bucket-space.)
-  const todayKey = useMemo(() => keyOf(isoDay(today)), [today, bucket]);
   const boundaryDate = useMemo(() => {
     // Prefer an exact-match tick on the chart; fall back to todayKey so the line still renders.
     const exact = chartData.find((p) => p.date === todayKey);

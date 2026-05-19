@@ -194,8 +194,8 @@ Deno.serve(async (req) => {
       upper_bound: Math.round(series.reduce((s, p) => s + p.revenue_upper, 0) * 100) / 100,
       confidence: 0.80,
       model: "linreg_dow_seasonality_v1",
-      series: { points: series, summary, strategy_mode: { goal, pace } },
-      narrative: `${horizon}-day projection from ${dates.length} days of history. Goal ${goal}/100, Pace ${pace}/100.`,
+      series: { points: series, summary, strategy_mode: { goal, pace }, baseline: { roas: Math.round(baselineRoas * 1000) / 1000, daily_spend: Math.round(baselineSpend * 100) / 100, days: recent28Spend.length } },
+      narrative: `${horizon}-day projection from ${dates.length} days of history, anchored on 28-day baseline ROAS ${baselineRoas.toFixed(2)}x. Goal ${goal}/100, Pace ${pace}/100.`,
       generated_at: new Date().toISOString(),
       valid_until: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
     };

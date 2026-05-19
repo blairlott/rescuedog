@@ -79,7 +79,7 @@ const PROVIDERS: ProviderDef[] = [
 
 export default function KennelIntegrationsPage() {
   const { data: roleInfo } = useUserRole();
-  const isAdmin = !!(roleInfo?.isOwner || roleInfo?.profile);
+  const isAdmin = !!roleInfo?.isAdminOrOwner;
   const [rows, setRows] = useState<CredRow[]>([]);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [reveal, setReveal] = useState<Record<string, boolean>>({});

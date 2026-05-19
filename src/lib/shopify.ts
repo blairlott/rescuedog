@@ -100,6 +100,7 @@ function wineRowToProduct(row: any): ShopifyProduct {
       },
       options: [],
       vinoshipperCartUrl: row.vinoshipper_cart_url ?? null,
+      vinoshipperProductId: row.vinoshipper_product_id ?? null,
       productKind: "wine",
     },
   };

@@ -731,7 +731,10 @@ async function handle(req: Request): Promise<Response> {
   }
 
   const token = Deno.env.get("META_ADS_ACCESS_TOKEN");
-  const accountId = Deno.env.get("META_ADS_ACCOUNT_ID") ?? body?.account_id;
+  // Normalize ad account id to always include the `act_` prefix that Meta Graph requires,
+  // regardless of how the secret / request body was stored ("act_123" or "123").
+  const rawAccountId = Deno.env.get("META_ADS_ACCOUNT_ID") ?? body?.account_id ?? "";
+  const accountId = rawAccountId ? `act_${String(rawAccountId).replace(/^act_/, "")}` : "";
   if (!token) return json({ error: "META_ADS_ACCESS_TOKEN missing" }, 500);
 
   // --- List campaigns ---

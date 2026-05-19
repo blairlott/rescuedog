@@ -71,8 +71,17 @@ export async function addLinesAndOpenCart(lines: VsCartLine[]): Promise<void> {
  * to checkout" flow — skips the slide-out drawer entirely.
  */
 export async function addLinesAndGoToHostedCart(lines: VsCartLine[]): Promise<void> {
+  // Open a blank tab synchronously inside the user gesture so popup
+  // blockers don't kill it during the async injector work below. We
+  // then redirect that tab to the VS hosted cart once we have the URL.
+  // This keeps the original tab (with the Shopify cart drawer) alive
+  // so the dual wine + merch handoff doesn't lose state.
+  const popup = typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
   const vs = await waitForVinoshipper(10000);
-  if (!vs) throw new Error("Vinoshipper Injector did not load");
+  if (!vs) {
+    try { popup?.close(); } catch {}
+    throw new Error("Vinoshipper Injector did not load");
+  }
   if (!vs.getCart?.()?.cartId) {
     await vs.initCartData?.(null);
   }
@@ -89,5 +98,16 @@ export async function addLinesAndGoToHostedCart(lines: VsCartLine[]): Promise<vo
   }
   checkoutUrl.searchParams.set("ret", window.location.href);
   const finalUrl = vs.getLinkParams ? await vs.getLinkParams(checkoutUrl) : checkoutUrl;
-  window.location.href = finalUrl.toString();
+  const href = finalUrl.toString();
+  if (popup && !popup.closed) {
+    try {
+      popup.location.href = href;
+      popup.focus?.();
+      return;
+    } catch {
+      // Cross-origin assign failed — fall through to same-tab redirect.
+    }
+  }
+  // Popup blocked or unavailable — preserve old behavior so checkout still works.
+  window.location.href = href;
 }

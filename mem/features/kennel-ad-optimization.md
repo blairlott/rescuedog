@@ -1,24 +1,36 @@
 ---
 name: Kennel Ad Optimization Stack
-description: DoW bid modifiers, geo bid modifiers, seasonality budget curve, and 60-90 day retention-risk view feeding ad bid/budget rules
+description: DoW/geo/seasonality modifiers, retention-risk view, nightly ad ingestion + Mailchimp audience sync with retry, ingestion status dashboard
 type: feature
 ---
 
-CONSUMER-only (non-wine-club, non-cancelled) Vinoshipper orders are the canonical source for all ad-optimization signals. Wine club shipments are batch-processed Mondays and would otherwise inflate ROAS and DoW patterns.
+CONSUMER-only (non-wine-club, non-cancelled) Vinoshipper orders are the canonical source for all ad-optimization signals.
 
-Tables (all RLS readable by `can_view_kennel`; writes service-role only):
-- `kennel_bid_modifiers` — per day-of-week multiplier, 90d window, clamped [0.5, 2.0], min 3 active days
-- `kennel_geo_modifiers` — per state, lifetime LTV vs median, clamped [0.5, 2.0], min 25 customers, tiered A/B/C
-- `kennel_seasonality_curve` — month-of-year revenue index vs avg month, clamped [0.3, 3.0]
+Tables (RLS via `can_view_kennel`; writes service-role only):
+- `kennel_bid_modifiers`, `kennel_geo_modifiers`, `kennel_seasonality_curve`
+- `kennel_ingest_runs` — per-target nightly run log (target/status/attempts/duration/error)
 
-View:
-- `kennel_retention_risk_summary` — aggregated per state, customers whose last CONSUMER order was 60–90 days ago (median time-to-2nd-order = 77d). Feeds Meta Custom Audience and Mailchimp winback.
+View: `kennel_retention_risk_summary` — 60–90d winback, aggregated per state.
 
-Recompute edge functions (auth via `KENNEL_INGEST_SECRET` header or service-role JWT):
-- `kennel-recompute-bid-modifiers` — nightly 07:10 UTC
-- `kennel-recompute-geo-modifiers` — nightly 07:15 UTC
-- `kennel-recompute-seasonality` — nightly 07:20 UTC
+Recompute edge functions (nightly):
+- `kennel-recompute-bid-modifiers` 07:10 UTC
+- `kennel-recompute-geo-modifiers` 07:15 UTC
+- `kennel-recompute-seasonality` 07:20 UTC
 
-UI: surfaced under "Ad optimization" section on `/kennel` dashboard (BidModifiersPanel, SeasonalityPanel, GeoModifiersPanel, RetentionRiskPanel). Each has a manual Recompute button.
+Nightly ingestion (07:00 UTC):
+- Orchestrator: `kennel-nightly-ingest` → calls meta/google/instacart ingest + `kennel-mailchimp-sync`
+- 3× retry with exponential backoff (2s, 6s) per target
+- Logs every attempt to `kennel_ingest_runs`
+- Auth: `KENNEL_INGEST_SECRET` header OR service-role JWT
 
-Next step (not yet built): the Meta/Google ad sync jobs should read these tables and apply the modifiers as dayparting / state bid adjustments / monthly budget multipliers.
+Mailchimp audience sync (`kennel-mailchimp-sync`):
+- Reads vs_transactions 60–90d window, dedups by email
+- Batch upserts to Mailchimp list (`MAILCHIMP_AUDIENCE_ID`) in chunks of 500 via `/lists/{id}` POST with `update_existing: true`
+- Tags members `signal_winback_60_90`
+- Tied-house compliant: audience-sync only; human triggers the campaign with approved templates that call `compliant_retailer_set()` at send time
+
+UI (under `/kennel` "Data pipeline health"):
+- `IngestionStatusPanel` — last run per target + Run Now button + recent failures
+- `CronStatusPanel` — every kennel-* cron with stale/failed badges
+
+`audience_update` recommendations (Meta ad-set targeting + lookalikes + Advantage+) execute via `kennel-execute` `dispatchMetaAudience`, with full rollback to prior `targeting` + `targeting_automation` from `rollback_state`.

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend, ReferenceLine,
+  CartesianGrid, Tooltip, Legend, ReferenceLine, ReferenceArea,
 } from "recharts";
 import { TrendingUp, RefreshCw } from "lucide-react";
 import {
@@ -125,6 +125,15 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
       .slice(0, horizonDays);
     return [...hist, ...future];
   }, [data, history, horizonDays, today]);
+
+  // Boundary tick = the date where forecast begins (first future point), or today if absent.
+  const boundaryDate = useMemo(() => {
+    const todayIso = isoDay(today);
+    const firstFuture = chartData.find((p) => p.date > todayIso);
+    const lastHist = [...chartData].reverse().find((p) => p.date <= todayIso);
+    return firstFuture?.date ?? lastHist?.date ?? todayIso;
+  }, [chartData, today]);
+  const forecastEndDate = chartData.length ? chartData[chartData.length - 1].date : boundaryDate;
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
@@ -249,7 +258,22 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <ReferenceLine yAxisId="left" x={isoDay(today)} stroke="hsl(var(--foreground))" strokeDasharray="2 2" label={{ value: "Today", position: "top", fontSize: 10 }} />
+                <ReferenceArea
+                  yAxisId="left"
+                  x1={boundaryDate}
+                  x2={forecastEndDate}
+                  fill="hsl(var(--primary) / 0.06)"
+                  stroke="none"
+                  label={{ value: "FORECAST", position: "insideTopRight", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                />
+                <ReferenceLine
+                  yAxisId="left"
+                  x={boundaryDate}
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  strokeDasharray="4 3"
+                  label={{ value: "▼ Today", position: "top", fontSize: 11, fill: "hsl(var(--primary))", fontWeight: 700 }}
+                />
                 <Area yAxisId="left" dataKey="revenue_upper" stroke="none" fill="hsl(var(--primary) / 0.15)" name="Revenue range" stackId="band" />
                 <Area yAxisId="left" dataKey="revenue_lower" stroke="none" fill="hsl(var(--background))" stackId="band" legendType="none" />
                 <Line yAxisId="left" type="monotone" dataKey="spend" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Spend" />

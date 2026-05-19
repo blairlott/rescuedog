@@ -12,6 +12,7 @@ import {
   shopifyCartDiscountCodesUpdate,
 } from "@/lib/shopify";
 import { analytics } from "@/lib/analytics";
+import { logAbEvent } from "@/lib/abEvents";
 
 export type { CartItem, ShopifyProduct };
 
@@ -69,6 +70,10 @@ export const useCartStore = create<CartStore>()(
           item_variant: item.variantTitle,
           price: Number(item.price?.amount ?? 0),
           quantity: item.quantity,
+        });
+        // A/B funnel: log to our own table so /admin/ab-results can compare arms.
+        logAbEvent("add_to_cart", {
+          valueCents: Math.round(Number(item.price?.amount ?? 0) * 100 * item.quantity),
         });
 
         // Wine: local only.

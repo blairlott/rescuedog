@@ -86,7 +86,7 @@ export const CartDrawer = () => {
   const { purchaseAllowed, setOverrideUS } = useGeo();
   const { t } = useTranslation();
   const isMerchRoute = location.pathname.startsWith("/merch");
-  const { items, isLoading, isSyncing, updateQuantity, removeItem, syncCart, addItem, getShopifyCheckoutUrl, getCheckoutUrl, clearCart } = useCartStore();
+  const { items, isLoading, isSyncing, updateQuantity, removeItem, syncCart, addItem, getShopifyCheckoutUrl, clearCart } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
   // Split cart into wine + merch groups so each can check out via the right
@@ -284,17 +284,10 @@ export const CartDrawer = () => {
       .filter((l) => Number.isFinite(l.productId) && l.quantity > 0);
 
     if (vsLines.length === 0) {
-      // Fallback — no IDs mapped, fall back to legacy deep-link so the
-      // customer still has *some* path to check out.
-      const url = getCheckoutUrl();
-      if (!url) {
-        toast.error("Wine checkout unavailable", {
-          description: "We couldn't reach Vinoshipper. Please refresh and try again.",
-        });
-        return;
-      }
-      logCheckoutEvent("wine_handoff_deeplink_fallback", { url });
-      window.location.href = url;
+      toast.error("Wine checkout unavailable", {
+        description: "This wine is missing its checkout mapping. Please refresh and try again.",
+      });
+      logCheckoutEvent("wine_injector_missing_product_ids");
       return;
     }
 
@@ -305,14 +298,8 @@ export const CartDrawer = () => {
     } catch (err) {
       console.error("[checkout] VS injector failed:", err);
       logCheckoutEvent("wine_injector_failed", { error: String(err) });
-      // Last-ditch: deep-link so the order can still happen.
-      const url = getCheckoutUrl();
-      if (url) {
-        window.location.href = url;
-        return;
-      }
       toast.error("Wine checkout unavailable", {
-        description: "Please refresh and try again.",
+        description: "We couldn't load the secure cart. Please refresh and try again.",
       });
     }
   };

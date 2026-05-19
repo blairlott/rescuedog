@@ -7,6 +7,305 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { vsFetch, type VsWebhookPayload } from "../_shared/vinoshipper.ts";
 import { forwardPurchaseConversion } from "../_shared/serverConversions.ts";
+import { TEMPLATES } from "../_shared/transactional-email-templates/registry.ts";
+
+// ---------------------------------------------------------------------------
+// Gift-recipient / club-shipment email dispatch
+// ---------------------------------------------------------------------------
+// Returns true if the named order email template is enabled in CMS settings.
+async function orderEmailEnabled(
+  supabase: ReturnType<typeof createClient>,
+  templateName: string,
+): Promise<boolean> {
+  try {
+    const { data } = await supabase
+      .from("order_email_settings")
+      .select("enabled")
+      .eq("template_name", templateName)
+      .maybeSingle();
+    // Default to enabled if no row exists yet.
+    return (data as any)?.enabled !== false;
+  } catch {
+    return true;
+  }
+}
+
+// Invokes send-transactional-email with a stable idempotency key so
+// repeat webhook deliveries do not double-send.
+async function enqueueOrderEmail(
+  supabase: ReturnType<typeof createClient>,
+  templateName: string,
+  recipientEmail: string,
+  templateData: Record<string, any>,
+  idempotencyKey: string,
+): Promise<string> {
+  if (!TEMPLATES[templateName]) {
+    return `template '${templateName}' not registered`;
+  }
+  if (!(await orderEmailEnabled(supabase, templateName))) {
+    return `template '${templateName}' disabled in CMS`;
+  }
+  const { error } = await supabase.functions.invoke("send-transactional-email", {
+    body: {
+      templateName,
+      recipientEmail,
+      idempotencyKey,
+      templateData,
+    },
+  });
+  if (error) return `enqueue err: ${String(error.message ?? error)}`;
+  return "email enqueued";
+}
+
+// ---------------------------------------------------------------------------
+// Match a pending gift intent to an incoming Vinoshipper order.
+// Strategy:
+//   1. If we have a linked customer_profiles row with a VS customer ID,
+//      look up the most recent unmatched intent for that customer.
+//   2. Else, try buyer_email match.
+//   3. Mark the intent as matched (claim it) so subsequent webhooks don't
+//      re-fire the email.
+// ---------------------------------------------------------------------------
+async function claimGiftIntentForOrder(
+  supabase: ReturnType<typeof createClient>,
+  vsOrderId: string,
+  vsCustomerId: string | number | null,
+  buyerEmail: string | null,
+): Promise<any | null> {
+  // First: already-claimed? (idempotency on retried webhooks)
+  const { data: alreadyClaimed } = await supabase
+    .from("wine_order_gift_intents")
+    .select("*")
+    .eq("matched_vs_order_id", String(vsOrderId))
+    .maybeSingle();
+  if (alreadyClaimed) return alreadyClaimed;
+
+  // Else look up unmatched intent by VS customer or email.
+  let query = supabase
+    .from("wine_order_gift_intents")
+    .select("*")
+    .is("matched_vs_order_id", null)
+    .gte("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (vsCustomerId) {
+    query = query.eq("vinoshipper_customer_id", String(vsCustomerId));
+  } else if (buyerEmail) {
+    query = query.ilike("buyer_email", buyerEmail);
+  } else {
+    return null;
+  }
+  const { data: intent } = await query.maybeSingle();
+  if (!intent) return null;
+
+  // Claim it.
+  await supabase
+    .from("wine_order_gift_intents")
+    .update({
+      matched_vs_order_id: String(vsOrderId),
+      matched_at: new Date().toISOString(),
+    })
+    .eq("id", (intent as any).id);
+  return intent;
+}
+
+// Fetch tracking + line-item enrichment from VS API. Best effort.
+async function fetchVsOrderDetails(vsOrderId: string): Promise<any | null> {
+  try {
+    return await vsFetch<Record<string, any>>(`/orders/${vsOrderId}`);
+  } catch (e) {
+    console.warn(`[vs-order-fetch] ${vsOrderId} failed: ${String(e)}`);
+    return null;
+  }
+}
+
+// Enrich a VS line list with our local wine_products data (tasting notes,
+// pairings). Returns ordered bottle list for emails.
+async function enrichBottles(
+  supabase: ReturnType<typeof createClient>,
+  vsLines: Array<{ productId?: string | number; sku?: string; title?: string; name?: string; quantity?: number }>,
+): Promise<Array<{ title: string; quantity: number; tastingNotes?: string; pairings?: string }>> {
+  if (!vsLines || vsLines.length === 0) return [];
+  const vsIds = vsLines
+    .map((l) => l.productId != null ? String(l.productId) : null)
+    .filter((x): x is string => x !== null);
+  let products: any[] = [];
+  if (vsIds.length > 0) {
+    const { data } = await supabase
+      .from("wine_products")
+      .select("vinoshipper_product_id, name, tasting_notes, food_pairings")
+      .in("vinoshipper_product_id", vsIds);
+    products = data ?? [];
+  }
+  return vsLines.map((l) => {
+    const match = products.find(
+      (p) => l.productId != null && String(p.vinoshipper_product_id) === String(l.productId),
+    );
+    return {
+      title: match?.name ?? l.title ?? l.name ?? `Product ${l.productId}`,
+      quantity: Number(l.quantity ?? 1),
+      tastingNotes: match?.tasting_notes ?? undefined,
+      pairings: match?.food_pairings ?? undefined,
+    };
+  });
+}
+
+function trackingUrlFor(carrier: string | null | undefined, trackingNumber: string | null | undefined): string | undefined {
+  if (!trackingNumber) return undefined;
+  const c = (carrier ?? "").toLowerCase();
+  if (c.includes("fedex")) return `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(trackingNumber)}`;
+  if (c.includes("ups"))   return `https://www.ups.com/track?tracknum=${encodeURIComponent(trackingNumber)}`;
+  if (c.includes("usps"))  return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(trackingNumber)}`;
+  return `https://www.google.com/search?q=${encodeURIComponent(trackingNumber + ' tracking')}`;
+}
+
+// ORDER created/updated: send "gift incoming" if matching gift intent.
+async function maybeSendGiftIncomingEmail(
+  supabase: ReturnType<typeof createClient>,
+  vsOrderId: string,
+  vsCustomerId: string | number | null,
+  buyerEmail: string | null,
+): Promise<string> {
+  const intent = await claimGiftIntentForOrder(supabase, vsOrderId, vsCustomerId, buyerEmail);
+  if (!intent) return "no gift intent";
+  if ((intent as any).recipient_emailed_at) return "gift incoming already sent";
+  const note = await enqueueOrderEmail(
+    supabase,
+    "gift-recipient-incoming",
+    (intent as any).recipient_email,
+    {
+      recipientName: (intent as any).recipient_name,
+      buyerName: (intent as any).buyer_name,
+      giftMessage: (intent as any).gift_message,
+      bottleCount: (intent as any).bottle_count,
+    },
+    `gift-incoming:${vsOrderId}`,
+  );
+  await supabase
+    .from("wine_order_gift_intents")
+    .update({ recipient_emailed_at: new Date().toISOString() })
+    .eq("id", (intent as any).id);
+  return `gift incoming → ${note}`;
+}
+
+// TRACKING_NUMBER event (or order SHIPPED): send "gift shipped" or
+// "club shipment shipped" depending on source.
+async function handleTrackingForOrder(
+  supabase: ReturnType<typeof createClient>,
+  vsOrderId: string,
+): Promise<string> {
+  const details = await fetchVsOrderDetails(vsOrderId);
+  const trackingNumber: string | null = (details as any)?.trackingNumber ?? (details as any)?.tracking_number ?? null;
+  const carrier: string | null = (details as any)?.carrier ?? (details as any)?.shippingCarrier ?? null;
+  const trackingUrl = trackingUrlFor(carrier, trackingNumber);
+  const lineItems = (details as any)?.lineItems ?? (details as any)?.line_items ?? [];
+  const bottles = await enrichBottles(supabase, lineItems);
+
+  const notes: string[] = [];
+
+  // Wine club shipment? Look up by vinoshipper_order_id.
+  const { data: clubShipment } = await supabase
+    .from("wine_club_shipments")
+    .select("id, membership_id, shipment_date")
+    .eq("vinoshipper_order_id", String(vsOrderId))
+    .maybeSingle();
+
+  if (clubShipment) {
+    const { data: membership } = await supabase
+      .from("wine_club_memberships")
+      .select("user_id, is_gift, gift_recipient_name, gift_recipient_email, gift_message")
+      .eq("id", (clubShipment as any).membership_id)
+      .maybeSingle();
+    const shipmentLabel = (clubShipment as any).shipment_date
+      ? new Date((clubShipment as any).shipment_date).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+      : undefined;
+
+    // Branch: club gift vs club regular member email.
+    if (membership && (membership as any).is_gift && (membership as any).gift_recipient_email) {
+      // Try to resolve buyer name from profiles.
+      let buyerName: string | undefined;
+      if ((membership as any).user_id) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", (membership as any).user_id)
+          .maybeSingle();
+        buyerName = (prof as any)?.full_name ?? undefined;
+      }
+      const note = await enqueueOrderEmail(
+        supabase,
+        "club-gift-shipment-shipped",
+        (membership as any).gift_recipient_email,
+        {
+          recipientName: (membership as any).gift_recipient_name,
+          buyerName,
+          shipmentLabel,
+          bottles,
+          trackingUrl,
+          trackingNumber,
+          carrier,
+          giftMessage: (membership as any).gift_message,
+        },
+        `club-gift-shipped:${vsOrderId}`,
+      );
+      notes.push(`club gift shipped → ${note}`);
+    } else if (membership && (membership as any).user_id) {
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", (membership as any).user_id)
+        .maybeSingle();
+      if ((prof as any)?.email) {
+        const note = await enqueueOrderEmail(
+          supabase,
+          "club-shipment-shipped",
+          (prof as any).email,
+          {
+            memberName: (prof as any).full_name,
+            shipmentLabel,
+            bottles,
+            trackingUrl,
+            trackingNumber,
+            carrier,
+          },
+          `club-shipped:${vsOrderId}`,
+        );
+        notes.push(`club shipped → ${note}`);
+      }
+    }
+  }
+
+  // A la carte gift? Look up matched intent.
+  const { data: intent } = await supabase
+    .from("wine_order_gift_intents")
+    .select("*")
+    .eq("matched_vs_order_id", String(vsOrderId))
+    .maybeSingle();
+  if (intent && !(intent as any).recipient_shipped_emailed_at) {
+    const note = await enqueueOrderEmail(
+      supabase,
+      "gift-recipient-shipped",
+      (intent as any).recipient_email,
+      {
+        recipientName: (intent as any).recipient_name,
+        buyerName: (intent as any).buyer_name,
+        giftMessage: (intent as any).gift_message,
+        bottles,
+        trackingUrl,
+        trackingNumber,
+        carrier,
+      },
+      `gift-shipped:${vsOrderId}`,
+    );
+    await supabase
+      .from("wine_order_gift_intents")
+      .update({ recipient_shipped_emailed_at: new Date().toISOString() })
+      .eq("id", (intent as any).id);
+    notes.push(`gift shipped → ${note}`);
+  }
+
+  return notes.length > 0 ? notes.join(" | ") : "no recipient email applicable";
+}
 
 // Launch cutoff: any Vinoshipper customer created before this date is treated
 // as legacy and never enters the new-site welcome series.

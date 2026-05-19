@@ -117,7 +117,12 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const got = req.headers.get("x-vinoshipper-secret");
+    // Accept secret via header OR ?token= query param (Vinoshipper's webhook
+    // config UI only allows URL + type, no custom headers).
+    const got =
+      req.headers.get("x-vinoshipper-secret") ??
+      url.searchParams.get("token") ??
+      url.searchParams.get("secret");
     if (got !== expected) {
       await supabase.from("vinoshipper_webhook_logs").insert({
         subject: "UNKNOWN",

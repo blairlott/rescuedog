@@ -69,6 +69,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
   const spanDays = Math.max(1, daysBetween(start, end));
   const bucket = pickBucket(spanDays);
   const keyOf = (date: string) => bucket === "day" ? date : date.slice(0, 7);
+  const todayKey = useMemo(() => keyOf(isoDay(today)), [today, bucket]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["forecast", activePlatform, horizonDays, lookbackDays],
@@ -165,12 +166,11 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
   });
 
   const chartData = useMemo(() => {
-    const todayIso = isoDay(today);
-    const hist = (history ?? []).filter((p) => p.date <= todayIso);
+    const hist = (history ?? []).filter((p) => p.date <= todayKey);
     // Re-bucket the forecast series so its granularity matches history (avoids a daily/monthly
     // x-axis cliff at the "today" boundary on long ranges).
     const futRaw = (data?.series?.points ?? [])
-      .filter((p) => p.date > todayIso)
+      .filter((p) => keyOf(p.date) > todayKey)
       .slice(0, horizonDays);
     const futMap = new Map<string, Point>();
     for (const p of futRaw) {
@@ -189,11 +189,10 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((p) => ({ ...p, roas: p.spend > 0 ? p.revenue / p.spend : 0 }));
     return [...hist, ...future];
-  }, [data, history, horizonDays, today, bucket]);
+  }, [data, history, horizonDays, todayKey, bucket]);
 
   // Boundary tick = today, bucketed the same way as the x-axis so it lines up with a real tick.
   // (Comparing "2026-05" > "2026-05-19" lexicographically gives the wrong answer — always compare in bucket-space.)
-  const todayKey = useMemo(() => keyOf(isoDay(today)), [today, bucket]);
   const boundaryDate = useMemo(() => {
     // Prefer an exact-match tick on the chart; fall back to todayKey so the line still renders.
     const exact = chartData.find((p) => p.date === todayKey);
@@ -203,6 +202,15 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     return firstFuture?.date ?? lastHist?.date ?? todayKey;
   }, [chartData, todayKey]);
   const forecastEndDate = chartData.length ? chartData[chartData.length - 1].date : boundaryDate;
+  const todayMarkerRatio = useMemo(() => {
+    if (chartData.length <= 1) return null;
+    const exactIndex = chartData.findIndex((p) => p.date === todayKey);
+    if (exactIndex >= 0) return exactIndex / (chartData.length - 1);
+    const futureIndex = chartData.findIndex((p) => p.date > todayKey);
+    if (futureIndex < 0) return 1;
+    if (futureIndex === 0) return 0;
+    return (futureIndex - 0.5) / (chartData.length - 1);
+  }, [chartData, todayKey]);
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
@@ -356,7 +364,18 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
               />
             </div>
           )}
-          <div style={{ width: "100%", height: 280 }}>
+          <div className="relative" style={{ width: "100%", height: 280 }}>
+            {todayMarkerRatio !== null && (
+              <div
+                className="pointer-events-none absolute top-0 bottom-8 z-10"
+                style={{ left: `calc(${todayMarkerRatio * 100}% + ${28 - todayMarkerRatio * 42}px)` }}
+              >
+                <div className="h-full border-l-2 border-foreground" />
+                <div className="absolute -top-4 -translate-x-1/2 bg-background px-1 text-[10px] font-extrabold uppercase tracking-brand text-foreground">
+                  Today
+                </div>
+              </div>
+            )}
             <ResponsiveContainer>
               <ComposedChart data={chartData} margin={{ top: 24, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -379,19 +398,26 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                   stroke="none"
                   label={{ value: "FORECAST →", position: "insideTopRight", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 />
-                <ReferenceLine
-                  yAxisId="left"
-                  x={boundaryDate}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  strokeDasharray="4 3"
-                  label={{ value: "TODAY", position: "insideBottomLeft", fontSize: 10, fill: "hsl(var(--primary))", fontWeight: 700, offset: 6 }}
-                />
                 <Area yAxisId="left" dataKey="revenue_upper" stroke="none" fill="hsl(var(--primary) / 0.15)" name="Revenue range" stackId="band" />
                 <Area yAxisId="left" dataKey="revenue_lower" stroke="none" fill="hsl(var(--background))" stackId="band" legendType="none" />
                 <Line yAxisId="left" type="monotone" dataKey="spend" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Spend" />
                 <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Revenue" />
                 <Line yAxisId="right" type="monotone" dataKey="roas" stroke="hsl(220 70% 45%)" strokeWidth={2} strokeDasharray="4 4" dot={false} name="ROAS" />
+                <ReferenceLine
+                  yAxisId="left"
+                  x={boundaryDate}
+                  stroke="hsl(var(--foreground))"
+                  strokeWidth={5}
+                  ifOverflow="extendDomain"
+                  label={{ value: "TODAY", position: "top", fontSize: 11, fill: "hsl(var(--foreground))", fontWeight: 800, offset: 12 }}
+                />
+                <ReferenceLine
+                  yAxisId="left"
+                  x={boundaryDate}
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  ifOverflow="extendDomain"
+                />
               </ComposedChart>
             </ResponsiveContainer>
           </div>

@@ -13,21 +13,17 @@
 // Docs: https://developer.yahooinc.com/dsp/api/reference/  (auth + reports)
 // deno-lint-ignore-file no-explicit-any
 import { CORS, J, FactRow, isAuthorized, makeAdminClient, writeFacts, ensureChannel } from "../_shared/facts-writer.ts";
-
-const CLIENT_ID     = Deno.env.get("YAHOO_DSP_CLIENT_ID");
-const CLIENT_SECRET = Deno.env.get("YAHOO_DSP_CLIENT_SECRET");
-const ADVERTISER_ID = Deno.env.get("YAHOO_DSP_ADVERTISER_ID");
+import { getCredentials } from "../_shared/credentials.ts";
 
 const TOKEN_URL  = "https://id.b2b.yahooinc.com/identity/oauth2/access_token?realm=dsp";
 const REPORT_URL = "https://dspapi.admanagerplus.yahoo.com/traffic/reports";
 
-async function getAccessToken(): Promise<string | null> {
-  if (!CLIENT_ID || !CLIENT_SECRET) return null;
+async function getAccessToken(clientId: string, clientSecret: string): Promise<string | null> {
   const body = new URLSearchParams({
     grant_type: "client_credentials",
     scope: "dsp-api-access",
-    client_id: CLIENT_ID,
-    client_secret: CLIENT_SECRET,
+    client_id: clientId,
+    client_secret: clientSecret,
   });
   const r = await fetch(TOKEN_URL, {
     method: "POST",
@@ -74,6 +70,15 @@ Deno.serve(async (req) => {
   const sb = makeAdminClient();
   if (!(await isAuthorized(req, sb))) return J(401, { error: "unauthorized" });
 
+  const creds = await getCredentials(sb, "yahoo_dsp", [
+    { key: "client_id",     envFallback: "YAHOO_DSP_CLIENT_ID" },
+    { key: "client_secret", envFallback: "YAHOO_DSP_CLIENT_SECRET" },
+    { key: "advertiser_id", envFallback: "YAHOO_DSP_ADVERTISER_ID" },
+  ]);
+  const CLIENT_ID = creds.client_id;
+  const CLIENT_SECRET = creds.client_secret;
+  const ADVERTISER_ID = creds.advertiser_id;
+
   if (!CLIENT_ID || !CLIENT_SECRET || !ADVERTISER_ID) {
     return J(200, { ok: true, skipped: "no_yahoo_dsp_credentials" });
   }
@@ -85,7 +90,7 @@ Deno.serve(async (req) => {
   if (!channel_id) return J(500, { error: "no yahoo channel row" });
 
   try {
-    const token = await getAccessToken();
+    const token = await getAccessToken(CLIENT_ID, CLIENT_SECRET);
     if (!token) return J(500, { error: "failed to obtain yahoo dsp access token" });
     const rows = await fetchReportRows(token, days);
     const facts = rows.map((r) => mapRow(channel_id, r));

@@ -273,7 +273,14 @@ export const CartDrawer = () => {
     await updateQuantity(target.variantId, target.quantity + bottlesToCase);
   };
 
-  const handleCheckoutWines = async () => {
+  const handleCheckoutWines = async (preOpenedPopup?: Window | null) => {
+    // Synchronously open the popup INSIDE the click handler if the
+    // caller didn't already. The async work below (gift intent, supabase,
+    // injector boot) takes long enough that browsers will block a late
+    // window.open. Pre-opening as about:blank preserves the user gesture.
+    const popup =
+      preOpenedPopup ??
+      (typeof window !== "undefined" ? window.open("about:blank", "_blank") : null);
     // Snapshot for "re-order last shipment"
     try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items, savedAt: new Date().toISOString() })); } catch {}
 
@@ -288,6 +295,7 @@ export const CartDrawer = () => {
       .filter((l) => Number.isFinite(l.productId) && l.quantity > 0);
 
     if (vsLines.length === 0) {
+      try { popup?.close(); } catch {}
       toast.error("Wine checkout unavailable", {
         description: "This wine is missing its checkout mapping. Please refresh and try again.",
       });
@@ -302,6 +310,7 @@ export const CartDrawer = () => {
     const liveGift = readGiftMode();
     if (liveGift.enabled) {
       if (!isGiftModeReady(liveGift)) {
+        try { popup?.close(); } catch {}
         toast.error("Recipient email required", {
           description: "Gift Mode is on — please add the recipient's email so we can send their gift notifications.",
         });
@@ -357,8 +366,9 @@ export const CartDrawer = () => {
       // so the webhook can stitch the resulting purchase to the right arm.
       const { data: authUserForAb } = await supabase.auth.getUser();
       recordCheckoutIntent({ email: authUserForAb?.user?.email ?? null, cartId: null });
-      await addLinesAndGoToHostedCart(vsLines);
+      await addLinesAndGoToHostedCart(vsLines, popup);
     } catch (err) {
+      try { popup?.close(); } catch {}
       console.error("[checkout] VS injector failed:", err);
       logCheckoutEvent("wine_injector_failed", { error: String(err) });
       toast.error("Wine checkout unavailable", {
@@ -399,7 +409,20 @@ export const CartDrawer = () => {
     if (hasMerch && !hasWine) {
       const url = getShopifyCheckoutUrl();
       if (url) {
-        pendingShopifyUrlRef.current = url;
+        // Open the new tab synchronously inside this click so popup
+        // blockers don't fire after the 700ms interstitial delay.
+        const win = window.open(url, "_blank", "noopener,noreferrer");
+        try {
+          localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items: merchItems, savedAt: new Date().toISOString() }));
+        } catch {}
+        if (!win) {
+          logCheckoutEvent("merch_handoff_popup_blocked_fallback");
+          setIsOpen(false);
+          window.location.href = url;
+          return;
+        }
+        logCheckoutEvent("merch_handoff_new_tab");
+        // Visual confirmation only — popup is already opening.
         setShopifyHandoffOpen(true);
       } else {
         handleCheckoutMerch();
@@ -411,39 +434,49 @@ export const CartDrawer = () => {
       return;
     }
     // Both: surface the compliance explainer first so the customer isn't
-    // surprised by two tabs / two charges / two emails.
+    // surprised by two tabs / two charges / two emails. The actual popup
+    // opening happens inside runDualCheckout, still within a user gesture
+    // (the confirm button click).
     setDualConfirmOpen(true);
   };
 
-  // Fires once the branded interstitial finishes — opens Shopify in a new
-  // tab, falls back to same-tab nav if the popup is blocked.
+  // Interstitial is now purely visual — the new tab was already opened
+  // synchronously inside the click handler to avoid popup blockers.
   const completeShopifyHandoff = () => {
     setShopifyHandoffOpen(false);
-    const url = pendingShopifyUrlRef.current;
-    pendingShopifyUrlRef.current = null;
-    if (!url) return;
-    logCheckoutEvent("merch_handoff_new_tab");
     setIsOpen(false);
-    const win = window.open(url, "_blank", "noopener,noreferrer");
-    if (!win) {
-      logCheckoutEvent("merch_handoff_popup_blocked_fallback");
-      window.location.href = url;
-    }
   };
 
   const runDualCheckout = () => {
     setDualConfirmOpen(false);
-    // WINE FIRST. Open Vinoshipper modal only — do NOT open Shopify yet.
-    // After the wine order is placed, the VS modal renders a "Continue to
-    // merch checkout" CTA. That click is a fresh user gesture, so the
-    // Shopify popup is not blocked. If the customer closes the modal
-    // without clicking, we already wrote a pending_merch_handoffs row so
-    // the cron can email a one-tap link to finish the merch order.
-    logCheckoutEvent("dual_wine_first_started", {
+    // Open BOTH popups synchronously inside this confirm-button click —
+    // that's the only gesture we get, so any window.open() that happens
+    // after the async VS injector boot would be blocked by Safari/Chrome.
+    // Merch goes first (URL is already ready), wine popup is handed to
+    // the injector to redirect once the VS hosted cart URL resolves.
+    const merchUrl = getShopifyCheckoutUrl();
+    const merchPopup = merchUrl ? window.open(merchUrl, "_blank", "noopener,noreferrer") : null;
+    const winePopup = window.open("about:blank", "_blank");
+    logCheckoutEvent("dual_checkout_started", {
       wine_items: wineItems.length,
       merch_items: merchItems.length,
+      merch_popup_blocked: !merchPopup,
+      wine_popup_blocked: !winePopup,
     });
-    handleCheckoutWines();
+    if (merchUrl && !merchPopup) {
+      // Merch popup was blocked — surface a clear retry rather than dropping
+      // the order. Wine popup (if it opened) gets closed so we don't leave
+      // an orphan blank tab.
+      try { winePopup?.close(); } catch {}
+      toast.error("Please allow popups", {
+        description: "Your browser blocked the checkout tabs. Allow popups for this site, then click Checkout again.",
+      });
+      return;
+    }
+    try {
+      localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items: merchItems, savedAt: new Date().toISOString() }));
+    } catch {}
+    handleCheckoutWines(winePopup);
   };
 
   return (

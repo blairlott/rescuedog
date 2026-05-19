@@ -280,11 +280,9 @@ export const CartDrawer = () => {
     }
     logCheckoutEvent("wine_handoff", { url });
     setIsOpen(false);
-    const win = window.open(url, "_blank", "noopener,noreferrer");
-    if (!win) {
-      // Popup blocked — fall back to same-tab nav so checkout still works.
-      window.location.href = url;
-    }
+    // Same-tab handoff so the preview (and embedded contexts) doesn't try to
+    // pop a new window — Vinoshipper takes over the current tab.
+    window.location.href = url;
   };
 
   const handleCheckoutMerch = () => {
@@ -301,10 +299,7 @@ export const CartDrawer = () => {
       localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items: merchItems, savedAt: new Date().toISOString() }));
     } catch {}
     setIsOpen(false);
-    const win = window.open(url, "_blank", "noopener,noreferrer");
-    if (!win) {
-      window.location.href = url;
-    }
+    window.location.href = url;
   };
 
   // Smart sequential checkout: combines wine (Vinoshipper) and merch
@@ -341,14 +336,9 @@ export const CartDrawer = () => {
     const url = pendingShopifyUrlRef.current;
     pendingShopifyUrlRef.current = null;
     if (!url) return;
-    const win = window.open(url, "_blank");
-    if (!win || win.closed || typeof win.closed === "undefined") {
-      logCheckoutEvent("popup_blocked", { kind: "merch_only" });
-      window.location.href = url;
-      return;
-    }
-    logCheckoutEvent("merch_popup_opened");
+    logCheckoutEvent("merch_handoff_same_tab");
     setIsOpen(false);
+    window.location.href = url;
   };
 
   const runDualCheckout = () => {

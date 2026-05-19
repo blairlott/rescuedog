@@ -498,6 +498,7 @@ export function MixingBoardPanel() {
     setDraftDow({});
     setDraftMo({});
     setDraftGeo({});
+    setActivePreset("custom");
   };
 
   /** Scenario presets — apply a multiplier to every baseline value as a draft. */

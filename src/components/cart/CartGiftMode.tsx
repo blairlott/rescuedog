@@ -3,6 +3,7 @@ import { Gift, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { useGiftWrapSettings, GIFT_WRAP_DEFAULTS } from "@/hooks/useGiftWrapSettings";
 
 const STORAGE_KEY = "rdw_gift_mode";
 
@@ -23,11 +24,10 @@ export function readGiftMode(): GiftModeState {
   }
 }
 
-const WRAP_FEE_CENTS = 400;
-
 export function CartGiftMode({ onChange }: { onChange?: (s: GiftModeState) => void }) {
   const [state, setState] = useState<GiftModeState>(() => readGiftMode());
   const [open, setOpen] = useState(state.enabled);
+  const { enabled: wrapAvailable, feeCents } = useGiftWrapSettings();
 
   const update = (next: Partial<GiftModeState>) => {
     const merged = { ...state, ...next };
@@ -62,13 +62,15 @@ export function CartGiftMode({ onChange }: { onChange?: (s: GiftModeState) => vo
           </label>
           {state.enabled && (
             <>
-              <label className="flex items-center justify-between gap-3 text-xs">
-                <span>Add gift wrap (+${(WRAP_FEE_CENTS / 100).toFixed(2)})</span>
-                <Switch
-                  checked={state.wrap}
-                  onCheckedChange={(v) => update({ wrap: v })}
-                />
-              </label>
+              {wrapAvailable && (
+                <label className="flex items-center justify-between gap-3 text-xs">
+                  <span>Add gift wrap (+${(feeCents / 100).toFixed(2)})</span>
+                  <Switch
+                    checked={state.wrap}
+                    onCheckedChange={(v) => update({ wrap: v })}
+                  />
+                </label>
+              )}
               <Textarea
                 placeholder="Gift message (optional, 250 chars)"
                 maxLength={250}
@@ -95,4 +97,4 @@ export function CartGiftMode({ onChange }: { onChange?: (s: GiftModeState) => vo
   );
 }
 
-export const GIFT_WRAP_FEE_CENTS = WRAP_FEE_CENTS;
+export const GIFT_WRAP_FEE_CENTS = GIFT_WRAP_DEFAULTS.feeCents;

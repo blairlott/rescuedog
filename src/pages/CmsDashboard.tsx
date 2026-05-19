@@ -40,6 +40,8 @@ import {
 } from "lucide-react";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CART_DEFAULTS } from "@/hooks/useCartSettings";
+import { GIFT_WRAP_DEFAULTS } from "@/hooks/useGiftWrapSettings";
+import { Switch } from "@/components/ui/switch";
 import { WordpressImportPanel } from "@/components/cms/WordpressImportPanel";
 import { ContentLibraryPanel } from "@/components/cms/ContentLibraryPanel";
 import { PairingsPanel } from "@/components/cms/PairingsPanel";
@@ -138,6 +140,78 @@ function CartSettingsPanel() {
               <><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving...</>
             ) : (
               "Save Settings"
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Gift Wrap Settings Panel ────────────────────────────────
+function GiftWrapSettingsPanel() {
+  const { content, upsert } = useCmsContent("cart_settings");
+  const [enabled, setEnabled] = useState<boolean>(GIFT_WRAP_DEFAULTS.enabled);
+  const [feeDollars, setFeeDollars] = useState<string>(String(GIFT_WRAP_DEFAULTS.feeCents / 100));
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!initialized && content) {
+      const enabledRaw = getCmsValue(content, "gift_wrap", "enabled", String(GIFT_WRAP_DEFAULTS.enabled));
+      const feeRaw = getCmsValue(content, "gift_wrap", "fee_cents", String(GIFT_WRAP_DEFAULTS.feeCents));
+      setEnabled(enabledRaw === "true" || (enabledRaw as any) === true);
+      setFeeDollars((Number(feeRaw) / 100).toFixed(2));
+      setInitialized(true);
+    }
+  }, [content, initialized]);
+
+  const handleSave = () => {
+    const cents = Math.max(0, Math.round(parseFloat(feeDollars || "0") * 100));
+    upsert.mutate({
+      sectionKey: "gift_wrap",
+      content: { enabled: String(enabled), fee_cents: String(cents) },
+    });
+  };
+
+  return (
+    <div className="bg-background border border-border mt-6">
+      <div className="px-6 py-4 border-b border-border">
+        <h2 className="font-bold text-foreground">Gift Wrapping</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Toggle the gift wrap add-on in the cart and set its price. Off by
+          default — turn on once fulfillment is ready.
+        </p>
+      </div>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <Label className="text-sm font-medium">Offer gift wrapping</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              When off, the gift-wrap option is hidden from the cart's Gift mode.
+            </p>
+          </div>
+          <Switch checked={enabled} onCheckedChange={setEnabled} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="gift-wrap-fee" className="text-sm font-medium">Gift Wrap Fee (USD)</Label>
+          <Input
+            id="gift-wrap-fee"
+            type="number"
+            min="0"
+            step="0.01"
+            value={feeDollars}
+            onChange={(e) => setFeeDollars(e.target.value)}
+            className="max-w-xs"
+            disabled={!enabled}
+          />
+          <p className="text-xs text-muted-foreground">Charged once per order when the customer opts in.</p>
+        </div>
+        <div className="pt-4 border-t border-border">
+          <Button onClick={handleSave} disabled={upsert.isPending}>
+            {upsert.isPending ? (
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving...</>
+            ) : (
+              "Save Gift Wrap Settings"
             )}
           </Button>
         </div>
@@ -567,6 +641,7 @@ const CmsDashboard = () => {
           {/* ── Settings Tab ──────────────────────────────── */}
           <TabsContent value="settings">
             <CartSettingsPanel />
+            <GiftWrapSettingsPanel />
           </TabsContent>
 
           {/* ── Import Tab ────────────────────────────────── */}

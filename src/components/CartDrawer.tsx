@@ -22,7 +22,8 @@ import { CartTrustBlock } from "@/components/cart/CartTrustBlock";
 import { CartGiftToggle } from "@/components/cart/CartGiftToggle";
 import { CartSaveForLater } from "@/components/cart/CartSaveForLater";
 import { CartLineExtras } from "@/components/cart/CartLineExtras";
-import { CartGiftMode, GIFT_WRAP_FEE_CENTS, readGiftMode } from "@/components/cart/CartGiftMode";
+import { CartGiftMode, readGiftMode } from "@/components/cart/CartGiftMode";
+import { useGiftWrapSettings } from "@/hooks/useGiftWrapSettings";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Percent } from "lucide-react";
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
@@ -96,7 +97,8 @@ export const CartDrawer = () => {
   const wineTotal = wineItems.reduce((s, i) => s + parseFloat(i.price.amount) * i.quantity, 0);
   const merchSubtotal = merchItems.reduce((s, i) => s + parseFloat(i.price.amount) * i.quantity, 0);
   const giftMode = readGiftMode();
-  const wrapFee = giftMode.enabled && giftMode.wrap ? GIFT_WRAP_FEE_CENTS / 100 : 0;
+  const { enabled: wrapAvailable, feeCents: wrapFeeCents } = useGiftWrapSettings();
+  const wrapFee = wrapAvailable && giftMode.enabled && giftMode.wrap ? wrapFeeCents / 100 : 0;
   const merchTotal = merchSubtotal + wrapFee;
   // Bundles (Mother's Day 6 Pack / 6-Bottle Sampler) count as 6 bottles for
   // the shipping-included threshold and are excluded from member discounts —

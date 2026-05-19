@@ -107,35 +107,31 @@ Deno.serve(async (req) => {
   let rawBody = "";
 
   try {
-    // MANDATORY shared-secret check. If the secret env var is not configured,
-    // we refuse all webhook traffic — never silently fall through.
+    // Vinoshipper webhooks have no signing/secret mechanism, so we accept
+    // unauthenticated traffic. If VINOSHIPPER_WEBHOOK_SECRET is set (via
+    // header or ?token=), we honor it as an optional belt-and-suspenders
+    // check. Otherwise, we authenticate payloads downstream by re-fetching
+    // the referenced order/customer from the Vinoshipper API.
     const expected = Deno.env.get("VINOSHIPPER_WEBHOOK_SECRET");
-    if (!expected) {
-      console.error("[vinoshipper-webhook] VINOSHIPPER_WEBHOOK_SECRET not configured — refusing all traffic");
-      return new Response(JSON.stringify({ error: "webhook secret not configured" }), {
-        status: 503,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    // Accept secret via header OR ?token= query param (Vinoshipper's webhook
-    // config UI only allows URL + type, no custom headers).
-    const got =
-      req.headers.get("x-vinoshipper-secret") ??
-      url.searchParams.get("token") ??
-      url.searchParams.get("secret");
-    if (got !== expected) {
-      await supabase.from("vinoshipper_webhook_logs").insert({
-        subject: "UNKNOWN",
-        event: "UNAUTHORIZED",
-        identifier: "n/a",
-        payload: {},
-        processed: false,
-        error: "shared-secret mismatch or missing",
-      });
-      return new Response(JSON.stringify({ error: "unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (expected) {
+      const got =
+        req.headers.get("x-vinoshipper-secret") ??
+        url.searchParams.get("token") ??
+        url.searchParams.get("secret");
+      if (got !== expected) {
+        await supabase.from("vinoshipper_webhook_logs").insert({
+          subject: "UNKNOWN",
+          event: "UNAUTHORIZED",
+          identifier: "n/a",
+          payload: {},
+          processed: false,
+          error: "shared-secret mismatch or missing",
+        });
+        return new Response(JSON.stringify({ error: "unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     rawBody = await req.text();

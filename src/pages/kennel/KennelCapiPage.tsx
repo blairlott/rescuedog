@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Send, Activity, Flame, CheckCircle2, XCircle, Clock, ShieldCheck, Upload } from "lucide-react";
+import { Send, Activity, Flame, CheckCircle2, XCircle, Clock, ShieldCheck, Upload, FileSpreadsheet } from "lucide-react";
+import * as XLSX from "xlsx";
 
 const SHARP = { borderRadius: 0 } as const;
 
@@ -34,6 +35,10 @@ export default function KennelCapiPage() {
   const [backfillDays, setBackfillDays] = useState(30);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillResult, setBackfillResult] = useState<any>(null);
+  const [uploadRows, setUploadRows] = useState<any[]>([]);
+  const [uploadFileName, setUploadFileName] = useState<string>("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<any>(null);
   const [testOrder, setTestOrder] = useState({
     order_id: `test-${Date.now()}`,
     value_cents: 9900,
@@ -123,6 +128,50 @@ export default function KennelCapiPage() {
       toast.error(e?.message ?? "Backfill failed");
     } finally {
       setBackfilling(false);
+    }
+  };
+
+  const handleFile = async (file: File) => {
+    setUploadFileName(file.name);
+    setUploadResult(null);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json<any>(sheet, { defval: null });
+      // Normalize headers: lowercase, trim, snake-case-ish.
+      const norm = json.map((r) => {
+        const out: any = {};
+        for (const [k, v] of Object.entries(r)) {
+          const key = String(k).trim().toLowerCase().replace(/[\s\-]+/g, "_");
+          out[key] = typeof v === "string" ? v.trim() : v;
+        }
+        return out;
+      });
+      setUploadRows(norm);
+      toast.success(`Parsed ${norm.length} rows from ${file.name}`);
+    } catch (e: any) {
+      toast.error("Parse failed", { description: e?.message ?? String(e) });
+      setUploadRows([]);
+    }
+  };
+
+  const sendUpload = async (dryRun: boolean) => {
+    if (!uploadRows.length) { toast.error("No rows parsed"); return; }
+    setUploading(true);
+    setUploadResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("vinoshipper-conversions-backfill", {
+        body: { orders: uploadRows, dry_run: dryRun, send_meta: true, send_google: true, limit: 2000 },
+      });
+      if (error) throw error;
+      setUploadResult(data);
+      toast.success(dryRun ? "Dry run complete" : "Uploaded to Meta + Google");
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -309,6 +358,81 @@ export default function KennelCapiPage() {
         {backfillResult && (
           <pre className="text-[11px] bg-muted/40 p-3 overflow-x-auto" style={SHARP}>
 {JSON.stringify(backfillResult, null, 2)}
+          </pre>
+        )}
+      </Card>
+
+      {/* --- File upload (CSV / XLSX) --- */}
+      <Card style={SHARP} className="p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <FileSpreadsheet className="h-4 w-4" />
+          <h2 className="font-bold uppercase tracking-brand">Upload conversions file</h2>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          CSV or XLSX. PII is SHA-256 hex-hashed before sending. Both sinks dedupe on{" "}
+          <code className="px-1 bg-muted">order_id</code>.
+          <br />
+          Accepted columns (case-insensitive):{" "}
+          <code className="px-1 bg-muted">order_id, value, date, email, phone, first_name, last_name, city, state, zip</code>
+          {" "}— also accepts the Vinoshipper export names (<code className="px-1 bg-muted">invoice, order_total, customer_email…</code>).
+        </p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Input
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            style={SHARP}
+            className="max-w-xs"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleFile(f);
+            }}
+          />
+          {uploadFileName && (
+            <span className="text-xs text-muted-foreground">
+              {uploadFileName} · <strong>{uploadRows.length}</strong> rows
+            </span>
+          )}
+          <div className="ml-auto flex gap-2">
+            <Button variant="outline" style={SHARP} disabled={!uploadRows.length || uploading}
+              onClick={() => sendUpload(true)}>
+              {uploading ? "Working…" : "Dry run"}
+            </Button>
+            <Button style={SHARP} disabled={!uploadRows.length || uploading}
+              onClick={() => sendUpload(false)}>
+              {uploading ? "Sending…" : "Send to Meta + Google"}
+            </Button>
+          </div>
+        </div>
+        {uploadRows.length > 0 && (
+          <div className="overflow-x-auto border border-border" style={SHARP}>
+            <table className="w-full text-xs">
+              <thead className="bg-muted/40">
+                <tr>
+                  {Object.keys(uploadRows[0]).slice(0, 8).map((k) => (
+                    <th key={k} className="text-left px-2 py-1 uppercase tracking-brand text-[10px]">{k}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {uploadRows.slice(0, 5).map((r, i) => (
+                  <tr key={i} className="border-t border-border/50">
+                    {Object.keys(uploadRows[0]).slice(0, 8).map((k) => (
+                      <td key={k} className="px-2 py-1 font-mono">{String(r[k] ?? "")}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {uploadRows.length > 5 && (
+              <div className="px-2 py-1 text-[10px] text-muted-foreground bg-muted/20">
+                +{uploadRows.length - 5} more rows…
+              </div>
+            )}
+          </div>
+        )}
+        {uploadResult && (
+          <pre className="text-[11px] bg-muted/40 p-3 overflow-x-auto" style={SHARP}>
+{JSON.stringify(uploadResult, null, 2)}
           </pre>
         )}
       </Card>

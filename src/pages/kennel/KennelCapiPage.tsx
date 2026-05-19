@@ -138,8 +138,30 @@ export default function KennelCapiPage() {
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json<any>(sheet, { defval: null });
-      // Normalize headers: lowercase, trim, snake-case-ish.
+      // Vinoshipper exports have a banner row ("Transaction Summary", "Customer Details", ...)
+      // above the real column names. Auto-detect the header row by scanning the first ~10
+      // rows for one that contains recognizable field names.
+      const aoa: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
+      const HEADER_HINTS = [
+        "invoice", "order id", "order_id", "order number", "order_number",
+        "email", "first name", "last name", "order total", "total",
+        "transaction date", "date",
+      ];
+      let headerIdx = 0;
+      for (let i = 0; i < Math.min(aoa.length, 10); i++) {
+        const cells = (aoa[i] ?? []).map((c) => String(c ?? "").trim().toLowerCase());
+        const hits = cells.filter((c) => HEADER_HINTS.some((h) => c === h || c.includes(h))).length;
+        if (hits >= 3) { headerIdx = i; break; }
+      }
+      const headers = (aoa[headerIdx] ?? []).map((h, i) =>
+        String(h ?? `col_${i}`).trim().toLowerCase().replace(/[\s\-/]+/g, "_").replace(/[^\w]/g, "")
+      );
+      const dataRows = aoa.slice(headerIdx + 1).filter((r) => Array.isArray(r) && r.some((c) => c !== null && c !== ""));
+      const json = dataRows.map((row) => {
+        const obj: any = {};
+        headers.forEach((h, i) => { if (h) obj[h] = row[i] ?? null; });
+        return obj;
+      });
       const norm = json.map((r) => {
         const out: any = {};
         for (const [k, v] of Object.entries(r)) {
@@ -149,7 +171,7 @@ export default function KennelCapiPage() {
         return out;
       });
       setUploadRows(norm);
-      toast.success(`Parsed ${norm.length} rows from ${file.name}`);
+      toast.success(`Parsed ${norm.length} rows from ${file.name} (header row ${headerIdx + 1})`);
     } catch (e: any) {
       toast.error("Parse failed", { description: e?.message ?? String(e) });
       setUploadRows([]);

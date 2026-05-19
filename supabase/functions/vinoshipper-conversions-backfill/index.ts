@@ -69,6 +69,9 @@ Deno.serve(async (req) => {
   const dryRun: boolean = body.dry_run === true;
   const sendMeta: boolean = body.send_meta !== false;
   const sendGoogle: boolean = body.send_google !== false;
+  // Optional: caller-supplied orders (CSV/XLSX upload path). When present we
+  // skip the vs_transactions query and treat these as the source rows.
+  const uploadedOrders: any[] | null = Array.isArray(body.orders) ? body.orders : null;
 
   // Settings
   const { data: settings } = await admin
@@ -80,18 +83,35 @@ Deno.serve(async (req) => {
   const ociOn = smap.kennel_oci_enabled === true || smap.kennel_oci_enabled === "true";
   const conversionActionId = String(smap.kennel_oci_conversion_action_id ?? "").trim();
 
-  // Pull orders
-  const { data: orders, error: ordErr } = await admin
-    .from("vs_transactions")
-    .select("invoice,transaction_date,order_total,customer_email,customer_phone,customer_first_name,customer_last_name,ship_to_city,ship_to_state,ship_to_zip")
-    .gte("transaction_date", sinceIso)
-    .eq("order_type", "CONSUMER")
-    .neq("chain_status", "Cancelled")
-    .gt("order_total", 0)
-    .order("transaction_date", { ascending: false })
-    .limit(limit);
-  if (ordErr) return json({ error: ordErr.message }, 500);
-  const rows = orders ?? [];
+  // Pull orders: either supplied directly (file upload) or queried.
+  let rows: any[] = [];
+  if (uploadedOrders) {
+    const today = new Date().toISOString().slice(0, 10);
+    rows = uploadedOrders.slice(0, limit).map((r: any, i: number) => ({
+      invoice: String(r.order_id ?? r.invoice ?? `upload-${Date.now()}-${i}`),
+      transaction_date: r.transaction_date ?? r.date ?? today,
+      order_total: Number(r.order_total ?? r.value ?? 0),
+      customer_email: r.customer_email ?? r.email ?? null,
+      customer_phone: r.customer_phone ?? r.phone ?? null,
+      customer_first_name: r.customer_first_name ?? r.first_name ?? null,
+      customer_last_name: r.customer_last_name ?? r.last_name ?? null,
+      ship_to_city: r.ship_to_city ?? r.city ?? null,
+      ship_to_state: r.ship_to_state ?? r.state ?? null,
+      ship_to_zip: r.ship_to_zip ?? r.zip ?? null,
+    })).filter((r: any) => r.order_total > 0);
+  } else {
+    const { data: orders, error: ordErr } = await admin
+      .from("vs_transactions")
+      .select("invoice,transaction_date,order_total,customer_email,customer_phone,customer_first_name,customer_last_name,ship_to_city,ship_to_state,ship_to_zip")
+      .gte("transaction_date", sinceIso)
+      .eq("order_type", "CONSUMER")
+      .neq("chain_status", "Cancelled")
+      .gt("order_total", 0)
+      .order("transaction_date", { ascending: false })
+      .limit(limit);
+    if (ordErr) return json({ error: ordErr.message }, 500);
+    rows = orders ?? [];
+  }
 
   // --- Meta dedup ---
   const invoices = rows.map((r: any) => String(r.invoice));

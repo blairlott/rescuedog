@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend, ReferenceLine,
+  CartesianGrid, Tooltip, Legend, ReferenceLine, ReferenceArea,
 } from "recharts";
 import { TrendingUp, RefreshCw } from "lucide-react";
 import {

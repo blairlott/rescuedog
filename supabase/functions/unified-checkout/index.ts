@@ -180,23 +180,59 @@ Deno.serve(async (req) => {
         }
       }
 
-      const [wineCostMap, dropshipCostMap, merchCostMap] = await Promise.all([
+      const [wineLookup, dropshipLookup, merchLookup] = await Promise.all([
         wineVsIds.length
-          ? supabase.from("wine_products").select("vinoshipper_product_id, cost_cents")
+          ? supabase.from("wine_products").select("vinoshipper_product_id, cost_cents, price_cents")
               .in("vinoshipper_product_id", wineVsIds)
-              .then(r => new Map((r.data ?? []).map((w: any) => [w.vinoshipper_product_id, w.cost_cents])))
-          : Promise.resolve(new Map<string, number | null>()),
+              .then(r => new Map((r.data ?? []).map((w: any) => [String(w.vinoshipper_product_id), { cost: w.cost_cents, price: w.price_cents }])))
+          : Promise.resolve(new Map<string, { cost: number | null; price: number | null }>()),
         merchSkus.length
-          ? supabase.from("dropship_skus").select("sku, cost_cents, partner_id")
+          ? supabase.from("dropship_skus").select("sku, cost_cents, partner_id, retail_cents")
               .in("sku", merchSkus).eq("is_active", true)
-              .then(r => new Map((r.data ?? []).map((d: any) => [d.sku, { cost: d.cost_cents, partner_id: d.partner_id }])))
-          : Promise.resolve(new Map<string, { cost: number; partner_id: string }>()),
+              .then(r => new Map((r.data ?? []).map((d: any) => [d.sku, { cost: d.cost_cents, partner_id: d.partner_id, price: d.retail_cents }])))
+          : Promise.resolve(new Map<string, { cost: number; partner_id: string; price: number | null }>()),
         merchIds.length
-          ? supabase.from("merch_products").select("id, cost_cents")
+          ? supabase.from("merch_products").select("id, cost_cents, price_cents")
               .in("id", merchIds)
-              .then(r => new Map((r.data ?? []).map((m: any) => [m.id, m.cost_cents])))
-          : Promise.resolve(new Map<string, number | null>()),
+              .then(r => new Map((r.data ?? []).map((m: any) => [m.id, { cost: m.cost_cents, price: m.price_cents }])))
+          : Promise.resolve(new Map<string, { cost: number | null; price: number | null }>()),
       ]);
+
+      // ── SERVER-SIDE PRICE ENFORCEMENT ──────────────────────────────────
+      // Replace client-supplied unit_price_cents with the authoritative price
+      // from the database. Reject the request if any line item can't be
+      // resolved to a known price — never trust the client on amounts.
+      const priceMismatches: Array<{ name: string; reason: string }> = [];
+      for (const item of data.items) {
+        let authoritative: number | null | undefined;
+        if (item.product_kind === "wine") {
+          const w = item.vinoshipper_product_id ? wineLookup.get(String(item.vinoshipper_product_id)) : null;
+          authoritative = w?.price ?? null;
+        } else {
+          const ds = item.product_sku ? (dropshipLookup.get(item.product_sku) as any) : null;
+          authoritative = ds?.price ?? null;
+          if (authoritative == null && item.product_id) {
+            authoritative = merchLookup.get(item.product_id)?.price ?? null;
+          }
+        }
+        if (authoritative == null || authoritative <= 0) {
+          priceMismatches.push({ name: item.product_name, reason: "no authoritative price found" });
+          continue;
+        }
+        item.unit_price_cents = authoritative;
+      }
+      if (priceMismatches.length > 0) {
+        return jsonResp({
+          error: "Some items could not be priced. Please refresh and try again.",
+          code: "price_resolution_failed",
+          details: priceMismatches,
+        }, 422);
+      }
+
+      // Back-compat aliases for downstream snapshotCost()
+      const wineCostMap = new Map(Array.from(wineLookup.entries()).map(([k, v]) => [k, v.cost]));
+      const dropshipCostMap = new Map(Array.from(dropshipLookup.entries()).map(([k, v]: any) => [k, { cost: v.cost, partner_id: v.partner_id }]));
+      const merchCostMap = new Map(Array.from(merchLookup.entries()).map(([k, v]) => [k, v.cost]));
 
       function snapshotCost(i: typeof data.items[number]): { cost_cents: number | null; partner_kind: string | null; partner_id: string | null } {
         if (i.product_kind === "wine") {

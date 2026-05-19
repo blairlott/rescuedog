@@ -20,6 +20,22 @@ const TEAM_CC = ['info@rescuedogwines.com', 'blair.lott@rescuedogwines.com'];
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    if (!token) {
+      return new Response(JSON.stringify({ success: false, error: 'unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    if (token !== serviceKey) {
+      const verifier = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY') ?? serviceKey);
+      const { data: userData, error: userErr } = await verifier.auth.getUser(token);
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ success: false, error: 'unauthorized' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
     const { inquiryId } = await req.json();
     if (!inquiryId) {
       return new Response(JSON.stringify({ success: false, error: 'inquiryId is required' }),

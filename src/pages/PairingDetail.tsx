@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProductByHandle } from "@/hooks/useProducts";
 import { Loader2, ArrowLeft, Wine } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import DOMPurify from "dompurify";
 
 type Recipe = {
   id: string; slug: string; title: string; excerpt: string | null; body_html: string | null;
@@ -64,7 +65,7 @@ export default function PairingDetail() {
           )}
 
           {recipe.body_html && (
-            <div className="prose prose-sm md:prose-base max-w-none" dangerouslySetInnerHTML={{ __html: recipe.body_html }} />
+            <div className="prose prose-sm md:prose-base max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(recipe.body_html) }} />
           )}
         </article>
       </main>

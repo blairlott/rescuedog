@@ -107,25 +107,30 @@ Deno.serve(async (req) => {
   let rawBody = "";
 
   try {
-    // Optional: shared-secret check. Vinoshipper lets you set a custom header
-    // when registering a webhook; we mirror that here.
+    // MANDATORY shared-secret check. If the secret env var is not configured,
+    // we refuse all webhook traffic — never silently fall through.
     const expected = Deno.env.get("VINOSHIPPER_WEBHOOK_SECRET");
-    if (expected) {
-      const got = req.headers.get("x-vinoshipper-secret");
-      if (got !== expected) {
-        await supabase.from("vinoshipper_webhook_logs").insert({
-          subject: "UNKNOWN",
-          event: "UNAUTHORIZED",
-          identifier: "n/a",
-          payload: {},
-          processed: false,
-          error: "shared-secret mismatch",
-        });
-        return new Response(JSON.stringify({ error: "unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    if (!expected) {
+      console.error("[vinoshipper-webhook] VINOSHIPPER_WEBHOOK_SECRET not configured — refusing all traffic");
+      return new Response(JSON.stringify({ error: "webhook secret not configured" }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const got = req.headers.get("x-vinoshipper-secret");
+    if (got !== expected) {
+      await supabase.from("vinoshipper_webhook_logs").insert({
+        subject: "UNKNOWN",
+        event: "UNAUTHORIZED",
+        identifier: "n/a",
+        payload: {},
+        processed: false,
+        error: "shared-secret mismatch or missing",
+      });
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     rawBody = await req.text();

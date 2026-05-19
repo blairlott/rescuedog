@@ -59,8 +59,8 @@ Deno.serve(async (req) => {
 
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
   const platformFilter: string | null = body?.platform ? String(body.platform).toLowerCase() : null;
-  const horizon = Math.min(Math.max(Number(body?.horizon_days ?? 90), 14), 180);
-  const lookback = Math.min(Math.max(Number(body?.lookback_days ?? 90), 14), 365);
+  const horizon = Math.min(Math.max(Number(body?.horizon_days ?? 90), 14), 1095);
+  const lookback = Math.min(Math.max(Number(body?.lookback_days ?? 90), 14), 3650);
 
   // Pull strategy_mode for tilts
   const { data: smRow } = await admin.from("ad_settings").select("value").eq("key", "strategy_mode").maybeSingle();

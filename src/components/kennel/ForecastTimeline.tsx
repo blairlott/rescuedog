@@ -180,16 +180,21 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
-    const cumSpend = chartData.reduce((s, p) => s + p.spend, 0);
-    const cumRev = chartData.reduce((s, p) => s + p.revenue, 0);
+    const todayIso = isoDay(today);
+    const hist = chartData.filter((p) => p.date <= todayIso);
+    const fut  = chartData.filter((p) => p.date >  todayIso);
+    const sum = (arr: typeof chartData, k: keyof Point) => arr.reduce((s, p) => s + (Number(p[k]) || 0), 0);
+    const histSpend = sum(hist, "spend"); const histRev = sum(hist, "revenue");
+    const futSpend  = sum(fut,  "spend"); const futRev  = sum(fut,  "revenue");
     return {
-      cumSpend,
-      cumRev,
-      avgRoas: cumSpend > 0 ? cumRev / cumSpend : 0,
-      revLower: chartData.reduce((s, p) => s + p.revenue_lower, 0),
-      revUpper: chartData.reduce((s, p) => s + p.revenue_upper, 0),
+      histSpend, histRev,
+      futSpend,  futRev,
+      avgHistRoas: histSpend > 0 ? histRev / histSpend : 0,
+      avgFutRoas:  futSpend  > 0 ? futRev  / futSpend  : 0,
+      futRevLower: sum(fut, "revenue_lower"),
+      futRevUpper: sum(fut, "revenue_upper"),
     };
-  }, [chartData]);
+  }, [chartData, today]);
 
   const generate = async () => {
     setBusy(true);
@@ -279,11 +284,25 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
         <>
           {summary && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <Stat label={`Spend (${horizonDays}d)`} value={`$${summary.cumSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-              <Stat label={`Revenue (${horizonDays}d)`} value={`$${summary.cumRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                hint={`Range $${summary.revLower.toLocaleString(undefined, { maximumFractionDigits: 0 })} – $${summary.revUpper.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-              <Stat label="Avg ROAS" value={`${summary.avgRoas.toFixed(2)}x`} />
-              <Stat label="Net (rev − spend)" value={`$${(summary.cumRev - summary.cumSpend).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+              <Stat
+                label={`Actual Spend · ${isoDay(start).slice(0,7)} → today`}
+                value={`$${summary.histSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                hint={`Avg ROAS ${summary.avgHistRoas.toFixed(2)}x`}
+              />
+              <Stat
+                label={`Actual Revenue · ${isoDay(start).slice(0,7)} → today`}
+                value={`$${summary.histRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+              />
+              <Stat
+                label={`Forecast Spend · next ${horizonDays}d`}
+                value={`$${summary.futSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                hint={`Avg ROAS ${summary.avgFutRoas.toFixed(2)}x`}
+              />
+              <Stat
+                label={`Forecast Revenue · next ${horizonDays}d`}
+                value={`$${summary.futRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                hint={`Range $${summary.futRevLower.toLocaleString(undefined, { maximumFractionDigits: 0 })} – $${summary.futRevUpper.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+              />
             </div>
           )}
           <div style={{ width: "100%", height: 280 }}>

@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Key, Save, Trash2, Eye, EyeOff, Lock } from "lucide-react";
+import { Key, Save, Trash2, Eye, EyeOff, Lock, Plug, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -85,6 +85,8 @@ export default function KennelIntegrationsPage() {
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [testing, setTesting] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, { ok: boolean; status: string; detail?: string }>>({});
 
   const load = async () => {
     setLoading(true);
@@ -137,6 +139,23 @@ export default function KennelIntegrationsPage() {
     await load();
   };
 
+  const test = async (provider: string) => {
+    setTesting(provider);
+    const { data, error } = await supabase.functions.invoke("kennel-test-credentials", {
+      body: { provider },
+    });
+    setTesting(null);
+    if (error) {
+      const result = { ok: false, status: "error", detail: error.message };
+      setTestResults((r) => ({ ...r, [provider]: result }));
+      toast.error(`${provider}: ${error.message}`);
+      return;
+    }
+    setTestResults((r) => ({ ...r, [provider]: data }));
+    if (data?.ok) toast.success(`${provider}: ${data.detail ?? "ok"}`);
+    else toast.error(`${provider}: ${data?.detail ?? data?.status ?? "failed"}`);
+  };
+
   if (!isAdmin) {
     return (
       <div className="p-6" style={BRAND}>
@@ -175,6 +194,37 @@ export default function KennelIntegrationsPage() {
                   <Badge variant="outline" style={SHARP} className="text-[10px]">{p.id}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{p.description}</p>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  style={SHARP}
+                  disabled={testing === p.id}
+                  onClick={() => test(p.id)}
+                >
+                  {testing === p.id ? (
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <Plug className="h-3 w-3 mr-1" />
+                  )}
+                  Test
+                </Button>
+                {testResults[p.id] && (
+                  <div
+                    className={`flex items-center gap-1 text-[10px] uppercase tracking-brand ${
+                      testResults[p.id].ok ? "text-primary" : "text-destructive"
+                    }`}
+                    title={testResults[p.id].detail ?? ""}
+                  >
+                    {testResults[p.id].ok ? (
+                      <CheckCircle2 className="h-3 w-3" />
+                    ) : (
+                      <XCircle className="h-3 w-3" />
+                    )}
+                    {testResults[p.id].status}
+                  </div>
+                )}
               </div>
             </div>
 

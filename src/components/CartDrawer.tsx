@@ -336,14 +336,9 @@ export const CartDrawer = () => {
     const url = pendingShopifyUrlRef.current;
     pendingShopifyUrlRef.current = null;
     if (!url) return;
-    const win = window.open(url, "_blank");
-    if (!win || win.closed || typeof win.closed === "undefined") {
-      logCheckoutEvent("popup_blocked", { kind: "merch_only" });
-      window.location.href = url;
-      return;
-    }
-    logCheckoutEvent("merch_popup_opened");
+    logCheckoutEvent("merch_handoff_same_tab");
     setIsOpen(false);
+    window.location.href = url;
   };
 
   const runDualCheckout = () => {

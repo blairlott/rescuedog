@@ -76,3 +76,21 @@ export function clearVariant() {
 }
 
 export const AB_META = { COOKIE_NAME, AB_TEST_ID } as const;
+
+/**
+ * Read GA4's `_ga` client_id cookie so we can stitch server-side conversions
+ * back to the same browser. Format: GA1.1.<client_id>.<timestamp>. We return
+ * the `<client_id>.<timestamp>` portion which is what MP /collect expects.
+ */
+export function getGa4ClientId(): string | null {
+  const raw = readCookie("_ga");
+  if (!raw) return null;
+  const parts = raw.split(".");
+  if (parts.length < 4) return null;
+  return `${parts[2]}.${parts[3]}`;
+}
+
+/** Read the gclid we stashed during ad-click capture (see metaAttribution). */
+export function getStoredGclid(): string | null {
+  return readCookie("gclaw");
+}

@@ -10,6 +10,7 @@ import { BidModifiersPanel } from "@/components/kennel/BidModifiersPanel";
 import { GeoModifiersPanel } from "@/components/kennel/GeoModifiersPanel";
 import { SeasonalityPanel } from "@/components/kennel/SeasonalityPanel";
 import { RetentionRiskPanel } from "@/components/kennel/RetentionRiskPanel";
+import { WinbackPanel } from "@/components/kennel/WinbackPanel";
 import { IngestionStatusPanel } from "@/components/kennel/IngestionStatusPanel";
 import { CronStatusPanel } from "@/components/kennel/CronStatusPanel";
 import { MixingBoardPanel } from "@/components/kennel/MixingBoardPanel";
@@ -483,6 +484,7 @@ export default function KennelDashboard() {
                 <SeasonalityPanel />
                 <GeoModifiersPanel />
                 <RetentionRiskPanel />
+                <WinbackPanel />
               </div>
             </DialogContent>
           </Dialog>

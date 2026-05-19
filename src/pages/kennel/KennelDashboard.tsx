@@ -382,6 +382,24 @@ export default function KennelDashboard() {
           </span>
         </Link>
       )}
+      {signalLow && (
+        <Link
+          to="/kennel/capi"
+          className="border-2 border-amber-500 bg-amber-500/10 hover:bg-amber-500/20 transition-colors p-3 flex items-center justify-between gap-2 text-sm group"
+          style={{ borderRadius: 0 }}
+        >
+          <span className="flex items-center gap-2">
+            <Radio className="h-4 w-4 text-amber-600 shrink-0" />
+            <strong className="uppercase tracking-brand text-foreground">
+              Signal data insufficient — {signal?.capi7d ?? 0} CAPI / {signal?.oci7d ?? 0} OCI in last 7d
+            </strong>
+            <span className="text-muted-foreground hidden sm:inline">— platforms can&apos;t optimize without enough conversions.</span>
+          </span>
+          <span className="flex items-center gap-1 uppercase tracking-brand text-xs font-bold text-amber-700 group-hover:underline">
+            Fix <ChevronRight className="h-3 w-3" />
+          </span>
+        </Link>
+      )}
       <header className="flex items-start md:items-end justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground uppercase tracking-brand" style={{ fontFamily: '"Nunito Sans", system-ui, sans-serif' }}>

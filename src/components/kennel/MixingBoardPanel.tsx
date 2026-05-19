@@ -24,6 +24,7 @@ function pos(value: number, min: number, max: number) {
 }
 
 function fmtPct(mod: number) {
+  if (!isFinite(mod)) return "—";
   const p = (mod - 1) * 100;
   return `${p > 0 ? "+" : ""}${p.toFixed(0)}%`;
 }

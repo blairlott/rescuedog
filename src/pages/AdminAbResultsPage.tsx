@@ -1,0 +1,203 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
+
+type Row = {
+  site_variant: string;
+  sessions: number;
+  pageviews: number;
+  add_to_carts: number;
+  checkout_intents: number;
+};
+
+const WINDOWS: { label: string; days: number }[] = [
+  { label: "24h", days: 1 },
+  { label: "7d", days: 7 },
+  { label: "30d", days: 30 },
+];
+
+function pct(num: number, den: number): string {
+  if (!den) return "—";
+  return ((num / den) * 100).toFixed(2) + "%";
+}
+
+function lift(a: number, b: number): string {
+  if (!b) return "—";
+  const l = ((a - b) / b) * 100;
+  const s = l > 0 ? "+" : "";
+  return s + l.toFixed(1) + "%";
+}
+
+export default function AdminAbResultsPage() {
+  const navigate = useNavigate();
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState(7);
+  const [authed, setAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        navigate("/admin");
+        return;
+      }
+      setAuthed(true);
+    })();
+  }, [navigate]);
+
+  const load = async () => {
+    setLoading(true);
+    const since = new Date(Date.now() - days * 86400 * 1000).toISOString();
+    const { data, error } = await supabase.rpc("ab_results_summary", { _since: since });
+    if (error) {
+      console.error(error);
+      setRows([]);
+    } else {
+      setRows((data as Row[]) || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (authed) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authed, days]);
+
+  if (!authed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+        Checking access…
+      </div>
+    );
+  }
+
+  const lovable = rows?.find((r) => r.site_variant === "lovable");
+  const legacy = rows?.find((r) => r.site_variant === "legacy");
+
+  const Metric = ({
+    label,
+    lv,
+    lg,
+    fmt = (n: number) => n.toLocaleString(),
+    deltaFmt,
+  }: {
+    label: string;
+    lv: number;
+    lg: number;
+    fmt?: (n: number) => string;
+    deltaFmt?: string;
+  }) => (
+    <tr className="border-b border-border">
+      <td className="py-3 text-sm text-muted-foreground">{label}</td>
+      <td className="py-3 text-right font-mono text-sm">{fmt(lv)}</td>
+      <td className="py-3 text-right font-mono text-sm">{fmt(lg)}</td>
+      <td className="py-3 text-right font-mono text-sm">
+        <span className={deltaFmt?.startsWith("+") ? "text-primary font-bold" : deltaFmt?.startsWith("-") ? "text-destructive font-bold" : ""}>
+          {deltaFmt ?? lift(lv, lg)}
+        </span>
+      </td>
+    </tr>
+  );
+
+  return (
+    <div className="min-h-screen bg-secondary">
+      <div className="border-b border-border bg-background">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/admin" className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <h1 className="font-bold text-foreground uppercase tracking-brand text-sm">
+              A/B Results — WP Legacy vs Lovable
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {WINDOWS.map((w) => (
+              <Button
+                key={w.days}
+                size="sm"
+                variant={days === w.days ? "default" : "outline"}
+                onClick={() => setDays(w.days)}
+                className="h-8 text-xs uppercase tracking-brand"
+              >
+                {w.label}
+              </Button>
+            ))}
+            <Button size="sm" variant="outline" onClick={load} disabled={loading} className="h-8">
+              {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
+        {loading || !rows ? (
+          <div className="py-20 flex justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="bg-background border border-border p-6">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b-2 border-foreground">
+                  <th className="py-3 text-left text-[10px] uppercase tracking-brand text-muted-foreground font-bold">Metric</th>
+                  <th className="py-3 text-right text-[10px] uppercase tracking-brand text-primary font-bold">Lovable</th>
+                  <th className="py-3 text-right text-[10px] uppercase tracking-brand text-muted-foreground font-bold">Legacy (WP)</th>
+                  <th className="py-3 text-right text-[10px] uppercase tracking-brand text-muted-foreground font-bold">Lift</th>
+                </tr>
+              </thead>
+              <tbody>
+                <Metric label="Sessions" lv={lovable?.sessions ?? 0} lg={legacy?.sessions ?? 0} />
+                <Metric label="Pageviews" lv={lovable?.pageviews ?? 0} lg={legacy?.pageviews ?? 0} />
+                <Metric label="Add to cart" lv={lovable?.add_to_carts ?? 0} lg={legacy?.add_to_carts ?? 0} />
+                <Metric label="Checkout intents" lv={lovable?.checkout_intents ?? 0} lg={legacy?.checkout_intents ?? 0} />
+                <Metric
+                  label="ATC rate (per session)"
+                  lv={lovable ? (lovable.sessions ? lovable.add_to_carts / lovable.sessions : 0) : 0}
+                  lg={legacy ? (legacy.sessions ? legacy.add_to_carts / legacy.sessions : 0) : 0}
+                  fmt={(n) => (n * 100).toFixed(2) + "%"}
+                  deltaFmt={lift(
+                    lovable?.sessions ? lovable.add_to_carts / lovable.sessions : 0,
+                    legacy?.sessions ? legacy.add_to_carts / legacy.sessions : 0,
+                  )}
+                />
+                <Metric
+                  label="Checkout rate (per session)"
+                  lv={lovable ? (lovable.sessions ? lovable.checkout_intents / lovable.sessions : 0) : 0}
+                  lg={legacy ? (legacy.sessions ? legacy.checkout_intents / legacy.sessions : 0) : 0}
+                  fmt={(n) => (n * 100).toFixed(2) + "%"}
+                  deltaFmt={lift(
+                    lovable?.sessions ? lovable.checkout_intents / lovable.sessions : 0,
+                    legacy?.sessions ? legacy.checkout_intents / legacy.sessions : 0,
+                  )}
+                />
+              </tbody>
+            </table>
+
+            <div className="mt-6 text-xs text-muted-foreground space-y-2 border-t border-border pt-4">
+              <p>
+                <strong className="text-foreground">Legacy data:</strong> the WordPress site must
+                also log to <code>ab_events</code> / <code>ab_checkout_intents</code> for the legacy
+                column to populate. Until then, only the Lovable arm will have numbers — that's
+                expected pre-launch.
+              </p>
+              <p>
+                <strong className="text-foreground">Checkout intent</strong> = visitor clicked
+                "Checkout" and we recorded the handoff to Vinoshipper. Completed{" "}
+                <em>purchases</em> are logged separately by the Vinoshipper webhook with full
+                revenue — we'll add a revenue row once data starts flowing.
+              </p>
+              <p>
+                <strong className="text-foreground">Significance:</strong> with fewer than ~200
+                conversions per arm, lift numbers are noisy. Wait for 2+ weeks before acting.
+              </p>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

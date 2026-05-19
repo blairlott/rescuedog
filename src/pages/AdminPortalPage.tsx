@@ -9,6 +9,7 @@ import { Shield, Lock } from "lucide-react";
 import { ADMIN_AREAS, hasAreaAccess } from "@/lib/adminAreas";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import { AbVariantTile } from "@/components/admin/AbVariantTile";
+import { BarChart3 } from "lucide-react";
 
 type RoleRow = { role: string };
 
@@ -148,6 +149,19 @@ const AdminPortalPage = () => {
         </div>
         <div className="mt-8">
           <AbVariantTile />
+        </div>
+        <div className="mt-4">
+          <Link
+            to="/admin/ab-results"
+            className="group block border border-border bg-background p-6 hover:border-primary transition-colors"
+          >
+            <BarChart3 className="h-6 w-6 text-primary mb-3" />
+            <h3 className="font-bold text-foreground mb-1">A/B Results Dashboard</h3>
+            <p className="text-sm text-muted-foreground">
+              Live conversion comparison between the legacy WordPress site and the Lovable
+              rebuild — no GA4 setup required.
+            </p>
+          </Link>
         </div>
       </main>
     </div>

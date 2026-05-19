@@ -7,6 +7,7 @@ import { useCartSync } from "@/hooks/useCartSync";
 import { lazy, Suspense, useEffect } from "react";
 import { captureFbclid, captureGclid } from "@/lib/metaAttribution";
 import { initVariantHandshake } from "@/lib/abVariant";
+import { logAbEvent } from "@/lib/abEvents";
 import { AgeGate } from "@/components/AgeGate";
 import { ExitIntentOffer } from "@/components/ExitIntentOffer";
 import { PackSignupPopup } from "@/components/PackSignupPopup";
@@ -72,6 +73,7 @@ const PairingDetail = lazy(() => import("./pages/PairingDetail"));
 const DropshipDashboard = lazy(() => import("./pages/DropshipDashboard"));
 const AdminFlagsPage = lazy(() => import("./pages/AdminFlagsPage"));
 const AdminPortalPage = lazy(() => import("./pages/AdminPortalPage"));
+const AdminAbResultsPage = lazy(() => import("./pages/AdminAbResultsPage"));
 const RequestAccessPage = lazy(() => import("./pages/RequestAccessPage"));
 const SellOnSitePage = lazy(() => import("./pages/SellOnSitePage"));
 const AmbassadorsLandingPage = lazy(() => import("./pages/AmbassadorsLandingPage"));
@@ -126,6 +128,14 @@ function AppContent() {
       sessionStorage.setItem("lastStorePath", "/wines");
     }
   }, [path]);
+  // A/B funnel: log one pageview per route change (skips internal admin tools).
+  useEffect(() => {
+    if (path.startsWith("/admin") || path.startsWith("/cms") || path.startsWith("/crm") ||
+        path.startsWith("/kennel") || path.startsWith("/dropship") || path.startsWith("/club/admin")) {
+      return;
+    }
+    logAbEvent("pageview", { path });
+  }, [path]);
   const showSommelier = !["/merch", "/crm", "/cms", "/sell", "/donation", "/login", "/signup", "/ambassador"].some(p => path === p || path.startsWith(p + "/"));
   const isKennel = path === "/kennel" || path.startsWith("/kennel/");
   return (
@@ -146,6 +156,7 @@ function AppContent() {
       <Route path="/where-to-buy" element={<Navigate to="/store-locator" replace />} />
       <Route path="/admin/flags" element={<AdminFlagsPage />} />
       <Route path="/admin" element={<AdminPortalPage />} />
+      <Route path="/admin/ab-results" element={<AdminAbResultsPage />} />
       <Route path="/admin/request-access" element={<RequestAccessPage />} />
       <Route path="/admin/login" element={<Navigate to="/admin" replace />} />
       <Route path="/wholesale" element={<WholesalePage />} />

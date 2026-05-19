@@ -1070,6 +1070,24 @@ export function MixingBoardPanel() {
                   {preview.dirtyCount} unsaved
                 </span>
               )}
+              {warnings.length > 0 && (
+                <span
+                  className={`flex items-center gap-1 text-[9px] uppercase tracking-brand px-1.5 py-0.5 ${
+                    warnings.some(w => w.level === "danger")
+                      ? "text-[hsl(0,75%,75%)] bg-[hsl(0,75%,55%)]/15"
+                      : "text-[hsl(25,95%,75%)] bg-[hsl(25,95%,55%)]/15"
+                  }`}
+                >
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  {warnings.length} guardrail{warnings.length === 1 ? "" : "s"}
+                </span>
+              )}
+              {warnings.length === 0 && preview.dirtyCount > 0 && (
+                <span className="flex items-center gap-1 text-[9px] uppercase tracking-brand text-[hsl(142,76%,75%)] bg-[hsl(142,76%,45%)]/15 px-1.5 py-0.5">
+                  <ShieldCheck className="h-2.5 w-2.5" />
+                  Within bounds
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -1088,6 +1106,33 @@ export function MixingBoardPanel() {
               </button>
             </div>
           </div>
+
+          {warnings.length > 0 && (
+            <div className="mb-2 border border-[hsl(25,95%,55%)]/40 bg-[hsl(25,95%,15%)]/40 p-2" style={{ borderRadius: 0 }}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <AlertTriangle className="h-3 w-3 text-[hsl(25,95%,55%)]" />
+                <span className="text-[10px] uppercase tracking-brand font-bold text-[hsl(25,95%,75%)]">
+                  Guardrail warnings
+                </span>
+                <span className="text-[9px] uppercase tracking-brand text-white/40">
+                  Hard min/max enforced · soft bands flagged
+                </span>
+              </div>
+              <ul className="space-y-1">
+                {warnings.map((w, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-[10px]">
+                    <span
+                      className={`mt-0.5 h-2 w-2 flex-shrink-0 ${
+                        w.level === "danger" ? "bg-[hsl(0,75%,55%)]" : "bg-[hsl(25,95%,55%)]"
+                      }`}
+                    />
+                    <span className="text-white/90 font-bold">{w.label}.</span>
+                    <span className="text-white/60">{w.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {compareMode ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

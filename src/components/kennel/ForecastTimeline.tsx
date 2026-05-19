@@ -51,7 +51,9 @@ interface Props {
 
 export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp, setStart: setStartProp, setEnd: setEndProp, hidePicker }: Props) {
   const qc = useQueryClient();
-  const [platform, setPlatform] = useState<PlatformOpt>(lockPlatform ?? "all");
+  const [platform, setPlatform] = useState<PlatformOpt>(
+    (lockPlatform && (PLATFORM_OPTS as readonly string[]).includes(lockPlatform) ? lockPlatform : "all") as PlatformOpt
+  );
   const [busy, setBusy] = useState(false);
   const [startLocal, setStartLocal] = useState<Date>(defaultStart);
   const [endLocal, setEndLocal] = useState<Date>(defaultEnd);

@@ -6,6 +6,7 @@ import { MetricCard } from "@/components/kennel/MetricCard";
 import { ChannelPerformanceTable, type ChannelRow } from "@/components/kennel/ChannelPerformanceTable";
 import { SpendChart, type SpendDatum } from "@/components/kennel/SpendChart";
 import { VinoshipperPanel } from "@/components/kennel/VinoshipperPanel";
+import { BidModifiersPanel } from "@/components/kennel/BidModifiersPanel";
 import { AiInsights } from "@/components/kennel/AiInsights";
 import { RefreshButton } from "@/components/kennel/RefreshButton";
 import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
@@ -78,6 +79,10 @@ export default function KennelDashboard() {
               .from("vs_transactions" as any)
               .select("order_total, invoice")
               .gte("transaction_date", fromIso)
+              // Ad-attribution baseline: exclude wine-club shipments (batch-processed
+              // weekly, not incremental to ad spend). Keeps True ROAS honest.
+              .eq("order_type", "CONSUMER")
+              .neq("chain_status", "Cancelled")
               .order("transaction_date", { ascending: true })
               .range(from, from + PAGE - 1);
             if (error) return { data: acc };

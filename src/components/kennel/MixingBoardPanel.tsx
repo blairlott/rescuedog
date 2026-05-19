@@ -829,6 +829,8 @@ export function MixingBoardPanel() {
                     baseline={dowBaseline(i)}
                     min={0.5}
                     max={2.0}
+                    softMin={0.7}
+                    softMax={1.5}
                     active={i === todayDow}
                     sublabel={r?.sample_days ? `${r.sample_days}d` : undefined}
                     onChange={(next) => setDow(i, next)}
@@ -866,6 +868,8 @@ export function MixingBoardPanel() {
                     baseline={moBaseline(month)}
                     min={0.3}
                     max={3.0}
+                    softMin={0.5}
+                    softMax={2.0}
                     active={month === todayMo}
                     onChange={(next) => setMo(month, next)}
                     tooltip={{
@@ -899,6 +903,8 @@ export function MixingBoardPanel() {
                   baseline={Number(g.modifier)}
                   min={0.5}
                   max={2.0}
+                  softMin={0.7}
+                  softMax={1.5}
                   sublabel={g.tier ?? undefined}
                   onChange={(next) => setGeo(g.state, next)}
                   tooltip={{

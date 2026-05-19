@@ -3954,6 +3954,63 @@ export type Database = {
         }
         Relationships: []
       }
+      kennel_insights: {
+        Row: {
+          actioned: boolean
+          actioned_at: string | null
+          actioned_by: string | null
+          created_at: string
+          data: Json
+          expires_at: string | null
+          id: string
+          insight_type: string
+          scope_key: string
+          severity: string
+          signal_type: string | null
+          source: string
+          source_url: string | null
+          summary: string | null
+          title: string
+          urgency: string | null
+        }
+        Insert: {
+          actioned?: boolean
+          actioned_at?: string | null
+          actioned_by?: string | null
+          created_at?: string
+          data?: Json
+          expires_at?: string | null
+          id?: string
+          insight_type: string
+          scope_key?: string
+          severity?: string
+          signal_type?: string | null
+          source?: string
+          source_url?: string | null
+          summary?: string | null
+          title: string
+          urgency?: string | null
+        }
+        Update: {
+          actioned?: boolean
+          actioned_at?: string | null
+          actioned_by?: string | null
+          created_at?: string
+          data?: Json
+          expires_at?: string | null
+          id?: string
+          insight_type?: string
+          scope_key?: string
+          severity?: string
+          signal_type?: string | null
+          source?: string
+          source_url?: string | null
+          summary?: string | null
+          title?: string
+          urgency?: string | null
+        }
+        Relationships: []
+      }
       kennel_keyword_ideas: {
         Row: {
           ad_group_id: string
@@ -4965,6 +5022,119 @@ export type Database = {
         }
         Relationships: []
       }
+      meta_audience_sync_runs: {
+        Row: {
+          completed_at: string | null
+          details: Json | null
+          error_message: string | null
+          executed_sql: string | null
+          id: string
+          lal_created: boolean | null
+          records_pushed: number | null
+          segment_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          details?: Json | null
+          error_message?: string | null
+          executed_sql?: string | null
+          id?: string
+          lal_created?: boolean | null
+          records_pushed?: number | null
+          segment_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          details?: Json | null
+          error_message?: string | null
+          executed_sql?: string | null
+          id?: string
+          lal_created?: boolean | null
+          records_pushed?: number | null
+          segment_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_audience_sync_runs_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "meta_audiences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_audiences: {
+        Row: {
+          create_lal: boolean
+          created_at: string
+          disabled_reason: string | null
+          enabled: boolean
+          id: string
+          lal_ratio: number
+          last_sync_at: string | null
+          member_count: number | null
+          meta_audience_id: string | null
+          meta_audience_name: string | null
+          meta_lookalike_id: string | null
+          meta_rule: Json | null
+          notes: string | null
+          segment_key: string
+          segment_kind: string
+          segment_name: string
+          segment_query: string | null
+          sync_cadence: string
+          updated_at: string
+        }
+        Insert: {
+          create_lal?: boolean
+          created_at?: string
+          disabled_reason?: string | null
+          enabled?: boolean
+          id?: string
+          lal_ratio?: number
+          last_sync_at?: string | null
+          member_count?: number | null
+          meta_audience_id?: string | null
+          meta_audience_name?: string | null
+          meta_lookalike_id?: string | null
+          meta_rule?: Json | null
+          notes?: string | null
+          segment_key: string
+          segment_kind?: string
+          segment_name: string
+          segment_query?: string | null
+          sync_cadence?: string
+          updated_at?: string
+        }
+        Update: {
+          create_lal?: boolean
+          created_at?: string
+          disabled_reason?: string | null
+          enabled?: boolean
+          id?: string
+          lal_ratio?: number
+          last_sync_at?: string | null
+          member_count?: number | null
+          meta_audience_id?: string | null
+          meta_audience_name?: string | null
+          meta_lookalike_id?: string | null
+          meta_rule?: Json | null
+          notes?: string | null
+          segment_key?: string
+          segment_kind?: string
+          segment_name?: string
+          segment_query?: string | null
+          sync_cadence?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       meta_capi_events: {
         Row: {
           created_at: string
@@ -5857,6 +6027,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sku_catalog: {
+        Row: {
+          active: boolean
+          color: string | null
+          created_at: string
+          notes: string | null
+          product_name: string | null
+          sku: string
+          style: string | null
+          updated_at: string
+          varietal: string | null
+        }
+        Insert: {
+          active?: boolean
+          color?: string | null
+          created_at?: string
+          notes?: string | null
+          product_name?: string | null
+          sku: string
+          style?: string | null
+          updated_at?: string
+          varietal?: string | null
+        }
+        Update: {
+          active?: boolean
+          color?: string | null
+          created_at?: string
+          notes?: string | null
+          product_name?: string | null
+          sku?: string
+          style?: string | null
+          updated_at?: string
+          varietal?: string | null
+        }
+        Relationships: []
       }
       subscription_signups: {
         Row: {
@@ -7821,6 +8027,18 @@ export type Database = {
           ledger_id: string
           new_balance: number
           redemption_id: string
+        }[]
+      }
+      run_meta_segment_sql: {
+        Args: { _limit?: number; _sql: string }
+        Returns: {
+          city: string
+          email: string
+          first_name: string
+          last_name: string
+          phone: string
+          state: string
+          zip: string
         }[]
       }
       simulate_loyalty_earn: {

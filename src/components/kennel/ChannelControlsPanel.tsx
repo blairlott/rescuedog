@@ -132,7 +132,7 @@ function ChannelCard({ row }: { row: ChannelRow }) {
         .eq("channel_id", row.channel_id)
         .eq("status", "pending");
       if (error) throw error;
-      const list = (recs ?? []) as { id: string }[];
+      const list = ((recs ?? []) as unknown as { id: string }[]);
       if (list.length === 0) {
         toast.info("Nothing to apply", { description: "No pending recommendations on this channel." });
         return;

@@ -34,18 +34,20 @@ export function defaultStart(): Date {
   return d;
 }
 export function defaultEnd(): Date {
+  // Default forward horizon = 3 years out so every timeline shows a full
+  // life-of-brand → 3-year predictive window without manual extension.
   const d = todayUTC();
-  d.setUTCDate(d.getUTCDate() + 90);
+  d.setUTCFullYear(d.getUTCFullYear() + 3);
   return d;
 }
 
 /** Quick presets — useful shortcuts, not the only way to pick a range. */
 const PRESETS: { label: string; start: () => Date; end: () => Date }[] = [
-  { label: "Life", start: () => MIN_START, end: () => { const d = todayUTC(); d.setUTCDate(d.getUTCDate() + 90); return d; } },
-  { label: "3y · +1y", start: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() - 3); return d; }, end: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() + 1); return d; } },
-  { label: "1y · +1y", start: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() - 1); return d; }, end: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() + 1); return d; } },
-  { label: "90d · +90d", start: () => { const d = todayUTC(); d.setUTCDate(d.getUTCDate() - 90); return d; }, end: () => { const d = todayUTC(); d.setUTCDate(d.getUTCDate() + 90); return d; } },
-  { label: "+3y plan", start: () => todayUTC(), end: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() + 3); return d; } },
+  { label: "Life · +3y", start: () => MIN_START, end: () => maxEnd() },
+  { label: "3y · +3y",   start: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() - 3); return d; }, end: () => maxEnd() },
+  { label: "1y · +3y",   start: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() - 1); return d; }, end: () => maxEnd() },
+  { label: "90d · +1y",  start: () => { const d = todayUTC(); d.setUTCDate(d.getUTCDate() - 90); return d; }, end: () => { const d = todayUTC(); d.setUTCFullYear(d.getUTCFullYear() + 1); return d; } },
+  { label: "+3y plan",   start: () => todayUTC(), end: () => maxEnd() },
 ];
 
 export function DateRangeControls({

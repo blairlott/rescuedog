@@ -387,19 +387,26 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                   stroke="none"
                   label={{ value: "FORECAST →", position: "insideTopRight", fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 />
-                <ReferenceLine
-                  yAxisId="left"
-                  x={boundaryDate}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  strokeDasharray="4 3"
-                  label={{ value: "TODAY", position: "insideBottomLeft", fontSize: 10, fill: "hsl(var(--primary))", fontWeight: 700, offset: 6 }}
-                />
                 <Area yAxisId="left" dataKey="revenue_upper" stroke="none" fill="hsl(var(--primary) / 0.15)" name="Revenue range" stackId="band" />
                 <Area yAxisId="left" dataKey="revenue_lower" stroke="none" fill="hsl(var(--background))" stackId="band" legendType="none" />
                 <Line yAxisId="left" type="monotone" dataKey="spend" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Spend" />
                 <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Revenue" />
                 <Line yAxisId="right" type="monotone" dataKey="roas" stroke="hsl(220 70% 45%)" strokeWidth={2} strokeDasharray="4 4" dot={false} name="ROAS" />
+                <ReferenceLine
+                  yAxisId="left"
+                  x={boundaryDate}
+                  stroke="hsl(var(--foreground))"
+                  strokeWidth={5}
+                  ifOverflow="extendDomain"
+                  label={{ value: "TODAY", position: "top", fontSize: 11, fill: "hsl(var(--foreground))", fontWeight: 800, offset: 12 }}
+                />
+                <ReferenceLine
+                  yAxisId="left"
+                  x={boundaryDate}
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  ifOverflow="extendDomain"
+                />
               </ComposedChart>
             </ResponsiveContainer>
           </div>

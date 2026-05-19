@@ -191,20 +191,25 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     return [...hist, ...future];
   }, [data, history, horizonDays, today, bucket]);
 
-  // Boundary tick = the date where forecast begins (first future point), or today if absent.
+  // Boundary tick = today, bucketed the same way as the x-axis so it lines up with a real tick.
+  // (Comparing "2026-05" > "2026-05-19" lexicographically gives the wrong answer — always compare in bucket-space.)
+  const todayKey = useMemo(() => keyOf(isoDay(today)), [today, bucket]);
   const boundaryDate = useMemo(() => {
-    const todayIso = isoDay(today);
-    const firstFuture = chartData.find((p) => p.date > todayIso);
-    const lastHist = [...chartData].reverse().find((p) => p.date <= todayIso);
-    return firstFuture?.date ?? lastHist?.date ?? todayIso;
-  }, [chartData, today]);
+    // Prefer an exact-match tick on the chart; fall back to todayKey so the line still renders.
+    const exact = chartData.find((p) => p.date === todayKey);
+    if (exact) return exact.date;
+    const firstFuture = chartData.find((p) => p.date > todayKey);
+    const lastHist = [...chartData].reverse().find((p) => p.date <= todayKey);
+    return firstFuture?.date ?? lastHist?.date ?? todayKey;
+  }, [chartData, todayKey]);
   const forecastEndDate = chartData.length ? chartData[chartData.length - 1].date : boundaryDate;
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
-    const todayIso = isoDay(today);
-    const hist = chartData.filter((p) => p.date <= todayIso);
-    const fut  = chartData.filter((p) => p.date >  todayIso);
+    // Split on the bucket boundary so the current month counts as "history" (it has real data)
+    // rather than getting dropped by a daily-string vs monthly-key mismatch.
+    const hist = chartData.filter((p) => p.date <= todayKey);
+    const fut  = chartData.filter((p) => p.date >  todayKey);
     const sum = (arr: typeof chartData, k: keyof Point) => arr.reduce((s, p) => s + (Number(p[k]) || 0), 0);
     const histSpend = sum(hist, "spend"); const histRev = sum(hist, "revenue");
     const futSpend  = sum(fut,  "spend"); const futRev  = sum(fut,  "revenue");
@@ -216,7 +221,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
       futRevLower: sum(fut, "revenue_lower"),
       futRevUpper: sum(fut, "revenue_upper"),
     };
-  }, [chartData, today]);
+  }, [chartData, todayKey]);
 
   const generate = async () => {
     setBusy(true);

@@ -142,8 +142,9 @@ Deno.serve(async (req) => {
     // Floor projected spend so a steeply negative slope can't drive it to ~0.
     // 25% of recent mean is a conservative wind-down assumption.
     const spendFloor = Math.max(0, baselineSpend * 0.25);
-    // Hard cap on projected daily ROAS at 3x recent baseline to clamp tails.
+    // ROAS guardrails: clamp implied daily ROAS to [0.3x, 3x] of recent baseline.
     const roasCeiling = baselineRoas > 0 ? baselineRoas * 3 : Number.POSITIVE_INFINITY;
+    const roasFloor   = baselineRoas > 0 ? baselineRoas * 0.3 : 0;
 
     const series: any[] = [];
     let cumSpend = 0, cumRev = 0;
@@ -153,10 +154,16 @@ Deno.serve(async (req) => {
       const xi = lastIdx + h;
       const rawSpend   = Math.max(0, spendReg.intercept + spendReg.slope * xi) * spendSeason[dow] * spendTilt;
       const trendSpend = Math.max(spendFloor * spendSeason[dow] * spendTilt, rawSpend);
-      // Derive revenue from projected spend × baseline efficiency (ROAS),
-      // then nudge with seasonal pattern. This keeps ROAS bounded.
-      const effectiveRoas = Math.min(roasCeiling, baselineRoas * roasTilt);
-      const trendRev = trendSpend * effectiveRoas * revSeason[dow] * revenueTilt;
+      // Project revenue with its own regression + seasonality (preserves trend
+      // and growth), then clamp implied ROAS to a band around baseline so a
+      // diverging spend/revenue pair can't blow up or collapse the ratio.
+      const rawRev   = Math.max(0, revReg.intercept + revReg.slope * xi) * revSeason[dow] * revenueTilt;
+      let trendRev   = rawRev;
+      if (trendSpend > 0 && baselineRoas > 0) {
+        const implied = trendRev / trendSpend;
+        const targetRoas = Math.min(roasCeiling, Math.max(roasFloor, implied)) * roasTilt;
+        trendRev = trendSpend * targetRoas;
+      }
       const roas = trendSpend > 0 ? trendRev / trendSpend : 0;
       const sigmaRev = Math.max(revReg.residStd, trendRev * 0.15);
       cumSpend += trendSpend; cumRev += trendRev;

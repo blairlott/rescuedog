@@ -100,25 +100,39 @@ Deno.serve(async (req) => {
       const n = Number(String(v).replace(/[$,\s]/g, ""));
       return Number.isFinite(n) ? n : 0;
     };
+    const toStr = (v: any) => (v == null ? null : String(v).trim() || null);
+    const toDate = (v: any) => {
+      if (v == null || v === "") return today;
+      const s = String(v).trim();
+      // Already YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+      // MM/DD/YYYY or M/D/YYYY
+      const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      if (m) {
+        const [_, mm, dd, yy] = m;
+        const year = yy.length === 2 ? `20${yy}` : yy;
+        return `${year}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+      }
+      const d = new Date(s);
+      return Number.isFinite(d.getTime()) ? d.toISOString().slice(0, 10) : today;
+    };
     const mapped = uploadedOrders.slice(0, limit).map((r: any, i: number) => ({
-      invoice: String(
+      invoice: toStr(
         pick(r, ["order_id", "invoice", "invoice_id", "invoice_number", "order_number", "order", "id"]) ??
         `upload-${Date.now()}-${i}`
-      ),
-      transaction_date: String(
-        pick(r, ["transaction_date", "date", "order_date", "invoice_date", "created_at", "placed_at"]) ?? today
-      ).slice(0, 10),
+      )!,
+      transaction_date: toDate(pick(r, ["transaction_date", "date", "order_date", "invoice_date", "created_at", "placed_at"])),
       order_total: toNum(pick(r, [
         "order_total", "value", "total", "grand_total", "amount", "subtotal",
         "order_amount", "total_amount", "invoice_total", "order_total_usd",
       ])),
-      customer_email: pick(r, ["customer_email", "email", "buyer_email", "billing_email"]),
-      customer_phone: pick(r, ["customer_phone", "phone", "phone_number", "billing_phone"]),
-      customer_first_name: pick(r, ["customer_first_name", "first_name", "firstname", "billing_first_name"]),
-      customer_last_name: pick(r, ["customer_last_name", "last_name", "lastname", "billing_last_name"]),
-      ship_to_city: pick(r, ["ship_to_city", "city", "shipping_city"]),
-      ship_to_state: pick(r, ["ship_to_state", "state", "shipping_state", "ship_state"]),
-      ship_to_zip: pick(r, ["ship_to_zip", "zip", "zip_code", "postal_code", "shipping_zip"]),
+      customer_email: toStr(pick(r, ["customer_email", "email", "buyer_email", "billing_email"])),
+      customer_phone: toStr(pick(r, ["customer_phone", "phone", "phone_number", "billing_phone"])),
+      customer_first_name: toStr(pick(r, ["customer_first_name", "first_name", "firstname", "billing_first_name"])),
+      customer_last_name: toStr(pick(r, ["customer_last_name", "last_name", "lastname", "billing_last_name"])),
+      ship_to_city: toStr(pick(r, ["ship_to_city", "city", "shipping_city"])),
+      ship_to_state: toStr(pick(r, ["ship_to_state", "state", "shipping_state", "ship_state"])),
+      ship_to_zip: toStr(pick(r, ["ship_to_zip", "zip", "zip_code", "postal_code", "shipping_zip"])),
     }));
     rows = mapped.filter((r: any) => r.order_total > 0);
     uploadDiagnostics = {
@@ -166,13 +180,13 @@ Deno.serve(async (req) => {
         order_id: String(r.invoice),
         value_cents: Math.round(Number(r.order_total) * 100),
         currency: "USD",
-        email: r.customer_email,
-        phone: r.customer_phone,
-        first_name: r.customer_first_name,
-        last_name: r.customer_last_name,
-        city: r.ship_to_city,
-        state: r.ship_to_state,
-        zip: r.ship_to_zip,
+        email: r.customer_email == null ? null : String(r.customer_email),
+        phone: r.customer_phone == null ? null : String(r.customer_phone),
+        first_name: r.customer_first_name == null ? null : String(r.customer_first_name),
+        last_name: r.customer_last_name == null ? null : String(r.customer_last_name),
+        city: r.ship_to_city == null ? null : String(r.ship_to_city),
+        state: r.ship_to_state == null ? null : String(r.ship_to_state),
+        zip: r.ship_to_zip == null ? null : String(r.ship_to_zip),
         country: "US",
       }));
     if (metaBatch.length && !dryRun) {

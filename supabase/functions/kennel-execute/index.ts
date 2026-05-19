@@ -193,12 +193,141 @@ async function dispatchMeta(payload: any): Promise<MetaDispatchResult> {
   };
 }
 
+/**
+ * Dispatch a Meta audience_update for an ad set.
+ * payload = { platform:"meta", entity_type:"adset", entity_id, kind:"audience_update",
+ *   updates:{ custom_audiences?, lookalike_spec?, geo_locations?, age_min?, age_max?,
+ *     interests?, behaviors?, advantage_audience? } }
+ */
+async function dispatchMetaAudience(payload: any): Promise<MetaDispatchResult> {
+  const token = Deno.env.get("META_ADS_ACCESS_TOKEN");
+  const accountId = Deno.env.get("META_ADS_ACCOUNT_ID");
+  if (!token) return { dispatched: false, ok: false, error: "META_ADS_ACCESS_TOKEN missing" };
+
+  const entityId = payload?.entity_id;
+  const updates = payload?.updates ?? {};
+  if (!entityId || payload?.entity_type !== "adset") {
+    return { dispatched: false, ok: false, error: "audience_update requires entity_type=adset and entity_id" };
+  }
+
+  // Read current targeting + automation for rollback.
+  let rollbackState: Record<string, unknown> = {};
+  try {
+    const readRes = await fetch(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/${entityId}?fields=id,name,status,targeting,promoted_object,targeting_automation&access_token=${encodeURIComponent(token)}`,
+    );
+    if (readRes.ok) rollbackState = await readRes.json();
+  } catch (_) { /* non-fatal */ }
+
+  const currentStatus = (rollbackState as any)?.status;
+  if (currentStatus === "ARCHIVED" || currentStatus === "DELETED") {
+    return {
+      dispatched: false, ok: false,
+      error: `entity is ${currentStatus} on Meta and cannot be edited`,
+      rollback_state: rollbackState,
+    };
+  }
+
+  // Build targeting from current + updates (merge, not replace, to preserve placements etc.).
+  const currentTargeting = (rollbackState as any)?.targeting ?? {};
+  const newTargeting: Record<string, unknown> = { ...currentTargeting };
+
+  // Step 1: if lookalike_spec present, create the lookalike audience first.
+  let createdLookalikeId: string | null = null;
+  if (updates.lookalike_spec) {
+    if (!accountId) {
+      return { dispatched: false, ok: false, error: "META_ADS_ACCOUNT_ID missing for lookalike create", rollback_state: rollbackState };
+    }
+    const acct = String(accountId).startsWith("act_") ? accountId : `act_${accountId}`;
+    const name = updates.lookalike_spec?.name ?? `LAL ${new Date().toISOString().slice(0,10)}`;
+    const body = new URLSearchParams({
+      name,
+      subtype: "LOOKALIKE",
+      origin_audience_id: String(updates.lookalike_spec?.origin?.[0]?.id ?? ""),
+      lookalike_spec: JSON.stringify({
+        country: updates.lookalike_spec?.country ?? "US",
+        ratio: updates.lookalike_spec?.ratio ?? 0.01,
+        type: updates.lookalike_spec?.type ?? "similarity",
+      }),
+      access_token: token,
+    });
+    const cRes = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/${acct}/customaudiences`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    });
+    const cJson = await cRes.json().catch(() => ({}));
+    if (!cRes.ok || !cJson?.id) {
+      return {
+        dispatched: false, ok: false,
+        error: `lookalike create failed: ${JSON.stringify(cJson)}`,
+        rollback_state: rollbackState,
+      };
+    }
+    createdLookalikeId = cJson.id;
+  }
+
+  // Step 2: assemble custom_audiences list (created LAL + explicit ids).
+  if (updates.custom_audiences || createdLookalikeId) {
+    const list = Array.isArray(updates.custom_audiences) ? [...updates.custom_audiences] : [];
+    if (createdLookalikeId) list.push({ id: createdLookalikeId });
+    newTargeting.custom_audiences = list;
+  }
+  if (updates.geo_locations) newTargeting.geo_locations = updates.geo_locations;
+  if (typeof updates.age_min === "number") newTargeting.age_min = updates.age_min;
+  if (typeof updates.age_max === "number") newTargeting.age_max = updates.age_max;
+  if (updates.interests) newTargeting.interests = updates.interests;
+  if (updates.behaviors) newTargeting.behaviors = updates.behaviors;
+
+  // Safety guard: don't wipe all targeting.
+  const ca = newTargeting.custom_audiences as any[] | undefined;
+  const hasCA = Array.isArray(ca) && ca.length > 0;
+  const hasInterests = Array.isArray(newTargeting.interests) && (newTargeting.interests as any[]).length > 0;
+  const hasBehaviors = Array.isArray(newTargeting.behaviors) && (newTargeting.behaviors as any[]).length > 0;
+  const hasGeo = newTargeting.geo_locations && Object.keys(newTargeting.geo_locations as object).length > 0;
+  if (!hasCA && !hasInterests && !hasBehaviors && !hasGeo) {
+    return {
+      dispatched: false, ok: false,
+      error: "refusing to clear all targeting (no custom_audiences/interests/behaviors/geo provided)",
+      rollback_state: rollbackState,
+    };
+  }
+
+  // Step 3: PATCH ad set targeting + Advantage+ toggle.
+  const form = new URLSearchParams({
+    targeting: JSON.stringify(newTargeting),
+    access_token: token,
+  });
+  if (typeof updates.advantage_audience === "boolean" || typeof updates.advantage_audience === "number") {
+    const v = updates.advantage_audience ? 1 : 0;
+    form.set("targeting_automation", JSON.stringify({ advantage_audience: v }));
+  }
+
+  const res = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/${entityId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form.toString(),
+  });
+  const responseJson = await res.json().catch(() => ({}));
+  return {
+    dispatched: true,
+    ok: res.ok && responseJson?.success !== false && !responseJson?.error,
+    status: res.status,
+    request: { entity_id: entityId, targeting: newTargeting, lookalike_created: createdLookalikeId },
+    response: responseJson,
+    rollback_state: rollbackState,
+  };
+}
+
 /** Apply guardrails for a recommendation. Returns null if ok, or error string. */
 async function checkGuardrails(admin: any, rec: any): Promise<string | null> {
   if (!rec.channel_id) return null;
   const { data: g } = await admin.from("ad_guardrails").select("*").eq("channel_id", rec.channel_id).maybeSingle();
   if (!g) return null;
   if (g.paused) return "channel is paused via guardrails";
+
+  // audience_update: only paused gate applies (no budget delta checks).
+  if (rec.kind === "audience_update") return null;
 
   const change = rec.payload?.change ?? {};
   const current = rec.payload?.current ?? {};
@@ -230,6 +359,8 @@ async function shouldAutoExecute(admin: any, rec: any): Promise<{ go: boolean; r
   if (Number(rec.projected_impact_cents ?? 0) > Number(g.auto_execute_max_impact_cents)) {
     return { go: false, reason: `impact ${rec.projected_impact_cents} > cap ${g.auto_execute_max_impact_cents}` };
   }
+  // audience_update: skip budget-delta auto-execute check.
+  if (rec.kind === "audience_update") return { go: true, reason: "ok (audience_update)" };
   const change = rec.payload?.change ?? {};
   const current = rec.payload?.current ?? {};
   if (typeof change.daily_budget_cents === "number" && typeof current.daily_budget_cents === "number" && current.daily_budget_cents > 0) {
@@ -259,7 +390,9 @@ async function runExecute(admin: any, recId: string, actorId: string | null, act
   const platform = (rec.payload?.platform ?? "").toString().toLowerCase();
   let dispatch: DispatchResult;
   if (platform === "meta" || platform === "facebook") {
-    dispatch = await dispatchMeta(rec.payload);
+    dispatch = rec.kind === "audience_update"
+      ? await dispatchMetaAudience(rec.payload)
+      : await dispatchMeta(rec.payload);
   } else if (platform === "google") {
     dispatch = await dispatchGoogle(rec.payload);
   } else if (platform === "instacart") {
@@ -443,16 +576,47 @@ Deno.serve(async (req) => {
     let dispatch: MetaDispatchResult = { dispatched: false, ok: true };
     if ((platform === "meta" || platform === "facebook") && rec.rollback_state) {
       const rb = rec.rollback_state as any;
-      const restorePayload = {
-        entity_type: rec.payload?.entity_type,
-        entity_id: rec.payload?.entity_id ?? rb.id,
-        change: {
-          ...(rb.daily_budget != null ? { daily_budget_cents: Number(rb.daily_budget) } : {}),
-          ...(rb.lifetime_budget != null ? { lifetime_budget_cents: Number(rb.lifetime_budget) } : {}),
-          ...(rb.status ? { status: rb.status } : {}),
-        },
-      };
-      dispatch = await dispatchMeta(restorePayload);
+      if (rec.kind === "audience_update") {
+        // Restore full targeting object + advantage_audience toggle directly.
+        const token = Deno.env.get("META_ADS_ACCESS_TOKEN");
+        if (token && rb?.targeting) {
+          const form = new URLSearchParams({
+            targeting: JSON.stringify(rb.targeting),
+            access_token: token,
+          });
+          const adv = rb?.targeting_automation?.advantage_audience;
+          if (adv !== undefined) {
+            form.set("targeting_automation", JSON.stringify({ advantage_audience: adv ? 1 : 0 }));
+          }
+          const entityId = rec.payload?.entity_id ?? rb.id;
+          const res = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/${entityId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: form.toString(),
+          });
+          const j = await res.json().catch(() => ({}));
+          dispatch = {
+            dispatched: true,
+            ok: res.ok && j?.success !== false && !j?.error,
+            status: res.status,
+            response: j,
+            error: res.ok ? undefined : `rollback ${res.status}: ${JSON.stringify(j)}`,
+          };
+        } else {
+          dispatch = { dispatched: false, ok: false, error: "no targeting in rollback_state" };
+        }
+      } else {
+        const restorePayload = {
+          entity_type: rec.payload?.entity_type,
+          entity_id: rec.payload?.entity_id ?? rb.id,
+          change: {
+            ...(rb.daily_budget != null ? { daily_budget_cents: Number(rb.daily_budget) } : {}),
+            ...(rb.lifetime_budget != null ? { lifetime_budget_cents: Number(rb.lifetime_budget) } : {}),
+            ...(rb.status ? { status: rb.status } : {}),
+          },
+        };
+        dispatch = await dispatchMeta(restorePayload);
+      }
     }
 
     const { error: updErr } = await admin

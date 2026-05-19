@@ -11,6 +11,7 @@ import { TrendingUp, RefreshCw, Info } from "lucide-react";
 import {
   DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween, formatAxisDate, pickBucket,
 } from "./DateRangeControls";
+import { TileAiGuidance } from "./TileAiGuidance";
 
 type Point = {
   date: string;
@@ -403,24 +404,28 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                 <Line yAxisId="left" type="monotone" dataKey="spend" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Spend" />
                 <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Revenue" />
                 <Line yAxisId="right" type="monotone" dataKey="roas" stroke="hsl(220 70% 45%)" strokeWidth={2} strokeDasharray="4 4" dot={false} name="ROAS" />
-                <ReferenceLine
-                  yAxisId="left"
-                  x={boundaryDate}
-                  stroke="hsl(var(--foreground))"
-                  strokeWidth={5}
-                  ifOverflow="extendDomain"
-                  label={{ value: "TODAY", position: "top", fontSize: 11, fill: "hsl(var(--foreground))", fontWeight: 800, offset: 12 }}
-                />
-                <ReferenceLine
-                  yAxisId="left"
-                  x={boundaryDate}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  ifOverflow="extendDomain"
-                />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+          {summary && (
+            <TileAiGuidance
+              tileId="dtc-ecommerce"
+              rangeLabel={`${isoDay(start)} → ${isoDay(end)}`}
+              tileData={{
+                platform: activePlatform,
+                model: "naive trend + day-of-week seasonality, not MMM",
+                actual_spend: summary.histSpend,
+                actual_revenue: summary.histRev,
+                actual_roas: summary.avgHistRoas,
+                forecast_spend: summary.futSpend,
+                forecast_revenue: summary.futRev,
+                forecast_roas: summary.avgFutRoas,
+                forecast_revenue_range: [summary.futRevLower, summary.futRevUpper],
+                horizon_days: horizonDays,
+                lookback_days: lookbackDays,
+              }}
+            />
+          )}
           {data?.narrative && (
             <p className="mt-3 text-[11px] text-muted-foreground">{data.narrative}</p>
           )}

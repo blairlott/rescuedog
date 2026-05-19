@@ -56,7 +56,7 @@ export function AiInsights({ snapshot, rangeLabel }: Props) {
         .order("created_at", { ascending: false })
         .limit(6);
       if (error) throw error;
-      return (data ?? []) as SoftSignal[];
+      return ((data ?? []) as unknown) as SoftSignal[];
     },
   });
 

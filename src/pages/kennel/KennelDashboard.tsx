@@ -22,36 +22,21 @@ import { RefreshButton } from "@/components/kennel/RefreshButton";
 import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
 import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
 import { BrickMortarTimeline, BrandLiftTimeline } from "@/components/kennel/BrickMortarTimeline";
+import { DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween } from "@/components/kennel/DateRangeControls";
 import { SortableDashboard, type SortableItem } from "@/components/kennel/SortableDashboard";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertTriangle, RefreshCw, Sparkles, ChevronRight, Maximize2, SlidersHorizontal, Radio } from "lucide-react";
 import { toast } from "sonner";
 
-type Range = 7 | 14 | 30 | 90 | 180 | 365 | 730 | "ytd";
-
-const RANGE_TABS: { value: Range; label: string }[] = [
-  { value: 7,    label: "7d" },
-  { value: 14,   label: "14d" },
-  { value: 30,   label: "30d" },
-  { value: 90,   label: "90d" },
-  { value: 180,  label: "6mo" },
-  { value: "ytd", label: "YTD" },
-  { value: 365,  label: "12mo" },
-  { value: 730,  label: "2yr" },
-];
-
-function rangeStartIso(range: Range): { iso: string; days: number; label: string } {
-  const today = new Date();
-  if (range === "ytd") {
-    const start = new Date(today.getFullYear(), 0, 1);
-    const days = Math.max(1, Math.round((today.getTime() - start.getTime()) / 86400000));
-    return { iso: start.toISOString().slice(0, 10), days, label: "YTD" };
-  }
-  const d = new Date();
-  d.setDate(d.getDate() - range);
-  const label = RANGE_TABS.find((t) => t.value === range)?.label ?? `${range}d`;
-  return { iso: d.toISOString().slice(0, 10), days: range, label };
+function rangeLabel(start: Date, end: Date): string {
+  const today = todayUTC();
+  const obs = end < today ? end : today;
+  const days = Math.max(1, daysBetween(start, obs));
+  if (days <= 14) return `${days}d`;
+  if (days <= 90) return `${days}d`;
+  if (days <= 365) return `${Math.round(days / 30)}mo`;
+  return `${(days / 365).toFixed(1)}yr`;
 }
 
 interface PerfRow {
@@ -69,7 +54,8 @@ interface Channel { id: string; name: string; platform: string; }
 interface SyncRow { channel_id: string; last_primary_sync: string | null; }
 
 export default function KennelDashboard() {
-  const [range, setRange] = useState<Range>(30);
+  const [start, setStart] = useState<Date>(defaultStart);
+  const [end, setEnd] = useState<Date>(defaultEnd);
   const [syncing, setSyncing] = useState(false);
   const [optimizationOpen, setOptimizationOpen] = useState(false);
   const navigate = useNavigate();
@@ -109,13 +95,15 @@ export default function KennelDashboard() {
   const signalLow = signal && (signal.capi7d < 10 || signal.oci7d < 10);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["kennel-dashboard", range],
+    queryKey: ["kennel-dashboard", isoDay(start), isoDay(end)],
     queryFn: async () => {
-      const { iso: fromIso } = rangeStartIso(range);
+      const fromIso = isoDay(start);
+      const today = todayUTC();
+      const toIso = isoDay(end < today ? end : today);
 
       const [channelsRes, perfRes, syncRes, dtcRes, bmRes, bmLifetimeRes, finRes, finLifetimeRes] = await Promise.all([
         supabase.from("ad_channels" as any).select("id, name, platform").order("name"),
-        supabase.from("ad_performance_daily" as any).select("channel_id, date, spend, impressions, clicks, conversions, revenue, roas, cpa").gte("date", fromIso).order("date"),
+        supabase.from("ad_performance_daily" as any).select("channel_id, date, spend, impressions, clicks, conversions, revenue, roas, cpa").gte("date", fromIso).lte("date", toIso).order("date"),
         supabase.from("channel_sync_status" as any).select("channel_id, last_primary_sync"),
         // Real DTC revenue: page through Vinoshipper transactions (canonical source).
         (async () => {
@@ -126,6 +114,7 @@ export default function KennelDashboard() {
               .from("vs_transactions" as any)
               .select("order_total, invoice")
               .gte("transaction_date", fromIso)
+              .lte("transaction_date", toIso)
               // Ad-attribution baseline: exclude wine-club shipments (batch-processed
               // weekly, not incremental to ad spend). Keeps True ROAS honest.
               .eq("order_type", "CONSUMER")
@@ -144,7 +133,8 @@ export default function KennelDashboard() {
           .from("business_revenue_facts" as any)
           .select("date, channel, state, net_revenue_cents, units, orders")
           .in("channel", ["brick_mortar_off", "brick_mortar_on", "distributor_depletion"])
-          .gte("date", fromIso),
+          .gte("date", fromIso)
+          .lte("date", toIso),
         // Brick & mortar — lifetime totals
         supabase
           .from("business_revenue_facts" as any)
@@ -154,7 +144,8 @@ export default function KennelDashboard() {
         supabase
           .from("business_expense_facts" as any)
           .select("date, category, subcategory, amount_cents")
-          .gte("date", fromIso),
+          .gte("date", fromIso)
+          .lte("date", toIso),
         // QuickBooks expenses — lifetime totals
         supabase
           .from("business_expense_facts" as any)
@@ -176,7 +167,15 @@ export default function KennelDashboard() {
     },
   });
 
-  const periodMeta = useMemo(() => rangeStartIso(range), [range]);
+  const periodMeta = useMemo(() => {
+    const today = todayUTC();
+    const obs = end < today ? end : today;
+    return {
+      iso: isoDay(start),
+      days: Math.max(1, daysBetween(start, obs)),
+      label: rangeLabel(start, end),
+    };
+  }, [start, end]);
   const dtc = useMemo(() => {
     if (!data) return { revenue: 0, orders: 0 };
     const invoices = new Set<string>();

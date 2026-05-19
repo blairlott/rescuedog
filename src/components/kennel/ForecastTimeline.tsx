@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend, ReferenceArea,
+  CartesianGrid, Tooltip, Legend, ReferenceArea, Bar,
 } from "recharts";
-import { TrendingUp, RefreshCw, Info } from "lucide-react";
+import { TrendingUp, RefreshCw, Info, Truck } from "lucide-react";
 import {
   DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween, formatAxisDate, pickBucket,
 } from "./DateRangeControls";
@@ -212,6 +212,55 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     if (futureIndex === 0) return 0;
     return (futureIndex - 0.5) / (chartData.length - 1);
   }, [chartData, todayKey]);
+
+  // Shipping cost history — paged through dtc_historical_orders, bucketed like the main chart.
+  const { data: shipping } = useQuery({
+    queryKey: ["dtc-shipping", isoDay(start), isoDay(today), bucket],
+    queryFn: async () => {
+      const startIso = isoDay(start);
+      const todayIso = isoDay(today);
+      const map = new Map<string, { shipping: number; subtotal: number; orders: number }>();
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data: rows } = await supabase
+          .from("dtc_historical_orders" as any)
+          .select("order_date, shipping_cents, subtotal_cents")
+          .gte("order_date", startIso)
+          .lte("order_date", todayIso)
+          .order("order_date", { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (!rows || rows.length === 0) break;
+        for (const r of rows as any[]) {
+          const k = keyOf(r.order_date);
+          const cur = map.get(k) ?? { shipping: 0, subtotal: 0, orders: 0 };
+          cur.shipping += (Number(r.shipping_cents) || 0) / 100;
+          cur.subtotal += (Number(r.subtotal_cents) || 0) / 100;
+          cur.orders += 1;
+          map.set(k, cur);
+        }
+        if (rows.length < pageSize) break;
+        from += pageSize;
+      }
+      return Array.from(map.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, v]) => ({
+          date,
+          shipping: v.shipping,
+          ship_per_order: v.orders > 0 ? v.shipping / v.orders : 0,
+          ship_pct: v.subtotal > 0 ? (v.shipping / v.subtotal) * 100 : 0,
+        }));
+    },
+  });
+
+  const shippingTotals = useMemo(() => {
+    const rows = shipping ?? [];
+    if (rows.length === 0) return null;
+    const totalShipping = rows.reduce((s, r) => s + r.shipping, 0);
+    const avgPerOrder = rows.reduce((s, r) => s + r.ship_per_order, 0) / rows.length;
+    const avgPct = rows.reduce((s, r) => s + r.ship_pct, 0) / rows.length;
+    return { totalShipping, avgPerOrder, avgPct };
+  }, [shipping]);
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;

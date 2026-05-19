@@ -70,13 +70,18 @@ export async function addLinesAndOpenCart(lines: VsCartLine[]): Promise<void> {
  * Vinoshipper's hosted cart page (cartId + ret URL). This is the "one click
  * to checkout" flow — skips the slide-out drawer entirely.
  */
-export async function addLinesAndGoToHostedCart(lines: VsCartLine[]): Promise<void> {
-  // Open a blank tab synchronously inside the user gesture so popup
-  // blockers don't kill it during the async injector work below. We
-  // then redirect that tab to the VS hosted cart once we have the URL.
-  // This keeps the original tab (with the Shopify cart drawer) alive
-  // so the dual wine + merch handoff doesn't lose state.
-  const popup = typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+export async function addLinesAndGoToHostedCart(
+  lines: VsCartLine[],
+  /**
+   * Optional pre-opened popup window. Callers in the dual checkout flow
+   * must open both popups (Shopify + Vinoshipper) synchronously inside
+   * the same user gesture, then hand the VS popup here so we can keep
+   * doing the async injector work without losing the popup permission.
+   * If omitted, we open a new tab ourselves.
+   */
+  preOpenedPopup?: Window | null,
+): Promise<void> {
+  const popup = preOpenedPopup ?? (typeof window !== "undefined" ? window.open("about:blank", "_blank") : null);
   const vs = await waitForVinoshipper(10000);
   if (!vs) {
     try { popup?.close(); } catch {}

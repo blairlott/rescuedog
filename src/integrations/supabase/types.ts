@@ -3804,6 +3804,48 @@ export type Database = {
         }
         Relationships: []
       }
+      kennel_geo_modifiers: {
+        Row: {
+          avg_ltv_cents: number | null
+          computed_at: string
+          customers: number | null
+          modifier: number
+          notes: string | null
+          orders: number | null
+          repeat_rate_pct: number | null
+          revenue_cents: number | null
+          state: string
+          tier: string | null
+          updated_at: string
+        }
+        Insert: {
+          avg_ltv_cents?: number | null
+          computed_at?: string
+          customers?: number | null
+          modifier?: number
+          notes?: string | null
+          orders?: number | null
+          repeat_rate_pct?: number | null
+          revenue_cents?: number | null
+          state: string
+          tier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avg_ltv_cents?: number | null
+          computed_at?: string
+          customers?: number | null
+          modifier?: number
+          notes?: string | null
+          orders?: number | null
+          repeat_rate_pct?: number | null
+          revenue_cents?: number | null
+          state?: string
+          tier?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kennel_keyword_ideas: {
         Row: {
           ad_group_id: string
@@ -4020,6 +4062,42 @@ export type Database = {
           spend_cents?: number | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      kennel_seasonality_curve: {
+        Row: {
+          avg_aov_cents: number | null
+          budget_index: number
+          computed_at: string
+          month: number
+          notes: string | null
+          orders: number | null
+          revenue_cents: number | null
+          updated_at: string
+          years_observed: number | null
+        }
+        Insert: {
+          avg_aov_cents?: number | null
+          budget_index?: number
+          computed_at?: string
+          month: number
+          notes?: string | null
+          orders?: number | null
+          revenue_cents?: number | null
+          updated_at?: string
+          years_observed?: number | null
+        }
+        Update: {
+          avg_aov_cents?: number | null
+          budget_index?: number
+          computed_at?: string
+          month?: number
+          notes?: string | null
+          orders?: number | null
+          revenue_cents?: number | null
+          updated_at?: string
+          years_observed?: number | null
         }
         Relationships: []
       }
@@ -7137,6 +7215,16 @@ export type Database = {
       }
     }
     Views: {
+      kennel_retention_risk_summary: {
+        Row: {
+          at_risk_customers: number | null
+          at_risk_lifetime_value: number | null
+          avg_lifetime_value: number | null
+          repeat_buyers_at_risk: number | null
+          state: string | null
+        }
+        Relationships: []
+      }
       merch_storefront: {
         Row: {
           badges: string[] | null

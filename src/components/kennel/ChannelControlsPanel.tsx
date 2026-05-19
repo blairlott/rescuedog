@@ -18,7 +18,7 @@ type ChannelControl = {
   updated_at?: string;
 };
 
-const DEFAULT_CONTROL: ChannelControl = { spend_pct: 100, auto_apply: false };
+const DEFAULT_CONTROL: ChannelControl = { spend_pct: 100, auto_apply: true };
 const SHARP = { borderRadius: 0 } as const;
 
 function keyFor(channelId: string) {

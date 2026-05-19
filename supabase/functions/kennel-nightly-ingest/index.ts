@@ -47,8 +47,12 @@ Deno.serve(async (req) => {
   if (!isService && !hasSecret && !isAdOps) return J(401, { error: "unauthorized" });
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
   const days = Math.min(Math.max(Number(body?.days ?? 7), 1), 30);
+  // Optional: limit to specific targets. Defaults to all.
+  const requestedTargets: string[] = Array.isArray(body?.targets)
+    ? body.targets.filter((t: any) => typeof t === "string")
+    : [];
 
-  const targets: Array<{ name: string; fn: string; body: unknown }> = [
+  const allTargets: Array<{ name: string; fn: string; body: unknown }> = [
     { name: "meta",            fn: "kennel-ingest-meta",      body: { days } },
     { name: "google",          fn: "kennel-ingest-google",    body: { days } },
     { name: "instacart",       fn: "kennel-ingest-instacart", body: { days } },
@@ -57,6 +61,12 @@ Deno.serve(async (req) => {
     { name: "winback_google",  fn: "kennel-winback-google-sync", body: {} },
     { name: "winback_recs",    fn: "kennel-winback-auto-recs",   body: {} },
   ];
+  const targets = requestedTargets.length
+    ? allTargets.filter((t) => requestedTargets.includes(t.name))
+    : allTargets;
+  if (targets.length === 0) {
+    return J(400, { error: `no matching targets; valid: ${allTargets.map((t) => t.name).join(", ")}` });
+  }
 
   const summary: any[] = [];
   for (const t of targets) {

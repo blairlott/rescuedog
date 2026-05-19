@@ -192,6 +192,22 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     return [...hist, ...future];
   }, [data, history, horizonDays, todayKey, bucket]);
 
+  // Merge shipping into the main chart series by date-bucket key.
+  const mergedChartData = useMemo(() => {
+    const ship = new Map<string, { shipping: number; ship_pct: number; ship_per_order: number }>();
+    for (const r of shipping ?? []) ship.set(r.date, r);
+    return chartData.map((p) => {
+      const s = ship.get(p.date);
+      return {
+        ...p,
+        shipping: s?.shipping ?? 0,
+        ship_pct: s?.ship_pct ?? 0,
+        ship_per_order: s?.ship_per_order ?? 0,
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartData, shipping]);
+
   // Boundary tick = today, bucketed the same way as the x-axis so it lines up with a real tick.
   // (Comparing "2026-05" > "2026-05-19" lexicographically gives the wrong answer — always compare in bucket-space.)
   const boundaryDate = useMemo(() => {

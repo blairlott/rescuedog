@@ -18,7 +18,8 @@ import { RefreshButton } from "@/components/kennel/RefreshButton";
 import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
 import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RefreshCw, Sparkles, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertTriangle, RefreshCw, Sparkles, ChevronRight, Maximize2, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
 type Range = 7 | 14 | 30 | 90 | 180 | 365 | 730 | "ytd";

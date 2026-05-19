@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { MetricCard } from "@/components/kennel/MetricCard";
 import { ChannelPerformanceTable, type ChannelRow } from "@/components/kennel/ChannelPerformanceTable";
+import { ChannelControlsPanel } from "@/components/kennel/ChannelControlsPanel";
 import { SpendChart, type SpendDatum } from "@/components/kennel/SpendChart";
 import { VinoshipperPanel } from "@/components/kennel/VinoshipperPanel";
 import { BidModifiersPanel } from "@/components/kennel/BidModifiersPanel";
@@ -419,6 +420,9 @@ export default function KennelDashboard() {
               rows={channelRows}
               onRowClick={(r) => navigate(`/kennel/channels?platform=${encodeURIComponent(r.platform)}`)}
             />
+            <div className="mt-4">
+              <ChannelControlsPanel rows={channelRows} />
+            </div>
           </section>
 
           <StrategyMixPanel scope="global" />

@@ -71,23 +71,10 @@ export function CartGiftMode({ onChange }: { onChange?: (s: GiftModeState) => vo
                   />
                 </label>
               )}
-              <Textarea
-                placeholder="Gift message (optional, 250 chars)"
-                maxLength={250}
-                value={state.message}
-                onChange={(e) => update({ message: e.target.value })}
-                className="text-xs resize-none h-16"
-              />
-              <Input
-                type="email"
-                placeholder="Recipient email (optional — we'll send shipping updates)"
-                value={state.recipientEmail}
-                onChange={(e) => update({ recipientEmail: e.target.value })}
-                className="text-xs h-9"
-              />
-              <p className="text-[10px] text-muted-foreground">
-                Wines are shipped via our compliance partner Vinoshipper and may
-                require an adult signature at delivery.
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                You'll enter the recipient's shipping address and an optional
+                gift message on the next step at our compliance partner
+                Vinoshipper. Adult signature required at delivery.
               </p>
             </>
           )}

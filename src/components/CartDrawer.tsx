@@ -381,7 +381,11 @@ export const CartDrawer = () => {
       localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items: merchItems, savedAt: new Date().toISOString() }));
     } catch {}
     setIsOpen(false);
-    window.location.href = url;
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) {
+      // Popup blocked — fall back to same-tab navigation.
+      window.location.href = url;
+    }
   };
 
   // Smart sequential checkout: combines wine (Vinoshipper) and merch
@@ -418,9 +422,13 @@ export const CartDrawer = () => {
     const url = pendingShopifyUrlRef.current;
     pendingShopifyUrlRef.current = null;
     if (!url) return;
-    logCheckoutEvent("merch_handoff_same_tab");
+    logCheckoutEvent("merch_handoff_new_tab");
     setIsOpen(false);
-    window.location.href = url;
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) {
+      logCheckoutEvent("merch_handoff_popup_blocked_fallback");
+      window.location.href = url;
+    }
   };
 
   const runDualCheckout = () => {

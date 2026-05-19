@@ -421,6 +421,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
               <Stat
                 label={`Actual Revenue · ${isoDay(start).slice(0,7)} → today`}
                 value={`$${summary.histRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                hint={`Net $${summary.histNet.toLocaleString(undefined, { maximumFractionDigits: 0 })} (rev − ad spend)`}
               />
               <Stat
                 label={`Forecast Spend · next ${horizonDays}d`}
@@ -430,7 +431,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
               <Stat
                 label={`Forecast Revenue · next ${horizonDays}d`}
                 value={`$${summary.futRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                hint={`Range $${summary.futRevLower.toLocaleString(undefined, { maximumFractionDigits: 0 })} – $${summary.futRevUpper.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                hint={`Net $${summary.futNet.toLocaleString(undefined, { maximumFractionDigits: 0 })} · range $${summary.futRevLower.toLocaleString(undefined, { maximumFractionDigits: 0 })}–$${summary.futRevUpper.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
               />
             </div>
           )}

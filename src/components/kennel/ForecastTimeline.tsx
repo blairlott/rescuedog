@@ -34,6 +34,14 @@ type ForecastRow = {
 const HORIZONS = [30, 60, 90] as const;
 type Horizon = typeof HORIZONS[number];
 
+const LOOKBACKS = [
+  { label: "90d", days: 90 },
+  { label: "1y", days: 365 },
+  { label: "2y", days: 730 },
+  { label: "3y", days: 1095 },
+] as const;
+type LookbackDays = typeof LOOKBACKS[number]["days"];
+
 const PLATFORM_OPTS = ["all", "meta", "google", "instacart"] as const;
 type PlatformOpt = typeof PLATFORM_OPTS[number];
 
@@ -47,6 +55,7 @@ export function ForecastTimeline({ lockPlatform }: Props) {
   const [horizon, setHorizon] = useState<Horizon>(30);
   const [platform, setPlatform] = useState<PlatformOpt>(lockPlatform ?? "all");
   const [busy, setBusy] = useState(false);
+  const [lookbackDays, setLookbackDays] = useState<LookbackDays>(1095);
 
   const activePlatform = lockPlatform ?? platform;
 
@@ -90,11 +99,11 @@ export function ForecastTimeline({ lockPlatform }: Props) {
         body: {
           platform: activePlatform === "all" ? undefined : activePlatform,
           horizon_days: 90,
-          lookback_days: 90,
+          lookback_days: lookbackDays,
         },
       });
       if (error) throw error;
-      toast.success("Forecast generated");
+      toast.success(`Forecast generated (${lookbackDays}d history)`);
       await qc.invalidateQueries({ queryKey: ["forecast"] });
     } catch (e: any) {
       toast.error("Forecast failed", { description: e?.message ?? String(e) });
@@ -128,6 +137,16 @@ export function ForecastTimeline({ lockPlatform }: Props) {
               ))}
             </div>
           )}
+          <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">history</span>
+          {LOOKBACKS.map((l) => (
+            <Button key={l.days} size="sm" variant={lookbackDays === l.days ? "default" : "outline"}
+              onClick={() => setLookbackDays(l.days)} style={{ borderRadius: 0 }}
+              className="uppercase tracking-brand text-[10px] h-7 px-2"
+            >
+              {l.label}
+            </Button>
+          ))}
+          <span className="text-[10px] uppercase tracking-brand text-muted-foreground mx-1">·</span>
           {HORIZONS.map((h) => (
             <Button key={h} size="sm" variant={horizon === h ? "default" : "outline"}
               onClick={() => setHorizon(h)} style={{ borderRadius: 0 }}

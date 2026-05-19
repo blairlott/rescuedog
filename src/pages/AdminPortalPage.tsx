@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Lock } from "lucide-react";
 import { ADMIN_AREAS, hasAreaAccess } from "@/lib/adminAreas";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
+import { AbVariantTile } from "@/components/admin/AbVariantTile";
 
 type RoleRow = { role: string };
 
@@ -144,6 +145,9 @@ const AdminPortalPage = () => {
               </Link>
             );
           })}
+        </div>
+        <div className="mt-8">
+          <AbVariantTile />
         </div>
       </main>
     </div>

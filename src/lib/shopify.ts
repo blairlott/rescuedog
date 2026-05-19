@@ -359,7 +359,15 @@ export async function shopifyCartCreate(
   quantity: number,
 ): Promise<{ cartId: string; checkoutUrl: string; lineId: string } | null> {
   const result = await storefrontApiRequest<any>(CART_CREATE_MUTATION, {
-    input: { lines: [{ quantity, merchandiseId: variantId }] },
+    input: {
+      lines: [{ quantity, merchandiseId: variantId }],
+      // Tag every Lovable-originated cart so checkout analytics can split
+      // Lovable vs legacy WP/Shopify carts permanently (A/B + post-cut cohort).
+      attributes: [
+        { key: "source", value: "lovable" },
+        { key: "platform_version", value: "headless-2025-07" },
+      ],
+    },
   });
   const errs = result?.data?.cartCreate?.userErrors ?? [];
   if (errs.length) {

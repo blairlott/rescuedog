@@ -22,7 +22,7 @@ import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
 import { SortableDashboard, type SortableItem } from "@/components/kennel/SortableDashboard";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertTriangle, RefreshCw, Sparkles, ChevronRight, Maximize2, SlidersHorizontal } from "lucide-react";
+import { AlertTriangle, RefreshCw, Sparkles, ChevronRight, Maximize2, SlidersHorizontal, Radio } from "lucide-react";
 import { toast } from "sonner";
 
 type Range = 7 | 14 | 30 | 90 | 180 | 365 | 730 | "ytd";
@@ -84,6 +84,26 @@ export default function KennelDashboard() {
     },
     refetchInterval: 60_000,
   });
+
+  // Signal-quality probe: in the last 7 days, how many live CAPI fires and
+  // OCI uploads did we send? Low numbers = ad platforms can't optimize.
+  const { data: signal } = useQuery({
+    queryKey: ["kennel-signal-quality"],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 7 * 86400_000).toISOString();
+      const [capi, oci] = await Promise.all([
+        supabase.from("meta_capi_events" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("test_mode", false).eq("success", true).gte("sent_at", since),
+        supabase.from("oci_upload_log" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("status", "uploaded").gte("uploaded_at", since),
+      ]);
+      return { capi7d: capi.count ?? 0, oci7d: oci.count ?? 0 };
+    },
+    refetchInterval: 5 * 60_000,
+  });
+  const signalLow = signal && (signal.capi7d < 10 || signal.oci7d < 10);
 
   const { data, isLoading } = useQuery({
     queryKey: ["kennel-dashboard", range],
@@ -359,6 +379,24 @@ export default function KennelDashboard() {
           </span>
           <span className="flex items-center gap-1 uppercase tracking-brand text-xs font-bold text-primary group-hover:underline">
             Review <ChevronRight className="h-3 w-3" />
+          </span>
+        </Link>
+      )}
+      {signalLow && (
+        <Link
+          to="/kennel/capi"
+          className="border-2 border-amber-500 bg-amber-500/10 hover:bg-amber-500/20 transition-colors p-3 flex items-center justify-between gap-2 text-sm group"
+          style={{ borderRadius: 0 }}
+        >
+          <span className="flex items-center gap-2">
+            <Radio className="h-4 w-4 text-amber-600 shrink-0" />
+            <strong className="uppercase tracking-brand text-foreground">
+              Signal data insufficient — {signal?.capi7d ?? 0} CAPI / {signal?.oci7d ?? 0} OCI in last 7d
+            </strong>
+            <span className="text-muted-foreground hidden sm:inline">— platforms can&apos;t optimize without enough conversions.</span>
+          </span>
+          <span className="flex items-center gap-1 uppercase tracking-brand text-xs font-bold text-amber-700 group-hover:underline">
+            Fix <ChevronRight className="h-3 w-3" />
           </span>
         </Link>
       )}

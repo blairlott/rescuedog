@@ -16,7 +16,7 @@ type StrategyMode = {
   updated_at?: string;
 };
 
-const DEFAULTS: StrategyMode = { goal: 35, risk: 30, pace: 50, auto_apply: false };
+const DEFAULTS: StrategyMode = { goal: 35, risk: 30, pace: 50, auto_apply: true };
 
 interface Props {
   scope?: string; // "global" | "platform:meta" | "platform:google" | "platform:instacart"

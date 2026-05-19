@@ -155,7 +155,7 @@ export function BrickMortarTimeline() {
   });
 
   const chart = useMemo(() => {
-    if (!data) return { points: [] as any[], projectedTotal: 0 };
+    if (!data || !Array.isArray(data.observed)) return { points: [] as any[], projectedTotal: 0 };
     const today = new Date();
     // Use monthly buckets whenever either history or projection is multi-year.
     const useMonthly = lookback.bucket === "month" || horizon.bucket === "month";
@@ -325,7 +325,7 @@ export function BrandLiftTimeline() {
   });
 
   const chart = useMemo(() => {
-    if (!data) return { points: [] as any[], projSpend: 0, projLift: 0 };
+    if (!data || !Array.isArray(data.observed)) return { points: [] as any[], projSpend: 0, projLift: 0 };
     const today = new Date();
     const useMonthly = lookback.bucket === "month" || horizon.bucket === "month";
     if (!useMonthly) {

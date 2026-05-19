@@ -376,11 +376,16 @@ export default function KennelDashboard() {
           <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">DTC sales (Vinoshipper)</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard label="DTC Revenue" value={`$${dtc.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Vinoshipper orders" />
-              <MetricCard label="DTC Orders" value={dtc.orders.toLocaleString()} hint="From Z3a / CAPI feed" />
+              <MetricCard label="DTC Revenue" value={`$${dtc.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Consumer orders (excl. wine club)" />
+              <MetricCard label="DTC Orders" value={dtc.orders.toLocaleString()} hint="Ad-addressable consumer orders" />
               <MetricCard label="True ROAS" value={(aggregates?.spend ?? 0) > 0 ? `${(dtc.revenue / (aggregates?.spend ?? 1)).toFixed(2)}x` : "—"} hint="DTC Revenue ÷ Ad Spend" />
               <MetricCard label="AOV" value={dtc.orders > 0 ? `$${(dtc.revenue / dtc.orders).toFixed(0)}` : "—"} hint="Average order value" />
             </div>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Ad optimization</h2>
+            <BidModifiersPanel />
           </section>
 
           <section className="space-y-2">

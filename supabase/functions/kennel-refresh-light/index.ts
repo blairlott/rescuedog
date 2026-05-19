@@ -32,16 +32,21 @@ Deno.serve(async (req) => {
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
   const days = Math.min(Math.max(Number(body?.days ?? 7), 1), 30);
 
+  const ingestSecret = Deno.env.get("KENNEL_INGEST_SECRET") ?? "";
+
   const targets = [
     { name: "kennel-ingest-google",    body: { days } },
     { name: "kennel-ingest-meta",      body: { days } },
     { name: "kennel-ingest-instacart", body: { days } },
-    { name: "vinoshipper-poll",        body: {} },
+    { name: "vinoshipper-poll",        body: {}, headers: { "x-kennel-ingest-secret": ingestSecret } },
   ];
 
   const results = await Promise.allSettled(
     targets.map(async (t) => {
-      const r = await admin.functions.invoke(t.name, { body: t.body });
+      const r = await admin.functions.invoke(t.name, {
+        body: t.body,
+        headers: (t as any).headers,
+      });
       if (r.error) throw new Error(`${t.name}: ${r.error.message ?? r.error}`);
       return { name: t.name, ok: true, data: r.data };
     }),

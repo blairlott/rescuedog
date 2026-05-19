@@ -456,6 +456,48 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+          {shipping && shipping.length > 0 && shippingTotals && (
+            <div className="mt-6 border-2 border-foreground p-3" style={{ borderRadius: 0 }}>
+              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-primary" />
+                  <h3 className="text-xs uppercase tracking-brand font-bold text-foreground">
+                    DTC Shipping Cost · {isoDay(start)} → {isoDay(today)}
+                  </h3>
+                </div>
+                <div className="flex gap-3 text-[10px] uppercase tracking-brand text-muted-foreground">
+                  <span>Total <strong className="text-foreground tabular-nums">${shippingTotals.totalShipping.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong></span>
+                  <span>Avg/order <strong className="text-foreground tabular-nums">${shippingTotals.avgPerOrder.toFixed(2)}</strong></span>
+                  <span>% of subtotal <strong className="text-foreground tabular-nums">{shippingTotals.avgPct.toFixed(1)}%</strong></span>
+                </div>
+              </div>
+              <div style={{ width: "100%", height: 180 }}>
+                <ResponsiveContainer>
+                  <ComposedChart data={shipping} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={32} tickFormatter={formatAxisDate} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} tickFormatter={(v) => `${v.toFixed(0)}%`} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 0, border: "2px solid hsl(var(--foreground))", fontSize: 12 }}
+                      formatter={(value: any, name: string) => {
+                        if (name === "% of subtotal") return [`${Number(value).toFixed(1)}%`, name];
+                        if (name === "Avg / order") return [`$${Number(value).toFixed(2)}`, name];
+                        return [`$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, name];
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Bar yAxisId="left" dataKey="shipping" fill="hsl(var(--primary) / 0.6)" name="Shipping cost" />
+                    <Line yAxisId="right" type="monotone" dataKey="ship_pct" stroke="hsl(220 70% 45%)" strokeWidth={2} dot={false} name="% of subtotal" />
+                    <Line yAxisId="right" type="monotone" dataKey="ship_per_order" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={false} name="Avg / order" />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Source: <strong>dtc_historical_orders</strong>. Bars = total shipping charged to customers per {bucket === "day" ? "day" : "month"}. Right axis = shipping as % of subtotal and average $ per order. Rising % or $/order = pricing pressure or carrier rate creep.
+              </p>
+            </div>
+          )}
           {summary && (
             <TileAiGuidance
               tileId="dtc-ecommerce"

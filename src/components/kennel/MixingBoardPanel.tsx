@@ -54,6 +54,8 @@ function Fader({
   onChange,
   disabled,
   tooltip,
+  softMin,
+  softMax,
 }: {
   label: string;
   sublabel?: string;
@@ -71,7 +73,7 @@ function Fader({
   /** Soft guardrail band — values outside trigger an amber warning. */
   softMin?: number;
   softMax?: number;
-} & { softMin?: number; softMax?: number }) {
+}) {
   const p = pos(value, min, max);
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -94,8 +96,8 @@ function Fader({
   // Guardrail state: hard-pinned at clamp, or outside the soft "reasonable" band.
   const atHardLimit = value <= min + 0.001 || value >= max - 0.001;
   const outsideSoft =
-    (arguments[0] as any).softMin !== undefined && value < (arguments[0] as any).softMin - 0.001 ||
-    (arguments[0] as any).softMax !== undefined && value > (arguments[0] as any).softMax + 0.001;
+    (softMin !== undefined && value < softMin - 0.001) ||
+    (softMax !== undefined && value > softMax + 0.001);
   const guardrailWarn = atHardLimit || outsideSoft;
 
   const setFromClientY = (clientY: number) => {

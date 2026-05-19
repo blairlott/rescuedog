@@ -192,6 +192,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     return [...hist, ...future];
   }, [data, history, horizonDays, todayKey, bucket]);
 
+
   // Boundary tick = today, bucketed the same way as the x-axis so it lines up with a real tick.
   // (Comparing "2026-05" > "2026-05-19" lexicographically gives the wrong answer — always compare in bucket-space.)
   const boundaryDate = useMemo(() => {
@@ -261,6 +262,22 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     const avgPct = rows.reduce((s, r) => s + r.ship_pct, 0) / rows.length;
     return { totalShipping, avgPerOrder, avgPct };
   }, [shipping]);
+
+  // Merge shipping into the main chart series by date-bucket key, so it can be
+  // rendered as a stacked-context bar inside the main predictive timeline.
+  const mergedChartData = useMemo(() => {
+    const ship = new Map<string, { shipping: number; ship_pct: number; ship_per_order: number }>();
+    for (const r of shipping ?? []) ship.set(r.date, r);
+    return chartData.map((p) => {
+      const s = ship.get(p.date);
+      return {
+        ...p,
+        shipping: s?.shipping ?? 0,
+        ship_pct: s?.ship_pct ?? 0,
+        ship_per_order: s?.ship_per_order ?? 0,
+      };
+    });
+  }, [chartData, shipping]);
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
@@ -427,7 +444,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
               </div>
             )}
             <ResponsiveContainer>
-              <ComposedChart data={chartData} margin={{ top: 24, right: 12, left: 0, bottom: 0 }}>
+              <ComposedChart data={mergedChartData} margin={{ top: 24, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={32} tickFormatter={formatAxisDate} />
                 <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
@@ -450,52 +467,19 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                 />
                 <Area yAxisId="left" dataKey="revenue_upper" stroke="none" fill="hsl(var(--primary) / 0.15)" name="Revenue range" stackId="band" />
                 <Area yAxisId="left" dataKey="revenue_lower" stroke="none" fill="hsl(var(--background))" stackId="band" legendType="none" />
+                <Bar yAxisId="left" dataKey="shipping" fill="hsl(var(--muted-foreground) / 0.35)" name="Shipping cost" />
                 <Line yAxisId="left" type="monotone" dataKey="spend" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Spend" />
                 <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Revenue" />
                 <Line yAxisId="right" type="monotone" dataKey="roas" stroke="hsl(220 70% 45%)" strokeWidth={2} strokeDasharray="4 4" dot={false} name="ROAS" />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          {shipping && shipping.length > 0 && shippingTotals && (
-            <div className="mt-6 border-2 border-foreground p-3" style={{ borderRadius: 0 }}>
-              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <Truck className="h-4 w-4 text-primary" />
-                  <h3 className="text-xs uppercase tracking-brand font-bold text-foreground">
-                    DTC Shipping Cost · {isoDay(start)} → {isoDay(today)}
-                  </h3>
-                </div>
-                <div className="flex gap-3 text-[10px] uppercase tracking-brand text-muted-foreground">
-                  <span>Total <strong className="text-foreground tabular-nums">${shippingTotals.totalShipping.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong></span>
-                  <span>Avg/order <strong className="text-foreground tabular-nums">${shippingTotals.avgPerOrder.toFixed(2)}</strong></span>
-                  <span>% of subtotal <strong className="text-foreground tabular-nums">{shippingTotals.avgPct.toFixed(1)}%</strong></span>
-                </div>
-              </div>
-              <div style={{ width: "100%", height: 180 }}>
-                <ResponsiveContainer>
-                  <ComposedChart data={shipping} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={32} tickFormatter={formatAxisDate} />
-                    <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} tickFormatter={(v) => `${v.toFixed(0)}%`} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: 0, border: "2px solid hsl(var(--foreground))", fontSize: 12 }}
-                      formatter={(value: any, name: string) => {
-                        if (name === "% of subtotal") return [`${Number(value).toFixed(1)}%`, name];
-                        if (name === "Avg / order") return [`$${Number(value).toFixed(2)}`, name];
-                        return [`$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, name];
-                      }}
-                    />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar yAxisId="left" dataKey="shipping" fill="hsl(var(--primary) / 0.6)" name="Shipping cost" />
-                    <Line yAxisId="right" type="monotone" dataKey="ship_pct" stroke="hsl(220 70% 45%)" strokeWidth={2} dot={false} name="% of subtotal" />
-                    <Line yAxisId="right" type="monotone" dataKey="ship_per_order" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={false} name="Avg / order" />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-              <p className="mt-2 text-[10px] text-muted-foreground">
-                Source: <strong>dtc_historical_orders</strong>. Bars = total shipping charged to customers per {bucket === "day" ? "day" : "month"}. Right axis = shipping as % of subtotal and average $ per order. Rising % or $/order = pricing pressure or carrier rate creep.
-              </p>
+          {shippingTotals && (
+            <div className="mt-2 flex flex-wrap gap-3 text-[10px] uppercase tracking-brand text-muted-foreground">
+              <span className="flex items-center gap-1"><Truck className="h-3 w-3" /> Shipping (history)</span>
+              <span>Total <strong className="text-foreground tabular-nums">${shippingTotals.totalShipping.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong></span>
+              <span>Avg/order <strong className="text-foreground tabular-nums">${shippingTotals.avgPerOrder.toFixed(2)}</strong></span>
+              <span>% of subtotal <strong className="text-foreground tabular-nums">{shippingTotals.avgPct.toFixed(1)}%</strong></span>
             </div>
           )}
           {summary && (

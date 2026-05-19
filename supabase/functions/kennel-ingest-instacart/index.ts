@@ -8,6 +8,7 @@ import { CORS, J, FactRow, isAuthorized, makeAdminClient, writeFacts, ensureChan
 const BASE = "https://ads.instacart.com/api/v2";
 const TOKEN = Deno.env.get("INSTACART_ADS_API_TOKEN");
 const ADV = Deno.env.get("INSTACART_ADS_ADVERTISER_ID");
+const WINDOW_DAYS = 90; // Instacart Reports API caps date ranges around this
 
 async function pull(path: string, params: Record<string, string>): Promise<any[]> {
   if (!TOKEN || !ADV) return [];
@@ -26,9 +27,17 @@ Deno.serve(async (req) => {
   if (!TOKEN || !ADV) return J(400, { error: "INSTACART_ADS_API_TOKEN or ADVERTISER_ID missing" });
 
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-  const days = Math.max(1, Math.min(Number(body.days ?? 30), 180));
-  const end = new Date().toISOString().slice(0, 10);
-  const start = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+  const days = Math.max(1, Math.min(Number(body.days ?? 30), 1095));
+  // Build chunked windows of WINDOW_DAYS each, newest first.
+  const today = new Date();
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const windows: { start: string; end: string }[] = [];
+  for (let offset = 0; offset < days; offset += WINDOW_DAYS) {
+    const wEnd = new Date(today.getTime() - offset * 86400000);
+    const span = Math.min(WINDOW_DAYS - 1, days - offset - 1);
+    const wStart = new Date(wEnd.getTime() - span * 86400000);
+    windows.push({ start: iso(wStart), end: iso(wEnd) });
+  }
 
   const channel_id = await ensureChannel(sb, "instacart");
   if (!channel_id) return J(500, { error: "no instacart channel" });
@@ -48,32 +57,35 @@ Deno.serve(async (req) => {
   const summary: Record<string, number> = {};
 
   for (const p of passes) {
-    try {
-      const rows = await pull(p.path, { start_date: start, end_date: end });
-      const facts: FactRow[] = rows.map((r: any): FactRow => ({
-        channel_id, platform: "instacart",
-        date: r.date ?? r.report_date,
-        campaign_id: r.campaign_id ?? null,
-        campaign_name: r.campaign_name ?? null,
-        ad_group_id: r.ad_group_id ?? null,
-        ad_group_name: r.ad_group_name ?? null,
-        creative_id: r.creative_id ?? null,
-        creative_name: r.creative_name ?? r.format ?? null,
-        placement: r.placement ?? r.surface ?? null,
-        geo_region: r.region ?? r.state ?? null,
-        hour: r.hour ?? null,
-        spend: Number(r.spend ?? r.cost ?? 0),
-        impressions: Number(r.impressions ?? 0),
-        clicks: Number(r.clicks ?? 0),
-        conversions: Math.round(Number(r.attributed_units ?? r.conversions ?? 0)),
-        revenue: Number(r.attributed_sales ?? r.revenue ?? 0),
-        source: `instacart_api:${p.name}`,
-      })).filter(f => f.date);
-      const written = await writeFacts(sb, facts);
-      summary[p.name] = written;
-      total += written;
-    } catch (e: any) {
-      errors.push(`${p.name}: ${e?.message ?? String(e)}`);
+    summary[p.name] = 0;
+    for (const w of windows) {
+      try {
+        const rows = await pull(p.path, { start_date: w.start, end_date: w.end });
+        const facts: FactRow[] = rows.map((r: any): FactRow => ({
+          channel_id, platform: "instacart",
+          date: r.date ?? r.report_date,
+          campaign_id: r.campaign_id ?? null,
+          campaign_name: r.campaign_name ?? null,
+          ad_group_id: r.ad_group_id ?? null,
+          ad_group_name: r.ad_group_name ?? null,
+          creative_id: r.creative_id ?? null,
+          creative_name: r.creative_name ?? r.format ?? null,
+          placement: r.placement ?? r.surface ?? null,
+          geo_region: r.region ?? r.state ?? null,
+          hour: r.hour ?? null,
+          spend: Number(r.spend ?? r.cost ?? 0),
+          impressions: Number(r.impressions ?? 0),
+          clicks: Number(r.clicks ?? 0),
+          conversions: Math.round(Number(r.attributed_units ?? r.conversions ?? 0)),
+          revenue: Number(r.attributed_sales ?? r.revenue ?? 0),
+          source: `instacart_api:${p.name}`,
+        })).filter(f => f.date);
+        const written = await writeFacts(sb, facts);
+        summary[p.name] += written;
+        total += written;
+      } catch (e: any) {
+        errors.push(`${p.name} ${w.start}..${w.end}: ${e?.message ?? String(e)}`);
+      }
     }
   }
 
@@ -83,5 +95,5 @@ Deno.serve(async (req) => {
     error_message: errors.length ? errors.join("; ").slice(0, 500) : null,
   }, { onConflict: "channel_id" });
 
-  return J(200, { ok: true, total, summary, errors });
+  return J(200, { ok: true, total, summary, errors, windows: windows.length, days });
 });

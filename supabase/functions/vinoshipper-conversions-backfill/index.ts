@@ -231,8 +231,10 @@ Deno.serve(async (req) => {
           if (emH) userIdentifiers.push({ hashedEmail: emH, userIdentifierSource: "FIRST_PARTY" });
           const phH = await sha256Hex(String(r.customer_phone ?? "").replace(/\D/g, "") || null);
           if (phH) userIdentifiers.push({ hashedPhoneNumber: phH, userIdentifierSource: "FIRST_PARTY" });
-          // Google requires a date-time string with timezone. transaction_date is YYYY-MM-DD.
-          const cdt = `${r.transaction_date} 12:00:00-05:00`;
+          // Google requires `yyyy-mm-dd hh:mm:ss+|-hh:mm`. Vinoshipper sometimes returns
+          // transaction_date as MM/DD/YYYY (string) — normalize defensively.
+          const isoDate = toIsoDate(r.transaction_date);
+          const cdt = `${isoDate} 12:00:00-05:00`;
           return {
             conversionAction,
             conversionDateTime: cdt,

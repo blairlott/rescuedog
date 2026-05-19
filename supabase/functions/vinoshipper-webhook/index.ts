@@ -500,16 +500,48 @@ Deno.serve(async (req) => {
     // confirm the exact GET endpoints from their docs.
     let notes = "";
     switch (payload.subject) {
-      case "ORDER":
-        // TODO: GET /orders/{id} from Vinoshipper, then update wine_club_shipments
-        // (status, tracking_number, total_cents, etc.) where vinoshipper_order_id matches.
-        notes = "ORDER event received; detail fetch pending Vinoshipper API key";
+      case "ORDER": {
+        notes = `ORDER ${payload.event} received`;
+        // Vinoshipper's webhook envelope only contains identifier+subject+event+href —
+        // no customer/email/lines. We MUST fetch the order to enrich everything
+        // downstream (gift matching, loyalty, conversions, welcome series).
+        const vsOrderDetails = await fetchVsOrderDetails(payload.identifier);
+        if (vsOrderDetails) {
+          notes += " | detail fetched";
+        } else {
+          notes += " | detail fetch failed (skipping enrichment)";
+        }
+        const vsCustomerObj =
+          (vsOrderDetails as any)?.customer ?? null;
+        const vsCustomerId: string | number | null =
+          vsCustomerObj?.id ??
+          (payload as any)?.customerId ??
+          null;
+        const buyerEmail: string | null =
+          vsCustomerObj?.email ??
+          vsCustomerObj?.emailAddress ??
+          null;
+        const buyerFirstName: string | null =
+          vsCustomerObj?.firstName ?? vsCustomerObj?.first_name ?? null;
+        const buyerLastName: string | null =
+          vsCustomerObj?.lastName ?? vsCustomerObj?.last_name ?? null;
+        const orderSubtotalDollars: number | null =
+          typeof (vsOrderDetails as any)?.saleAmount === "number"
+            ? (vsOrderDetails as any).saleAmount
+            : typeof (vsOrderDetails as any)?.subtotal === "number"
+            ? (vsOrderDetails as any).subtotal
+            : null;
+        const orderSubtotalCents: number | null =
+          orderSubtotalDollars != null ? Math.round(orderSubtotalDollars * 100) : null;
+        const orderTrackingNumber: string | null =
+          (vsOrderDetails as any)?.trackingNumber ??
+          (vsOrderDetails as any)?.tracking_number ??
+          (vsOrderDetails as any)?.shipping?.trackingNumber ??
+          null;
+        const orderShipmentStatus: string | null =
+          (vsOrderDetails as any)?.shipmentStatus ?? null;
         // Gift recipient + club shipment emails.
         try {
-          const p = payload as unknown as Record<string, any>;
-          const vsCustomerId =
-            p?.customerId ?? p?.customer_id ?? p?.data?.customerId ?? null;
-          const buyerEmail = p?.email ?? null;
           if (payload.event === "CREATED" || payload.event === "UPDATED") {
             const giftNote = await maybeSendGiftIncomingEmail(
               supabase,
@@ -519,7 +551,15 @@ Deno.serve(async (req) => {
             );
             notes += ` | ${giftNote}`;
           }
-          if (payload.event === "TRACKING_NUMBER") {
+          // Fire shipped emails whenever:
+          //   (a) VS sends a dedicated TRACKING_NUMBER event, or
+          //   (b) the fetched order detail now has a tracking number / shipped status.
+          // handleTrackingForOrder is idempotent (timestamp guard per intent).
+          const shouldFireTracking =
+            payload.event === "TRACKING_NUMBER" ||
+            !!orderTrackingNumber ||
+            (orderShipmentStatus && orderShipmentStatus.toUpperCase() === "SHIPPED");
+          if (shouldFireTracking) {
             const trackNote = await handleTrackingForOrder(supabase, payload.identifier);
             notes += ` | ${trackNote}`;
           }
@@ -531,15 +571,12 @@ Deno.serve(async (req) => {
         // never created a site account. enqueue_welcome_series is idempotent
         // (per-email dedupe) so repeat orders won't re-trigger.
         try {
-          const p = payload as unknown as Record<string, any>;
-          const vsCustomerId =
-            p?.customerId ?? p?.customer_id ?? p?.data?.customerId ?? null;
           if (vsCustomerId) {
             const note = await enqueueWelcomeForVsCustomer(supabase, vsCustomerId, {
-              email: p?.email ?? null,
-              firstName: p?.firstName ?? p?.first_name ?? null,
-              lastName: p?.lastName ?? p?.last_name ?? null,
-              createdAt: p?.customerCreatedAt ?? null,
+              email: buyerEmail,
+              firstName: buyerFirstName,
+              lastName: buyerLastName,
+              createdAt: vsCustomerObj?.customerSince ?? null,
             });
             notes += ` | ${note}`;
           }
@@ -549,15 +586,7 @@ Deno.serve(async (req) => {
         // Best-effort loyalty accrual: if the payload includes a linkable
         // customer + a subtotal, award 1 point per $1. Idempotent on order_id.
         try {
-          const p = payload as unknown as Record<string, any>;
-          const vsCustomerId =
-            p?.customerId ?? p?.customer_id ?? p?.data?.customerId ?? null;
-          const subtotalCents =
-            typeof p?.subtotalCents === "number" ? p.subtotalCents
-            : typeof p?.subtotal_cents === "number" ? p.subtotal_cents
-            : typeof p?.subtotal === "number" ? Math.round(p.subtotal * 100)
-            : typeof p?.amount === "number" ? Math.round(p.amount * 100)
-            : null;
+          const subtotalCents = orderSubtotalCents;
           if (vsCustomerId && subtotalCents && subtotalCents > 0) {
             const { data: profile } = await supabase
               .from("customer_profiles")
@@ -606,15 +635,11 @@ Deno.serve(async (req) => {
         // Server-side conversion forwarding (GA4 Measurement Protocol + Meta CAPI).
         // Inert until GA4_*/META_* secrets are configured.
         try {
-          const p = payload as unknown as Record<string, any>;
-          const vsCustomerId =
-            p?.customerId ?? p?.customer_id ?? p?.data?.customerId ?? null;
-          const subtotalCents =
-            typeof p?.subtotalCents === "number" ? p.subtotalCents
-            : typeof p?.subtotal_cents === "number" ? p.subtotal_cents
-            : typeof p?.subtotal === "number" ? Math.round(p.subtotal * 100)
-            : typeof p?.amount === "number" ? Math.round(p.amount * 100)
-            : null;
+          const subtotalCents = orderSubtotalCents;
+          const shipAddr =
+            (vsOrderDetails as any)?.shipToAddress ??
+            (vsOrderDetails as any)?.shippingAddress ??
+            null;
           if (subtotalCents && subtotalCents > 0) {
             let prof: any = null;
             if (vsCustomerId) {
@@ -628,15 +653,15 @@ Deno.serve(async (req) => {
             const result = await forwardPurchaseConversion({
               orderId: payload.identifier,
               valueCents: subtotalCents,
-              currency: (p?.currency as string) || "USD",
-              email: prof?.email ?? p?.email ?? null,
-              phone: prof?.phone ?? p?.phone ?? null,
-              firstName: p?.firstName ?? p?.first_name ?? null,
-              lastName: p?.lastName ?? p?.last_name ?? null,
-              city: p?.city ?? p?.shippingCity ?? null,
-              state: p?.state ?? p?.shippingState ?? null,
-              zip: p?.zip ?? p?.shippingZip ?? null,
-              country: p?.country ?? "US",
+              currency: ((vsOrderDetails as any)?.currency as string) || "USD",
+              email: prof?.email ?? buyerEmail ?? null,
+              phone: prof?.phone ?? vsCustomerObj?.phone ?? null,
+              firstName: buyerFirstName,
+              lastName: buyerLastName,
+              city: shipAddr?.city ?? null,
+              state: shipAddr?.stateCode ?? shipAddr?.state ?? null,
+              zip: shipAddr?.zip ?? shipAddr?.postalCode ?? null,
+              country: shipAddr?.country ?? "US",
               fbc: null,
               fbp: null,
               gclid: null,
@@ -682,6 +707,7 @@ Deno.serve(async (req) => {
           notes += " | bridge exception: " + String(e);
         }
         break;
+      }
       case "CLUB_MEMBERSHIP":
         // TODO: GET /club-memberships/{id}, then update wine_club_memberships
         // (status, next_shipment_date, payment_status) where vinoshipper_membership_id matches.

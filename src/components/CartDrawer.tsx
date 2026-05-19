@@ -22,7 +22,7 @@ import { CartTrustBlock } from "@/components/cart/CartTrustBlock";
 import { CartGiftToggle } from "@/components/cart/CartGiftToggle";
 import { CartSaveForLater } from "@/components/cart/CartSaveForLater";
 import { CartLineExtras } from "@/components/cart/CartLineExtras";
-import { CartGiftMode, readGiftMode } from "@/components/cart/CartGiftMode";
+import { CartGiftMode, readGiftMode, isGiftModeReady } from "@/components/cart/CartGiftMode";
 import { useGiftWrapSettings } from "@/hooks/useGiftWrapSettings";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Percent } from "lucide-react";
@@ -31,6 +31,7 @@ import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
 import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInterstitial";
 import { CartLineSizePicker } from "@/components/cart/CartLineSizePicker";
 import { addLinesAndGoToHostedCart } from "@/lib/vinoshipperInjector";
+import { supabase } from "@/integrations/supabase/client";
 
 const LAST_ORDER_KEY = "rdw_last_order";
 const PENDING_WINE_KEY = "rdw_pending_wine_checkout";
@@ -291,6 +292,61 @@ export const CartDrawer = () => {
       });
       logCheckoutEvent("wine_injector_missing_product_ids");
       return;
+    }
+
+    // GIFT MODE: persist a pending intent so the Vinoshipper webhook can
+    // match this order back to a recipient and fire branded gift emails.
+    // We do this BEFORE redirecting because once we hand off to Vinoshipper
+    // we lose the React context. Best-effort: never block checkout on failure.
+    const liveGift = readGiftMode();
+    if (liveGift.enabled) {
+      if (!isGiftModeReady(liveGift)) {
+        toast.error("Recipient email required", {
+          description: "Gift Mode is on — please add the recipient's email so we can send their gift notifications.",
+        });
+        return;
+      }
+      try {
+        const { data: authUser } = await supabase.auth.getUser();
+        const bottleCount = wineItems.reduce((s, i) => s + i.quantity, 0);
+        const subtotalCents = Math.round(wineTotal * 100);
+        let vsCustomerId: string | null = null;
+        let buyerName: string | null = null;
+        let buyerEmail: string | null = authUser?.user?.email ?? null;
+        if (authUser?.user?.id) {
+          const { data: prof } = await supabase
+            .from("customer_profiles")
+            .select("vinoshipper_customer_id, full_name, email")
+            .eq("id", authUser.user.id)
+            .maybeSingle();
+          vsCustomerId = (prof as any)?.vinoshipper_customer_id ?? null;
+          buyerName = (prof as any)?.full_name ?? null;
+          buyerEmail = buyerEmail ?? (prof as any)?.email ?? null;
+        }
+        const { error: intentErr } = await supabase
+          .from("wine_order_gift_intents")
+          .insert({
+            buyer_user_id: authUser?.user?.id ?? null,
+            buyer_email: buyerEmail,
+            buyer_name: buyerName,
+            vinoshipper_customer_id: vsCustomerId,
+            recipient_name: liveGift.recipientName || "Friend",
+            recipient_email: liveGift.recipientEmail.trim(),
+            gift_message: liveGift.message || null,
+            gift_wrap: !!liveGift.wrap,
+            bottle_count: bottleCount,
+            subtotal_cents: subtotalCents,
+            source: "a_la_carte",
+          });
+        if (intentErr) {
+          console.error("[gift-intent] insert failed", intentErr);
+          logCheckoutEvent("gift_intent_insert_failed", { error: intentErr.message });
+        } else {
+          logCheckoutEvent("gift_intent_saved", { bottleCount, vsCustomerId });
+        }
+      } catch (e) {
+        console.error("[gift-intent] exception", e);
+      }
     }
 
     logCheckoutEvent("wine_injector_hosted_cart", { lines: vsLines.length });

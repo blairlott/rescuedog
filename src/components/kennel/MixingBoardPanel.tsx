@@ -143,9 +143,21 @@ function Fader({
   }, []);
 
   const inner = (
-    <div className={`flex flex-col items-center gap-1 px-1 py-2 ${active ? "bg-white/5" : ""} ${isDirty ? "ring-1 ring-[hsl(45,95%,55%)]/50" : ""}`} style={{ borderRadius: 0 }}>
-      <div className={`text-[9px] font-bold tabular-nums leading-none ${delta > 0 ? "text-[hsl(142,76%,55%)]" : delta < 0 ? "text-[hsl(0,75%,65%)]" : "text-white/60"}`}>
-        {fmtPct(value)}
+    <div
+      className={`flex flex-col items-center gap-1 px-1 py-2 ${active ? "bg-white/5" : ""} ${
+        guardrailWarn
+          ? "ring-1 ring-[hsl(25,95%,55%)]/80"
+          : isDirty
+            ? "ring-1 ring-[hsl(45,95%,55%)]/50"
+            : ""
+      }`}
+      style={{ borderRadius: 0 }}
+    >
+      <div className="flex items-center gap-0.5 h-3 leading-none">
+        {guardrailWarn && <AlertTriangle className="h-2.5 w-2.5 text-[hsl(25,95%,55%)]" />}
+        <span className={`text-[9px] font-bold tabular-nums ${delta > 0 ? "text-[hsl(142,76%,55%)]" : delta < 0 ? "text-[hsl(0,75%,65%)]" : "text-white/60"}`}>
+          {fmtPct(value)}
+        </span>
       </div>
       <div
         ref={trackRef}
@@ -200,6 +212,17 @@ function Fader({
 
   if (!tooltip) return inner;
 
+  const warnNote = guardrailWarn ? (
+    <div className="mt-2 pt-2 border-t border-[hsl(25,95%,55%)]/40 text-[10px] text-[hsl(25,95%,75%)] flex items-start gap-1">
+      <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+      <span>
+        {atHardLimit
+          ? `Pinned at the hard ${value <= min + 0.001 ? "min" : "max"} (${value.toFixed(2)}×). Further moves are blocked.`
+          : `Outside the reasonable band${softMin !== undefined && softMax !== undefined ? ` (${softMin.toFixed(2)}–${softMax.toFixed(2)}×)` : ""}. Expect outsized swings in spend or CAC.`}
+      </span>
+    </div>
+  ) : null;
+
   return (
     <Tooltip open={tipOpen} onOpenChange={setTipOpen} delayDuration={150}>
       <TooltipTrigger asChild>
@@ -208,7 +231,7 @@ function Fader({
       <TooltipContent
         side="top"
         sideOffset={8}
-        className="max-w-[260px] bg-black border border-[hsl(45,95%,55%)]/50 text-white px-3 py-2"
+        className={`max-w-[260px] bg-black border text-white px-3 py-2 ${guardrailWarn ? "border-[hsl(25,95%,55%)]/70" : "border-[hsl(45,95%,55%)]/50"}`}
         style={{ borderRadius: 0 }}
       >
         <div className="text-[10px] uppercase tracking-brand font-bold text-[hsl(45,95%,55%)] mb-1">
@@ -217,6 +240,7 @@ function Fader({
         <div className="text-[11px] leading-snug text-white/85">
           {tooltip.body}
         </div>
+        {warnNote}
       </TooltipContent>
     </Tooltip>
   );

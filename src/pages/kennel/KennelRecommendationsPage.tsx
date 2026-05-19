@@ -69,8 +69,9 @@ export default function KennelRecommendationsPage() {
   const filtered = useMemo(() => {
     const list = filter === "all" ? recs : recs.filter((r) => r.status === filter);
     if (filter === "pending") {
+      // Newest first
       return [...list].sort(
-        (a, b) => b.projected_impact_cents * b.confidence - a.projected_impact_cents * a.confidence,
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
     }
     return list;

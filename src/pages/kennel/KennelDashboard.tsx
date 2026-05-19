@@ -446,12 +446,46 @@ export default function KennelDashboard() {
 
           <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Ad optimization</h2>
-            <MixingBoardPanel />
-            <BidModifiersPanel />
-            <SeasonalityPanel />
-            <GeoModifiersPanel />
-            <RetentionRiskPanel />
+            <button
+              type="button"
+              onClick={() => setOptimizationOpen(true)}
+              className="w-full border-2 border-foreground bg-card hover:bg-muted/40 transition-colors p-4 flex items-center justify-between text-left group"
+              style={{ borderRadius: 0 }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="border-2 border-foreground p-2 bg-background">
+                  <SlidersHorizontal className="h-5 w-5 text-foreground" />
+                </div>
+                <div>
+                  <div className="font-bold uppercase tracking-brand text-sm text-foreground">Optimization console</div>
+                  <div className="text-xs text-muted-foreground">Mixing board · bids · seasonality · geo · retention risk</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs uppercase tracking-brand text-muted-foreground group-hover:text-foreground">
+                Open <Maximize2 className="h-4 w-4" />
+              </div>
+            </button>
           </section>
+
+          <Dialog open={optimizationOpen} onOpenChange={setOptimizationOpen}>
+            <DialogContent
+              className="max-w-none w-screen h-screen sm:rounded-none p-0 gap-0 border-0 flex flex-col"
+              style={{ borderRadius: 0 }}
+            >
+              <DialogHeader className="border-b-2 border-foreground p-4 shrink-0">
+                <DialogTitle className="uppercase tracking-brand text-base flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4" /> Optimization console
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-background">
+                <MixingBoardPanel />
+                <BidModifiersPanel />
+                <SeasonalityPanel />
+                <GeoModifiersPanel />
+                <RetentionRiskPanel />
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Data pipeline health</h2>

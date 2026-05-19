@@ -223,21 +223,21 @@ export function Header() {
           <div className="pt-2 mt-2 border-t border-border space-y-3">
               <Link
                 to="/admin"
-                className="block text-sm font-medium tracking-brand uppercase text-foreground"
+                className="block text-xs font-medium tracking-brand uppercase text-muted-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 ADMIN
               </Link>
               <Link
                 to="/crm/login"
-                className="block text-sm font-medium tracking-brand uppercase text-foreground"
+                className="block text-xs font-medium tracking-brand uppercase text-muted-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 RDW SALES PORTAL
               </Link>
               <Link
                 to="/intelligence"
-                className="block text-sm font-medium tracking-brand uppercase text-foreground"
+                className="block text-xs font-medium tracking-brand uppercase text-muted-foreground"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 COMMAND CENTER

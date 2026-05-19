@@ -69,26 +69,43 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         .filter((c) => c.platform === "instacart")
         .map((c) => c.id);
 
-      const [qbRes, depRes, icRes] = await Promise.all([
-        supabase
+      // Paginated fetch — Supabase caps at 1000/page; .limit() above that silently truncates.
+      const pageAll = async <T,>(builder: (from: number, to: number) => Promise<{ data: T[] | null }>): Promise<T[]> => {
+        const out: T[] = [];
+        const pageSize = 1000;
+        let from = 0;
+        while (true) {
+          const { data: rows } = await builder(from, from + pageSize - 1);
+          if (!rows || rows.length === 0) break;
+          out.push(...rows);
+          if (rows.length < pageSize) break;
+          from += pageSize;
+        }
+        return out;
+      };
+      const [qbRows, depRows, icRows] = await Promise.all([
+        pageAll<any>((f, t) => supabase
           .from("bm_finance_entries" as any)
           .select("date, amount_cents, channel, entry_type")
           .gte("date", since).lte("date", until)
           .in("entry_type", ["revenue", "income", "sales"])
-          .limit(100000),
-        supabase
+          .order("date", { ascending: true })
+          .range(f, t)),
+        pageAll<any>((f, t) => supabase
           .from("depletion_report_lines" as any)
           .select("period_end, units, cases")
           .gte("period_end", since).lte("period_end", until)
-          .limit(100000),
+          .order("period_end", { ascending: true })
+          .range(f, t)),
         instacartChannelIds.length
-          ? supabase
+          ? pageAll<any>((f, t) => supabase
               .from("ad_performance_daily" as any)
               .select("date, revenue, channel_id")
               .gte("date", since).lte("date", until)
               .in("channel_id", instacartChannelIds)
-              .limit(100000)
-          : Promise.resolve({ data: [] as any[] }),
+              .order("date", { ascending: true })
+              .range(f, t))
+          : Promise.resolve([] as any[]),
       ]);
 
       const byDay = new Map<string, DayPoint>();
@@ -96,21 +113,21 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         if (!byDay.has(d)) byDay.set(d, { date: d, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: 0 });
         return byDay.get(d)!;
       };
-      for (const r of (qbRes.data ?? []) as any[]) {
+      for (const r of qbRows) {
         const ch = (r.channel ?? "").toLowerCase();
         if (ch === "dtc" || ch === "ecommerce") continue;
         ensure(r.date).qb_revenue += Number(r.amount_cents ?? 0) / 100;
       }
-      for (const r of (depRes.data ?? []) as any[]) {
+      for (const r of depRows) {
         if (!r.period_end) continue;
         const units = Number(r.units ?? 0) || Number(r.cases ?? 0) * 12;
         // Market-level depletions, modeled at $9 FOB / bottle until SKU pricing lands.
         ensure(r.period_end).depletion_revenue += units * 9;
       }
-      for (const r of (icRes.data ?? []) as any[]) {
+      for (const r of icRows) {
         ensure(r.date).instacart_revenue += Number(r.revenue ?? 0);
       }
-      return { byDay, qbRows: qbRes.data?.length ?? 0, depRows: depRes.data?.length ?? 0, icRows: icRes.data?.length ?? 0 };
+      return { byDay, qbRows: qbRows.length, depRows: depRows.length, icRows: icRows.length };
     },
   });
 
@@ -232,11 +249,17 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
             <Stat label="Observed (QB+dep+IC)" value={`$${Math.round(chart.observedTotal).toLocaleString()}`} hint={`${isoDay(start)} → ${isoDay(observedEnd)}`} />
             <Stat label="Trailing 90d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint="projection base" />
             <Stat label="Projected" value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={end > today ? `${isoDay(today)} → ${isoDay(end)} · ${growthKey}` : "no future range"} />
-            <Stat label="QB / dep lines" value={`${data.qbRows} / ${data.depRows}`} hint="dep = market-level" />
+            <Stat label="Observed + Projected" value={`$${Math.round(chart.observedTotal + chart.projectedTotal).toLocaleString()}`} hint={`${data.qbRows.toLocaleString()} QB · ${data.depRows.toLocaleString()} dep lines`} />
           </div>
           <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>
               <ComposedChart data={chart.points} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <defs>
+                  <pattern id="depletionStripe" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                    <rect width="6" height="6" fill="hsl(220 70% 45% / 0.18)" />
+                    <line x1="0" y1="0" x2="0" y2="6" stroke="hsl(220 70% 45% / 0.55)" strokeWidth="2" />
+                  </pattern>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={32} tickFormatter={formatAxisDate} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
@@ -247,7 +270,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <ReferenceLine x={todayKey} stroke="hsl(var(--foreground))" strokeDasharray="2 2" label={{ value: "today", position: "top", fontSize: 10, fill: "hsl(var(--foreground))" }} />
                 <Area type="monotone" dataKey="qb_revenue" stackId="actual" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.35)" name="QuickBooks (wholesale)" />
-                <Area type="monotone" dataKey="depletion_revenue" stackId="actual" stroke="hsl(220 70% 45%)" fill="hsl(220 70% 45% / 0.3)" name="Depletions (modeled $)" />
+                <Area type="monotone" dataKey="depletion_revenue" stackId="actual" stroke="hsl(220 70% 45%)" fill="url(#depletionStripe)" name="Depletions (modeled @ $9/btl)" />
                 <Area type="monotone" dataKey="instacart_revenue" stackId="actual" stroke="hsl(30 90% 50%)" fill="hsl(30 90% 50% / 0.3)" name="Instacart" />
                 <Line type="monotone" dataKey="projected" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={false} name={`Projection (${growthKey})`} />
               </ComposedChart>

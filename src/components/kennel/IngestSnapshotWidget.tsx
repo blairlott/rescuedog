@@ -1,8 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, CheckCircle2, XCircle, Radio, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { Activity, CheckCircle2, XCircle, Radio, Loader2, RotateCw, AlertTriangle } from "lucide-react";
 
 const SHARP = { borderRadius: 0 } as const;
 const CHANNELS = ["meta", "google", "instacart", "mailchimp_sync"] as const;
@@ -43,6 +47,10 @@ function upsertCounts(p: any): { upserts: number | null; inserted: number | null
 }
 
 export function IngestSnapshotWidget() {
+  const qc = useQueryClient();
+  const [days, setDays] = useState<number>(7);
+  const [rerunning, setRerunning] = useState<string | null>(null);
+
   const { data: runs, isLoading } = useQuery({
     queryKey: ["kennel-ingest-snapshot"],
     queryFn: async () => {
@@ -75,6 +83,33 @@ export function IngestSnapshotWidget() {
 
   const z8Time = lindyLast?.created_at ?? null;
 
+  async function rerun(target: string | "all") {
+    const key = target;
+    setRerunning(key);
+    try {
+      const payload: { days: number; targets?: string[] } = { days };
+      if (target !== "all") payload.targets = [target];
+      const { data, error } = await supabase.functions.invoke("kennel-nightly-ingest", { body: payload });
+      if (error) throw error;
+      const summary = (data as any)?.summary ?? [];
+      const failed = summary.filter((s: any) => !s.ok);
+      if (failed.length === 0) {
+        toast.success(
+          target === "all"
+            ? `Re-ran ${summary.length} target(s) for last ${days}d`
+            : `Re-ran ${target} for last ${days}d`,
+        );
+      } else {
+        toast.error(`Re-run completed with ${failed.length} failure(s): ${failed.map((f: any) => f.target).join(", ")}`);
+      }
+      await qc.invalidateQueries({ queryKey: ["kennel-ingest-snapshot"] });
+    } catch (e: any) {
+      toast.error(`Re-run failed: ${e?.message ?? String(e)}`);
+    } finally {
+      setRerunning(null);
+    }
+  }
+
   return (
     <Card className="p-4 md:p-5 border-2" style={SHARP}>
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -97,6 +132,35 @@ export function IngestSnapshotWidget() {
         </div>
       </div>
 
+      <div className="flex items-center gap-2 mb-3 pb-3 border-b border-border flex-wrap">
+        <span className="text-[11px] uppercase tracking-brand text-muted-foreground">Manual re-run window:</span>
+        <Input
+          type="number"
+          min={1}
+          max={30}
+          value={days}
+          onChange={(e) => setDays(Math.min(30, Math.max(1, Number(e.target.value) || 1)))}
+          className="h-7 w-16 text-xs"
+          style={SHARP}
+        />
+        <span className="text-[11px] text-muted-foreground">days back (max 30)</span>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => rerun("all")}
+          disabled={rerunning !== null}
+          className="h-7 ml-auto"
+          style={SHARP}
+        >
+          {rerunning === "all" ? (
+            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+          ) : (
+            <RotateCw className="h-3 w-3 mr-1" />
+          )}
+          Re-run all
+        </Button>
+      </div>
+
       {isLoading ? (
         <div className="text-xs text-muted-foreground flex items-center gap-2">
           <Loader2 className="h-3 w-3 animate-spin" /> Loading…
@@ -111,7 +175,8 @@ export function IngestSnapshotWidget() {
                 <th className="text-left py-1 pr-3 uppercase tracking-brand">Last run</th>
                 <th className="text-right py-1 pr-3 uppercase tracking-brand">Upserts</th>
                 <th className="text-right py-1 pr-3 uppercase tracking-brand">New</th>
-                <th className="text-right py-1 uppercase tracking-brand">Updated</th>
+                <th className="text-right py-1 pr-3 uppercase tracking-brand">Updated</th>
+                <th className="text-right py-1 uppercase tracking-brand">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -119,8 +184,13 @@ export function IngestSnapshotWidget() {
                 const r = latest[t];
                 const ok = r?.status === "ok";
                 const c = upsertCounts(r?.payload);
+                const zeroUpserts = c.upserts === 0;
+                const flagged = !r || !ok || zeroUpserts;
                 return (
-                  <tr key={t} className="border-b border-border/50">
+                  <tr
+                    key={t}
+                    className={`border-b border-border/50 ${flagged ? "bg-destructive/5" : ""}`}
+                  >
                     <td className="py-1.5 pr-3 font-mono font-bold">{t}</td>
                     <td className="py-1.5 pr-3">
                       {!r ? (
@@ -137,13 +207,37 @@ export function IngestSnapshotWidget() {
                     </td>
                     <td className="py-1.5 pr-3 text-muted-foreground">{relTime(r?.run_at ?? null)}</td>
                     <td className="py-1.5 pr-3 text-right font-mono font-bold">
-                      {c.upserts ?? "—"}
+                      {zeroUpserts ? (
+                        <span className="inline-flex items-center gap-1 text-destructive">
+                          <AlertTriangle className="h-3 w-3" /> 0
+                        </span>
+                      ) : (
+                        c.upserts ?? "—"
+                      )}
                     </td>
                     <td className="py-1.5 pr-3 text-right font-mono text-muted-foreground">
                       {c.inserted ?? "—"}
                     </td>
-                    <td className="py-1.5 text-right font-mono text-muted-foreground">
+                    <td className="py-1.5 pr-3 text-right font-mono text-muted-foreground">
                       {c.updated ?? "—"}
+                    </td>
+                    <td className="py-1.5 text-right">
+                      <Button
+                        size="sm"
+                        variant={flagged ? "default" : "ghost"}
+                        onClick={() => rerun(t)}
+                        disabled={rerunning !== null}
+                        className="h-6 px-2 text-[10px] uppercase tracking-brand"
+                        style={SHARP}
+                      >
+                        {rerunning === t ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <RotateCw className="h-3 w-3 mr-1" /> Re-run
+                          </>
+                        )}
+                      </Button>
                     </td>
                   </tr>
                 );

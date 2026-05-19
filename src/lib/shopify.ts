@@ -43,6 +43,8 @@ export interface ShopifyProduct {
     options: Array<{ name: string; values: string[] }>;
     /** Lovable extension: Vinoshipper deep-link cart URL for wine items. */
     vinoshipperCartUrl?: string | null;
+    /** Lovable extension: numeric Vinoshipper product ID for Injector add-to-cart. */
+    vinoshipperProductId?: string | null;
     /** Lovable extension: 'wine' | 'merch' classification. */
     productKind?: "wine" | "merch";
   };

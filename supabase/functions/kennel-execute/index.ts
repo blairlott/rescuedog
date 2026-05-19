@@ -514,7 +514,26 @@ Deno.serve(async (req) => {
       _action: action,
       _notes: notes ?? null,
     });
-    if (error) return json({ error: error.message }, 400);
+    if (error) {
+      const msg = error.message ?? "";
+      // Race-safe: rec was already handled (typically superseded by a sibling
+      // approval) or expired between render and click. Return 200 with a hint
+      // so the UI can refresh instead of showing a non-2xx error.
+      if (/not pending|expired|not found/i.test(msg)) {
+        const { data: latest } = await admin
+          .from("ad_recommendations")
+          .select("id,status,rejection_reason")
+          .eq("id", recommendation_id)
+          .maybeSingle();
+        return json({
+          ok: true,
+          already_handled: true,
+          reason: msg,
+          recommendation: latest ?? null,
+        });
+      }
+      return json({ error: msg }, 400);
+    }
 
     // Persist the rejection reason on the rec for UI display.
     if (action === "reject" && notes) {

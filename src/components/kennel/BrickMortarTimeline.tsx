@@ -32,6 +32,13 @@ export function BrickMortarTimeline() {
   const { data, isLoading } = useQuery({
     queryKey: ["bm-timeline", since],
     queryFn: async () => {
+      const channelsRes = await supabase
+        .from("ad_channels" as any)
+        .select("id, platform");
+      const instacartChannelIds = ((channelsRes.data ?? []) as any[])
+        .filter((c) => c.platform === "instacart")
+        .map((c) => c.id);
+
       const [qbRes, depRes, icRes] = await Promise.all([
         supabase
           .from("bm_finance_entries" as any)
@@ -44,12 +51,14 @@ export function BrickMortarTimeline() {
           .select("period_end, units, cases")
           .gte("period_end", since)
           .limit(5000),
-        supabase
-          .from("ad_performance_daily" as any)
-          .select("date, revenue, channel_id, ad_channels!inner(platform)" as any)
-          .gte("date", since)
-          .eq("ad_channels.platform" as any, "instacart")
-          .limit(5000),
+        instacartChannelIds.length
+          ? supabase
+              .from("ad_performance_daily" as any)
+              .select("date, revenue, channel_id")
+              .gte("date", since)
+              .in("channel_id", instacartChannelIds)
+              .limit(5000)
+          : Promise.resolve({ data: [] as any[] }),
       ]);
 
       const byDay = new Map<string, DayPoint>();
@@ -163,16 +172,27 @@ export function BrandLiftTimeline() {
   const { data, isLoading } = useQuery({
     queryKey: ["brand-lift-timeline", since],
     queryFn: async () => {
-      const { data: rows } = await supabase
-        .from("ad_performance_daily" as any)
-        .select("date, spend, conversions, revenue, ad_channels!inner(platform, objective)" as any)
-        .gte("date", since)
-        .limit(10000);
+      const channelsRes = await supabase
+        .from("ad_channels" as any)
+        .select("id, platform, objective");
+      const channels = (channelsRes.data ?? []) as any[];
+      const channelMap = new Map(channels.map((c) => [c.id, c]));
+      const dtcIds = channels.filter((c) => ["meta", "google"].includes(c.platform)).map((c) => c.id);
+
+      const { data: rows } = dtcIds.length
+        ? await supabase
+            .from("ad_performance_daily" as any)
+            .select("date, spend, conversions, revenue, channel_id")
+            .gte("date", since)
+            .in("channel_id", dtcIds)
+            .limit(10000)
+        : { data: [] as any[] };
 
       const byDay = new Map<string, { date: string; dtc_spend: number; dtc_revenue: number; modeled_lift: number; cumulative_lift: number }>();
       for (const r of (rows ?? []) as any[]) {
-        const platform = r.ad_channels?.platform ?? "";
-        const objective = (r.ad_channels?.objective ?? "").toLowerCase();
+        const ch = channelMap.get(r.channel_id);
+        const platform = ch?.platform ?? "";
+        const objective = (ch?.objective ?? "").toLowerCase();
         // Conversion-objective ads on DTC platforms (Meta / Google) are the lift source.
         const isConversion = objective.includes("conversion") || objective.includes("sales") || objective.includes("purchase");
         if (!["meta", "google"].includes(platform)) continue;

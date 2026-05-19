@@ -40,14 +40,23 @@ type PlatformOpt = typeof PLATFORM_OPTS[number];
 interface Props {
   /** If set, locks the timeline to a single platform (drill-down view). */
   lockPlatform?: "meta" | "google" | "instacart";
+  /** Optional controlled range. When provided, overrides the internal pickers. */
+  start?: Date;
+  end?: Date;
+  setStart?: (d: Date) => void;
+  setEnd?: (d: Date) => void;
 }
 
-export function ForecastTimeline({ lockPlatform }: Props) {
+export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp, setStart: setStartProp, setEnd: setEndProp }: Props) {
   const qc = useQueryClient();
   const [platform, setPlatform] = useState<PlatformOpt>(lockPlatform ?? "all");
   const [busy, setBusy] = useState(false);
-  const [start, setStart] = useState<Date>(defaultStart);
-  const [end, setEnd] = useState<Date>(defaultEnd);
+  const [startLocal, setStartLocal] = useState<Date>(defaultStart);
+  const [endLocal, setEndLocal] = useState<Date>(defaultEnd);
+  const start = startProp ?? startLocal;
+  const end = endProp ?? endLocal;
+  const setStart = setStartProp ?? setStartLocal;
+  const setEnd = setEndProp ?? setEndLocal;
   const today = todayUTC();
   const lookbackDays = Math.max(30, daysBetween(start, today));
   const horizonDays = Math.max(1, Math.min(1095, daysBetween(today, end > today ? end : today)));

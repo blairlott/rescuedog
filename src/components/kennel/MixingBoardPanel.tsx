@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2, ListTree, ArrowRight, Columns2 } from "lucide-react";
+import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2, ListTree, ArrowRight, Columns2, AlertTriangle, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -68,7 +68,10 @@ function Fader({
   disabled?: boolean;
   /** Rich tooltip content shown on hover (desktop) and tap (mobile). */
   tooltip?: { title: string; body: React.ReactNode };
-}) {
+  /** Soft guardrail band — values outside trigger an amber warning. */
+  softMin?: number;
+  softMax?: number;
+} & { softMin?: number; softMax?: number }) {
   const p = pos(value, min, max);
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -87,6 +90,13 @@ function Fader({
   const litCount = Math.round(p * segs);
 
   const isDirty = baseline !== undefined && Math.abs(baseline - value) > 0.005;
+
+  // Guardrail state: hard-pinned at clamp, or outside the soft "reasonable" band.
+  const atHardLimit = value <= min + 0.001 || value >= max - 0.001;
+  const outsideSoft =
+    (arguments[0] as any).softMin !== undefined && value < (arguments[0] as any).softMin - 0.001 ||
+    (arguments[0] as any).softMax !== undefined && value > (arguments[0] as any).softMax + 0.001;
+  const guardrailWarn = atHardLimit || outsideSoft;
 
   const setFromClientY = (clientY: number) => {
     if (!onChange || !trackRef.current) return;

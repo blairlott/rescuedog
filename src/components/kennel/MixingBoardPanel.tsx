@@ -1,10 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Sliders } from "lucide-react";
+import { Sliders, RotateCcw, Save, FlaskConical } from "lucide-react";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
-type DowRow = { day_of_week: number; modifier: number; sample_days: number | null };
-type MoRow = { month: number; budget_index: number };
-type GeoRow = { state: string; modifier: number; tier: string | null; revenue_cents: number | null };
+type DowRow = { day_of_week: number; modifier: number; sample_days: number | null; override_modifier: number | null };
+type MoRow = { month: number; budget_index: number; override_budget_index: number | null };
+type GeoRow = { state: string; modifier: number; tier: string | null; revenue_cents: number | null; override_modifier: number | null };
 type RiskRow = { state: string; at_risk_customers: number; at_risk_lifetime_value: number; repeat_buyers_at_risk: number };
 type PerfRow = { date: string; spend: number; impressions: number; clicks: number; conversions: number; revenue: number };
 type TxnRow = { order_total: number; invoice: string; customer_id: string | null; transaction_date: string };
@@ -32,25 +35,40 @@ function fmtKpi(value: number, kind: "x" | "pct" | "usd" | "int") {
   return Math.round(value).toLocaleString();
 }
 
-/** Vertical fader strip with LED column + knob. */
+/** Clamp helper. */
+function clamp(v: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, v));
+}
+
+/** Vertical fader strip with LED column + draggable knob. */
 function Fader({
   label,
   sublabel,
   value,
+  baseline,
   min,
   max,
   active,
   centerOne = true,
+  onChange,
+  disabled,
 }: {
   label: string;
   sublabel?: string;
   value: number;
+  /** Auto-computed baseline (renders as a ghost marker when override is active). */
+  baseline?: number;
   min: number;
   max: number;
   active?: boolean;
   centerOne?: boolean;
+  onChange?: (next: number) => void;
+  disabled?: boolean;
 }) {
   const p = pos(value, min, max);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
   // Color: red below 1, green above 1, neutral near 1
   const delta = value - 1;
   const ledColor =
@@ -62,18 +80,67 @@ function Fader({
   const segs = 20;
   const litCount = Math.round(p * segs);
 
+  const isDirty = baseline !== undefined && Math.abs(baseline - value) > 0.005;
+
+  const setFromClientY = (clientY: number) => {
+    if (!onChange || !trackRef.current) return;
+    const r = trackRef.current.getBoundingClientRect();
+    const ratio = clamp(1 - (clientY - r.top) / r.height, 0, 1);
+    const raw = min + ratio * (max - min);
+    // Snap to 0.05 steps.
+    const snapped = Math.round(raw * 20) / 20;
+    onChange(clamp(snapped, min, max));
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (disabled || !onChange) return;
+    dragging.current = true;
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    setFromClientY(e.clientY);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    setFromClientY(e.clientY);
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    dragging.current = false;
+    (e.target as Element).releasePointerCapture?.(e.pointerId);
+  };
+  const onKey = (e: React.KeyboardEvent) => {
+    if (disabled || !onChange) return;
+    const step = e.shiftKey ? 0.1 : 0.05;
+    if (e.key === "ArrowUp") { e.preventDefault(); onChange(clamp(value + step, min, max)); }
+    if (e.key === "ArrowDown") { e.preventDefault(); onChange(clamp(value - step, min, max)); }
+    if (e.key === "Home" && baseline !== undefined) { e.preventDefault(); onChange(baseline); }
+  };
+
   return (
-    <div className={`flex flex-col items-center gap-1 px-1 py-2 ${active ? "bg-white/5" : ""}`} style={{ borderRadius: 0 }}>
+    <div className={`flex flex-col items-center gap-1 px-1 py-2 ${active ? "bg-white/5" : ""} ${isDirty ? "ring-1 ring-[hsl(45,95%,55%)]/50" : ""}`} style={{ borderRadius: 0 }}>
       <div className={`text-[9px] font-bold tabular-nums leading-none ${delta > 0 ? "text-[hsl(142,76%,55%)]" : delta < 0 ? "text-[hsl(0,75%,65%)]" : "text-white/60"}`}>
         {fmtPct(value)}
       </div>
-      <div className="relative w-5 h-24 bg-black border border-white/15" style={{ borderRadius: 0 }}>
+      <div
+        ref={trackRef}
+        className={`relative w-5 h-24 bg-black border border-white/15 ${onChange && !disabled ? "cursor-ns-resize touch-none" : ""}`}
+        style={{ borderRadius: 0 }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        tabIndex={onChange && !disabled ? 0 : -1}
+        onKeyDown={onKey}
+        role={onChange ? "slider" : undefined}
+        aria-label={onChange ? `${label} modifier` : undefined}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+      >
         {/* center 1.0x marker */}
         {centerOne && (
           <div className="absolute left-0 right-0 border-t border-white/25" style={{ top: `${(1 - pos(1, min, max)) * 100}%` }} />
         )}
         {/* LED ladder */}
-        <div className="absolute inset-0.5 flex flex-col-reverse gap-[1px]">
+        <div className="absolute inset-0.5 flex flex-col-reverse gap-[1px] pointer-events-none">
           {Array.from({ length: segs }).map((_, i) => (
             <div
               key={i}
@@ -82,9 +149,17 @@ function Fader({
             />
           ))}
         </div>
+        {/* baseline ghost marker when overridden */}
+        {baseline !== undefined && isDirty && (
+          <div
+            className="absolute left-0 right-0 border-t border-dashed border-white/40 pointer-events-none"
+            style={{ top: `${(1 - pos(baseline, min, max)) * 100}%` }}
+            title={`Baseline ${baseline.toFixed(2)}×`}
+          />
+        )}
         {/* knob */}
         <div
-          className="absolute left-1/2 -translate-x-1/2 w-6 h-2 bg-gradient-to-b from-white/90 to-white/50 border border-black shadow-md"
+          className={`absolute left-1/2 -translate-x-1/2 w-6 h-2 border border-black shadow-md pointer-events-none ${isDirty ? "bg-gradient-to-b from-[hsl(45,95%,75%)] to-[hsl(45,95%,45%)]" : "bg-gradient-to-b from-white/90 to-white/50"}`}
           style={{ top: `calc(${(1 - p) * 100}% - 4px)`, borderRadius: 0 }}
         />
       </div>
@@ -220,9 +295,9 @@ export function MixingBoardPanel() {
       })();
 
       const [dowR, moR, geoR, riskR] = await Promise.all([
-        supabase.from("kennel_bid_modifiers" as any).select("day_of_week, modifier, sample_days").order("day_of_week"),
-        supabase.from("kennel_seasonality_curve" as any).select("month, budget_index").order("month"),
-        supabase.from("kennel_geo_modifiers" as any).select("state, modifier, tier, revenue_cents").order("revenue_cents", { ascending: false, nullsFirst: false }).limit(8),
+        supabase.from("kennel_bid_modifiers" as any).select("day_of_week, modifier, sample_days, override_modifier").order("day_of_week"),
+        supabase.from("kennel_seasonality_curve" as any).select("month, budget_index, override_budget_index").order("month"),
+        supabase.from("kennel_geo_modifiers" as any).select("state, modifier, tier, revenue_cents, override_modifier").order("revenue_cents", { ascending: false, nullsFirst: false }).limit(8),
         supabase.from("kennel_retention_risk_summary" as any).select("state, at_risk_customers, at_risk_lifetime_value, repeat_buyers_at_risk"),
       ]);
 
@@ -299,8 +374,149 @@ export function MixingBoardPanel() {
   const todayDow = new Date().getDay();
   const todayMo = new Date().getMonth() + 1;
 
+  const qc = useQueryClient();
+
+  // What-if draft state: keyed maps that override the persisted "effective" value
+  // (= override ?? computed) only while the user is dragging.
+  const [draftDow, setDraftDow] = useState<Record<number, number>>({});
+  const [draftMo, setDraftMo] = useState<Record<number, number>>({});
+  const [draftGeo, setDraftGeo] = useState<Record<string, number>>({});
+  const [saving, setSaving] = useState(false);
+
+  // Reset drafts when fresh data lands.
+  useEffect(() => {
+    setDraftDow({});
+    setDraftMo({});
+    setDraftGeo({});
+  }, [data?.dow, data?.mo, data?.geo]);
+
   const dowMap = new Map((data?.dow ?? []).map(r => [r.day_of_week, r]));
   const moMap = new Map((data?.mo ?? []).map(r => [r.month, r]));
+
+  const dowEff = (i: number) => {
+    if (draftDow[i] !== undefined) return draftDow[i];
+    const r = dowMap.get(i);
+    return r ? Number(r.override_modifier ?? r.modifier) : 1;
+  };
+  const dowBaseline = (i: number) => {
+    const r = dowMap.get(i);
+    return r ? Number(r.modifier) : 1;
+  };
+  const moEff = (m: number) => {
+    if (draftMo[m] !== undefined) return draftMo[m];
+    const r = moMap.get(m);
+    return r ? Number(r.override_budget_index ?? r.budget_index) : 1;
+  };
+  const moBaseline = (m: number) => {
+    const r = moMap.get(m);
+    return r ? Number(r.budget_index) : 1;
+  };
+  const geoEff = (s: string, computed: number, override: number | null) => {
+    if (draftGeo[s] !== undefined) return draftGeo[s];
+    return override !== null ? Number(override) : computed;
+  };
+
+  // What-if preview math: today's blended index = today's DoW × today's month.
+  // Projected daily spend = current daily spend × blended index.
+  // Projected ROAS = current True ROAS × (geo avg of dirty states / baseline).
+  const preview = useMemo(() => {
+    const dowToday = dowEff(todayDow);
+    const dowTodayBase = dowBaseline(todayDow);
+    const moToday = moEff(todayMo);
+    const moTodayBase = moBaseline(todayMo);
+    const blended = dowToday * moToday;
+    const blendedBase = dowTodayBase * moTodayBase;
+    const blendedDelta = blendedBase > 0 ? blended / blendedBase : 1;
+
+    const dailySpend = data?.kpi?.dailySpend ?? 0;
+    const trueRoas = data?.kpi?.trueRoas ?? 0;
+    const projDailySpend = dailySpend * blendedDelta;
+
+    // Geo avg (weighted by revenue) — projected lift = sum(eff)/sum(base)
+    const geos = data?.geo ?? [];
+    let baseSum = 0, effSum = 0, wSum = 0;
+    for (const g of geos) {
+      const w = Math.max(1, Number(g.revenue_cents ?? 0));
+      const base = Number(g.modifier);
+      const eff = geoEff(g.state, base, g.override_modifier);
+      baseSum += base * w;
+      effSum += eff * w;
+      wSum += w;
+    }
+    const geoLift = baseSum > 0 ? effSum / baseSum : 1;
+    const projRoas = trueRoas * geoLift;
+
+    const dirtyCount =
+      Object.keys(draftDow).length +
+      Object.keys(draftMo).length +
+      Object.keys(draftGeo).length;
+
+    return { blended, blendedBase, blendedDelta, projDailySpend, dailySpend, projRoas, trueRoas, geoLift, dirtyCount };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftDow, draftMo, draftGeo, data, todayDow, todayMo]);
+
+  const resetDraft = () => {
+    setDraftDow({});
+    setDraftMo({});
+    setDraftGeo({});
+  };
+
+  const saveDraft = async () => {
+    setSaving(true);
+    try {
+      const ops: PromiseLike<any>[] = [];
+      for (const [k, v] of Object.entries(draftDow)) {
+        ops.push(
+          supabase.from("kennel_bid_modifiers" as any)
+            .update({ override_modifier: v })
+            .eq("day_of_week", Number(k))
+        );
+      }
+      for (const [k, v] of Object.entries(draftMo)) {
+        ops.push(
+          supabase.from("kennel_seasonality_curve" as any)
+            .update({ override_budget_index: v })
+            .eq("month", Number(k))
+        );
+      }
+      for (const [k, v] of Object.entries(draftGeo)) {
+        ops.push(
+          supabase.from("kennel_geo_modifiers" as any)
+            .update({ override_modifier: v })
+            .eq("state", k)
+        );
+      }
+      const results = await Promise.all(ops);
+      const failed = results.find(r => r.error);
+      if (failed) throw failed.error;
+      toast.success(`Saved ${ops.length} override${ops.length === 1 ? "" : "s"}`);
+      await qc.invalidateQueries({ queryKey: ["kennel-mixing-board"] });
+      resetDraft();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const clearAllOverrides = async () => {
+    setSaving(true);
+    try {
+      const [r1, r2, r3] = await Promise.all([
+        supabase.from("kennel_bid_modifiers" as any).update({ override_modifier: null }).gte("day_of_week", 0),
+        supabase.from("kennel_seasonality_curve" as any).update({ override_budget_index: null }).gte("month", 1),
+        supabase.from("kennel_geo_modifiers" as any).update({ override_modifier: null }).neq("state", ""),
+      ]);
+      if (r1.error || r2.error || r3.error) throw (r1.error || r2.error || r3.error);
+      toast.success("All overrides cleared — back to auto");
+      await qc.invalidateQueries({ queryKey: ["kennel-mixing-board"] });
+      resetDraft();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Clear failed");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const riskTotals = (data?.risk ?? []).reduce(
     (a, r) => ({
@@ -328,7 +544,7 @@ export function MixingBoardPanel() {
         <div className="flex items-center gap-2">
           <Sliders className="h-4 w-4 text-[hsl(45,95%,55%)]" />
           <h3 className="text-sm uppercase tracking-brand font-bold">Optimization Console</h3>
-          <span className="text-[10px] text-white/40 uppercase tracking-brand">Live mix · executive view</span>
+          <span className="text-[10px] text-white/40 uppercase tracking-brand">Drag faders · what-if mode</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="h-1.5 w-1.5 rounded-full bg-[hsl(142,76%,55%)] animate-pulse" />
@@ -363,16 +579,17 @@ export function MixingBoardPanel() {
             <div className="flex gap-0.5 border border-white/10 bg-black/30 p-1">
               {DAYS.map((d, i) => {
                 const r = dowMap.get(i);
-                const v = r ? Number(r.modifier) : 1;
                 return (
                   <Fader
                     key={i}
                     label={d}
-                    value={v}
+                    value={dowEff(i)}
+                    baseline={dowBaseline(i)}
                     min={0.5}
                     max={2.0}
                     active={i === todayDow}
                     sublabel={r?.sample_days ? `${r.sample_days}d` : undefined}
+                    onChange={(next) => setDraftDow(p => ({ ...p, [i]: next }))}
                   />
                 );
               })}
@@ -385,16 +602,16 @@ export function MixingBoardPanel() {
             <div className="flex gap-0.5 border border-white/10 bg-black/30 p-1">
               {MONTHS.map((m, i) => {
                 const month = i + 1;
-                const r = moMap.get(month);
-                const v = r ? Number(r.budget_index) : 1;
                 return (
                   <Fader
                     key={month}
                     label={m}
-                    value={v}
+                    value={moEff(month)}
+                    baseline={moBaseline(month)}
                     min={0.3}
                     max={3.0}
                     active={month === todayMo}
+                    onChange={(next) => setDraftMo(p => ({ ...p, [month]: next }))}
                   />
                 );
               })}
@@ -409,10 +626,12 @@ export function MixingBoardPanel() {
                 <Fader
                   key={g.state}
                   label={g.state}
-                  value={Number(g.modifier)}
+                  value={geoEff(g.state, Number(g.modifier), g.override_modifier)}
+                  baseline={Number(g.modifier)}
                   min={0.5}
                   max={2.0}
                   sublabel={g.tier ?? undefined}
+                  onChange={(next) => setDraftGeo(p => ({ ...p, [g.state]: next }))}
                 />
               ))}
               {(data?.geo ?? []).length === 0 && (
@@ -444,6 +663,91 @@ export function MixingBoardPanel() {
                 ${Math.round(riskTotals.value).toLocaleString()}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* WHAT-IF PREVIEW BAR */}
+        <div className="mt-4 border border-[hsl(45,95%,55%)]/40 bg-black/40 p-3" style={{ borderRadius: 0 }}>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <FlaskConical className="h-3.5 w-3.5 text-[hsl(45,95%,55%)]" />
+              <span className="text-[10px] uppercase tracking-brand font-bold text-[hsl(45,95%,75%)]">
+                What-if preview
+              </span>
+              {preview.dirtyCount > 0 && (
+                <span className="text-[9px] uppercase tracking-brand text-[hsl(45,95%,55%)] bg-[hsl(45,95%,55%)]/15 px-1.5 py-0.5">
+                  {preview.dirtyCount} unsaved
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] uppercase tracking-brand text-white/40">Today's blend</span>
+              <span className="text-sm font-bold tabular-nums text-white">{preview.blended.toFixed(2)}×</span>
+              <span className="text-[9px] tabular-nums text-white/40">
+                ({preview.blendedDelta >= 1 ? "+" : ""}{((preview.blendedDelta - 1) * 100).toFixed(0)}% vs auto)
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] uppercase tracking-brand text-white/40">Proj. daily spend</span>
+              <span className="text-sm font-bold tabular-nums text-[hsl(142,76%,55%)]">
+                ${preview.projDailySpend.toFixed(0)}
+              </span>
+              <span className="text-[9px] tabular-nums text-white/40">
+                (was ${preview.dailySpend.toFixed(0)})
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] uppercase tracking-brand text-white/40">Geo lift</span>
+              <span className="text-sm font-bold tabular-nums text-white">{(preview.geoLift).toFixed(2)}×</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] uppercase tracking-brand text-white/40">Proj. ROAS</span>
+              <span className="text-sm font-bold tabular-nums text-[hsl(45,95%,55%)]">
+                {preview.projRoas.toFixed(2)}×
+              </span>
+              <span className="text-[9px] tabular-nums text-white/40">
+                (was {preview.trueRoas.toFixed(2)}×)
+              </span>
+            </div>
+
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white hover:bg-white/10"
+                onClick={resetDraft}
+                disabled={preview.dirtyCount === 0 || saving}
+              >
+                <RotateCcw className="h-3 w-3 mr-1" />
+                Reset draft
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white/70 hover:bg-white/10"
+                onClick={clearAllOverrides}
+                disabled={saving}
+                title="Wipe all saved overrides and revert to nightly auto-computed values"
+              >
+                Clear all overrides
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 text-[10px] uppercase tracking-brand bg-[hsl(45,95%,55%)] text-black hover:bg-[hsl(45,95%,65%)]"
+                onClick={saveDraft}
+                disabled={preview.dirtyCount === 0 || saving}
+              >
+                <Save className="h-3 w-3 mr-1" />
+                {saving ? "Saving…" : `Save ${preview.dirtyCount || ""}`}
+              </Button>
+            </div>
+          </div>
+          <div className="mt-2 text-[9px] uppercase tracking-brand text-white/40">
+            Drag a knob or use ↑/↓ (Shift = larger step, Home = revert). Overrides take precedence over the nightly auto-computed value.
           </div>
         </div>
         </>

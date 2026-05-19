@@ -3741,6 +3741,7 @@ export type Database = {
           day_of_week: number
           modifier: number
           notes: string | null
+          override_modifier: number | null
           sample_avg_revenue_cents: number | null
           sample_days: number | null
           source_window_days: number
@@ -3751,6 +3752,7 @@ export type Database = {
           day_of_week: number
           modifier?: number
           notes?: string | null
+          override_modifier?: number | null
           sample_avg_revenue_cents?: number | null
           sample_days?: number | null
           source_window_days?: number
@@ -3761,6 +3763,7 @@ export type Database = {
           day_of_week?: number
           modifier?: number
           notes?: string | null
+          override_modifier?: number | null
           sample_avg_revenue_cents?: number | null
           sample_days?: number | null
           source_window_days?: number
@@ -3812,6 +3815,7 @@ export type Database = {
           modifier: number
           notes: string | null
           orders: number | null
+          override_modifier: number | null
           repeat_rate_pct: number | null
           revenue_cents: number | null
           state: string
@@ -3825,6 +3829,7 @@ export type Database = {
           modifier?: number
           notes?: string | null
           orders?: number | null
+          override_modifier?: number | null
           repeat_rate_pct?: number | null
           revenue_cents?: number | null
           state: string
@@ -3838,6 +3843,7 @@ export type Database = {
           modifier?: number
           notes?: string | null
           orders?: number | null
+          override_modifier?: number | null
           repeat_rate_pct?: number | null
           revenue_cents?: number | null
           state?: string
@@ -4073,6 +4079,7 @@ export type Database = {
           month: number
           notes: string | null
           orders: number | null
+          override_budget_index: number | null
           revenue_cents: number | null
           updated_at: string
           years_observed: number | null
@@ -4084,6 +4091,7 @@ export type Database = {
           month: number
           notes?: string | null
           orders?: number | null
+          override_budget_index?: number | null
           revenue_cents?: number | null
           updated_at?: string
           years_observed?: number | null
@@ -4095,6 +4103,7 @@ export type Database = {
           month?: number
           notes?: string | null
           orders?: number | null
+          override_budget_index?: number | null
           revenue_cents?: number | null
           updated_at?: string
           years_observed?: number | null

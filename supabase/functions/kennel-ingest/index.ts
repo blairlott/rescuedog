@@ -63,14 +63,37 @@ Deno.serve(async (req) => {
   // 1) Resolve channels by name -> id
   const { data: channels, error: chErr } = await supabase.from("ad_channels").select("id,name");
   if (chErr) return json({ error: "channel lookup failed", details: chErr.message }, 500);
-  const channelByName = new Map((channels ?? []).map((c: any) => [c.name.toLowerCase(), c.id]));
+  // Build an alias-tolerant lookup. Lindy may send "Meta" / "meta_ads" / "facebook"
+  // while the canonical DB names are "Meta Ads" / "Google Ads" / etc.
+  const channelByName = new Map<string, string>();
+  const aliasGroups: Record<string, string[]> = {
+    meta: ["meta", "meta ads", "meta_ads", "facebook", "fb", "facebook ads"],
+    google: ["google", "google ads", "google_ads", "gads", "adwords"],
+    instacart: ["instacart", "instacart ads", "instacart_ads", "ic"],
+    yahoo: ["yahoo", "yahoo dsp", "yahoo_dsp", "ydsp"],
+  };
+  for (const c of channels ?? []) {
+    const canon = String(c.name).toLowerCase();
+    channelByName.set(canon, c.id);
+    // Also register every alias whose canonical token appears in the channel name.
+    for (const aliases of Object.values(aliasGroups)) {
+      if (aliases.some((a) => canon.includes(a))) {
+        for (const a of aliases) channelByName.set(a, c.id);
+      }
+    }
+  }
+  const resolveChannel = (raw: unknown): string | null => {
+    if (!raw) return null;
+    const key = String(raw).trim().toLowerCase();
+    return channelByName.get(key) ?? null;
+  };
 
   // 2) Performance snapshots: [{ channel, date, spend, impressions, clicks, conversions, revenue }]
   const snapshots: any[] = Array.isArray(body?.performance) ? body.performance : [];
   if (snapshots.length) {
     const rows = snapshots
       .map((s) => {
-        const cid = channelByName.get(String(s.channel ?? "").toLowerCase());
+        const cid = resolveChannel(s.channel);
         if (!cid || !s.date) return null;
         return {
           channel_id: cid,
@@ -114,7 +137,7 @@ Deno.serve(async (req) => {
   const recs: any[] = Array.isArray(body?.recommendations) ? body.recommendations : [];
   if (recs.length) {
     const rows = recs.map((r, i) => ({
-      channel_id: r.channel ? channelByName.get(String(r.channel).toLowerCase()) ?? null : null,
+      channel_id: resolveChannel(r.channel),
       kind: String(r.kind ?? "adjustment"),
       title: String(r.title ?? "Untitled recommendation"),
       summary: String(r.summary ?? ""),

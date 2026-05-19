@@ -4,6 +4,7 @@ import { Sliders, RotateCcw, Save, FlaskConical } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type DowRow = { day_of_week: number; modifier: number; sample_days: number | null; override_modifier: number | null };
 type MoRow = { month: number; budget_index: number; override_budget_index: number | null };
@@ -52,6 +53,7 @@ function Fader({
   centerOne = true,
   onChange,
   disabled,
+  tooltip,
 }: {
   label: string;
   sublabel?: string;
@@ -64,10 +66,14 @@ function Fader({
   centerOne?: boolean;
   onChange?: (next: number) => void;
   disabled?: boolean;
+  /** Rich tooltip content shown on hover (desktop) and tap (mobile). */
+  tooltip?: { title: string; body: React.ReactNode };
 }) {
   const p = pos(value, min, max);
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  const [tipOpen, setTipOpen] = useState(false);
+  const tapTimer = useRef<number | null>(null);
 
   // Color: red below 1, green above 1, neutral near 1
   const delta = value - 1;
@@ -97,6 +103,12 @@ function Fader({
     dragging.current = true;
     (e.target as Element).setPointerCapture?.(e.pointerId);
     setFromClientY(e.clientY);
+    // Touch tap → flash tooltip for 2.5s so mobile users get the explanation too.
+    if (tooltip && e.pointerType === "touch") {
+      setTipOpen(true);
+      if (tapTimer.current) window.clearTimeout(tapTimer.current);
+      tapTimer.current = window.setTimeout(() => setTipOpen(false), 2500);
+    }
   };
   const onPointerMove = (e: React.PointerEvent) => {
     if (!dragging.current) return;
@@ -114,7 +126,11 @@ function Fader({
     if (e.key === "Home" && baseline !== undefined) { e.preventDefault(); onChange(baseline); }
   };
 
-  return (
+  useEffect(() => () => {
+    if (tapTimer.current) window.clearTimeout(tapTimer.current);
+  }, []);
+
+  const inner = (
     <div className={`flex flex-col items-center gap-1 px-1 py-2 ${active ? "bg-white/5" : ""} ${isDirty ? "ring-1 ring-[hsl(45,95%,55%)]/50" : ""}`} style={{ borderRadius: 0 }}>
       <div className={`text-[9px] font-bold tabular-nums leading-none ${delta > 0 ? "text-[hsl(142,76%,55%)]" : delta < 0 ? "text-[hsl(0,75%,65%)]" : "text-white/60"}`}>
         {fmtPct(value)}
@@ -168,6 +184,29 @@ function Fader({
       </div>
       {sublabel && <div className="text-[8px] text-white/40 leading-none">{sublabel}</div>}
     </div>
+  );
+
+  if (!tooltip) return inner;
+
+  return (
+    <Tooltip open={tipOpen} onOpenChange={setTipOpen} delayDuration={150}>
+      <TooltipTrigger asChild>
+        {inner}
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={8}
+        className="max-w-[260px] bg-black border border-[hsl(45,95%,55%)]/50 text-white px-3 py-2"
+        style={{ borderRadius: 0 }}
+      >
+        <div className="text-[10px] uppercase tracking-brand font-bold text-[hsl(45,95%,55%)] mb-1">
+          {tooltip.title}
+        </div>
+        <div className="text-[11px] leading-snug text-white/85">
+          {tooltip.body}
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -555,7 +594,7 @@ export function MixingBoardPanel() {
       {isLoading ? (
         <div className="text-white/40 text-xs py-8 text-center uppercase tracking-brand">Warming up the board…</div>
       ) : (
-        <>
+        <TooltipProvider delayDuration={150}>
         {/* MASTER KPI RACK — any reasonable metric */}
         {k && (
           <div className="mb-4">
@@ -579,6 +618,7 @@ export function MixingBoardPanel() {
             <div className="flex gap-0.5 border border-white/10 bg-black/30 p-1">
               {DAYS.map((d, i) => {
                 const r = dowMap.get(i);
+                const dayName = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][i];
                 return (
                   <Fader
                     key={i}
@@ -590,6 +630,19 @@ export function MixingBoardPanel() {
                     active={i === todayDow}
                     sublabel={r?.sample_days ? `${r.sample_days}d` : undefined}
                     onChange={(next) => setDraftDow(p => ({ ...p, [i]: next }))}
+                    tooltip={{
+                      title: `${dayName} bid modifier`,
+                      body: (
+                        <>
+                          Multiplier applied to <b>ad bid prices</b> (Meta / Google) on {dayName}s.
+                          Based on the last 90 days of consumer revenue vs the weekly average
+                          {r?.sample_days ? ` (${r.sample_days} day samples).` : "."}
+                          <div className="mt-1 text-white/60">
+                            1.20× = bid 20% higher · 0.80× = bid 20% lower · clamped 0.5×–2.0×.
+                          </div>
+                        </>
+                      ),
+                    }}
                   />
                 );
               })}
@@ -602,6 +655,7 @@ export function MixingBoardPanel() {
             <div className="flex gap-0.5 border border-white/10 bg-black/30 p-1">
               {MONTHS.map((m, i) => {
                 const month = i + 1;
+                const monthName = ["January","February","March","April","May","June","July","August","September","October","November","December"][i];
                 return (
                   <Fader
                     key={month}
@@ -612,6 +666,19 @@ export function MixingBoardPanel() {
                     max={3.0}
                     active={month === todayMo}
                     onChange={(next) => setDraftMo(p => ({ ...p, [month]: next }))}
+                    tooltip={{
+                      title: `${monthName} budget index`,
+                      body: (
+                        <>
+                          Multiplier on the <b>monthly ad budget</b> for {monthName}.
+                          Lifetime consumer revenue this month vs the average month — Q4
+                          typically runs 2–3× while Jan/Feb fall well below.
+                          <div className="mt-1 text-white/60">
+                            Push to Meta/Google campaign budget rules. Clamped 0.3×–3.0×.
+                          </div>
+                        </>
+                      ),
+                    }}
                   />
                 );
               })}
@@ -632,6 +699,20 @@ export function MixingBoardPanel() {
                   max={2.0}
                   sublabel={g.tier ?? undefined}
                   onChange={(next) => setDraftGeo(p => ({ ...p, [g.state]: next }))}
+                  tooltip={{
+                    title: `${g.state} geo bid modifier`,
+                    body: (
+                      <>
+                        <b>State-level bid adjustment</b> based on lifetime consumer LTV vs the
+                        median state{g.tier ? `. Tier ${g.tier}.` : "."}
+                        <div className="mt-1 text-white/60">
+                          Raises or lowers ad bids when targeting customers in {g.state}.
+                          Tier A states get the biggest boost; C states get pulled back.
+                          Clamped 0.5×–2.0×.
+                        </div>
+                      </>
+                    ),
+                  }}
                 />
               ))}
               {(data?.geo ?? []).length === 0 && (
@@ -641,6 +722,8 @@ export function MixingBoardPanel() {
           </div>
 
           {/* RETENTION RISK MASTER VU */}
+          <Tooltip delayDuration={150}>
+            <TooltipTrigger asChild>
           <div className="lg:w-56 flex flex-col gap-2 border border-white/10 bg-black/30 p-3" style={{ borderRadius: 0 }}>
             <SectionLabel>Retention risk · master</SectionLabel>
             <VuMeter
@@ -664,6 +747,26 @@ export function MixingBoardPanel() {
               </div>
             </div>
           </div>
+            </TooltipTrigger>
+            <TooltipContent
+              side="top"
+              sideOffset={8}
+              className="max-w-[280px] bg-black border border-[hsl(45,95%,55%)]/50 text-white px-3 py-2"
+              style={{ borderRadius: 0 }}
+            >
+              <div className="text-[10px] uppercase tracking-brand font-bold text-[hsl(45,95%,55%)] mb-1">
+                Retention risk meters
+              </div>
+              <div className="text-[11px] leading-snug text-white/85">
+                Customers whose last consumer order was <b>60–90 days ago</b> — the median
+                time-to-2nd-order is 77 days, so this is the winback sweet spot.
+                <div className="mt-1 text-white/60">
+                  Feeds Meta Custom Audiences and Mailchimp winback flows. The LTV figure is
+                  the dollar value at stake if these customers don't reorder.
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* WHAT-IF PREVIEW BAR */}
@@ -750,7 +853,7 @@ export function MixingBoardPanel() {
             Drag a knob or use ↑/↓ (Shift = larger step, Home = revert). Overrides take precedence over the nightly auto-computed value.
           </div>
         </div>
-        </>
+        </TooltipProvider>
       )}
 
       {/* Footer legend */}

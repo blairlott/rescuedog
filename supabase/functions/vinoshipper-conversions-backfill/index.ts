@@ -42,6 +42,25 @@ async function sha256Hex(input: string | null | undefined): Promise<string | nul
     .join("");
 }
 
+/**
+ * Normalize a transaction date to ISO `YYYY-MM-DD`.
+ * Accepts: `YYYY-MM-DD`, `MM/DD/YYYY`, `M/D/YYYY`, Date objects, or full ISO strings.
+ * Falls back to today (UTC) only as a last resort to avoid Google rejecting the whole batch.
+ */
+function toIsoDate(v: unknown): string {
+  if (v instanceof Date && !isNaN(v.getTime())) return v.toISOString().slice(0, 10);
+  const s = String(v ?? "").trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (mdy) {
+    const [, m, d, y] = mdy;
+    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  const t = Date.parse(s);
+  if (!isNaN(t)) return new Date(t).toISOString().slice(0, 10);
+  return new Date().toISOString().slice(0, 10);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
@@ -164,8 +183,11 @@ Deno.serve(async (req) => {
     const [{ data: metaExisting }, { data: ociExisting }] = await Promise.all([
       admin.from("meta_capi_events").select("order_id")
         .in("order_id", invoices).eq("test_mode", false).eq("success", true),
+      // Dedup only on truly-uploaded rows. `partial_failure` and `error` rows
+      // are eligible for retry — otherwise a bad source-side format (e.g. the
+      // MM/DD/YYYY date bug) permanently blackholes those conversions.
       admin.from("oci_upload_log").select("order_id")
-        .in("order_id", invoices).in("status", ["uploaded", "partial_failure"]),
+        .in("order_id", invoices).eq("status", "uploaded"),
     ]);
     metaSent = new Set((metaExisting ?? []).map((r: any) => String(r.order_id)));
     ociSent = new Set((ociExisting ?? []).map((r: any) => String(r.order_id)).filter(Boolean));
@@ -231,8 +253,10 @@ Deno.serve(async (req) => {
           if (emH) userIdentifiers.push({ hashedEmail: emH, userIdentifierSource: "FIRST_PARTY" });
           const phH = await sha256Hex(String(r.customer_phone ?? "").replace(/\D/g, "") || null);
           if (phH) userIdentifiers.push({ hashedPhoneNumber: phH, userIdentifierSource: "FIRST_PARTY" });
-          // Google requires a date-time string with timezone. transaction_date is YYYY-MM-DD.
-          const cdt = `${r.transaction_date} 12:00:00-05:00`;
+          // Google requires `yyyy-mm-dd hh:mm:ss+|-hh:mm`. Vinoshipper sometimes returns
+          // transaction_date as MM/DD/YYYY (string) — normalize defensively.
+          const isoDate = toIsoDate(r.transaction_date);
+          const cdt = `${isoDate} 12:00:00-05:00`;
           return {
             conversionAction,
             conversionDateTime: cdt,

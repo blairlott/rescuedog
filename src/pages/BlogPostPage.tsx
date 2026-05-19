@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useWpPost } from "@/hooks/useWordpress";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import DOMPurify from "dompurify";
 
 const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();

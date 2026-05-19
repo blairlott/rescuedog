@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useWpPosts } from "@/hooks/useWordpress";
 import { Loader2 } from "lucide-react";
+import DOMPurify from "dompurify";
 
 const BlogPage = () => {
   const { data: posts, isLoading } = useWpPosts(20);

@@ -263,6 +263,22 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     return { totalShipping, avgPerOrder, avgPct };
   }, [shipping]);
 
+  // Merge shipping into the main chart series by date-bucket key, so it can be
+  // rendered as a stacked-context bar inside the main predictive timeline.
+  const mergedChartData = useMemo(() => {
+    const ship = new Map<string, { shipping: number; ship_pct: number; ship_per_order: number }>();
+    for (const r of shipping ?? []) ship.set(r.date, r);
+    return chartData.map((p) => {
+      const s = ship.get(p.date);
+      return {
+        ...p,
+        shipping: s?.shipping ?? 0,
+        ship_pct: s?.ship_pct ?? 0,
+        ship_per_order: s?.ship_per_order ?? 0,
+      };
+    });
+  }, [chartData, shipping]);
+
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
     // Split on the bucket boundary so the current month counts as "history" (it has real data)

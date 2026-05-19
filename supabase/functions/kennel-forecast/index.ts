@@ -118,15 +118,46 @@ Deno.serve(async (req) => {
     const lastIdx = xs[xs.length - 1];
     const lastDate = new Date(dates[dates.length - 1] + "T00:00:00Z");
 
+    // ---- Stability anchors -------------------------------------------------
+    // Independent regressions on spend and revenue diverge badly when one trend
+    // collapses (e.g. campaigns paused → spend slope ~0, revenue stays flat →
+    // ROAS = rev/tiny_spend explodes to 30–300x). Anchor the projection on
+    // recent realized efficiency so ROAS stays physically meaningful.
+    const tail = (arr: number[], n: number) => arr.slice(Math.max(0, arr.length - n));
+    const mean = (arr: number[]) => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
+    const sum  = (arr: number[]) => arr.reduce((s, v) => s + v, 0);
+
+    const recent28Spend = tail(spendSeries, 28);
+    const recent28Rev   = tail(revSeries, 28);
+    const baselineSpend = mean(recent28Spend);
+    const baselineRev   = mean(recent28Rev);
+    const baselineSumSpend = sum(recent28Spend);
+    const baselineSumRev   = sum(recent28Rev);
+    // Realized ROAS over last 28 days (or whole window if shorter). Falls back
+    // to lifetime mean ratio when recent spend is near zero.
+    const lifetimeRoas = sum(spendSeries) > 0 ? sum(revSeries) / sum(spendSeries) : 0;
+    const baselineRoas = baselineSumSpend > 0
+      ? baselineSumRev / baselineSumSpend
+      : lifetimeRoas;
+    // Floor projected spend so a steeply negative slope can't drive it to ~0.
+    // 25% of recent mean is a conservative wind-down assumption.
+    const spendFloor = Math.max(0, baselineSpend * 0.25);
+    // Hard cap on projected daily ROAS at 3x recent baseline to clamp tails.
+    const roasCeiling = baselineRoas > 0 ? baselineRoas * 3 : Number.POSITIVE_INFINITY;
+
     const series: any[] = [];
     let cumSpend = 0, cumRev = 0;
     for (let h = 1; h <= horizon; h++) {
       const futureDate = new Date(lastDate.getTime() + h * 86400000);
       const dow = futureDate.getUTCDay();
       const xi = lastIdx + h;
-      const trendSpend = Math.max(0, spendReg.intercept + spendReg.slope * xi) * spendSeason[dow] * spendTilt;
-      const trendRev   = Math.max(0, revReg.intercept   + revReg.slope   * xi) * revSeason[dow]   * revenueTilt;
-      const roas = trendSpend > 0 ? (trendRev / trendSpend) * roasTilt : 0;
+      const rawSpend   = Math.max(0, spendReg.intercept + spendReg.slope * xi) * spendSeason[dow] * spendTilt;
+      const trendSpend = Math.max(spendFloor * spendSeason[dow] * spendTilt, rawSpend);
+      // Derive revenue from projected spend × baseline efficiency (ROAS),
+      // then nudge with seasonal pattern. This keeps ROAS bounded.
+      const effectiveRoas = Math.min(roasCeiling, baselineRoas * roasTilt);
+      const trendRev = trendSpend * effectiveRoas * revSeason[dow] * revenueTilt;
+      const roas = trendSpend > 0 ? trendRev / trendSpend : 0;
       const sigmaRev = Math.max(revReg.residStd, trendRev * 0.15);
       cumSpend += trendSpend; cumRev += trendRev;
       series.push({
@@ -163,8 +194,8 @@ Deno.serve(async (req) => {
       upper_bound: Math.round(series.reduce((s, p) => s + p.revenue_upper, 0) * 100) / 100,
       confidence: 0.80,
       model: "linreg_dow_seasonality_v1",
-      series: { points: series, summary, strategy_mode: { goal, pace } },
-      narrative: `${horizon}-day projection from ${dates.length} days of history. Goal ${goal}/100, Pace ${pace}/100.`,
+      series: { points: series, summary, strategy_mode: { goal, pace }, baseline: { roas: Math.round(baselineRoas * 1000) / 1000, daily_spend: Math.round(baselineSpend * 100) / 100, days: recent28Spend.length } },
+      narrative: `${horizon}-day projection from ${dates.length} days of history, anchored on 28-day baseline ROAS ${baselineRoas.toFixed(2)}x. Goal ${goal}/100, Pace ${pace}/100.`,
       generated_at: new Date().toISOString(),
       valid_until: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
     };

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2, ListTree, ArrowRight, Columns2 } from "lucide-react";
+import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2, ListTree, ArrowRight, Columns2, AlertTriangle, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,8 @@ function Fader({
   onChange,
   disabled,
   tooltip,
+  softMin,
+  softMax,
 }: {
   label: string;
   sublabel?: string;
@@ -68,6 +70,9 @@ function Fader({
   disabled?: boolean;
   /** Rich tooltip content shown on hover (desktop) and tap (mobile). */
   tooltip?: { title: string; body: React.ReactNode };
+  /** Soft guardrail band — values outside trigger an amber warning. */
+  softMin?: number;
+  softMax?: number;
 }) {
   const p = pos(value, min, max);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -87,6 +92,13 @@ function Fader({
   const litCount = Math.round(p * segs);
 
   const isDirty = baseline !== undefined && Math.abs(baseline - value) > 0.005;
+
+  // Guardrail state: hard-pinned at clamp, or outside the soft "reasonable" band.
+  const atHardLimit = value <= min + 0.001 || value >= max - 0.001;
+  const outsideSoft =
+    (softMin !== undefined && value < softMin - 0.001) ||
+    (softMax !== undefined && value > softMax + 0.001);
+  const guardrailWarn = atHardLimit || outsideSoft;
 
   const setFromClientY = (clientY: number) => {
     if (!onChange || !trackRef.current) return;
@@ -131,9 +143,21 @@ function Fader({
   }, []);
 
   const inner = (
-    <div className={`flex flex-col items-center gap-1 px-1 py-2 ${active ? "bg-white/5" : ""} ${isDirty ? "ring-1 ring-[hsl(45,95%,55%)]/50" : ""}`} style={{ borderRadius: 0 }}>
-      <div className={`text-[9px] font-bold tabular-nums leading-none ${delta > 0 ? "text-[hsl(142,76%,55%)]" : delta < 0 ? "text-[hsl(0,75%,65%)]" : "text-white/60"}`}>
-        {fmtPct(value)}
+    <div
+      className={`flex flex-col items-center gap-1 px-1 py-2 ${active ? "bg-white/5" : ""} ${
+        guardrailWarn
+          ? "ring-1 ring-[hsl(25,95%,55%)]/80"
+          : isDirty
+            ? "ring-1 ring-[hsl(45,95%,55%)]/50"
+            : ""
+      }`}
+      style={{ borderRadius: 0 }}
+    >
+      <div className="flex items-center gap-0.5 h-3 leading-none">
+        {guardrailWarn && <AlertTriangle className="h-2.5 w-2.5 text-[hsl(25,95%,55%)]" />}
+        <span className={`text-[9px] font-bold tabular-nums ${delta > 0 ? "text-[hsl(142,76%,55%)]" : delta < 0 ? "text-[hsl(0,75%,65%)]" : "text-white/60"}`}>
+          {fmtPct(value)}
+        </span>
       </div>
       <div
         ref={trackRef}
@@ -188,6 +212,17 @@ function Fader({
 
   if (!tooltip) return inner;
 
+  const warnNote = guardrailWarn ? (
+    <div className="mt-2 pt-2 border-t border-[hsl(25,95%,55%)]/40 text-[10px] text-[hsl(25,95%,75%)] flex items-start gap-1">
+      <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+      <span>
+        {atHardLimit
+          ? `Pinned at the hard ${value <= min + 0.001 ? "min" : "max"} (${value.toFixed(2)}×). Further moves are blocked.`
+          : `Outside the reasonable band${softMin !== undefined && softMax !== undefined ? ` (${softMin.toFixed(2)}–${softMax.toFixed(2)}×)` : ""}. Expect outsized swings in spend or CAC.`}
+      </span>
+    </div>
+  ) : null;
+
   return (
     <Tooltip open={tipOpen} onOpenChange={setTipOpen} delayDuration={150}>
       <TooltipTrigger asChild>
@@ -196,7 +231,7 @@ function Fader({
       <TooltipContent
         side="top"
         sideOffset={8}
-        className="max-w-[260px] bg-black border border-[hsl(45,95%,55%)]/50 text-white px-3 py-2"
+        className={`max-w-[260px] bg-black border text-white px-3 py-2 ${guardrailWarn ? "border-[hsl(25,95%,55%)]/70" : "border-[hsl(45,95%,55%)]/50"}`}
         style={{ borderRadius: 0 }}
       >
         <div className="text-[10px] uppercase tracking-brand font-bold text-[hsl(45,95%,55%)] mb-1">
@@ -205,6 +240,7 @@ function Fader({
         <div className="text-[11px] leading-snug text-white/85">
           {tooltip.body}
         </div>
+        {warnNote}
       </TooltipContent>
     </Tooltip>
   );
@@ -533,6 +569,42 @@ export function MixingBoardPanel() {
   // live what-if values. Toggle persists in component state only.
   const [compareMode, setCompareMode] = useState(true);
 
+  // ---- Guardrail warnings: per-fader + aggregate (spend swing, ROAS drop, etc.)
+  type Warn = { level: "warn" | "danger"; label: string; detail: string };
+  const warnings = useMemo<Warn[]>(() => {
+    const out: Warn[] = [];
+    const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+    // Per-fader band checks
+    for (const [k, v] of Object.entries(draftDow)) {
+      const name = DAY_NAMES[Number(k)];
+      if (v <= 0.501 || v >= 1.999) out.push({ level: "danger", label: `${name} pinned at hard ${v <= 0.501 ? "min" : "max"}`, detail: `${v.toFixed(2)}× — bid pacing will be jagged. Consider a smoother value.` });
+      else if (v < 0.7 || v > 1.5) out.push({ level: "warn", label: `${name} outside 0.70–1.50× band`, detail: `Value ${v.toFixed(2)}× will produce outsized swings vs typical DoW lift.` });
+    }
+    for (const [k, v] of Object.entries(draftMo)) {
+      const name = MONTH_NAMES[Number(k) - 1];
+      if (v <= 0.301 || v >= 2.999) out.push({ level: "danger", label: `${name} pinned at hard ${v <= 0.301 ? "min" : "max"}`, detail: `${v.toFixed(2)}× — monthly budget cap will hit the clamp.` });
+      else if (v < 0.5 || v > 2.0) out.push({ level: "warn", label: `${name} outside 0.50–2.00× band`, detail: `Value ${v.toFixed(2)}× will skew the seasonality curve.` });
+    }
+    for (const [k, v] of Object.entries(draftGeo)) {
+      if (v <= 0.501 || v >= 1.999) out.push({ level: "danger", label: `${k} pinned at hard ${v <= 0.501 ? "min" : "max"}`, detail: `${v.toFixed(2)}× — geo bid will saturate.` });
+      else if (v < 0.7 || v > 1.5) out.push({ level: "warn", label: `${k} outside 0.70–1.50× band`, detail: `Value ${v.toFixed(2)}× is unusual for a state-level adjustment.` });
+    }
+
+    // Aggregate impact checks (only when we have a meaningful baseline)
+    if (preview.dailySpend > 0) {
+      const swing = preview.projDailySpend / preview.dailySpend;
+      if (swing >= 1.5) out.push({ level: "danger", label: `Daily spend +${((swing - 1) * 100).toFixed(0)}%`, detail: `Projected $${preview.projDailySpend.toFixed(0)}/day vs $${preview.dailySpend.toFixed(0)} baseline — exceeds the 1.5× safety threshold.` });
+      else if (swing <= 0.6) out.push({ level: "warn", label: `Daily spend −${((1 - swing) * 100).toFixed(0)}%`, detail: `Projected $${preview.projDailySpend.toFixed(0)}/day — risk of starving the auction below 0.6× baseline.` });
+    }
+    if (preview.trueRoas > 0) {
+      const roasRatio = preview.projRoas / preview.trueRoas;
+      if (roasRatio <= 0.85) out.push({ level: "danger", label: `Projected ROAS drop ${((1 - roasRatio) * 100).toFixed(0)}%`, detail: `${preview.projRoas.toFixed(2)}× vs ${preview.trueRoas.toFixed(2)}× baseline — below 3.0× target risk.` });
+    }
+    return out;
+  }, [draftDow, draftMo, draftGeo, preview]);
+
   // ---- Change Summary: explicit list of every parameter delta vs baseline,
   // with the metrics each one is expected to move. Drives the executive panel.
   type DeltaRow = {
@@ -793,6 +865,8 @@ export function MixingBoardPanel() {
                     baseline={dowBaseline(i)}
                     min={0.5}
                     max={2.0}
+                    softMin={0.7}
+                    softMax={1.5}
                     active={i === todayDow}
                     sublabel={r?.sample_days ? `${r.sample_days}d` : undefined}
                     onChange={(next) => setDow(i, next)}
@@ -830,6 +904,8 @@ export function MixingBoardPanel() {
                     baseline={moBaseline(month)}
                     min={0.3}
                     max={3.0}
+                    softMin={0.5}
+                    softMax={2.0}
                     active={month === todayMo}
                     onChange={(next) => setMo(month, next)}
                     tooltip={{
@@ -863,6 +939,8 @@ export function MixingBoardPanel() {
                   baseline={Number(g.modifier)}
                   min={0.5}
                   max={2.0}
+                  softMin={0.7}
+                  softMax={1.5}
                   sublabel={g.tier ?? undefined}
                   onChange={(next) => setGeo(g.state, next)}
                   tooltip={{
@@ -992,6 +1070,24 @@ export function MixingBoardPanel() {
                   {preview.dirtyCount} unsaved
                 </span>
               )}
+              {warnings.length > 0 && (
+                <span
+                  className={`flex items-center gap-1 text-[9px] uppercase tracking-brand px-1.5 py-0.5 ${
+                    warnings.some(w => w.level === "danger")
+                      ? "text-[hsl(0,75%,75%)] bg-[hsl(0,75%,55%)]/15"
+                      : "text-[hsl(25,95%,75%)] bg-[hsl(25,95%,55%)]/15"
+                  }`}
+                >
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  {warnings.length} guardrail{warnings.length === 1 ? "" : "s"}
+                </span>
+              )}
+              {warnings.length === 0 && preview.dirtyCount > 0 && (
+                <span className="flex items-center gap-1 text-[9px] uppercase tracking-brand text-[hsl(142,76%,75%)] bg-[hsl(142,76%,45%)]/15 px-1.5 py-0.5">
+                  <ShieldCheck className="h-2.5 w-2.5" />
+                  Within bounds
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -1010,6 +1106,33 @@ export function MixingBoardPanel() {
               </button>
             </div>
           </div>
+
+          {warnings.length > 0 && (
+            <div className="mb-2 border border-[hsl(25,95%,55%)]/40 bg-[hsl(25,95%,15%)]/40 p-2" style={{ borderRadius: 0 }}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <AlertTriangle className="h-3 w-3 text-[hsl(25,95%,55%)]" />
+                <span className="text-[10px] uppercase tracking-brand font-bold text-[hsl(25,95%,75%)]">
+                  Guardrail warnings
+                </span>
+                <span className="text-[9px] uppercase tracking-brand text-white/40">
+                  Hard min/max enforced · soft bands flagged
+                </span>
+              </div>
+              <ul className="space-y-1">
+                {warnings.map((w, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-[10px]">
+                    <span
+                      className={`mt-0.5 h-2 w-2 flex-shrink-0 ${
+                        w.level === "danger" ? "bg-[hsl(0,75%,55%)]" : "bg-[hsl(25,95%,55%)]"
+                      }`}
+                    />
+                    <span className="text-white/90 font-bold">{w.label}.</span>
+                    <span className="text-white/60">{w.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {compareMode ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

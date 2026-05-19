@@ -126,6 +126,15 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     return [...hist, ...future];
   }, [data, history, horizonDays, today]);
 
+  // Boundary tick = the date where forecast begins (first future point), or today if absent.
+  const boundaryDate = useMemo(() => {
+    const todayIso = isoDay(today);
+    const firstFuture = chartData.find((p) => p.date > todayIso);
+    const lastHist = [...chartData].reverse().find((p) => p.date <= todayIso);
+    return firstFuture?.date ?? lastHist?.date ?? todayIso;
+  }, [chartData, today]);
+  const forecastEndDate = chartData.length ? chartData[chartData.length - 1].date : boundaryDate;
+
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
     const cumSpend = chartData.reduce((s, p) => s + p.spend, 0);

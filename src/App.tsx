@@ -102,6 +102,7 @@ const KennelCapiPage = lazy(() => import("./pages/kennel/KennelCapiPage"));
 const KennelMethodologyPage = lazy(() => import("./pages/kennel/KennelMethodologyPage"));
 const KennelIntegrationsPage = lazy(() => import("./pages/kennel/KennelIntegrationsPage"));
 const KennelOciLogPage = lazy(() => import("./pages/kennel/KennelOciLogPage"));
+const KennelBackfillsPage = lazy(() => import("./pages/kennel/KennelBackfillsPage"));
 const ExecutiveCommandCenter = lazy(() => import("./pages/intelligence/ExecutiveCommandCenter"));
 import { v2Routes } from "./v2/routes";
 import { v3Routes } from "./v3/routes";
@@ -238,6 +239,7 @@ function AppContent() {
         <Route path="channels" element={<KennelChannelsPage />} />
         <Route path="log" element={<KennelLogPage />} />
         <Route path="oci-log" element={<KennelOciLogPage />} />
+        <Route path="backfills" element={<KennelBackfillsPage />} />
         <Route path="settings" element={<KennelSettingsPage />} />
         <Route path="methodology" element={<KennelMethodologyPage />} />
         <Route path="integrations" element={<KennelIntegrationsPage />} />

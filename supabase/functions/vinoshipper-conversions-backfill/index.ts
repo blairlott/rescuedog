@@ -85,20 +85,49 @@ Deno.serve(async (req) => {
 
   // Pull orders: either supplied directly (file upload) or queried.
   let rows: any[] = [];
+  let uploadDiagnostics: any = null;
   if (uploadedOrders) {
     const today = new Date().toISOString().slice(0, 10);
-    rows = uploadedOrders.slice(0, limit).map((r: any, i: number) => ({
-      invoice: String(r.order_id ?? r.invoice ?? `upload-${Date.now()}-${i}`),
-      transaction_date: r.transaction_date ?? r.date ?? today,
-      order_total: Number(r.order_total ?? r.value ?? 0),
-      customer_email: r.customer_email ?? r.email ?? null,
-      customer_phone: r.customer_phone ?? r.phone ?? null,
-      customer_first_name: r.customer_first_name ?? r.first_name ?? null,
-      customer_last_name: r.customer_last_name ?? r.last_name ?? null,
-      ship_to_city: r.ship_to_city ?? r.city ?? null,
-      ship_to_state: r.ship_to_state ?? r.state ?? null,
-      ship_to_zip: r.ship_to_zip ?? r.zip ?? null,
-    })).filter((r: any) => r.order_total > 0);
+    // Accept many header variants from Vinoshipper / generic exports.
+    const pick = (r: any, keys: string[]) => {
+      for (const k of keys) {
+        if (r[k] !== undefined && r[k] !== null && r[k] !== "") return r[k];
+      }
+      return null;
+    };
+    const toNum = (v: any) => {
+      if (v == null) return 0;
+      const n = Number(String(v).replace(/[$,\s]/g, ""));
+      return Number.isFinite(n) ? n : 0;
+    };
+    const mapped = uploadedOrders.slice(0, limit).map((r: any, i: number) => ({
+      invoice: String(
+        pick(r, ["order_id", "invoice", "invoice_id", "invoice_number", "order_number", "order", "id"]) ??
+        `upload-${Date.now()}-${i}`
+      ),
+      transaction_date: String(
+        pick(r, ["transaction_date", "date", "order_date", "invoice_date", "created_at", "placed_at"]) ?? today
+      ).slice(0, 10),
+      order_total: toNum(pick(r, [
+        "order_total", "value", "total", "grand_total", "amount", "subtotal",
+        "order_amount", "total_amount", "invoice_total", "order_total_usd",
+      ])),
+      customer_email: pick(r, ["customer_email", "email", "buyer_email", "billing_email"]),
+      customer_phone: pick(r, ["customer_phone", "phone", "phone_number", "billing_phone"]),
+      customer_first_name: pick(r, ["customer_first_name", "first_name", "firstname", "billing_first_name"]),
+      customer_last_name: pick(r, ["customer_last_name", "last_name", "lastname", "billing_last_name"]),
+      ship_to_city: pick(r, ["ship_to_city", "city", "shipping_city"]),
+      ship_to_state: pick(r, ["ship_to_state", "state", "shipping_state", "ship_state"]),
+      ship_to_zip: pick(r, ["ship_to_zip", "zip", "zip_code", "postal_code", "shipping_zip"]),
+    }));
+    rows = mapped.filter((r: any) => r.order_total > 0);
+    uploadDiagnostics = {
+      received: uploadedOrders.length,
+      mapped: mapped.length,
+      dropped_zero_total: mapped.length - rows.length,
+      detected_headers: uploadedOrders[0] ? Object.keys(uploadedOrders[0]) : [],
+      sample_mapped_row: mapped[0] ?? null,
+    };
   } else {
     const { data: orders, error: ordErr } = await admin
       .from("vs_transactions")
@@ -264,6 +293,7 @@ Deno.serve(async (req) => {
     ok: true,
     since: sinceIso,
     orders_examined: rows.length,
+    upload: uploadDiagnostics,
     meta_already_sent: metaSent.size,
     google_already_sent: ociSent.size,
     meta: metaResult,

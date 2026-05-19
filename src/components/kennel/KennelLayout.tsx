@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert } from "lucide-react";
+import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -13,6 +13,7 @@ const NAV = [
   { to: "/kennel/channels", label: "Channels", icon: Network, end: false, viewerOk: true },
   { to: "/kennel/log", label: "Execution log", icon: ScrollText, end: false, viewerOk: true },
   { to: "/kennel/settings", label: "Settings", icon: Settings, end: false, viewerOk: false },
+  { to: "/kennel/integrations", label: "Integrations", icon: Key, end: false, viewerOk: false },
 ];
 
 export function KennelLayout() {

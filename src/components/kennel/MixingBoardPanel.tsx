@@ -691,7 +691,7 @@ export function MixingBoardPanel() {
                     max={2.0}
                     active={i === todayDow}
                     sublabel={r?.sample_days ? `${r.sample_days}d` : undefined}
-                    onChange={(next) => setDraftDow(p => ({ ...p, [i]: next }))}
+                    onChange={(next) => setDow(i, next)}
                     tooltip={{
                       title: `${dayName} bid modifier`,
                       body: (
@@ -727,7 +727,7 @@ export function MixingBoardPanel() {
                     min={0.3}
                     max={3.0}
                     active={month === todayMo}
-                    onChange={(next) => setDraftMo(p => ({ ...p, [month]: next }))}
+                    onChange={(next) => setMo(month, next)}
                     tooltip={{
                       title: `${monthName} budget index`,
                       body: (
@@ -760,7 +760,7 @@ export function MixingBoardPanel() {
                   min={0.5}
                   max={2.0}
                   sublabel={g.tier ?? undefined}
-                  onChange={(next) => setDraftGeo(p => ({ ...p, [g.state]: next }))}
+                  onChange={(next) => setGeo(g.state, next)}
                   tooltip={{
                     title: `${g.state} geo bid modifier`,
                     body: (

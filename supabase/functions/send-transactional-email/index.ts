@@ -16,6 +16,58 @@ const SENDER_DOMAIN = "notify.rescuedog.com"
 // even though actual sending uses the subdomain above.
 const FROM_DOMAIN = "notify.rescuedog.com"
 
+// Customer-service routing.
+// All customer-facing emails reply to info@ (never no-reply) and BCC info@
+// for internal visibility. Shipping issues are routed to Vinoshipper's
+// customer service for fastest resolution.
+const REPLY_TO_EMAIL = 'info@rescuedogwines.com'
+const BCC_EMAIL = 'info@rescuedogwines.com'
+const SHIPPING_SUPPORT_EMAIL = 'customerservice@vinoshipper.com'
+
+// Templates whose recipient is internal staff/partners (not the end customer).
+// These skip reply-to override, the BCC copy, and the shipping support note.
+const INTERNAL_TEMPLATES = new Set<string>([
+  'donation-admin-notification',
+  'wholesale-admin-notification',
+  'stale-accounts-rep-alert',
+  'stale-accounts-summary',
+  'dropship-partner-po',
+  'wine-club-staff-action',
+  'kennel-access-invite',
+  'reviewer-invite',
+])
+
+function buildSupportFooterHtml(): string {
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0;border-top:1px solid #e5e5e5;">
+      <tr><td style="padding:18px 28px;font-family:'Nunito Sans','Avenir Next',Arial,sans-serif;font-size:12px;color:#666;line-height:1.6;">
+        <strong style="color:#000;">Need help?</strong> Reply to this email and we'll get back to you at
+        <a href="mailto:${REPLY_TO_EMAIL}" style="color:#c30017;text-decoration:none;">${REPLY_TO_EMAIL}</a>.<br/>
+        <strong style="color:#000;">Shipping or tracking question?</strong> For fastest resolution, contact our shipping partner directly at
+        <a href="mailto:${SHIPPING_SUPPORT_EMAIL}" style="color:#c30017;text-decoration:none;">${SHIPPING_SUPPORT_EMAIL}</a>.
+      </td></tr>
+    </table>
+  `
+}
+
+function buildSupportFooterText(): string {
+  return [
+    '',
+    '----',
+    `Need help? Reply to this email and we'll get back to you at ${REPLY_TO_EMAIL}.`,
+    `Shipping or tracking question? For fastest resolution, contact our shipping partner directly at ${SHIPPING_SUPPORT_EMAIL}.`,
+  ].join('\n')
+}
+
+function injectSupportFooterHtml(html: string): string {
+  const footer = buildSupportFooterHtml()
+  // Insert just before </body> if present, otherwise append.
+  if (/<\/body>/i.test(html)) {
+    return html.replace(/<\/body>/i, `${footer}</body>`)
+  }
+  return html + footer
+}
+
 // Generate a cryptographically random 32-byte hex token
 function generateToken(): string {
   const bytes = new Uint8Array(32)

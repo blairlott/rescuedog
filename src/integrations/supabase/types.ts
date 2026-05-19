@@ -3657,6 +3657,45 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_credentials: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          credential_key: string
+          credential_value: string
+          id: string
+          notes: string | null
+          provider: string
+          scope: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          credential_key: string
+          credential_value: string
+          id?: string
+          notes?: string | null
+          provider: string
+          scope?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          credential_key?: string
+          credential_value?: string
+          id?: string
+          notes?: string | null
+          provider?: string
+          scope?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       kennel_entity_aliases: {
         Row: {
           created_at: string

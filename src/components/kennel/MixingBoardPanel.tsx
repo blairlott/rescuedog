@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Sliders, RotateCcw, Save, FlaskConical } from "lucide-react";
+import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2 } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -500,6 +500,54 @@ export function MixingBoardPanel() {
     setDraftGeo({});
   };
 
+  /** Scenario presets — apply a multiplier to every baseline value as a draft. */
+  type Preset = "boost" | "hold" | "pull" | "auto" | "custom";
+  const [activePreset, setActivePreset] = useState<Preset>("custom");
+
+  const applyPreset = (preset: Preset) => {
+    if (preset === "auto") {
+      // Revert all faders to the auto-computed baseline (drop any override).
+      const dow: Record<number, number> = {};
+      const mo: Record<number, number> = {};
+      const geo: Record<string, number> = {};
+      (data?.dow ?? []).forEach(r => { dow[r.day_of_week] = Number(r.modifier); });
+      (data?.mo ?? []).forEach(r => { mo[r.month] = Number(r.budget_index); });
+      (data?.geo ?? []).forEach(r => { geo[r.state] = Number(r.modifier); });
+      setDraftDow(dow); setDraftMo(mo); setDraftGeo(geo);
+      setActivePreset("auto");
+      return;
+    }
+    if (preset === "hold") {
+      // Neutralize every fader to 1.0×.
+      const dow: Record<number, number> = {};
+      const mo: Record<number, number> = {};
+      const geo: Record<string, number> = {};
+      (data?.dow ?? []).forEach(r => { dow[r.day_of_week] = 1.0; });
+      (data?.mo ?? []).forEach(r => { mo[r.month] = 1.0; });
+      (data?.geo ?? []).forEach(r => { geo[r.state] = 1.0; });
+      setDraftDow(dow); setDraftMo(mo); setDraftGeo(geo);
+      setActivePreset("hold");
+      return;
+    }
+    // Boost = baseline × 1.2 clamped; Pull = baseline × 0.8 clamped.
+    const mult = preset === "boost" ? 1.2 : 0.8;
+    const dow: Record<number, number> = {};
+    const mo: Record<number, number> = {};
+    const geo: Record<string, number> = {};
+    (data?.dow ?? []).forEach(r => { dow[r.day_of_week] = clamp(Number(r.modifier) * mult, 0.5, 2.0); });
+    (data?.mo ?? []).forEach(r => { mo[r.month] = clamp(Number(r.budget_index) * mult, 0.3, 3.0); });
+    (data?.geo ?? []).forEach(r => { geo[r.state] = clamp(Number(r.modifier) * mult, 0.5, 2.0); });
+    setDraftDow(dow); setDraftMo(mo); setDraftGeo(geo);
+    setActivePreset(preset);
+  };
+
+  // Drop the preset highlight as soon as the user drags a fader manually.
+  useEffect(() => {
+    if (activePreset === "custom") return;
+    // No-op: applyPreset sets drafts which triggers this effect; we only flip back to
+    // "custom" via the Fader onChange path below.
+  }, [activePreset]);
+
   const saveDraft = async () => {
     setSaving(true);
     try {
@@ -555,6 +603,20 @@ export function MixingBoardPanel() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Wrap state-setters so any manual drag flips us back to "Custom".
+  const setDow = (i: number, v: number) => {
+    setDraftDow(p => ({ ...p, [i]: v }));
+    if (activePreset !== "custom") setActivePreset("custom");
+  };
+  const setMo = (m: number, v: number) => {
+    setDraftMo(p => ({ ...p, [m]: v }));
+    if (activePreset !== "custom") setActivePreset("custom");
+  };
+  const setGeo = (s: string, v: number) => {
+    setDraftGeo(p => ({ ...p, [s]: v }));
+    if (activePreset !== "custom") setActivePreset("custom");
   };
 
   const riskTotals = (data?.risk ?? []).reduce(

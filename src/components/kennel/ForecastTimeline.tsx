@@ -239,6 +239,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
+                <ReferenceLine yAxisId="left" x={isoDay(today)} stroke="hsl(var(--foreground))" strokeDasharray="2 2" label={{ value: "Today", position: "top", fontSize: 10 }} />
                 <Area yAxisId="left" dataKey="revenue_upper" stroke="none" fill="hsl(var(--primary) / 0.15)" name="Revenue range" stackId="band" />
                 <Area yAxisId="left" dataKey="revenue_lower" stroke="none" fill="hsl(var(--background))" stackId="band" legendType="none" />
                 <Line yAxisId="left" type="monotone" dataKey="spend" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Spend" />

@@ -10,6 +10,7 @@ import {
   DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay,
   monthKey, pickBucket, daysBetween, formatAxisDate,
 } from "./DateRangeControls";
+import { TileAiGuidance } from "./TileAiGuidance";
 
 type DayPoint = {
   date: string;
@@ -276,6 +277,18 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+          <TileAiGuidance
+            tileId="brick-mortar"
+            rangeLabel={rangeLabel(start, end)}
+            tileData={{
+              model: "trailing 90-day average with selected growth rate, not MMM",
+              growth_mode: growthKey,
+              observed_revenue: chart.observedTotal,
+              projected_revenue: chart.projectedTotal,
+              daily_average: chart.dailyAvg,
+              source_rows: { quickbooks: data.qbRows, depletions: data.depRows, instacart: data.icRows },
+            }}
+          />
         </>
       )}
     </section>

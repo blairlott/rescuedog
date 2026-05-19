@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Send, Activity, Flame, CheckCircle2, XCircle, Clock, ShieldCheck } from "lucide-react";
+import { Send, Activity, Flame, CheckCircle2, XCircle, Clock, ShieldCheck, Upload } from "lucide-react";
 
 const SHARP = { borderRadius: 0 } as const;
 
@@ -28,7 +28,12 @@ export default function KennelCapiPage() {
   const [recent, setRecent] = useState<CapiEvent[]>([]);
   const [z3aOnly, setZ3aOnly] = useState(false);
   const [enabled, setEnabled] = useState(true);
-  const [ociEnabled, setOciEnabled] = useState(false);
+  const [ociEnabled, setOciEnabled] = useState(true);
+  const [conversionActionId, setConversionActionId] = useState("");
+  const [savingCAI, setSavingCAI] = useState(false);
+  const [backfillDays, setBackfillDays] = useState(30);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<any>(null);
   const [testOrder, setTestOrder] = useState({
     order_id: `test-${Date.now()}`,
     value_cents: 9900,
@@ -48,13 +53,14 @@ export default function KennelCapiPage() {
     const [{ data: ev }, { data: rec }, { data: flags }] = await Promise.all([
       supabase.from("meta_capi_events").select("*").order("sent_at", { ascending: false }).limit(50),
       supabase.from("meta_capi_events").select("*").gte("sent_at", since).order("sent_at", { ascending: false }).limit(500),
-      supabase.from("app_settings").select("key,value").in("key", ["kennel_capi_enabled", "kennel_oci_enabled"]),
+      supabase.from("app_settings").select("key,value").in("key", ["kennel_capi_enabled", "kennel_oci_enabled", "kennel_oci_conversion_action_id"]),
     ]);
     setEvents((ev as CapiEvent[]) ?? []);
     setRecent((rec as CapiEvent[]) ?? []);
     const fmap = Object.fromEntries((flags ?? []).map((f: any) => [f.key, f.value]));
     setEnabled(fmap.kennel_capi_enabled === true || fmap.kennel_capi_enabled === "true");
-    setOciEnabled(fmap.kennel_oci_enabled === true || fmap.kennel_oci_enabled === "true");
+    setOciEnabled(fmap.kennel_oci_enabled !== false && fmap.kennel_oci_enabled !== "false");
+    setConversionActionId(String(fmap.kennel_oci_conversion_action_id ?? "").replace(/^"|"$/g, ""));
   };
 
   useEffect(() => { load(); }, []);
@@ -85,6 +91,39 @@ export default function KennelCapiPage() {
     if (error) { toast.error(error.message); return; }
     toast.success(`${key} = ${next}`);
     load();
+  };
+
+  const saveConversionActionId = async () => {
+    setSavingCAI(true);
+    try {
+      const { error } = await supabase.from("app_settings")
+        .upsert({ key: "kennel_oci_conversion_action_id", value: conversionActionId }, { onConflict: "key" });
+      if (error) throw error;
+      toast.success("Conversion action ID saved");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed");
+    } finally {
+      setSavingCAI(false);
+    }
+  };
+
+  const runBackfill = async (dryRun: boolean) => {
+    setBackfilling(true);
+    setBackfillResult(null);
+    try {
+      const since_iso = new Date(Date.now() - backfillDays * 86400_000).toISOString().slice(0, 10);
+      const { data, error } = await supabase.functions.invoke("vinoshipper-conversions-backfill", {
+        body: { since_iso, dry_run: dryRun, send_meta: true, send_google: true, limit: 1000 },
+      });
+      if (error) throw error;
+      setBackfillResult(data);
+      toast.success(dryRun ? "Dry run complete" : "Backfill sent");
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Backfill failed");
+    } finally {
+      setBackfilling(false);
+    }
   };
 
   const sendTest = async () => {
@@ -228,6 +267,50 @@ export default function KennelCapiPage() {
             </tbody>
           </table>
         </div>
+      </Card>
+
+      {/* --- Vinoshipper → Meta CAPI + Google OCI backfill --- */}
+      <Card style={SHARP} className="p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Upload className="h-4 w-4" />
+          <h2 className="font-bold uppercase tracking-brand">Backfill Vinoshipper sales</h2>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Pulls CONSUMER orders from <code className="px-1 bg-muted">vs_transactions</code>, hashes PII as SHA-256 hex
+          (Meta's required format), and forwards to Meta CAPI + Google Ads OCI.
+          Both sinks dedupe on <code className="px-1 bg-muted">order_id</code> — safe to re-run.
+        </p>
+        <div className="grid grid-cols-3 gap-3 items-end">
+          <div>
+            <Label className="text-xs">Google conversion action ID</Label>
+            <div className="flex gap-2">
+              <Input style={SHARP} value={conversionActionId} placeholder="e.g. 1234567890"
+                onChange={(e) => setConversionActionId(e.target.value)} />
+              <Button size="sm" variant="outline" style={SHARP} onClick={saveConversionActionId} disabled={savingCAI}>
+                Save
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">Numeric ID from Google Ads → Tools → Conversions.</p>
+          </div>
+          <div>
+            <Label className="text-xs">Lookback (days)</Label>
+            <Input style={SHARP} type="number" min={1} max={365} value={backfillDays}
+              onChange={(e) => setBackfillDays(Math.max(1, Number(e.target.value) || 30))} />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" style={SHARP} onClick={() => runBackfill(true)} disabled={backfilling}>
+              {backfilling ? "Working…" : "Dry run"}
+            </Button>
+            <Button style={SHARP} onClick={() => runBackfill(false)} disabled={backfilling}>
+              {backfilling ? "Sending…" : "Send to Meta + Google"}
+            </Button>
+          </div>
+        </div>
+        {backfillResult && (
+          <pre className="text-[11px] bg-muted/40 p-3 overflow-x-auto" style={SHARP}>
+{JSON.stringify(backfillResult, null, 2)}
+          </pre>
+        )}
       </Card>
 
       <div className="grid grid-cols-3 gap-4">

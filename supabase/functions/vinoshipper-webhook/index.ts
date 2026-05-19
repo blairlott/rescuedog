@@ -500,7 +500,7 @@ Deno.serve(async (req) => {
     // confirm the exact GET endpoints from their docs.
     let notes = "";
     switch (payload.subject) {
-      case "ORDER":
+      case "ORDER": {
         notes = `ORDER ${payload.event} received`;
         // Vinoshipper's webhook envelope only contains identifier+subject+event+href —
         // no customer/email/lines. We MUST fetch the order to enrich everything
@@ -707,6 +707,7 @@ Deno.serve(async (req) => {
           notes += " | bridge exception: " + String(e);
         }
         break;
+      }
       case "CLUB_MEMBERSHIP":
         // TODO: GET /club-memberships/{id}, then update wine_club_memberships
         // (status, next_shipment_date, payment_status) where vinoshipper_membership_id matches.

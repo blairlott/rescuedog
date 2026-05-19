@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { TrendingUp, RefreshCw } from "lucide-react";
 import {
-  DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween,
+  DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween, formatAxisDate,
 } from "./DateRangeControls";
 
 type Point = {
@@ -185,7 +185,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
             <ResponsiveContainer>
               <ComposedChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={32} tickFormatter={formatAxisDate} />
                 <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} tickFormatter={(v) => `${v.toFixed(1)}x`} />
                 <Tooltip

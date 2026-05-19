@@ -149,3 +149,14 @@ export function daysBetween(a: Date, b: Date): number {
 export function monthKey(d: Date) {
   return d.toISOString().slice(0, 7);
 }
+
+/** Format an x-axis tick (YYYY-MM-DD or YYYY-MM) as "Mon YYYY". */
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+export function formatAxisDate(v: string): string {
+  if (!v || typeof v !== "string") return String(v ?? "");
+  const m = v.match(/^(\d{4})-(\d{2})/);
+  if (!m) return v;
+  const year = m[1];
+  const month = MONTHS[Math.max(0, Math.min(11, parseInt(m[2], 10) - 1))];
+  return `${month} ${year}`;
+}

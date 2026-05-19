@@ -6701,6 +6701,72 @@ export type Database = {
         }
         Relationships: []
       }
+      winback_campaign_state: {
+        Row: {
+          channel: string
+          id: string
+          last_launched_at: string | null
+          last_member_count: number | null
+          last_recommended_at: string | null
+          notes: string | null
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          id?: string
+          last_launched_at?: string | null
+          last_member_count?: number | null
+          last_recommended_at?: string | null
+          notes?: string | null
+          tier: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          id?: string
+          last_launched_at?: string | null
+          last_member_count?: number | null
+          last_recommended_at?: string | null
+          notes?: string | null
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      winback_snapshots: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          member_count: number
+          payload: Json
+          reactivations_since_last: number
+          snapshot_date: string
+          tier: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          member_count?: number
+          payload?: Json
+          reactivations_since_last?: number
+          snapshot_date?: string
+          tier: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          member_count?: number
+          payload?: Json
+          reactivations_since_last?: number
+          snapshot_date?: string
+          tier?: string
+        }
+        Relationships: []
+      }
       wine_club_curation_picks: {
         Row: {
           ai_rationale: string | null

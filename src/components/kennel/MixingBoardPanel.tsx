@@ -6,6 +6,8 @@ type DowRow = { day_of_week: number; modifier: number; sample_days: number | nul
 type MoRow = { month: number; budget_index: number };
 type GeoRow = { state: string; modifier: number; tier: string | null; revenue_cents: number | null };
 type RiskRow = { state: string; at_risk_customers: number; at_risk_lifetime_value: number; repeat_buyers_at_risk: number };
+type PerfRow = { date: string; spend: number; impressions: number; clicks: number; conversions: number; revenue: number };
+type TxnRow = { order_total: number; invoice: string; customer_id: string | null; transaction_date: string };
 
 const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
 const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
@@ -19,6 +21,15 @@ function pos(value: number, min: number, max: number) {
 function fmtPct(mod: number) {
   const p = (mod - 1) * 100;
   return `${p > 0 ? "+" : ""}${p.toFixed(0)}%`;
+}
+
+/** Format a KPI value with appropriate units. */
+function fmtKpi(value: number, kind: "x" | "pct" | "usd" | "int") {
+  if (!isFinite(value)) return "—";
+  if (kind === "x") return `${value.toFixed(2)}×`;
+  if (kind === "pct") return `${(value * 100).toFixed(2)}%`;
+  if (kind === "usd") return `$${value.toFixed(0)}`;
+  return Math.round(value).toLocaleString();
 }
 
 /** Vertical fader strip with LED column + knob. */
@@ -125,21 +136,161 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Generic KPI meter: any reasonable metric with a target/baseline + range. */
+function KpiMeter({
+  label,
+  value,
+  target,
+  min,
+  max,
+  kind,
+  invert = false,
+  sub,
+}: {
+  label: string;
+  value: number;
+  target: number;
+  min: number;
+  max: number;
+  kind: "x" | "pct" | "usd" | "int";
+  /** If true, lower-is-better (e.g. CAC). */
+  invert?: boolean;
+  sub?: string;
+}) {
+  const p = pos(value, min, max);
+  const ratio = target > 0 ? value / target : 1;
+  const healthy = invert ? ratio <= 1.05 : ratio >= 0.95;
+  const warn = invert ? ratio <= 1.25 : ratio >= 0.75;
+  const tone = healthy
+    ? "text-[hsl(142,76%,55%)]"
+    : warn
+    ? "text-[hsl(45,95%,55%)]"
+    : "text-[hsl(0,75%,65%)]";
+
+  const segs = 24;
+  const lit = Math.round(p * segs);
+  const targetPos = pos(target, min, max);
+
+  return (
+    <div className="flex flex-col gap-1 px-2 py-1.5 border border-white/10 bg-black/30" style={{ borderRadius: 0 }}>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[9px] uppercase tracking-brand font-bold text-white/70 truncate">{label}</span>
+        <span className="text-[8px] text-white/40 tabular-nums">tgt {fmtKpi(target, kind)}</span>
+      </div>
+      <div className="relative h-3 bg-black border border-white/15 flex gap-[1px] p-0.5">
+        {Array.from({ length: segs }).map((_, i) => {
+          const isLit = i < lit;
+          const segColor =
+            i < segs * 0.4 ? "bg-[hsl(0,75%,55%)]"
+            : i < segs * 0.75 ? "bg-[hsl(45,95%,55%)]"
+            : "bg-[hsl(142,76%,45%)]";
+          const segTone = invert
+            ? (i < segs * 0.25 ? "bg-[hsl(142,76%,45%)]" : i < segs * 0.6 ? "bg-[hsl(45,95%,55%)]" : "bg-[hsl(0,75%,55%)]")
+            : segColor;
+          return (
+            <div
+              key={i}
+              className={`flex-1 ${isLit ? segTone : "bg-white/5"}`}
+              style={{ boxShadow: isLit ? "0 0 3px currentColor" : undefined }}
+            />
+          );
+        })}
+        {/* target marker */}
+        <div
+          className="absolute top-0 bottom-0 w-px bg-white/80"
+          style={{ left: `${targetPos * 100}%` }}
+        />
+      </div>
+      <div className="flex items-baseline justify-between">
+        <span className={`text-sm font-bold tabular-nums ${tone}`}>{fmtKpi(value, kind)}</span>
+        {sub && <span className="text-[8px] uppercase tracking-brand text-white/40">{sub}</span>}
+      </div>
+    </div>
+  );
+}
+
 export function MixingBoardPanel() {
   const { data, isLoading } = useQuery({
     queryKey: ["kennel-mixing-board"],
     queryFn: async () => {
+      const fromIso = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        return d.toISOString().slice(0, 10);
+      })();
+
       const [dowR, moR, geoR, riskR] = await Promise.all([
         supabase.from("kennel_bid_modifiers" as any).select("day_of_week, modifier, sample_days").order("day_of_week"),
         supabase.from("kennel_seasonality_curve" as any).select("month, budget_index").order("month"),
         supabase.from("kennel_geo_modifiers" as any).select("state, modifier, tier, revenue_cents").order("revenue_cents", { ascending: false, nullsFirst: false }).limit(8),
         supabase.from("kennel_retention_risk_summary" as any).select("state, at_risk_customers, at_risk_lifetime_value, repeat_buyers_at_risk"),
       ]);
+
+      // Pull recent ad performance + consumer transactions for KPI meters.
+      const perfR = await supabase
+        .from("ad_performance_daily" as any)
+        .select("date, spend, impressions, clicks, conversions, revenue")
+        .gte("date", fromIso);
+
+      // Page consumer txns for AOV/repeat rate.
+      const txns: TxnRow[] = [];
+      const PAGE = 1000;
+      for (let from = 0; from < 20000; from += PAGE) {
+        const { data: tdata, error } = await supabase
+          .from("vs_transactions" as any)
+          .select("order_total, invoice, customer_id, transaction_date")
+          .gte("transaction_date", fromIso)
+          .eq("order_type", "CONSUMER")
+          .neq("chain_status", "Cancelled")
+          .range(from, from + PAGE - 1);
+        if (error) break;
+        const rows = ((tdata as any) ?? []) as TxnRow[];
+        txns.push(...rows);
+        if (rows.length < PAGE) break;
+      }
+
+      const perf = ((perfR.data as any) ?? []) as PerfRow[];
+      const totals = perf.reduce(
+        (a, r) => ({
+          spend: a.spend + Number(r.spend || 0),
+          impr: a.impr + Number(r.impressions || 0),
+          clicks: a.clicks + Number(r.clicks || 0),
+          conv: a.conv + Number(r.conversions || 0),
+          rev: a.rev + Number(r.revenue || 0),
+        }),
+        { spend: 0, impr: 0, clicks: 0, conv: 0, rev: 0 }
+      );
+
+      // Consumer-side metrics from Vinoshipper (canonical revenue truth).
+      const uniqueOrders = new Map<string, number>();
+      txns.forEach(t => uniqueOrders.set(t.invoice, Number(t.order_total || 0)));
+      const orderCount = uniqueOrders.size;
+      const grossRev = Array.from(uniqueOrders.values()).reduce((a, b) => a + b, 0);
+      const aov = orderCount > 0 ? grossRev / orderCount : 0;
+
+      // Repeat rate: % of customers with 2+ orders in window.
+      const byCustomer = new Map<string, Set<string>>();
+      txns.forEach(t => {
+        if (!t.customer_id) return;
+        if (!byCustomer.has(t.customer_id)) byCustomer.set(t.customer_id, new Set());
+        byCustomer.get(t.customer_id)!.add(t.invoice);
+      });
+      const customerCount = byCustomer.size;
+      const repeatCount = Array.from(byCustomer.values()).filter(s => s.size >= 2).length;
+      const repeatRate = customerCount > 0 ? repeatCount / customerCount : 0;
+
+      const trueRoas = totals.spend > 0 ? grossRev / totals.spend : 0;
+      const ctr = totals.impr > 0 ? totals.clicks / totals.impr : 0;
+      const cvr = totals.clicks > 0 ? totals.conv / totals.clicks : 0;
+      const cac = orderCount > 0 ? totals.spend / orderCount : 0;
+      const dailySpend = totals.spend / 30;
+
       return {
         dow: ((dowR.data as any) ?? []) as DowRow[],
         mo: ((moR.data as any) ?? []) as MoRow[],
         geo: ((geoR.data as any) ?? []) as GeoRow[],
         risk: ((riskR.data as any) ?? []) as RiskRow[],
+        kpi: { trueRoas, ctr, cvr, aov, cac, repeatRate, dailySpend, orderCount, grossRev },
       };
     },
     staleTime: 60 * 1000,
@@ -159,6 +310,8 @@ export function MixingBoardPanel() {
     }),
     { customers: 0, value: 0, repeat: 0 }
   );
+
+  const k = data?.kpi;
 
   return (
     <div
@@ -186,6 +339,23 @@ export function MixingBoardPanel() {
       {isLoading ? (
         <div className="text-white/40 text-xs py-8 text-center uppercase tracking-brand">Warming up the board…</div>
       ) : (
+        <>
+        {/* MASTER KPI RACK — any reasonable metric */}
+        {k && (
+          <div className="mb-4">
+            <SectionLabel>Master KPIs · trailing 30d</SectionLabel>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-1.5">
+              <KpiMeter label="True ROAS" value={k.trueRoas} target={3.0} min={0} max={6} kind="x" sub="rev/spend" />
+              <KpiMeter label="CTR" value={k.ctr} target={0.02} min={0} max={0.05} kind="pct" sub="clicks/impr" />
+              <KpiMeter label="CVR" value={k.cvr} target={0.03} min={0} max={0.08} kind="pct" sub="conv/clicks" />
+              <KpiMeter label="AOV" value={k.aov} target={120} min={0} max={250} kind="usd" sub="per order" />
+              <KpiMeter label="CAC" value={k.cac} target={40} min={0} max={150} kind="usd" invert sub="lower better" />
+              <KpiMeter label="Repeat Rate" value={k.repeatRate} target={0.25} min={0} max={0.5} kind="pct" sub="2+ orders" />
+              <KpiMeter label="Daily Spend" value={k.dailySpend} target={k.dailySpend || 100} min={0} max={Math.max(500, k.dailySpend * 2)} kind="usd" sub="30d avg" />
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-[auto_auto_1fr_auto] gap-4">
           {/* DAY OF WEEK */}
           <div>
@@ -276,6 +446,7 @@ export function MixingBoardPanel() {
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* Footer legend */}

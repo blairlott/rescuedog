@@ -19,6 +19,7 @@ import { AiInsights } from "@/components/kennel/AiInsights";
 import { RefreshButton } from "@/components/kennel/RefreshButton";
 import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
 import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
+import { SortableDashboard, type SortableItem } from "@/components/kennel/SortableDashboard";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertTriangle, RefreshCw, Sparkles, ChevronRight, Maximize2, SlidersHorizontal } from "lucide-react";
@@ -402,8 +403,20 @@ export default function KennelDashboard() {
         <>
           <ForecastTimeline />
 
-          <section>
-            <h2 className="text-sm uppercase tracking-brand font-bold text-foreground mb-3">Channel breakdown</h2>
+          <StrategyMixPanel scope="global" />
+
+          <p className="text-[11px] uppercase tracking-brand text-muted-foreground">
+            Hover any section below and drag the handle on the left to reorder. Order is saved to this browser.
+          </p>
+
+          <SortableDashboard
+            storageKey="kennel-dashboard-order-v1"
+            items={([
+              {
+                id: "channel-breakdown",
+                node: (
+                  <section>
+                    <h2 className="text-sm uppercase tracking-brand font-bold text-foreground mb-3">Channel breakdown</h2>
             <div className="border-2 border-foreground bg-muted/40 p-4 mb-3 flex items-start gap-3" style={{ borderRadius: 0 }}>
               <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
               <div className="flex-1 text-xs text-foreground leading-relaxed">
@@ -423,13 +436,17 @@ export default function KennelDashboard() {
             <div className="mt-4">
               <ChannelControlsPanel rows={channelRows} />
             </div>
-          </section>
-
-          <StrategyMixPanel scope="global" />
-
-          <AiInsights snapshot={aiSnapshot} rangeLabel={periodMeta.label} />
-
-          <section className="space-y-2">
+                  </section>
+                ),
+              },
+              {
+                id: "ai-insights",
+                node: <AiInsights snapshot={aiSnapshot} rangeLabel={periodMeta.label} />,
+              },
+              {
+                id: "paid-media",
+                node: (
+                  <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Paid media (ad channels)</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard label="Ad Spend" value={`$${(aggregates?.spend ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Meta + Google + Instacart" />
@@ -437,9 +454,13 @@ export default function KennelDashboard() {
               <MetricCard label="ROAS" value={`${(aggregates?.roas ?? 0).toFixed(2)}x`} hint="Attributed ÷ Spend" />
               <MetricCard label="Conversions" value={(aggregates?.conversions ?? 0).toLocaleString()} hint={`$${(aggregates?.cpa ?? 0).toFixed(2)} CPA`} />
             </div>
-          </section>
-
-          <section className="space-y-2">
+                  </section>
+                ),
+              },
+              {
+                id: "dtc-sales",
+                node: (
+                  <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">DTC sales (Vinoshipper)</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard label="DTC Revenue" value={`$${dtc.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} hint="Consumer orders (excl. wine club)" />
@@ -447,9 +468,13 @@ export default function KennelDashboard() {
               <MetricCard label="True ROAS" value={(aggregates?.spend ?? 0) > 0 ? `${(dtc.revenue / (aggregates?.spend ?? 1)).toFixed(2)}x` : "—"} hint="DTC Revenue ÷ Ad Spend" />
               <MetricCard label="AOV" value={dtc.orders > 0 ? `$${(dtc.revenue / dtc.orders).toFixed(0)}` : "—"} hint="Average order value" />
             </div>
-          </section>
-
-          <section className="space-y-2">
+                  </section>
+                ),
+              },
+              {
+                id: "ad-optimization",
+                node: (
+                  <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Ad optimization</h2>
             <button
               type="button"
@@ -470,41 +495,32 @@ export default function KennelDashboard() {
                 Open <Maximize2 className="h-4 w-4" />
               </div>
             </button>
-          </section>
-
-          <Dialog open={optimizationOpen} onOpenChange={setOptimizationOpen}>
-            <DialogContent
-              className="max-w-none w-screen h-screen sm:rounded-none p-0 gap-0 border-0 flex flex-col"
-              style={{ borderRadius: 0 }}
-            >
-              <DialogHeader className="border-b-2 border-foreground p-4 shrink-0">
-                <DialogTitle className="uppercase tracking-brand text-base flex items-center gap-2">
-                  <SlidersHorizontal className="h-4 w-4" /> Optimization console
-                </DialogTitle>
-              </DialogHeader>
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-background">
-                <MixingBoardPanel />
-                <BidModifiersPanel />
-                <SeasonalityPanel />
-                <GeoModifiersPanel />
-                <RetentionRiskPanel />
-                <WinbackPanel />
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <section className="space-y-2">
+                  </section>
+                ),
+              },
+              {
+                id: "pipeline-health",
+                node: (
+                  <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Data pipeline health</h2>
             <IngestionStatusPanel />
             <CronStatusPanel />
-          </section>
-
-          <section className="space-y-2">
+                  </section>
+                ),
+              },
+              {
+                id: "vinoshipper",
+                node: (
+                  <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Vinoshipper DTC (full history)</h2>
             <VinoshipperPanel rangeDays={periodMeta.days} />
-          </section>
-
-          <section className="space-y-2">
+                  </section>
+                ),
+              },
+              {
+                id: "brick-mortar",
+                node: (
+                  <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Brick &amp; mortar (Lindy)</h2>
             {!bm?.hasData ? (
               <div className="border-2 border-dashed border-border p-4 text-sm text-muted-foreground" style={{ borderRadius: 0 }}>
@@ -535,9 +551,13 @@ export default function KennelDashboard() {
                 )}
               </>
             )}
-          </section>
-
-          <section className="space-y-2">
+                  </section>
+                ),
+              },
+              {
+                id: "finance",
+                node: (
+                  <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Finance (QuickBooks via Lindy)</h2>
             {!fin?.hasData ? (
               <div className="border-2 border-dashed border-border p-4 text-sm text-muted-foreground" style={{ borderRadius: 0 }}>
@@ -553,9 +573,36 @@ export default function KennelDashboard() {
                 </div>
               </>
             )}
-          </section>
+                  </section>
+                ),
+              },
+              {
+                id: "spend-chart",
+                node: <SpendChart data={chartData} channels={channelNames} />,
+              },
+            ] as SortableItem[])}
+          />
 
-          <SpendChart data={chartData} channels={channelNames} />
+          <Dialog open={optimizationOpen} onOpenChange={setOptimizationOpen}>
+            <DialogContent
+              className="max-w-none w-screen h-screen sm:rounded-none p-0 gap-0 border-0 flex flex-col"
+              style={{ borderRadius: 0 }}
+            >
+              <DialogHeader className="border-b-2 border-foreground p-4 shrink-0">
+                <DialogTitle className="uppercase tracking-brand text-base flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4" /> Optimization console
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-background">
+                <MixingBoardPanel />
+                <BidModifiersPanel />
+                <SeasonalityPanel />
+                <GeoModifiersPanel />
+                <RetentionRiskPanel />
+                <WinbackPanel />
+              </div>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

@@ -443,8 +443,12 @@ export default function KennelDashboard() {
           </p>
 
           <SortableDashboard
-            storageKey="kennel-dashboard-order-v1"
+            storageKey="kennel-dashboard-order-v2"
             items={([
+              {
+                id: "ai-insights",
+                node: <AiInsights snapshot={aiSnapshot} rangeLabel={periodMeta.label} />,
+              },
               {
                 id: "channel-breakdown",
                 node: (
@@ -471,10 +475,6 @@ export default function KennelDashboard() {
             </div>
                   </section>
                 ),
-              },
-              {
-                id: "ai-insights",
-                node: <AiInsights snapshot={aiSnapshot} rangeLabel={periodMeta.label} />,
               },
               {
                 id: "external-signals",

@@ -8,6 +8,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const INGEST_SECRET = Deno.env.get("KENNEL_INGEST_SECRET") ?? "";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
 
 const MIN_CUSTOMERS = 25;
 const MOD_MIN = 0.5;
@@ -20,7 +21,16 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const provided = req.headers.get("x-kennel-ingest-secret") ?? "";
   const auth = req.headers.get("authorization") ?? "";
-  if (!auth.includes(SUPABASE_SERVICE_ROLE_KEY) && (!INGEST_SECRET || provided !== INGEST_SECRET)) {
+  let authorized = auth.includes(SUPABASE_SERVICE_ROLE_KEY) || (!!INGEST_SECRET && provided === INGEST_SECRET);
+  if (!authorized && auth.startsWith("Bearer ")) {
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: auth } } });
+    const { data: u } = await userClient.auth.getUser();
+    if (u?.user?.id) {
+      const { data: ok } = await supabase.rpc("is_ad_ops", { _user_id: u.user.id });
+      if (ok === true) authorized = true;
+    }
+  }
+  if (!authorized) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

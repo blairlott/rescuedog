@@ -2941,6 +2941,69 @@ export type Database = {
           },
         ]
       }
+      dtc_historical_orders: {
+        Row: {
+          channel: string
+          created_at: string
+          currency: string | null
+          customer_email: string | null
+          external_id: string
+          id: string
+          order_date: string
+          raw: Json
+          ship_state: string | null
+          ship_zip: string | null
+          shipping_cents: number
+          sku: string | null
+          source: string
+          subtotal_cents: number
+          tax_cents: number
+          total_cents: number
+          units: number | null
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          external_id: string
+          id?: string
+          order_date: string
+          raw?: Json
+          ship_state?: string | null
+          ship_zip?: string | null
+          shipping_cents?: number
+          sku?: string | null
+          source?: string
+          subtotal_cents?: number
+          tax_cents?: number
+          total_cents?: number
+          units?: number | null
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          currency?: string | null
+          customer_email?: string | null
+          external_id?: string
+          id?: string
+          order_date?: string
+          raw?: Json
+          ship_state?: string | null
+          ship_zip?: string | null
+          shipping_cents?: number
+          sku?: string | null
+          source?: string
+          subtotal_cents?: number
+          tax_cents?: number
+          total_cents?: number
+          units?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string

@@ -1,7 +1,12 @@
 // Webhook for Lindy to push external signals into kennel_insights.
 // Auth: x-kennel-signature: sha256=<hex hmac of raw body> using KENNEL_EXTERNAL_SIGNAL_SECRET.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-kennel-signature",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 const ALLOWED_TYPES = new Set([
   "industry_trend", "brand_mention", "creative_opportunity", "regulatory", "competitor",

@@ -22,7 +22,7 @@ import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
 import { SortableDashboard, type SortableItem } from "@/components/kennel/SortableDashboard";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertTriangle, RefreshCw, Sparkles, ChevronRight, Maximize2, SlidersHorizontal } from "lucide-react";
+import { AlertTriangle, RefreshCw, Sparkles, ChevronRight, Maximize2, SlidersHorizontal, Radio } from "lucide-react";
 import { toast } from "sonner";
 
 type Range = 7 | 14 | 30 | 90 | 180 | 365 | 730 | "ytd";
@@ -84,6 +84,26 @@ export default function KennelDashboard() {
     },
     refetchInterval: 60_000,
   });
+
+  // Signal-quality probe: in the last 7 days, how many live CAPI fires and
+  // OCI uploads did we send? Low numbers = ad platforms can't optimize.
+  const { data: signal } = useQuery({
+    queryKey: ["kennel-signal-quality"],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 7 * 86400_000).toISOString();
+      const [capi, oci] = await Promise.all([
+        supabase.from("meta_capi_events" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("test_mode", false).eq("success", true).gte("sent_at", since),
+        supabase.from("oci_upload_log" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("status", "uploaded").gte("uploaded_at", since),
+      ]);
+      return { capi7d: capi.count ?? 0, oci7d: oci.count ?? 0 };
+    },
+    refetchInterval: 5 * 60_000,
+  });
+  const signalLow = signal && (signal.capi7d < 10 || signal.oci7d < 10);
 
   const { data, isLoading } = useQuery({
     queryKey: ["kennel-dashboard", range],

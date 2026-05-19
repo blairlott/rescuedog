@@ -85,7 +85,7 @@ export const CartDrawer = () => {
   const { purchaseAllowed, setOverrideUS } = useGeo();
   const { t } = useTranslation();
   const isMerchRoute = location.pathname.startsWith("/merch");
-  const { items, isLoading, isSyncing, updateQuantity, removeItem, syncCart, addItem, getShopifyCheckoutUrl, clearCart } = useCartStore();
+  const { items, isLoading, isSyncing, updateQuantity, removeItem, syncCart, addItem, getShopifyCheckoutUrl, getCheckoutUrl, clearCart } = useCartStore();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
   // Split cart into wine + merch groups so each can check out via the right
@@ -271,32 +271,40 @@ export const CartDrawer = () => {
   const handleCheckoutWines = () => {
     // Snapshot for "re-order last shipment"
     try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items, savedAt: new Date().toISOString() })); } catch {}
+    const url = getCheckoutUrl();
+    if (!url) {
+      toast.error("Wine checkout unavailable", {
+        description: "We couldn't reach Vinoshipper. Please refresh and try again.",
+      });
+      return;
+    }
+    logCheckoutEvent("wine_handoff", { url });
     setIsOpen(false);
-    setVsCheckoutOpen(true);
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) {
+      // Popup blocked — fall back to same-tab nav so checkout still works.
+      window.location.href = url;
+    }
   };
 
   const handleCheckoutMerch = () => {
-    // Simulated merch checkout — bypass Shopify hosted checkout for now and
-    // walk the user through to the thank-you screen with a fake order ID so
-    // the full UX can be evaluated end-to-end.
-    const fakeOrderId = `MERCH-SIM-${Date.now()}`;
-    const merchOnlyTotal = merchTotal;
-    const merchUnits = merchItems.reduce((s, i) => s + i.quantity, 0);
+    // Real Shopify hosted checkout. If the URL hasn't synced yet, surface the
+    // error rather than fabricating a fake order — checkout must be live.
+    const url = getShopifyCheckoutUrl();
+    if (!url) {
+      toast.error("Checkout not ready", {
+        description: "Cart is still syncing with the store. Try again in a moment.",
+      });
+      return;
+    }
     try {
       localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items: merchItems, savedAt: new Date().toISOString() }));
     } catch {}
-    // Drop merch lines but keep wine in cart if any.
-    const remainingWine = wineItems;
-    if (remainingWine.length === 0) {
-      clearCart();
-    } else {
-      // remove each merch line locally
-      merchItems.forEach((i) => removeItem(i.variantId));
-    }
     setIsOpen(false);
-    navigate(
-      `/thank-you?order=${encodeURIComponent(fakeOrderId)}&total=${merchOnlyTotal.toFixed(2)}&bottles=0&units=${merchUnits}`,
-    );
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) {
+      window.location.href = url;
+    }
   };
 
   // Smart sequential checkout: combines wine (Vinoshipper) and merch

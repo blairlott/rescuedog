@@ -28,8 +28,8 @@ const BlogPage = () => {
                       {new Date(p.date).toLocaleDateString()}
                       {p._embedded?.author?.[0]?.name ? ` · ${p._embedded.author[0].name}` : ""}
                     </p>
-                    <h2 className="text-2xl font-display font-bold group-hover:text-primary transition-colors" dangerouslySetInnerHTML={{ __html: p.title.rendered }} />
-                    <div className="text-muted-foreground mt-2 text-sm" dangerouslySetInnerHTML={{ __html: p.excerpt.rendered }} />
+                    <h2 className="text-2xl font-display font-bold group-hover:text-primary transition-colors" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(p.title.rendered) }} />
+                    <div className="text-muted-foreground mt-2 text-sm" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(p.excerpt.rendered) }} />
                   </Link>
                 </li>
               ))}

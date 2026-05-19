@@ -44,8 +44,8 @@ const BlogPostPage = () => {
             {new Date(post.date).toLocaleDateString()}
             {post._embedded?.author?.[0]?.name ? ` · ${post._embedded.author[0].name}` : ""}
           </p>
-          <h1 className="font-display text-4xl font-bold mb-6" dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
-          <div className="prose prose-neutral max-w-none" dangerouslySetInnerHTML={{ __html: post.content.rendered }} />
+          <h1 className="font-display text-4xl font-bold mb-6" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.title.rendered) }} />
+          <div className="prose prose-neutral max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content.rendered) }} />
         </article>
       </main>
       <Footer />

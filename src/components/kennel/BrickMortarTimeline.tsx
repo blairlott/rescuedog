@@ -16,7 +16,14 @@ type DayPoint = {
   projected: number;
 };
 
-const WINDOW_DAYS = 90;
+const LOOKBACKS = [
+  { key: "90d", label: "90d", days: 90, bucket: "day" as const },
+  { key: "1y", label: "1y", days: 365, bucket: "month" as const },
+  { key: "2y", label: "2y", days: 730, bucket: "month" as const },
+  { key: "3y", label: "3y", days: 1095, bucket: "month" as const },
+];
+type LookbackKey = typeof LOOKBACKS[number]["key"];
+const DEFAULT_LOOKBACK: LookbackKey = "3y";
 
 const HORIZONS = [
   { key: "30d", label: "30d", days: 30, bucket: "day" as const },
@@ -62,19 +69,21 @@ function buildProjection(dailyAvg: number, days: number, bucket: "day" | "month"
 }
 
 export function BrickMortarTimeline() {
+  const [lookbackKey, setLookbackKey] = useState<LookbackKey>(DEFAULT_LOOKBACK);
   const [horizonKey, setHorizonKey] = useState<HorizonKey>("30d");
   const [growthKey, setGrowthKey] = useState<GrowthKey>("flat");
+  const lookback = LOOKBACKS.find((l) => l.key === lookbackKey)!;
   const horizon = HORIZONS.find((h) => h.key === horizonKey)!;
   const growth = GROWTH_OPTS.find((g) => g.key === growthKey)!;
 
   const since = useMemo(() => {
     const d = new Date();
-    d.setUTCDate(d.getUTCDate() - WINDOW_DAYS);
+    d.setUTCDate(d.getUTCDate() - lookback.days);
     return isoDay(d);
-  }, []);
+  }, [lookback.days]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["bm-timeline", since],
+    queryKey: ["bm-timeline", since, lookback.days],
     queryFn: async () => {
       const channelsRes = await supabase
         .from("ad_channels" as any)
@@ -89,19 +98,19 @@ export function BrickMortarTimeline() {
           .select("date, amount_cents, channel, entry_type, category")
           .gte("date", since)
           .in("entry_type", ["revenue", "income", "sales"])
-          .limit(5000),
+          .limit(50000),
         supabase
           .from("depletion_report_lines" as any)
           .select("period_end, units, cases")
           .gte("period_end", since)
-          .limit(5000),
+          .limit(50000),
         instacartChannelIds.length
           ? supabase
               .from("ad_performance_daily" as any)
               .select("date, revenue, channel_id")
               .gte("date", since)
               .in("channel_id", instacartChannelIds)
-              .limit(5000)
+              .limit(50000)
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
@@ -126,9 +135,9 @@ export function BrickMortarTimeline() {
         ensure(r.date).instacart_revenue += Number(r.revenue ?? 0);
       }
 
-      // Build observed (last 90d) at daily granularity.
+      // Build observed history at daily granularity over the lookback window.
       const observed: DayPoint[] = [];
-      for (let i = 0; i < WINDOW_DAYS; i++) {
+      for (let i = 0; i < lookback.days; i++) {
         const d = new Date(since);
         d.setUTCDate(d.getUTCDate() + i);
         const key = isoDay(d);
@@ -148,7 +157,9 @@ export function BrickMortarTimeline() {
   const chart = useMemo(() => {
     if (!data) return { points: [] as any[], projectedTotal: 0 };
     const today = new Date();
-    if (horizon.bucket === "day") {
+    // Use monthly buckets whenever either history or projection is multi-year.
+    const useMonthly = lookback.bucket === "month" || horizon.bucket === "month";
+    if (!useMonthly) {
       const obs = data.observed.map((p) => ({ ...p, projected: 0 }));
       const proj = buildProjection(data.dailyAvg, horizon.days, "day", growth.rate, today);
       const points = [
@@ -175,7 +186,7 @@ export function BrickMortarTimeline() {
     ];
     const projectedTotal = proj.reduce((s, p) => s + p.projected, 0);
     return { points, projectedTotal };
-  }, [data, horizon, growth]);
+  }, [data, horizon, growth, lookback]);
 
   return (
     <section className="border-2 border-foreground p-4" style={{ borderRadius: 0 }}>
@@ -183,9 +194,10 @@ export function BrickMortarTimeline() {
         <div className="flex items-center gap-2">
           <Store className="h-4 w-4 text-primary" />
           <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">Brick & Mortar Sales Timeline</h2>
-          <span className="text-[10px] uppercase tracking-brand text-muted-foreground">· 90d actual + {horizon.label} projection</span>
+          <span className="text-[10px] uppercase tracking-brand text-muted-foreground">· {lookback.label} actual + {horizon.label} projection</span>
         </div>
         <HorizonControls
+          lookbackKey={lookbackKey} setLookbackKey={setLookbackKey}
           horizonKey={horizonKey} setHorizonKey={setHorizonKey}
           growthKey={growthKey} setGrowthKey={setGrowthKey}
         />
@@ -206,7 +218,7 @@ export function BrickMortarTimeline() {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <Stat label="Trailing 90d (modeled)" value={`$${Math.round(data.total).toLocaleString()}`} />
+            <Stat label={`Trailing ${lookback.label} (modeled)`} value={`$${Math.round(data.total).toLocaleString()}`} />
             <Stat label="Avg / day" value={`$${Math.round(data.dailyAvg).toLocaleString()}`} />
             <Stat label={`Projected ${horizon.label}`} value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={growth.label.toLowerCase()} />
             <Stat label="QB / dep lines" value={`${data.qbRows} / ${data.depRows}`} hint="rows ingested" />
@@ -236,23 +248,25 @@ export function BrickMortarTimeline() {
 }
 
 export function BrandLiftTimeline() {
+  const [lookbackKey, setLookbackKey] = useState<LookbackKey>(DEFAULT_LOOKBACK);
   const [horizonKey, setHorizonKey] = useState<HorizonKey>("30d");
   const [growthKey, setGrowthKey] = useState<GrowthKey>("flat");
+  const lookback = LOOKBACKS.find((l) => l.key === lookbackKey)!;
   const horizon = HORIZONS.find((h) => h.key === horizonKey)!;
   const growth = GROWTH_OPTS.find((g) => g.key === growthKey)!;
 
   const since = useMemo(() => {
     const d = new Date();
-    d.setUTCDate(d.getUTCDate() - WINDOW_DAYS);
+    d.setUTCDate(d.getUTCDate() - lookback.days);
     return isoDay(d);
-  }, []);
+  }, [lookback.days]);
 
   // Default modeled halo coefficient — DTC conversion spend → incremental B&M sales.
   // Calibrated from a literature prior of ~5–12% halo on lower-funnel ads.
   const HALO_COEFFICIENT = 0.08;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["brand-lift-timeline", since],
+    queryKey: ["brand-lift-timeline", since, lookback.days],
     queryFn: async () => {
       const channelsRes = await supabase
         .from("ad_channels" as any)
@@ -267,7 +281,7 @@ export function BrandLiftTimeline() {
             .select("date, spend, conversions, revenue, channel_id")
             .gte("date", since)
             .in("channel_id", dtcIds)
-            .limit(10000)
+            .limit(100000)
         : { data: [] as any[] };
 
       const byDay = new Map<string, { date: string; dtc_spend: number; dtc_revenue: number; modeled_lift: number; cumulative_lift: number }>();
@@ -291,7 +305,7 @@ export function BrandLiftTimeline() {
       // Build dense series + cumulative
       const arr: { date: string; dtc_spend: number; dtc_revenue: number; modeled_lift: number; cumulative_lift: number }[] = [];
       let cum = 0;
-      for (let i = 0; i < WINDOW_DAYS; i++) {
+      for (let i = 0; i < lookback.days; i++) {
         const d = new Date(since);
         d.setUTCDate(d.getUTCDate() + i);
         const key = isoDay(d);
@@ -312,7 +326,8 @@ export function BrandLiftTimeline() {
   const chart = useMemo(() => {
     if (!data) return { points: [] as any[], projSpend: 0, projLift: 0 };
     const today = new Date();
-    if (horizon.bucket === "day") {
+    const useMonthly = lookback.bucket === "month" || horizon.bucket === "month";
+    if (!useMonthly) {
       let cum = data.totalLift;
       const proj = [] as any[];
       for (let i = 1; i <= horizon.days; i++) {
@@ -353,7 +368,7 @@ export function BrandLiftTimeline() {
     const projSpend = proj.reduce((s, p) => s + p.dtc_spend, 0);
     const projLift = proj.reduce((s, p) => s + p.modeled_lift, 0);
     return { points: [...obsArr, ...proj], projSpend, projLift };
-  }, [data, horizon, growth]);
+  }, [data, horizon, growth, lookback]);
 
   return (
     <section className="border-2 border-foreground p-4" style={{ borderRadius: 0 }}>
@@ -361,9 +376,10 @@ export function BrandLiftTimeline() {
         <div className="flex items-center gap-2">
           <Store className="h-4 w-4 text-primary" />
           <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">Brand Lift Model — DTC Ads → B&M Halo</h2>
-          <span className="text-[10px] uppercase tracking-brand text-muted-foreground">· prior-based · {horizon.label} horizon</span>
+          <span className="text-[10px] uppercase tracking-brand text-muted-foreground">· {lookback.label} actual · {horizon.label} horizon</span>
         </div>
         <HorizonControls
+          lookbackKey={lookbackKey} setLookbackKey={setLookbackKey}
           horizonKey={horizonKey} setHorizonKey={setHorizonKey}
           growthKey={growthKey} setGrowthKey={setGrowthKey}
         />
@@ -384,8 +400,8 @@ export function BrandLiftTimeline() {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <Stat label="Spend 90d" value={`$${Math.round(data.totalSpend).toLocaleString()}`} hint="actual" />
-            <Stat label="Lift 90d" value={`$${Math.round(data.totalLift).toLocaleString()}`} hint={`at ${(data.coefficient * 100).toFixed(0)}% halo`} />
+            <Stat label={`Spend ${lookback.label}`} value={`$${Math.round(data.totalSpend).toLocaleString()}`} hint="actual" />
+            <Stat label={`Lift ${lookback.label}`} value={`$${Math.round(data.totalLift).toLocaleString()}`} hint={`at ${(data.coefficient * 100).toFixed(0)}% halo`} />
             <Stat label={`Projected spend ${horizon.label}`} value={`$${Math.round(chart.projSpend).toLocaleString()}`} hint={growth.label.toLowerCase()} />
             <Stat label={`Projected lift ${horizon.label}`} value={`$${Math.round(chart.projLift).toLocaleString()}`} hint={growth.label.toLowerCase()} />
           </div>
@@ -414,13 +430,24 @@ export function BrandLiftTimeline() {
 }
 
 function HorizonControls({
-  horizonKey, setHorizonKey, growthKey, setGrowthKey,
+  lookbackKey, setLookbackKey, horizonKey, setHorizonKey, growthKey, setGrowthKey,
 }: {
+  lookbackKey: LookbackKey; setLookbackKey: (k: LookbackKey) => void;
   horizonKey: HorizonKey; setHorizonKey: (k: HorizonKey) => void;
   growthKey: GrowthKey; setGrowthKey: (k: GrowthKey) => void;
 }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
+      <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">history</span>
+      {LOOKBACKS.map((l) => (
+        <Button key={l.key} size="sm" variant={lookbackKey === l.key ? "default" : "outline"}
+          onClick={() => setLookbackKey(l.key)} style={{ borderRadius: 0 }}
+          className="uppercase tracking-brand text-[10px] h-7 px-2">
+          {l.label}
+        </Button>
+      ))}
+      <span className="text-[10px] uppercase tracking-brand text-muted-foreground mx-1">·</span>
+      <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">project</span>
       {HORIZONS.map((h) => (
         <Button key={h.key} size="sm" variant={horizonKey === h.key ? "default" : "outline"}
           onClick={() => setHorizonKey(h.key)} style={{ borderRadius: 0 }}
@@ -428,7 +455,8 @@ function HorizonControls({
           {h.label}
         </Button>
       ))}
-      <span className="text-[10px] uppercase tracking-brand text-muted-foreground ml-2">growth</span>
+      <span className="text-[10px] uppercase tracking-brand text-muted-foreground mx-1">·</span>
+      <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">growth</span>
       {GROWTH_OPTS.map((g) => (
         <Button key={g.key} size="sm" variant={growthKey === g.key ? "default" : "outline"}
           onClick={() => setGrowthKey(g.key)} style={{ borderRadius: 0 }}

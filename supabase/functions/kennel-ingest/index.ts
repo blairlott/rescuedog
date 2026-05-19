@@ -59,6 +59,13 @@ Deno.serve(async (req) => {
   );
 
   const result = { request_id: requestId, snapshots_upserted: 0, recommendations_inserted: 0, errors: [] as string[] };
+  const diagnostics = {
+    snapshots_received: 0,
+    snapshots_skipped: 0,
+    unknown_channels: [] as string[],
+    missing_date: 0,
+    known_channels: [] as string[],
+  };
 
   // 1) Resolve channels by name -> id
   const { data: channels, error: chErr } = await supabase.from("ad_channels").select("id,name");
@@ -82,6 +89,7 @@ Deno.serve(async (req) => {
       }
     }
   }
+  diagnostics.known_channels = Array.from(new Set(channelByName.keys()));
   const resolveChannel = (raw: unknown): string | null => {
     if (!raw) return null;
     const key = String(raw).trim().toLowerCase();
@@ -90,11 +98,21 @@ Deno.serve(async (req) => {
 
   // 2) Performance snapshots: [{ channel, date, spend, impressions, clicks, conversions, revenue }]
   const snapshots: any[] = Array.isArray(body?.performance) ? body.performance : [];
+  diagnostics.snapshots_received = snapshots.length;
   if (snapshots.length) {
     const rows = snapshots
       .map((s) => {
         const cid = resolveChannel(s.channel);
-        if (!cid || !s.date) return null;
+        if (!cid) {
+          diagnostics.snapshots_skipped++;
+          diagnostics.unknown_channels.push(String(s.channel ?? "(missing)"));
+          return null;
+        }
+        if (!s.date) {
+          diagnostics.snapshots_skipped++;
+          diagnostics.missing_date++;
+          return null;
+        }
         return {
           channel_id: cid,
           date: s.date,
@@ -156,5 +174,5 @@ Deno.serve(async (req) => {
     else result.recommendations_inserted = count ?? rows.length;
   }
 
-  return json(result, result.errors.length ? 207 : 200);
+  return json({ ...result, diagnostics }, result.errors.length ? 207 : 200);
 });

@@ -254,7 +254,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
       <header className="flex items-center justify-between mb-3 flex-wrap gap-3">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" />
-          <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">Paid Media Predictive Timeline</h2>
+          <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">DTC E-commerce · Paid Media Predictive Timeline</h2>
           <span className="text-[10px] uppercase tracking-brand text-muted-foreground">
             · {isoDay(start)} → {isoDay(end)} · {lookbackDays}d hist / {horizonDays}d horizon
           </span>
@@ -318,12 +318,13 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
           <div className="border-2 border-foreground bg-muted/40 p-3 mb-4 flex items-start gap-3" style={{ borderRadius: 0 }}>
             <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <div className="flex-1 text-[11px] text-foreground leading-relaxed">
-              <div className="uppercase tracking-brand font-bold mb-1">Naive trend + day-of-week seasonality — not MMM</div>
+              <div className="uppercase tracking-brand font-bold mb-1">DTC e-commerce only · naive trend + day-of-week seasonality (not MMM)</div>
               <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                <li>Scope: paid Meta + Google spend driving <strong>DTC website revenue only</strong>. Excludes wholesale/B&M (see Brick & Mortar tile) and Instacart.</li>
                 <li>Linear regression on the lookback window plus a 7-day seasonality pattern. Strategy-mode sliders tilt spend, revenue, and ROAS within ±15–30%.</li>
                 <li>Range bands are ±1.96σ on residuals — directional confidence, not a guarantee.</li>
                 <li>Long horizons (1–3 years) extrapolate trend confidently — treat as a planning baseline, not a budget commit.</li>
-                <li>Actuals before today come from <strong>ad_performance_daily</strong> (paid spend/revenue) plus <strong>business_revenue_facts</strong> when viewing All.</li>
+                <li>Actuals before today: <strong>ad_performance_daily</strong> (paid spend + attributed DTC revenue) plus <strong>business_revenue_facts</strong> (total DTC net revenue) when viewing All.</li>
               </ul>
             </div>
           </div>

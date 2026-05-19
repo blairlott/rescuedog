@@ -330,10 +330,10 @@ Deno.serve(async (req) => {
   }
 
   // 4. Render React Email template to HTML and plain text
-  const html = await renderAsync(
+  let html = await renderAsync(
     React.createElement(template.component, templateData)
   )
-  const plainText = await renderAsync(
+  let plainText = await renderAsync(
     React.createElement(template.component, templateData),
     { plainText: true }
   )
@@ -343,6 +343,16 @@ Deno.serve(async (req) => {
     typeof template.subject === 'function'
       ? template.subject(templateData)
       : template.subject
+
+  // Customer-facing emails get a shared support footer (reply-to info@,
+  // shipping questions routed to Vinoshipper) and a BCC to info@.
+  // Internal staff/partner notifications skip this entirely.
+  const isCustomerFacing = !INTERNAL_TEMPLATES.has(templateName)
+  if (isCustomerFacing) {
+    html = injectSupportFooterHtml(html)
+    plainText = plainText + buildSupportFooterText()
+  }
+  const replyTo = isCustomerFacing ? REPLY_TO_EMAIL : undefined
 
   // 5. Enqueue the pre-rendered email for async processing by the dispatcher.
   // The dispatcher (process-email-queue) handles sending, retries, and rate-limit backoff.
@@ -366,6 +376,7 @@ Deno.serve(async (req) => {
       html,
       text: plainText,
       purpose: 'transactional',
+      reply_to: replyTo,
       label: templateName,
       idempotency_key: idempotencyKey,
       unsubscribe_token: unsubscribeToken,
@@ -395,6 +406,81 @@ Deno.serve(async (req) => {
   }
 
   console.log('Transactional email enqueued', { templateName, effectiveRecipient })
+
+  // 6. BCC fallback: the Lovable email SDK does not support a `bcc` field, so
+  // we enqueue a second copy to info@ for customer-facing sends. Skip if the
+  // primary recipient is already info@ to avoid duplicate sends.
+  if (isCustomerFacing && effectiveRecipient.toLowerCase() !== BCC_EMAIL.toLowerCase()) {
+    const bccMessageId = crypto.randomUUID()
+    const bccSubject = `[BCC: ${effectiveRecipient}] ${resolvedSubject}`
+
+    // Ensure an unsubscribe token exists for the BCC address.
+    let bccUnsubToken: string
+    const { data: existingBccToken } = await supabase
+      .from('email_unsubscribe_tokens')
+      .select('token, used_at')
+      .eq('email', BCC_EMAIL.toLowerCase())
+      .maybeSingle()
+
+    if (existingBccToken && !existingBccToken.used_at) {
+      bccUnsubToken = existingBccToken.token
+    } else {
+      bccUnsubToken = generateToken()
+      await supabase
+        .from('email_unsubscribe_tokens')
+        .upsert(
+          { token: bccUnsubToken, email: BCC_EMAIL.toLowerCase() },
+          { onConflict: 'email', ignoreDuplicates: true }
+        )
+      const { data: stored } = await supabase
+        .from('email_unsubscribe_tokens')
+        .select('token')
+        .eq('email', BCC_EMAIL.toLowerCase())
+        .maybeSingle()
+      if (stored?.token) bccUnsubToken = stored.token
+    }
+
+    await supabase.from('email_send_log').insert({
+      message_id: bccMessageId,
+      template_name: `${templateName}-bcc`,
+      recipient_email: BCC_EMAIL,
+      status: 'pending',
+    })
+
+    const { error: bccEnqueueError } = await supabase.rpc('enqueue_email', {
+      queue_name: 'transactional_emails',
+      payload: {
+        message_id: bccMessageId,
+        to: BCC_EMAIL,
+        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+        sender_domain: SENDER_DOMAIN,
+        subject: bccSubject,
+        html,
+        text: plainText,
+        purpose: 'transactional',
+        reply_to: replyTo,
+        label: `${templateName}-bcc`,
+        idempotency_key: `${idempotencyKey}:bcc`,
+        unsubscribe_token: bccUnsubToken,
+        queued_at: new Date().toISOString(),
+      },
+    })
+
+    if (bccEnqueueError) {
+      console.error('Failed to enqueue BCC copy', {
+        error: bccEnqueueError,
+        templateName,
+      })
+      await supabase.from('email_send_log').insert({
+        message_id: bccMessageId,
+        template_name: `${templateName}-bcc`,
+        recipient_email: BCC_EMAIL,
+        status: 'failed',
+        error_message: 'Failed to enqueue BCC copy',
+      })
+      // Don't fail the primary send — BCC is best-effort.
+    }
+  }
 
   return new Response(
     JSON.stringify({ success: true, queued: true }),

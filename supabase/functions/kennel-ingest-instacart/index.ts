@@ -6,25 +6,53 @@
 import { CORS, J, FactRow, isAuthorized, makeAdminClient, writeFacts, ensureChannel } from "../_shared/facts-writer.ts";
 
 const BASE = "https://ads.instacart.com/api/v2";
-const TOKEN = Deno.env.get("INSTACART_ADS_API_TOKEN");
 const ADV = Deno.env.get("INSTACART_ADS_ADVERTISER_ID");
 const WINDOW_DAYS = 90; // Instacart Reports API caps date ranges around this
 
-async function pull(path: string, params: Record<string, string>): Promise<any[]> {
-  if (!TOKEN || !ADV) return [];
+let cachedToken: { token: string; expires_at: number } | null = null;
+
+async function getAccessToken(): Promise<string | null> {
+  if (cachedToken && cachedToken.expires_at > Date.now() + 60_000) return cachedToken.token;
+  const refresh = Deno.env.get("INSTACART_ADS_REFRESH_TOKEN");
+  const cid = Deno.env.get("INSTACART_ADS_CLIENT_ID");
+  const csec = Deno.env.get("INSTACART_ADS_CLIENT_SECRET");
+  if (refresh && cid && csec) {
+    const r = await fetch("https://api.ads.instacart.com/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ grant_type: "refresh_token", refresh_token: refresh, client_id: cid, client_secret: csec }),
+    });
+    if (r.ok) {
+      const b: any = await r.json().catch(() => ({}));
+      if (b?.access_token) {
+        cachedToken = { token: b.access_token, expires_at: Date.now() + Number(b.expires_in ?? 3600) * 1000 };
+        return cachedToken.token;
+      }
+    }
+  }
+  return Deno.env.get("INSTACART_ADS_API_TOKEN") ?? null;
+}
+
+async function pull(path: string, params: Record<string, string>): Promise<{ rows: any[]; status: number; err?: string }> {
+  const TOKEN = await getAccessToken();
+  if (!TOKEN || !ADV) return { rows: [], status: 0, err: "no_token_or_adv" };
   const qs = new URLSearchParams({ advertiser_id: ADV, ...params });
   const url = `${BASE}${path}?${qs}`;
   const r = await fetch(url, { headers: { "Authorization": `Bearer ${TOKEN}` } });
-  if (!r.ok) return [];
+  if (!r.ok) {
+    const txt = (await r.text().catch(() => "")).slice(0, 240);
+    return { rows: [], status: r.status, err: txt };
+  }
   const b: any = await r.json().catch(() => ({}));
-  return b?.data ?? b?.results ?? [];
+  return { rows: b?.data ?? b?.results ?? [], status: 200 };
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const sb = makeAdminClient();
   if (!(await isAuthorized(req, sb))) return J(401, { error: "unauthorized" });
-  if (!TOKEN || !ADV) return J(400, { error: "INSTACART_ADS_API_TOKEN or ADVERTISER_ID missing" });
+  const tok = await getAccessToken();
+  if (!tok || !ADV) return J(400, { error: "instacart_credentials_missing_or_expired", hint: "Re-run OAuth at /functions/v1/oauth-instacart-callback to mint a fresh refresh_token, then update INSTACART_ADS_REFRESH_TOKEN." });
 
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
   const days = Math.max(1, Math.min(Number(body.days ?? 30), 1095));
@@ -60,7 +88,11 @@ Deno.serve(async (req) => {
     summary[p.name] = 0;
     for (const w of windows) {
       try {
-        const rows = await pull(p.path, { start_date: w.start, end_date: w.end });
+        const { rows, status, err } = await pull(p.path, { start_date: w.start, end_date: w.end });
+        if (status >= 400) {
+          errors.push(`${p.name} ${w.start}..${w.end}: HTTP ${status} ${err ?? ""}`.slice(0, 240));
+          continue;
+        }
         const facts: FactRow[] = rows.map((r: any): FactRow => ({
           channel_id, platform: "instacart",
           date: r.date ?? r.report_date,

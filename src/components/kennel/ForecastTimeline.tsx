@@ -226,7 +226,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
       <header className="flex items-center justify-between mb-3 flex-wrap gap-3">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" />
-          <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">Predictive Timeline</h2>
+          <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">E-commerce Predictive Timeline</h2>
           <span className="text-[10px] uppercase tracking-brand text-muted-foreground">
             · {isoDay(start)} → {isoDay(end)} · {lookbackDays}d hist / {horizonDays}d horizon
           </span>

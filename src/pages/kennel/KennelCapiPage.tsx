@@ -264,8 +264,9 @@ export default function KennelCapiPage() {
               <div className="text-xs text-muted-foreground truncate">
                 {(() => {
                   if (!oauthHealth) return "Click check to probe the refresh token.";
-                  if (oauthHealth.healthy) return `Healthy · customer ${oauthHealth.customer_id}`;
-                  return `Failed · ${oauthHealth.hint ?? oauthHealth.error}`;
+                  const h = oauthHealth as any;
+                  if (h.healthy) return `Healthy · customer ${h.customer_id}`;
+                  return `Failed · ${h.hint ?? h.error}`;
                 })()}
               </div>
             </div>

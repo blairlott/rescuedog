@@ -1434,6 +1434,26 @@ export function MixingBoardPanel() {
               <Button
                 size="sm"
                 variant="outline"
+                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white hover:bg-white/10"
+                onClick={exportCsv}
+                title="Download scenario as CSV"
+              >
+                <FileText className="h-3 w-3 mr-1" />
+                Export CSV
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white hover:bg-white/10"
+                onClick={exportPdf}
+                title="Download shareable PDF report"
+              >
+                <FileDown className="h-3 w-3 mr-1" />
+                Export PDF
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
                 className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white/70 hover:bg-white/10"
                 onClick={clearAllOverrides}
                 disabled={saving}

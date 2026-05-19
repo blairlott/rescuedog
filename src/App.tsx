@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCartSync } from "@/hooks/useCartSync";
 import { lazy, Suspense, useEffect } from "react";
 import { captureFbclid, captureGclid } from "@/lib/metaAttribution";
+import { initVariantHandshake } from "@/lib/abVariant";
 import { AgeGate } from "@/components/AgeGate";
 import { ExitIntentOffer } from "@/components/ExitIntentOffer";
 import { PackSignupPopup } from "@/components/PackSignupPopup";
@@ -114,6 +115,7 @@ function AppContent() {
   useEffect(() => {
     captureFbclid();
     captureGclid();
+    initVariantHandshake();
   }, []);
   const location = useLocation();
   const path = location.pathname.toLowerCase();

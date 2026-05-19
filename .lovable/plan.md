@@ -1,143 +1,70 @@
-## Phase 1 — GTM GCLID Capture Spec (container `GTM-5DBQXWP7`, Vinoshipper)
+## Goal
 
-Goal: capture every `gclid` (and `gbraid` / `wbraid`) that lands on a Vinoshipper-hosted page, persist it long enough to survive checkout, and forward it into the order so Z3a's email-match has a click ID to pair. No app code changes — paste-ready spec only.
+Give Blair a simple admin view of the `oci_upload_log` table so he can watch Lindy's Google Ads OCI uploads land in real time, spot partial failures fast, and confirm the 13 stuck conversions clear once OAuth is reconnected.
 
-Deliverable: `docs/gtm/gclid-capture-spec.md` in the repo containing the exact GTM objects below.
+## Placement: Kennel, not CRM
 
-### A. Variables (User-Defined)
+OCI uploads are ad-attribution telemetry, not sales-rep data. They belong with the rest of the Kennel ad-ops tooling (which already has `/kennel/log` for the cron job log, `/kennel/capi` for Meta CAPI, etc.), behind `KennelGuard` and gated by `is_ad_ops()`. Adding it to `/crm` would force a sales rep persona into an ads-attribution screen.
 
-1. `dlv - gclid`, `dlv - gbraid`, `dlv - wbraid` — Data Layer Variable, Version 2, default `undefined`.
-2. `cookie - rdw_gclid` — 1st-Party Cookie, name `rdw_gclid`.
-3. `cjs - Best GCLID` — Custom JS, returns URL value → cookie fallback:
-```js
-function(){ return {{dlv - gclid}} || {{cookie - rdw_gclid}} || undefined; }
-```
+Route: **`/kennel/oci-log`**
 
-### B. Triggers
+## Files
 
-1. `Trigger - PV - Has Click ID` — Page View, `{{Page URL}}` matches RegEx `[?&](gclid|gbraid|wbraid)=`.
-2. `Trigger - DOM Ready - VS Checkout` — DOM Ready, `{{Page Path}}` matches RegEx `^/(checkout|cart|order|thank|confirmation)`.
-3. `Trigger - Form Submit - VS Checkout` — Form Submit (Check Validation), same path filter.
+1. **`src/pages/kennel/KennelOciLogPage.tsx`** (new)
+   - Header: "Google Ads OCI Uploads"
+   - Sub-copy: "Offline click conversions pushed to Google Ads by Lindy's Z3 worker."
+   - Filters bar:
+     - Status pill toggle: `All` / `Uploaded` / `Partial Failure` / `Error` (default `All`)
+     - Date range: last 24h / 7d / 30d (default 7d)
+     - Search by `order_id` (text input, debounced)
+   - Summary tiles (top of page):
+     - Total rows in window
+     - Uploaded count (green)
+     - Partial-failure count (amber)
+     - Error count (red)
+     - Sum of `conversion_value` for status=`uploaded`
+   - Table (paginated 50/page):
+     - `uploaded_at` (relative + tooltip absolute)
+     - `status` badge
+     - `order_id` (mono)
+     - `gclid` (truncated, click-to-copy)
+     - `conversion_value` + `currency`
+     - `conversion_action_id` (mono)
+     - `error_message` (truncated; click row to expand `raw_response` JSON viewer)
+   - Empty state copy: "No uploads yet. Lindy's Z3 worker will start populating this after the next post-purchase batch."
 
-### C. Tags
+2. **`src/lib/kennel/ociLog.ts`** (new) — thin data layer:
+   - `fetchOciLog({status, since, search, limit, offset})` → returns rows + total count via Supabase client + RLS (admins/owners only — already enforced by the migration).
+   - `fetchOciLogSummary({since})` → returns the 4 summary counts + value sum.
 
-1. `Tag - Persist Click ID to Cookie` (Custom HTML, Trigger #1):
-```html
-<script>
-(function(){
-  var u=new URL(location.href);
-  var v=u.searchParams.get('gclid')||u.searchParams.get('gbraid')||u.searchParams.get('wbraid');
-  if(!v) return;
-  document.cookie='rdw_gclid='+encodeURIComponent(v)+'; Max-Age='+(90*24*60*60)+'; Path=/; SameSite=Lax; Secure';
-  window.dataLayer=window.dataLayer||[];
-  window.dataLayer.push({event:'rdw_gclid_captured', gclid:v});
-})();
-</script>
-```
-2. `Tag - Inject Hidden gclid Field` (Custom HTML, Trigger #2) — adds `<input name="custom_gclid">` to every form so VS submits the click ID with the order.
-3. `Tag - GA4 Event - rdw_checkout_with_gclid` — GA4 event tag, param `gclid={{cjs - Best GCLID}}`, Trigger #3. Audit match-rate in GA4 BigQuery export.
-4. (Optional fallback) Beacon to a future `/functions/v1/gclid-beacon` if VS strips the hidden field — documented but not built in v1.
+3. **`src/App.tsx`** — add inside the `/kennel` block:
+   ```tsx
+   <Route path="oci-log" element={<KennelOciLogPage />} />
+   ```
+   plus the lazy import.
 
-### D. Verification in GTM Preview
+4. **Kennel sidebar/nav** — locate the existing Kennel nav component (sibling of `KennelLayout`) and add an "OCI Uploads" entry next to "Log". Visible only when `is_ad_ops()` returns true (the layout already does that gate).
 
-- Visit `…?gclid=TEST123` → `rdw_gclid` cookie set + dataLayer push fires.
-- Browse to `/cart` then `/checkout` → hidden `custom_gclid` input present on the form.
-- Submit a sandbox order → `custom_gclid` appears in the VS order payload received by `vinoshipper-webhook`.
+## RLS
 
-### E. Downstream handoff
-
-Webhook + `_shared/serverConversions.ts` already accept `gclid`. After GTM ships, confirm Lindy's Z3a worker reads `custom_gclid` from the order's custom fields and attaches it to the OCI row.
-
----
-
-## Phase 2 — Z3 OCI Proxy (Google Ads Offline Click Conversions)
-
-Goal: extend the existing `google-ads-proxy` pattern with a new edge function that accepts batched OCI rows from Lindy and calls `customers/{id}:uploadClickConversions`. Unblocks the 13 stuck conversions ($1,669.02).
-
-### Architecture
-
-```text
-Lindy worker
-   │  POST /functions/v1/google-ads-oci-upload
-   │  Authorization: Bearer LINDY_PROXY_TOKEN
-   │  body: { conversion_action_id, dry_run?, conversions:[…] }
-   ▼
-google-ads-oci-upload (new edge fn)
-   ├─ verify LINDY_PROXY_TOKEN
-   ├─ refresh Google Ads access token (shared with google-ads-proxy)
-   ├─ POST googleads.googleapis.com/v20/customers/{cid}:uploadClickConversions
-   │     { partialFailure:true, validateOnly: dry_run }
-   └─ log each row to public.oci_upload_log
-```
-
-### Files
-
-1. `supabase/functions/_shared/googleAdsAuth.ts` — extract the OAuth refresh block currently inline in `google-ads-proxy/index.ts`. Both functions import from here.
-2. `supabase/functions/google-ads-proxy/index.ts` — refactor to use the shared helper (no behavior change).
-3. `supabase/functions/google-ads-oci-upload/index.ts` — new function. Zod-validate body. Build payload:
-```json
-{
-  "conversions": [{
-    "conversionAction": "customers/{cid}/conversionActions/{action_id}",
-    "conversionDateTime": "2026-05-15 14:22:01-07:00",
-    "conversionValue": 169.99,
-    "currencyCode": "USD",
-    "orderId": "VS-96354108417",
-    "gclid": "Cj0KCQjw..."
-  }],
-  "partialFailure": true,
-  "validateOnly": false
-}
-```
-Headers: `Authorization: Bearer <access>`, `developer-token`, `login-customer-id`.
-Returns `{ uploaded, partial_failures, errors }` to Lindy.
-
-4. New migration — `public.oci_upload_log`:
+Already covered by the Phase-2 migration:
 ```sql
-create table public.oci_upload_log (
-  id uuid primary key default gen_random_uuid(),
-  uploaded_at timestamptz not null default now(),
-  conversion_action_id text not null,
-  order_id text,
-  gclid text,
-  conversion_value numeric,
-  currency text,
-  status text not null check (status in ('uploaded','partial_failure','error')),
-  error_message text,
-  raw_response jsonb
-);
-alter table public.oci_upload_log enable row level security;
-create policy "admins read oci log" on public.oci_upload_log
-  for select using (public.is_admin_or_owner(auth.uid()));
--- inserts via service role only
+create policy "admins read oci upload log"
+  on public.oci_upload_log for select
+  using (public.is_admin_or_owner(auth.uid()));
 ```
+No additional policy needed. The page surfaces a clear "You don't have access" state if the query returns 0 rows due to RLS rather than empty data.
 
-5. `supabase/config.toml` — add `[functions.google-ads-oci-upload]\nverify_jwt = false`.
+## Out of scope (intentional)
 
-### Secrets / dependencies
+- No re-upload / retry button — Lindy owns the trigger; this is read-only.
+- No CSV export in v1 (can add later if Blair asks).
+- No realtime subscription — page polls on filter change; uploads are batch, not streaming.
+- No Phase-1 GTM verification embedded here — that's a one-time GTM Preview task, not an ongoing dashboard.
 
-- Reuses `LINDY_PROXY_TOKEN` and all `GOOGLE_ADS_*` secrets already present. **No new secrets.**
-- Hard external dependency: **Blair must reconnect Google Ads OAuth in Lindy** before live upload — otherwise the OAuth refresh returns `invalid_grant` and the function will surface a clean 502. Function will still deploy and accept dry-runs.
+## Verification
 
-### Test plan
-
-1. `supabase--curl_edge_functions` POST with `dry_run:true` and 1 synthetic row → expect Google Ads `validateOnly` OK.
-2. Live POST with 1 real stuck row → expect `oci_upload_log.status='uploaded'`.
-3. Backfill the 13 stuck conversions in a single batched call.
-4. Spot-check Google Ads UI 4–6h later for the `Imported - Web` conversion bump.
-
-### Out of scope
-
-- Enhanced Conversions for Leads (hashed email/phone user_identifiers) — schema supports it but ship gclid-only first.
-- Admin UI for re-running uploads — Lindy is the trigger.
-- Z3a email-match itself — that's Lindy-side; this proxy just ingests what she sends.
-
----
-
-## Sequencing
-
-1. **Phase 1 first** (~5 min build, hand off to Blair to paste into GTM-5DBQXWP7). Unblocks Z3a match quality immediately as it propagates.
-2. **Phase 2 second** — shared OAuth helper, new edge function, migration, dry-run test, then live-fire the 13 stuck conversions (after Google Ads OAuth reconnect).
-
-The two phases are independent — Phase 2 can ship before Phase 1 verification completes in GTM.</parameter>
-<parameter name="summary">GTM GCLID capture spec doc first, then Z3 OCI upload edge function + log table
+1. Visit `/kennel/oci-log` as admin → empty state shown.
+2. After a Lindy upload (or a manual `supabase--curl_edge_functions` test with `dry_run:false`), refresh → rows appear with correct status.
+3. Trigger a deliberately invalid row (bad `conversion_action_id`) → status `error`, `error_message` shows the API response.
+4. Verify a non-admin user gets the "no access" state.

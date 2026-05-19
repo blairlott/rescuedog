@@ -245,7 +245,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
           )}
           <div style={{ width: "100%", height: 280 }}>
             <ResponsiveContainer>
-              <ComposedChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+              <ComposedChart data={chartData} margin={{ top: 24, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={32} tickFormatter={formatAxisDate} />
                 <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
@@ -272,7 +272,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                   stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   strokeDasharray="4 3"
-                  label={{ value: "▼ Today", position: "top", fontSize: 11, fill: "hsl(var(--primary))", fontWeight: 700 }}
+                  label={{ value: "▼ TODAY", position: "insideTop", fontSize: 11, fill: "hsl(var(--primary))", fontWeight: 700, offset: 4 }}
                 />
                 <Area yAxisId="left" dataKey="revenue_upper" stroke="none" fill="hsl(var(--primary) / 0.15)" name="Revenue range" stackId="band" />
                 <Area yAxisId="left" dataKey="revenue_lower" stroke="none" fill="hsl(var(--background))" stackId="band" legendType="none" />

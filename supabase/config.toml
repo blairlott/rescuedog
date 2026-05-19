@@ -45,3 +45,5 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.webhook-ubereats]
     verify_jwt = false
+  [functions.google-ads-oci-upload]
+    verify_jwt = false

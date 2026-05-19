@@ -1,4 +1,5 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { getGoogleAdsAccessToken, buildGoogleAdsHeaders, isAuthError } from '../_shared/googleAdsAuth.ts';
 
 // Public proxy: Lindy POSTs a GAQL query with a shared bearer token.
 // We handle the OAuth refresh dance on our side so the refresh token never leaves Lovable Cloud.
@@ -33,47 +34,20 @@ Deno.serve(async (req) => {
       return json({ error: 'missing "query" (GAQL string)' }, 400);
     }
 
-    const customerId = (body.customer_id || Deno.env.get('GOOGLE_ADS_CUSTOMER_ID') || '').replace(/-/g, '');
-    const loginCustomerId = (body.login_customer_id || Deno.env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID') || '').replace(/-/g, '');
-    const clientId = Deno.env.get('GOOGLE_ADS_CLIENT_ID');
-    const clientSecret = Deno.env.get('GOOGLE_ADS_CLIENT_SECRET');
-    const refreshToken = Deno.env.get('GOOGLE_ADS_REFRESH_TOKEN');
-    const developerToken = Deno.env.get('GOOGLE_ADS_DEVELOPER_TOKEN');
-
-    if (!customerId || !clientId || !clientSecret || !refreshToken || !developerToken) {
-      return json({ error: 'server misconfigured: missing Google Ads credentials' }, 500);
-    }
-
-    // 3. Exchange refresh token for access token
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
+    // 3. Resolve Google Ads credentials + access token (shared helper)
+    const auth = await getGoogleAdsAccessToken({
+      customer_id: body.customer_id,
+      login_customer_id: body.login_customer_id,
     });
-    const tokenJson = await tokenRes.json();
-    if (!tokenRes.ok) {
-      return json({
-        error: 'google_oauth_failed',
-        status: tokenRes.status,
-        details: tokenJson,
-        hint: 'GOOGLE_ADS_REFRESH_TOKEN is likely invalid (invalid_grant). Re-run OAuth and update the secret.',
-      }, 502);
+    if (isAuthError(auth)) {
+      const status = auth.error === 'google_oauth_failed' ? 502 : 500;
+      return json(auth, status);
     }
-    const accessToken = tokenJson.access_token as string;
+    const { accessToken, config } = auth;
+    const customerId = config.customerId;
+    const headers = buildGoogleAdsHeaders(accessToken, config);
 
     // 4. Call Google Ads API (searchStream returns the full result set in one shot)
-    const headers: Record<string, string> = {
-      'Authorization': `Bearer ${accessToken}`,
-      'developer-token': developerToken,
-      'Content-Type': 'application/json',
-    };
-    if (loginCustomerId) headers['login-customer-id'] = loginCustomerId;
-
     const adsRes = await fetch(
       `https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:searchStream`,
       {

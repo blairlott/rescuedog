@@ -4926,6 +4926,45 @@ export type Database = {
         }
         Relationships: []
       }
+      oci_upload_log: {
+        Row: {
+          conversion_action_id: string
+          conversion_value: number | null
+          currency: string | null
+          error_message: string | null
+          gclid: string | null
+          id: string
+          order_id: string | null
+          raw_response: Json | null
+          status: string
+          uploaded_at: string
+        }
+        Insert: {
+          conversion_action_id: string
+          conversion_value?: number | null
+          currency?: string | null
+          error_message?: string | null
+          gclid?: string | null
+          id?: string
+          order_id?: string | null
+          raw_response?: Json | null
+          status: string
+          uploaded_at?: string
+        }
+        Update: {
+          conversion_action_id?: string
+          conversion_value?: number | null
+          currency?: string | null
+          error_message?: string | null
+          gclid?: string | null
+          id?: string
+          order_id?: string | null
+          raw_response?: Json | null
+          status?: string
+          uploaded_at?: string
+        }
+        Relationships: []
+      }
       order_email_settings: {
         Row: {
           description: string | null

@@ -1,67 +1,143 @@
-## Goal
+## Phase 1 — GTM GCLID Capture Spec (container `GTM-5DBQXWP7`, Vinoshipper)
 
-Rescue Dog Wines sends its own branded order/shipment emails because Vinoshipper doesn't email buyers or recipients for a la carte or club orders. We'll trigger off a Vinoshipper webhook and send via Lovable Cloud's email queue.
+Goal: capture every `gclid` (and `gbraid` / `wbraid`) that lands on a Vinoshipper-hosted page, persist it long enough to survive checkout, and forward it into the order so Z3a's email-match has a click ID to pair. No app code changes — paste-ready spec only.
 
-## Scope (confirmed)
+Deliverable: `docs/gtm/gclid-capture-spec.md` in the repo containing the exact GTM objects below.
 
-- **Gift recipient** notices ("a gift is on the way") — for a la carte AND wine club gift purchases.
-- **Trigger**: Vinoshipper webhook (`order.created` for the "on the way" tease, `order.shipped` for tracking).
-- **Wine club shipment notice** with tasting notes for the wines in that shipment.
+### A. Variables (User-Defined)
 
-Out of scope for now (can add later): buyer-side order confirmation and buyer shipped notification.
+1. `dlv - gclid`, `dlv - gbraid`, `dlv - wbraid` — Data Layer Variable, Version 2, default `undefined`.
+2. `cookie - rdw_gclid` — 1st-Party Cookie, name `rdw_gclid`.
+3. `cjs - Best GCLID` — Custom JS, returns URL value → cookie fallback:
+```js
+function(){ return {{dlv - gclid}} || {{cookie - rdw_gclid}} || undefined; }
+```
 
-## Build phases
+### B. Triggers
 
-### 1. Gift Mode UX (frontend)
+1. `Trigger - PV - Has Click ID` — Page View, `{{Page URL}}` matches RegEx `[?&](gclid|gbraid|wbraid)=`.
+2. `Trigger - DOM Ready - VS Checkout` — DOM Ready, `{{Page Path}}` matches RegEx `^/(checkout|cart|order|thank|confirmation)`.
+3. `Trigger - Form Submit - VS Checkout` — Form Submit (Check Validation), same path filter.
 
-- Restore the recipient email + gift message fields in `CartGiftMode` (we hid them earlier) but only show them when Gift Mode is on.
-- Add a "Send a gift" toggle in the Wine Club signup + member portal so club members can flag a shipment as a gift and provide recipient name/email/message + gift duration (one-time gift vs ongoing).
-- Persist gift metadata to a new `wine_orders_meta` table keyed by Vinoshipper order ID (or club subscription ID) so the webhook handler can look it up when VS pings us.
+### C. Tags
 
-### 2. Database
+1. `Tag - Persist Click ID to Cookie` (Custom HTML, Trigger #1):
+```html
+<script>
+(function(){
+  var u=new URL(location.href);
+  var v=u.searchParams.get('gclid')||u.searchParams.get('gbraid')||u.searchParams.get('wbraid');
+  if(!v) return;
+  document.cookie='rdw_gclid='+encodeURIComponent(v)+'; Max-Age='+(90*24*60*60)+'; Path=/; SameSite=Lax; Secure';
+  window.dataLayer=window.dataLayer||[];
+  window.dataLayer.push({event:'rdw_gclid_captured', gclid:v});
+})();
+</script>
+```
+2. `Tag - Inject Hidden gclid Field` (Custom HTML, Trigger #2) — adds `<input name="custom_gclid">` to every form so VS submits the click ID with the order.
+3. `Tag - GA4 Event - rdw_checkout_with_gclid` — GA4 event tag, param `gclid={{cjs - Best GCLID}}`, Trigger #3. Audit match-rate in GA4 BigQuery export.
+4. (Optional fallback) Beacon to a future `/functions/v1/gclid-beacon` if VS strips the hidden field — documented but not built in v1.
 
-New tables (with RLS):
-- `wine_order_gift_meta` — `vs_order_id` (unique), `buyer_user_id`, `recipient_name`, `recipient_email`, `gift_message`, `gift_wrap`, `source` (`a_la_carte` | `club`), created_at.
-- `club_gift_subscriptions` — `subscription_id`, `recipient_name`, `recipient_email`, `gift_message`, `duration_months`, `started_at`.
-- `vs_webhook_events` — raw webhook audit log: `event_id`, `event_type`, `vs_order_id`, `payload jsonb`, `processed_at`, `status`.
+### D. Verification in GTM Preview
 
-### 3. Vinoshipper integration
+- Visit `…?gclid=TEST123` → `rdw_gclid` cookie set + dataLayer push fires.
+- Browse to `/cart` then `/checkout` → hidden `custom_gclid` input present on the form.
+- Submit a sandbox order → `custom_gclid` appears in the VS order payload received by `vinoshipper-webhook`.
 
-- Edge function `vinoshipper-webhook` — verifies the VS HMAC signature, dedupes by `event_id`, dispatches by `event_type` (`order.created`, `order.shipped`).
-- Edge function `vinoshipper-order-lookup` — fetches order details (line items, tracking, recipient address) via VS REST API when payload is sparse.
-- Map VS line items to our `wine_products` to enrich emails with tasting notes / pairings (already in CMS).
-- Add `VINOSHIPPER_WEBHOOK_SECRET` secret for HMAC verification (request from user when ready to enable).
+### E. Downstream handoff
 
-### 4. Email templates (Lovable Cloud)
+Webhook + `_shared/serverConversions.ts` already accept `gclid`. After GTM ships, confirm Lindy's Z3a worker reads `custom_gclid` from the order's custom fields and attaches it to the OCI row.
 
-Set up email infrastructure (if not already), then scaffold templates:
-- `gift-incoming` — "A gift from {buyer_name} is on the way" — sent on `order.created` for gift orders.
-- `gift-shipped` — "Your gift from {buyer_name} just shipped" — tracking link, ETA, adult-signature note.
-- `club-shipment-shipped` — "Your {month} club shipment is on the way" — bottle list with tasting notes + pairings, tracking link.
-- `club-gift-shipment-shipped` — gift-recipient variant of the club shipment email.
+---
 
-All templates branded (Red `#c30017`, Nunito Sans, RDW logo, flat edges), white email body background, no quantified impact, "shipping included" wording, no marketing.
+## Phase 2 — Z3 OCI Proxy (Google Ads Offline Click Conversions)
 
-### 5. CMS controls
+Goal: extend the existing `google-ads-proxy` pattern with a new edge function that accepts batched OCI rows from Lindy and calls `customers/{id}:uploadClickConversions`. Unblocks the 13 stuck conversions ($1,669.02).
 
-Add panels under CMS → Settings:
-- **Order Emails** — per-template enable/disable toggle and "Send test to my email" button (admins only).
-- Editable subject lines + preview of `templateData` per template.
+### Architecture
 
-### 6. Wiring
+```text
+Lindy worker
+   │  POST /functions/v1/google-ads-oci-upload
+   │  Authorization: Bearer LINDY_PROXY_TOKEN
+   │  body: { conversion_action_id, dry_run?, conversions:[…] }
+   ▼
+google-ads-oci-upload (new edge fn)
+   ├─ verify LINDY_PROXY_TOKEN
+   ├─ refresh Google Ads access token (shared with google-ads-proxy)
+   ├─ POST googleads.googleapis.com/v20/customers/{cid}:uploadClickConversions
+   │     { partialFailure:true, validateOnly: dry_run }
+   └─ log each row to public.oci_upload_log
+```
 
-- Webhook URL exposed: `https://eskqaxmypgvwtsffcbsw.supabase.co/functions/v1/vinoshipper-webhook` — user pastes into VS producer settings.
-- Webhook events log surfaced at `/cms/order-emails` with status (sent / failed / suppressed) for visibility.
+### Files
 
-## What I need from you to start
+1. `supabase/functions/_shared/googleAdsAuth.ts` — extract the OAuth refresh block currently inline in `google-ads-proxy/index.ts`. Both functions import from here.
+2. `supabase/functions/google-ads-proxy/index.ts` — refactor to use the shared helper (no behavior change).
+3. `supabase/functions/google-ads-oci-upload/index.ts` — new function. Zod-validate body. Build payload:
+```json
+{
+  "conversions": [{
+    "conversionAction": "customers/{cid}/conversionActions/{action_id}",
+    "conversionDateTime": "2026-05-15 14:22:01-07:00",
+    "conversionValue": 169.99,
+    "currencyCode": "USD",
+    "orderId": "VS-96354108417",
+    "gclid": "Cj0KCQjw..."
+  }],
+  "partialFailure": true,
+  "validateOnly": false
+}
+```
+Headers: `Authorization: Bearer <access>`, `developer-token`, `login-customer-id`.
+Returns `{ uploaded, partial_failures, errors }` to Lindy.
 
-1. **Confirm I should provision Lovable Cloud Emails** (or you already have an email sender domain) — we need a verified sender domain so recipients see emails from `notify@rescuedogwines.com` rather than a Lovable default.
-2. **Vinoshipper webhook secret** — I'll wire the verification code first; you'll add the secret value when you enable the webhook in your VS producer dashboard.
-3. **OK to defer buyer confirmation emails** — only gift recipient + club shipment emails this round?
+4. New migration — `public.oci_upload_log`:
+```sql
+create table public.oci_upload_log (
+  id uuid primary key default gen_random_uuid(),
+  uploaded_at timestamptz not null default now(),
+  conversion_action_id text not null,
+  order_id text,
+  gclid text,
+  conversion_value numeric,
+  currency text,
+  status text not null check (status in ('uploaded','partial_failure','error')),
+  error_message text,
+  raw_response jsonb
+);
+alter table public.oci_upload_log enable row level security;
+create policy "admins read oci log" on public.oci_upload_log
+  for select using (public.is_admin_or_owner(auth.uid()));
+-- inserts via service role only
+```
 
-## Technical notes
+5. `supabase/config.toml` — add `[functions.google-ads-oci-upload]\nverify_jwt = false`.
 
-- Webhook handler returns 200 fast and enqueues work to `pgmq` (`transactional_emails` queue) so VS retries don't fan out duplicate sends.
-- Idempotency key per email = `${vs_order_id}:${template_name}` so re-deliveries from VS never double-send.
-- All emails respect `suppressed_emails` (bounces, unsubscribes) automatically.
-- Tasting notes pulled from `wine_products.tasting_notes` / `pairings` at send time (not snapshot) so updates flow forward.
+### Secrets / dependencies
+
+- Reuses `LINDY_PROXY_TOKEN` and all `GOOGLE_ADS_*` secrets already present. **No new secrets.**
+- Hard external dependency: **Blair must reconnect Google Ads OAuth in Lindy** before live upload — otherwise the OAuth refresh returns `invalid_grant` and the function will surface a clean 502. Function will still deploy and accept dry-runs.
+
+### Test plan
+
+1. `supabase--curl_edge_functions` POST with `dry_run:true` and 1 synthetic row → expect Google Ads `validateOnly` OK.
+2. Live POST with 1 real stuck row → expect `oci_upload_log.status='uploaded'`.
+3. Backfill the 13 stuck conversions in a single batched call.
+4. Spot-check Google Ads UI 4–6h later for the `Imported - Web` conversion bump.
+
+### Out of scope
+
+- Enhanced Conversions for Leads (hashed email/phone user_identifiers) — schema supports it but ship gclid-only first.
+- Admin UI for re-running uploads — Lindy is the trigger.
+- Z3a email-match itself — that's Lindy-side; this proxy just ingests what she sends.
+
+---
+
+## Sequencing
+
+1. **Phase 1 first** (~5 min build, hand off to Blair to paste into GTM-5DBQXWP7). Unblocks Z3a match quality immediately as it propagates.
+2. **Phase 2 second** — shared OAuth helper, new edge function, migration, dry-run test, then live-fire the 13 stuck conversions (after Google Ads OAuth reconnect).
+
+The two phases are independent — Phase 2 can ship before Phase 1 verification completes in GTM.</parameter>
+<parameter name="summary">GTM GCLID capture spec doc first, then Z3 OCI upload edge function + log table

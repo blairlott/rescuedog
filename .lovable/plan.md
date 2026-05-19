@@ -1,178 +1,67 @@
-## Kennel Phase 2 — Build Plan
+## Goal
 
-Ships in three waves. 2A is fully live. 2B renders real UI on stub-but-schema-correct data. 2C is receiver endpoints + docs only.
+Rescue Dog Wines sends its own branded order/shipment emails because Vinoshipper doesn't email buyers or recipients for a la carte or club orders. We'll trigger off a Vinoshipper webhook and send via Lovable Cloud's email queue.
 
----
+## Scope (confirmed)
 
-### Values to confirm before I build
+- **Gift recipient** notices ("a gift is on the way") — for a la carte AND wine club gift purchases.
+- **Trigger**: Vinoshipper webhook (`order.created` for the "on the way" tease, `order.shipped` for tracking).
+- **Wine club shipment notice** with tasting notes for the wines in that shipment.
 
-Please confirm (or override) the defaults below — I'll bake whichever you pick into the `guardrail_baseline` + `ad_settings` rows on first run:
+Out of scope for now (can add later): buyer-side order confirmation and buyer shipped notification.
 
-1. **Max single-execution Δ%** vs baseline campaign budget — default **±25%**
-2. **Max 24-hr cumulative Δ%** vs baseline — default **±60%**
-3. **Daily spend cap multiplier** (baseline daily spend × N) — default **1.5x** global, **1.75x** per channel
-4. **Confidence floor for auto-execute** — default **0.80** (below floor → "Needs Approval")
-5. **Kill switch scope** — assumed **global + per-channel** (Meta / Google / Instacart) unless you want per-campaign too
-6. **Notification provider** — Resend (already wired, secret present) for email + **Twilio (new connector)** for SMS. Confirm and I'll connect Twilio; otherwise name your preferred SMS provider.
+## Build phases
 
-Everything else proceeds with the defaults below.
+### 1. Gift Mode UX (frontend)
 
----
+- Restore the recipient email + gift message fields in `CartGiftMode` (we hid them earlier) but only show them when Gift Mode is on.
+- Add a "Send a gift" toggle in the Wine Club signup + member portal so club members can flag a shipment as a gift and provide recipient name/email/message + gift duration (one-time gift vs ongoing).
+- Persist gift metadata to a new `wine_orders_meta` table keyed by Vinoshipper order ID (or club subscription ID) so the webhook handler can look it up when VS pings us.
 
-## PHASE 2A — Alerts + Live Execution
+### 2. Database
 
-### Schema (new)
+New tables (with RLS):
+- `wine_order_gift_meta` — `vs_order_id` (unique), `buyer_user_id`, `recipient_name`, `recipient_email`, `gift_message`, `gift_wrap`, `source` (`a_la_carte` | `club`), created_at.
+- `club_gift_subscriptions` — `subscription_id`, `recipient_name`, `recipient_email`, `gift_message`, `duration_months`, `started_at`.
+- `vs_webhook_events` — raw webhook audit log: `event_id`, `event_type`, `vs_order_id`, `payload jsonb`, `processed_at`, `status`.
 
-```text
-guardrail_baseline
-  id, channel, campaign_id (nullable for channel-level rows),
-  baseline_daily_budget_cents, baseline_mtd_spend_cents,
-  captured_at, source ('auto_daily'|'manual'),
-  is_current (bool, unique partial index per channel+campaign)
+### 3. Vinoshipper integration
 
-guardrail_config           -- single row per scope
-  scope ('global'|'meta'|'google'|'instacart'),
-  max_single_delta_pct, max_24h_cumulative_delta_pct,
-  daily_spend_cap_multiplier, confidence_floor,
-  kill_switch_enabled, updated_at, updated_by
+- Edge function `vinoshipper-webhook` — verifies the VS HMAC signature, dedupes by `event_id`, dispatches by `event_type` (`order.created`, `order.shipped`).
+- Edge function `vinoshipper-order-lookup` — fetches order details (line items, tracking, recipient address) via VS REST API when payload is sparse.
+- Map VS line items to our `wine_products` to enrich emails with tasting notes / pairings (already in CMS).
+- Add `VINOSHIPPER_WEBHOOK_SECRET` secret for HMAC verification (request from user when ready to enable).
 
-alert_dispatch_log
-  id, event_type ('anomaly'|'recommendation'|'auto_executed'|'rollback'),
-  channel, payload jsonb, channels_sent text[] ('email','sms'),
-  email_message_id, sms_sid, success, error, created_at
-```
+### 4. Email templates (Lovable Cloud)
 
-Extend existing `ad_execution_log` with: `guardrail_results jsonb`, `executor text`, `before_value`, `after_value`, `baseline_id uuid`. (Most already exist; I'll add what's missing.)
+Set up email infrastructure (if not already), then scaffold templates:
+- `gift-incoming` — "A gift from {buyer_name} is on the way" — sent on `order.created` for gift orders.
+- `gift-shipped` — "Your gift from {buyer_name} just shipped" — tracking link, ETA, adult-signature note.
+- `club-shipment-shipped` — "Your {month} club shipment is on the way" — bottle list with tasting notes + pairings, tracking link.
+- `club-gift-shipment-shipped` — gift-recipient variant of the club shipment email.
 
-RLS: `is_ad_ops()` for read/write on config + baseline; service-role only for inserts to `alert_dispatch_log` and execution-side writes.
+All templates branded (Red `#c30017`, Nunito Sans, RDW logo, flat edges), white email body background, no quantified impact, "shipping included" wording, no marketing.
 
-### Edge functions (new / upgraded)
+### 5. CMS controls
 
-| Function | Role |
-|---|---|
-| `kennel-baseline-capture` | Captures `daily_budget` per campaign + MTD spend per channel from Meta/Google/Instacart. Run via pg_cron at 08:00 UTC (00:00 PT). Manual trigger from Settings. Flips prior `is_current=true` rows to false. |
-| `kennel-execute` (upgrade) | Validates: kill switch → confidence floor → single-exec Δ → 24h cumulative Δ → daily spend cap. Every check writes its result. Only on full pass does it call the platform API. Logs before/after + `executor='auto'\|'manual_approval'`. |
-| `kennel-alert-dispatch` | Single entry point. Renders email (Resend) + SMS (Twilio), writes to `alert_dispatch_log`. Called by `kennel-execute`, the optimizer, and the anomaly job. Payload: `{ event_type, channel, action, spend_impact_cents, confidence, deep_link }`. |
-| `kennel-rollback` | Reverts an execution to its `before_value`, fires a rollback alert, logs as a separate execution row referencing the original. |
+Add panels under CMS → Settings:
+- **Order Emails** — per-template enable/disable toggle and "Send test to my email" button (admins only).
+- Editable subject lines + preview of `templateData` per template.
 
-Alert deep links route to `/kennel/log?execution=<id>` for executions and `/kennel/recommendations?id=<id>` for queued recs.
+### 6. Wiring
 
-### UI
+- Webhook URL exposed: `https://eskqaxmypgvwtsffcbsw.supabase.co/functions/v1/vinoshipper-webhook` — user pastes into VS producer settings.
+- Webhook events log surfaced at `/cms/order-emails` with status (sent / failed / suppressed) for visibility.
 
-- **RefreshButton header:** add a small "Last baseline: 4h ago · Refresh" affordance.
-- **Settings page:** Guardrail thresholds form (single + 24h Δ%, daily cap multiplier, confidence floor) with per-channel overrides; global + per-channel kill switch toggles (red, sticky banner when any are off).
-- **Recommendations page:** items above thresholds get a "Needs Approval" badge; Approve (executes via `kennel-execute`) / Reject (required `reason` field). Both write to `ad_execution_log`.
-- **Log page:** add columns for `executor`, guardrail summary chip (✓ all / ✗ which failed), and a "Rollback" action on successful auto-executions within the last 24h.
+## What I need from you to start
 
-### Twilio + Resend wiring
+1. **Confirm I should provision Lovable Cloud Emails** (or you already have an email sender domain) — we need a verified sender domain so recipients see emails from `notify@rescuedogwines.com` rather than a Lovable default.
+2. **Vinoshipper webhook secret** — I'll wire the verification code first; you'll add the secret value when you enable the webhook in your VS producer dashboard.
+3. **OK to defer buyer confirmation emails** — only gift recipient + club shipment emails this round?
 
-- Resend already has `RESEND_API_KEY` → use existing transactional pattern, sender `alerts@notify.<domain>`.
-- Twilio: connect via Standard Connector, then `kennel-alert-dispatch` calls the gateway. SMS body kept under 320 chars with the deep link.
-- Recipients fixed in `guardrail_config.alert_recipients` (default `blair.lott@rescuedogwines.com` + `+14043120550`); editable from Settings.
+## Technical notes
 
----
-
-## PHASE 2B — Enterprise Ad Stack (scaffolded on real schemas)
-
-Renders UI with seeded/stub rows so swapping in real ingestion later is a no-op.
-
-### Schema
-
-```text
-customer_signals
-  user_id, email, ltv_cents, purchase_count, last_order_at,
-  churn_risk_score (0-1), tier ('new'|'repeat'|'vip'|'churn_risk'|'churned'),
-  source ('mailchimp_wf12'|'mailchimp_wf13'|'vinoshipper'|'stub'),
-  updated_at
-
-audience_bid_modifiers
-  channel, audience_key, modifier_pct, rationale, active, updated_at
-
-frequency_cap_view (materialized view, refreshed hourly)
-  visitor_id/email, channel, impressions_7d, last_seen, capped_bool
-
-attribution_dedup_log
-  conversion_id (vinoshipper order id), winning_channel, contributing_channels jsonb,
-  rule ('last_click_7d'|'incrementality_adjusted'), dedup_at
-
-incrementality_tests
-  id, name, channel, start_at, end_at, holdout_pct, status,
-  control_conversions, exposed_conversions, lift_pct, p_value
-
-pacing_forecast
-  channel, month, budget_cents, spend_to_date_cents,
-  projected_eom_spend_cents, on_pace_bool, computed_at
-
-creative_fatigue
-  creative_id, channel, impressions_7d, ctr_7d, ctr_30d_baseline,
-  fatigue_score (0-1), computed_at
-
-dayparting_recommendations
-  channel, campaign_id, hour_of_day (0-23), day_of_week (0-6),
-  recommended_bid_modifier_pct, basis_conversions, computed_at
-```
-
-### Edge functions (stub + cron)
-
-- `kennel-signals-sync` — pulls Mailchimp WF-12/13 tags (when available) into `customer_signals`. For now seeds from Vinoshipper aggregates + a small stub set so the UI renders.
-- `kennel-attribution-dedup` — runs nightly, applies last-click 7d across Meta/Google/Instacart against Vinoshipper actuals, writes `attribution_dedup_log`.
-- `kennel-pacing` — daily; projects EOM spend per channel; emits an alert via `kennel-alert-dispatch` when `projected > 1.1 × budget`.
-- `kennel-frequency-rollup` — hourly view refresh.
-
-### UI
-
-- **New "Signals" tab** (`/kennel/signals`): LTV distribution histogram, churn risk heatmap by state, frequency cap status table, pacing alerts list.
-- **New "Attribution" tab** (`/kennel/attribution`): cross-channel True ROAS table (channels × period), dedup log table, incrementality tests panel with holdout sizing helper.
-- Existing dashboard gets two new cards above the channel breakdown: "Pacing" (per-channel on-track/over) and "Frequency" (% audience above cap).
-
-### Advanced triggers (scaffold only, no auto-apply)
-
-- **Dayparting** card on each channel drill-down reads `dayparting_recommendations`.
-- **Weather** hook: edge function `kennel-weather-trigger` accepts a daily forecast payload, writes recs tagged `basis='weather'`. No automation; appears in Recommendations queue for approval.
-- **Creative fatigue** panel in Recommendations list using `creative_fatigue.fatigue_score`.
-
----
-
-## PHASE 2C — Local Delivery Signal Loop (receivers stubbed)
-
-### Edge functions (receivers, all `verify_jwt = false`, signed)
-
-- `webhook-instacart-purchase` — accepts purchase events, writes to `local_delivery_events`, fans out to existing Meta CAPI + Google OCI helpers from Z3.
-- `webhook-doordash`, `webhook-gopuff`, `webhook-ubereats` — same shape, platform-specific signature verification stubs with TODO comments and the doc link.
-
-### Schema
-
-```text
-local_delivery_events
-  id, platform, external_event_id (unique),
-  customer_email_hash, sku, qty, revenue_cents,
-  occurred_at, raw jsonb, processed_at, capi_status, oci_status
-```
-
-Surfaced in the Attribution tab as a "Local delivery" channel column (zeros until live).
-
----
-
-## Documentation
-
-Update `README.md` and add `docs/kennel-phase-2.md`:
-
-- New edge function list + invocation patterns
-- Required env vars / secrets (Twilio additions only — rest already present)
-- `guardrail_baseline` + `guardrail_config` schema reference
-- Where to change thresholds (Settings UI → falls back to `guardrail_config` row)
-- Webhook receiver URLs + signature requirements for 2C platforms
-- Alert payload contract
-
----
-
-## Out of scope (call out for later)
-
-- Real ML for churn / fatigue (current scoring is rules-based)
-- Per-campaign kill switch (channel-level only in v1)
-- Auto-execution of dayparting/weather recs (approval-only in v1)
-- Two-way SMS (outbound ops alerts only — TCPA constraint respected)
-
----
-
-**Approve and confirm the 6 values above, and I'll build 2A end-to-end first, then 2B scaffolds, then 2C receivers in a single pass.**
+- Webhook handler returns 200 fast and enqueues work to `pgmq` (`transactional_emails` queue) so VS retries don't fan out duplicate sends.
+- Idempotency key per email = `${vs_order_id}:${template_name}` so re-deliveries from VS never double-send.
+- All emails respect `suppressed_emails` (bounces, unsubscribes) automatically.
+- Tasting notes pulled from `wine_products.tasting_notes` / `pairings` at send time (not snapshot) so updates flow forward.

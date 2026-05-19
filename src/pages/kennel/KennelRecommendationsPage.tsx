@@ -85,10 +85,15 @@ export default function KennelRecommendationsPage() {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      const sup = (data as any)?.superseded ?? 0;
-      toast.success(
-        `Recommendation ${action}d${sup > 0 ? ` · ${sup} duplicate${sup === 1 ? "" : "s"} cleared` : ""}`,
-      );
+      if ((data as any)?.already_handled) {
+        toast.info("Already handled — refreshing list");
+        await load();
+      } else {
+        const sup = (data as any)?.superseded ?? 0;
+        toast.success(
+          `Recommendation ${action}d${sup > 0 ? ` · ${sup} duplicate${sup === 1 ? "" : "s"} cleared` : ""}`,
+        );
+      }
     } catch (e: any) {
       toast.error(e.message ?? "Action failed");
     } finally {

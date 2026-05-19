@@ -28,8 +28,8 @@ function keyFor(scope: string) {
 }
 
 function deriveTargets(m: StrategyMode) {
-  // Goal → target ROAS floor (max ROAS: 4.0x → max reach: 1.5x)
-  const targetRoas = 4.0 - (m.goal / 100) * 2.5;
+  // Goal → target ROAS floor (max ROAS: 15.0x → max reach: 1.5x)
+  const targetRoas = 15.0 - (m.goal / 100) * 13.5;
   // Risk → confidence floor and budget shift
   const confidence = 0.95 - (m.risk / 100) * 0.25;
   const maxBudgetShiftPct = 10 + (m.risk / 100) * 30;

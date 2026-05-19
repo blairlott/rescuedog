@@ -54,6 +54,9 @@ Deno.serve(async (req) => {
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
   const days = Number(body.days ?? 30);
   const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+  // Google Ads API requires a finite date range (both bounds) on segments.date,
+  // otherwise it returns EXPECTED_FILTERS_ON_DATE_RANGE. Use today as the upper bound.
+  const until = new Date().toISOString().slice(0, 10);
 
   const channel_id = await ensureChannel(sb, "google");
   if (!channel_id) return J(500, { error: "no google channel row" });
@@ -70,7 +73,7 @@ Deno.serve(async (req) => {
              metrics.cost_micros, metrics.impressions, metrics.clicks,
              metrics.conversions, metrics.conversions_value
       FROM geographic_view
-      WHERE segments.date >= '${since}'
+      WHERE segments.date BETWEEN '${since}' AND '${until}'
     `;
     const rows = await gaql(q, token);
     const facts: FactRow[] = rows.map((row): FactRow => ({
@@ -98,7 +101,7 @@ Deno.serve(async (req) => {
              metrics.cost_micros, metrics.impressions, metrics.clicks,
              metrics.conversions, metrics.conversions_value
       FROM ad_group_ad
-      WHERE segments.date >= '${since}'
+      WHERE segments.date BETWEEN '${since}' AND '${until}'
     `;
     const rows = await gaql(q, token);
     const facts: FactRow[] = rows.map((row): FactRow => ({

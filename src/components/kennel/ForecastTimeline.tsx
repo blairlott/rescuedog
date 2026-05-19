@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend,
+  CartesianGrid, Tooltip, Legend, ReferenceLine,
 } from "recharts";
 import { TrendingUp, RefreshCw } from "lucide-react";
+import {
+  DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween,
+} from "./DateRangeControls";
 
 type Point = {
   date: string;
@@ -31,17 +34,6 @@ type ForecastRow = {
   generated_at: string;
 };
 
-const HORIZONS = [30, 60, 90] as const;
-type Horizon = typeof HORIZONS[number];
-
-const LOOKBACKS = [
-  { label: "90d", days: 90 },
-  { label: "1y", days: 365 },
-  { label: "2y", days: 730 },
-  { label: "3y", days: 1095 },
-] as const;
-type LookbackDays = typeof LOOKBACKS[number]["days"];
-
 const PLATFORM_OPTS = ["all", "meta", "google", "instacart"] as const;
 type PlatformOpt = typeof PLATFORM_OPTS[number];
 
@@ -52,10 +44,13 @@ interface Props {
 
 export function ForecastTimeline({ lockPlatform }: Props) {
   const qc = useQueryClient();
-  const [horizon, setHorizon] = useState<Horizon>(30);
   const [platform, setPlatform] = useState<PlatformOpt>(lockPlatform ?? "all");
   const [busy, setBusy] = useState(false);
-  const [lookbackDays, setLookbackDays] = useState<LookbackDays>(1095);
+  const [start, setStart] = useState<Date>(defaultStart);
+  const [end, setEnd] = useState<Date>(defaultEnd);
+  const today = todayUTC();
+  const lookbackDays = Math.max(30, daysBetween(start, today));
+  const horizonDays = Math.max(1, Math.min(1095, daysBetween(today, end > today ? end : today)));
 
   const activePlatform = lockPlatform ?? platform;
 
@@ -76,8 +71,8 @@ export function ForecastTimeline({ lockPlatform }: Props) {
 
   const chartData = useMemo(() => {
     if (!data?.series?.points) return [];
-    return data.series.points.slice(0, horizon);
-  }, [data, horizon]);
+    return data.series.points.slice(0, horizonDays);
+  }, [data, horizonDays]);
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
@@ -98,12 +93,12 @@ export function ForecastTimeline({ lockPlatform }: Props) {
       const { error } = await supabase.functions.invoke("kennel-forecast", {
         body: {
           platform: activePlatform === "all" ? undefined : activePlatform,
-          horizon_days: 90,
+          horizon_days: horizonDays,
           lookback_days: lookbackDays,
         },
       });
       if (error) throw error;
-      toast.success(`Forecast generated (${lookbackDays}d history)`);
+      toast.success(`Forecast generated (${lookbackDays}d history → ${horizonDays}d horizon)`);
       await qc.invalidateQueries({ queryKey: ["forecast"] });
     } catch (e: any) {
       toast.error("Forecast failed", { description: e?.message ?? String(e) });
@@ -118,6 +113,9 @@ export function ForecastTimeline({ lockPlatform }: Props) {
         <div className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" />
           <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">Predictive Timeline</h2>
+          <span className="text-[10px] uppercase tracking-brand text-muted-foreground">
+            · {isoDay(start)} → {isoDay(end)} · {lookbackDays}d hist / {horizonDays}d horizon
+          </span>
           {data?.generated_at && (
             <span className="text-[10px] uppercase tracking-brand text-muted-foreground">
               · model {data.confidence ? `${Math.round(data.confidence * 100)}% conf` : ""}
@@ -137,30 +135,17 @@ export function ForecastTimeline({ lockPlatform }: Props) {
               ))}
             </div>
           )}
-          <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">history</span>
-          {LOOKBACKS.map((l) => (
-            <Button key={l.days} size="sm" variant={lookbackDays === l.days ? "default" : "outline"}
-              onClick={() => setLookbackDays(l.days)} style={{ borderRadius: 0 }}
-              className="uppercase tracking-brand text-[10px] h-7 px-2"
-            >
-              {l.label}
-            </Button>
-          ))}
-          <span className="text-[10px] uppercase tracking-brand text-muted-foreground mx-1">·</span>
-          {HORIZONS.map((h) => (
-            <Button key={h} size="sm" variant={horizon === h ? "default" : "outline"}
-              onClick={() => setHorizon(h)} style={{ borderRadius: 0 }}
-              className="uppercase tracking-brand text-[10px] h-7 px-2"
-            >
-              {h}d
-            </Button>
-          ))}
-          <Button size="sm" variant="outline" onClick={generate} disabled={busy}
-            style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7 px-2 ml-1"
-          >
-            <RefreshCw className={`h-3 w-3 mr-1 ${busy ? "animate-spin" : ""}`} />
-            {busy ? "Modeling…" : "Regenerate"}
-          </Button>
+          <DateRangeControls
+            start={start} end={end} setStart={setStart} setEnd={setEnd}
+            extraSlot={
+              <Button size="sm" variant="outline" onClick={generate} disabled={busy}
+                style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7 px-2 ml-1"
+              >
+                <RefreshCw className={`h-3 w-3 mr-1 ${busy ? "animate-spin" : ""}`} />
+                {busy ? "Modeling…" : "Regenerate"}
+              </Button>
+            }
+          />
         </div>
       </header>
 
@@ -169,7 +154,7 @@ export function ForecastTimeline({ lockPlatform }: Props) {
       ) : !data ? (
         <div className="border-2 border-dashed border-border p-6 text-center" style={{ borderRadius: 0 }}>
           <p className="text-sm text-muted-foreground mb-3">
-            No forecast yet for <strong className="uppercase tracking-brand">{activePlatform}</strong>. Generate one from the last 90 days of performance data.
+            No forecast yet for <strong className="uppercase tracking-brand">{activePlatform}</strong>. Generate one from {lookbackDays} days of real performance data.
           </p>
           <Button size="sm" onClick={generate} disabled={busy} style={{ borderRadius: 0 }} className="uppercase tracking-brand text-xs">
             <RefreshCw className={`h-3 w-3 mr-1 ${busy ? "animate-spin" : ""}`} />
@@ -180,8 +165,8 @@ export function ForecastTimeline({ lockPlatform }: Props) {
         <>
           {summary && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <Stat label={`Spend (${horizon}d)`} value={`$${summary.cumSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-              <Stat label={`Revenue (${horizon}d)`} value={`$${summary.cumRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+              <Stat label={`Spend (${horizonDays}d)`} value={`$${summary.cumSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+              <Stat label={`Revenue (${horizonDays}d)`} value={`$${summary.cumRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                 hint={`Range $${summary.revLower.toLocaleString(undefined, { maximumFractionDigits: 0 })} – $${summary.revUpper.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
               <Stat label="Avg ROAS" value={`${summary.avgRoas.toFixed(2)}x`} />
               <Stat label="Net (rev − spend)" value={`$${(summary.cumRev - summary.cumSpend).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
@@ -191,7 +176,7 @@ export function ForecastTimeline({ lockPlatform }: Props) {
             <ResponsiveContainer>
               <ComposedChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d) => d.slice(5)} />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
                 <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} tickFormatter={(v) => `${v.toFixed(1)}x`} />
                 <Tooltip

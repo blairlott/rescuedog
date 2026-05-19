@@ -3,10 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend,
+  CartesianGrid, Tooltip, Legend, ReferenceLine,
 } from "recharts";
 import { Store, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay,
+  monthKey, pickBucket, daysBetween,
+} from "./DateRangeControls";
 
 type DayPoint = {
   date: string;
@@ -16,74 +19,42 @@ type DayPoint = {
   projected: number;
 };
 
-const LOOKBACKS = [
-  { key: "90d", label: "90d", days: 90, bucket: "day" as const },
-  { key: "1y", label: "1y", days: 365, bucket: "month" as const },
-  { key: "2y", label: "2y", days: 730, bucket: "month" as const },
-  { key: "3y", label: "3y", days: 1095, bucket: "month" as const },
-];
-type LookbackKey = typeof LOOKBACKS[number]["key"];
-const DEFAULT_LOOKBACK: LookbackKey = "3y";
+const GROWTH_MAP: Record<string, number> = { flat: 0, g10: 0.10, g25: 0.25 };
 
-const HORIZONS = [
-  { key: "30d", label: "30d", days: 30, bucket: "day" as const },
-  { key: "1y", label: "+1y", days: 365, bucket: "month" as const },
-  { key: "2y", label: "+2y", days: 730, bucket: "month" as const },
-  { key: "3y", label: "+3y", days: 1095, bucket: "month" as const },
-];
-type HorizonKey = typeof HORIZONS[number]["key"];
-
-const GROWTH_OPTS = [
-  { key: "flat", label: "Flat", rate: 0 },
-  { key: "g10", label: "+10%/yr", rate: 0.10 },
-  { key: "g25", label: "+25%/yr", rate: 0.25 },
-];
-type GrowthKey = typeof GROWTH_OPTS[number]["key"];
-
-function isoDay(d: Date) {
-  return d.toISOString().slice(0, 10);
+function rangeLabel(start: Date, end: Date) {
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  return `${fmt(start)} → ${fmt(end)}`;
 }
-function monthKey(d: Date) { return d.toISOString().slice(0, 7); }
 
-/** Project a daily average forward, optionally with annualized growth, bucketed to day or month. */
-function buildProjection(dailyAvg: number, days: number, bucket: "day" | "month", annualGrowth: number, startFromToday: Date) {
-  const out: { date: string; projected: number }[] = [];
-  if (bucket === "day") {
-    for (let i = 1; i <= days; i++) {
-      const d = new Date(startFromToday);
-      d.setUTCDate(d.getUTCDate() + i);
-      const yrs = i / 365;
-      out.push({ date: isoDay(d), projected: dailyAvg * Math.pow(1 + annualGrowth, yrs) });
-    }
-  } else {
-    const months = Math.ceil(days / 30);
-    for (let m = 1; m <= months; m++) {
-      const d = new Date(startFromToday);
-      d.setUTCMonth(d.getUTCMonth() + m);
-      const yrs = m / 12;
-      const monthDays = 30; // approximate
-      out.push({ date: monthKey(d), projected: dailyAvg * monthDays * Math.pow(1 + annualGrowth, yrs) });
-    }
+/** Step through a date range and emit daily or monthly keys. */
+function bucketIterator(start: Date, end: Date, bucket: "day" | "month"): string[] {
+  const out: string[] = [];
+  const cur = new Date(start);
+  while (cur <= end) {
+    out.push(bucket === "day" ? isoDay(cur) : monthKey(cur));
+    if (bucket === "day") cur.setUTCDate(cur.getUTCDate() + 1);
+    else cur.setUTCMonth(cur.getUTCMonth() + 1);
   }
-  return out;
+  // de-dupe (in case of month bucket repeats)
+  return Array.from(new Set(out));
 }
 
 export function BrickMortarTimeline() {
-  const [lookbackKey, setLookbackKey] = useState<LookbackKey>(DEFAULT_LOOKBACK);
-  const [horizonKey, setHorizonKey] = useState<HorizonKey>("30d");
-  const [growthKey, setGrowthKey] = useState<GrowthKey>("flat");
-  const lookback = LOOKBACKS.find((l) => l.key === lookbackKey)!;
-  const horizon = HORIZONS.find((h) => h.key === horizonKey)!;
-  const growth = GROWTH_OPTS.find((g) => g.key === growthKey)!;
+  const [start, setStart] = useState<Date>(defaultStart);
+  const [end, setEnd] = useState<Date>(defaultEnd);
+  const [growthKey, setGrowthKey] = useState<string>("flat");
+  const today = todayUTC();
+  const growth = GROWTH_MAP[growthKey] ?? 0;
 
-  const since = useMemo(() => {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - lookback.days);
-    return isoDay(d);
-  }, [lookback.days]);
+  const observedEnd = end < today ? end : today;
+  const projectStart = today;
+  const totalSpanDays = Math.max(1, daysBetween(start, end));
+  const bucket = pickBucket(totalSpanDays);
+  const since = isoDay(start);
+  const until = isoDay(observedEnd);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["bm-timeline", since, lookback.days],
+    queryKey: ["bm-timeline-range", since, until],
     queryFn: async () => {
       const channelsRes = await supabase
         .from("ad_channels" as any)
@@ -95,22 +66,22 @@ export function BrickMortarTimeline() {
       const [qbRes, depRes, icRes] = await Promise.all([
         supabase
           .from("bm_finance_entries" as any)
-          .select("date, amount_cents, channel, entry_type, category")
-          .gte("date", since)
+          .select("date, amount_cents, channel, entry_type")
+          .gte("date", since).lte("date", until)
           .in("entry_type", ["revenue", "income", "sales"])
-          .limit(50000),
+          .limit(100000),
         supabase
           .from("depletion_report_lines" as any)
           .select("period_end, units, cases")
-          .gte("period_end", since)
-          .limit(50000),
+          .gte("period_end", since).lte("period_end", until)
+          .limit(100000),
         instacartChannelIds.length
           ? supabase
               .from("ad_performance_daily" as any)
               .select("date, revenue, channel_id")
-              .gte("date", since)
+              .gte("date", since).lte("date", until)
               .in("channel_id", instacartChannelIds)
-              .limit(50000)
+              .limit(100000)
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
@@ -121,72 +92,91 @@ export function BrickMortarTimeline() {
       };
       for (const r of (qbRes.data ?? []) as any[]) {
         const ch = (r.channel ?? "").toLowerCase();
-        // Treat anything not explicitly DTC as brick-and-mortar / wholesale revenue.
         if (ch === "dtc" || ch === "ecommerce") continue;
         ensure(r.date).qb_revenue += Number(r.amount_cents ?? 0) / 100;
       }
       for (const r of (depRes.data ?? []) as any[]) {
         if (!r.period_end) continue;
         const units = Number(r.units ?? 0) || Number(r.cases ?? 0) * 12;
-        // Rough on-premise wholesale FOB ~ $9/bottle. Placeholder until SKU-level pricing lands.
+        // Market-level depletions, modeled at $9 FOB / bottle until SKU pricing lands.
         ensure(r.period_end).depletion_revenue += units * 9;
       }
       for (const r of (icRes.data ?? []) as any[]) {
         ensure(r.date).instacart_revenue += Number(r.revenue ?? 0);
       }
-
-      // Build observed history at daily granularity over the lookback window.
-      const observed: DayPoint[] = [];
-      for (let i = 0; i < lookback.days; i++) {
-        const d = new Date(since);
-        d.setUTCDate(d.getUTCDate() + i);
-        const key = isoDay(d);
-        observed.push(byDay.get(key) ?? { date: key, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: 0 });
-      }
-
-      const last30 = observed.slice(-30);
-      const avg = last30.length
-        ? last30.reduce((s, p) => s + p.qb_revenue + p.depletion_revenue + p.instacart_revenue, 0) / last30.length
-        : 0;
-
-      const total = observed.reduce((s, p) => s + p.qb_revenue + p.depletion_revenue + p.instacart_revenue, 0);
-      return { observed, total, dailyAvg: avg, qbRows: qbRes.data?.length ?? 0, depRows: depRes.data?.length ?? 0, icRows: icRes.data?.length ?? 0 };
+      return { byDay, qbRows: qbRes.data?.length ?? 0, depRows: depRes.data?.length ?? 0, icRows: icRes.data?.length ?? 0 };
     },
   });
 
   const chart = useMemo(() => {
-    if (!data || !Array.isArray(data.observed)) return { points: [] as any[], projectedTotal: 0 };
-    const today = new Date();
-    // Use monthly buckets whenever either history or projection is multi-year.
-    const useMonthly = lookback.bucket === "month" || horizon.bucket === "month";
-    if (!useMonthly) {
-      const obs = data.observed.map((p) => ({ ...p, projected: 0 }));
-      const proj = buildProjection(data.dailyAvg, horizon.days, "day", growth.rate, today);
-      const points = [
-        ...obs,
-        ...proj.map((p) => ({ date: p.date, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: p.projected })),
-      ];
-      const projectedTotal = proj.reduce((s, p) => s + p.projected, 0);
-      return { points, projectedTotal };
+    if (!data) return { points: [] as any[], observedTotal: 0, projectedTotal: 0, dailyAvg: 0 };
+
+    // Build observed buckets (start..min(end, today))
+    const observedKeys = bucketIterator(start, observedEnd, bucket);
+    const observed = observedKeys.map((k) => {
+      const point = { date: k, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: 0 };
+      if (bucket === "day") {
+        const d = data.byDay.get(k);
+        if (d) { point.qb_revenue = d.qb_revenue; point.depletion_revenue = d.depletion_revenue; point.instacart_revenue = d.instacart_revenue; }
+      } else {
+        // Aggregate all days in this month
+        for (const [day, d] of data.byDay.entries()) {
+          if (day.startsWith(k)) {
+            point.qb_revenue += d.qb_revenue;
+            point.depletion_revenue += d.depletion_revenue;
+            point.instacart_revenue += d.instacart_revenue;
+          }
+        }
+      }
+      return point;
+    });
+
+    // Trailing 90-day daily average from the actual byDay data, used as projection base.
+    const trailingStart = new Date(today); trailingStart.setUTCDate(trailingStart.getUTCDate() - 90);
+    let trailingSum = 0; let trailingDays = 0;
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(trailingStart); d.setUTCDate(d.getUTCDate() + i);
+      const k = isoDay(d);
+      const row = data.byDay.get(k);
+      trailingDays++;
+      if (row) trailingSum += row.qb_revenue + row.depletion_revenue + row.instacart_revenue;
     }
-    // Monthly buckets: roll observed into months too.
-    const obsByMonth = new Map<string, { date: string; qb_revenue: number; depletion_revenue: number; instacart_revenue: number; projected: number }>();
-    for (const p of data.observed) {
-      const k = p.date.slice(0, 7);
-      if (!obsByMonth.has(k)) obsByMonth.set(k, { date: k, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: 0 });
-      const row = obsByMonth.get(k)!;
-      row.qb_revenue += p.qb_revenue;
-      row.depletion_revenue += p.depletion_revenue;
-      row.instacart_revenue += p.instacart_revenue;
+    const dailyAvg = trailingDays ? trailingSum / trailingDays : 0;
+
+    // Project from today → end
+    const projection: { date: string; projected: number }[] = [];
+    if (end > today) {
+      if (bucket === "day") {
+        const days = daysBetween(today, end);
+        for (let i = 1; i <= days; i++) {
+          const d = new Date(today); d.setUTCDate(d.getUTCDate() + i);
+          const yrs = i / 365;
+          projection.push({ date: isoDay(d), projected: dailyAvg * Math.pow(1 + growth, yrs) });
+        }
+      } else {
+        // monthly forward from current month +1
+        const cur = new Date(today);
+        cur.setUTCDate(1); cur.setUTCMonth(cur.getUTCMonth() + 1);
+        let m = 1;
+        while (cur <= end) {
+          const yrs = m / 12;
+          projection.push({ date: monthKey(cur), projected: dailyAvg * 30 * Math.pow(1 + growth, yrs) });
+          cur.setUTCMonth(cur.getUTCMonth() + 1);
+          m++;
+        }
+      }
     }
-    const proj = buildProjection(data.dailyAvg, horizon.days, "month", growth.rate, today);
+
     const points = [
-      ...Array.from(obsByMonth.values()).sort((a, b) => a.date.localeCompare(b.date)),
-      ...proj.map((p) => ({ date: p.date, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: p.projected })),
+      ...observed,
+      ...projection.map((p) => ({ date: p.date, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: p.projected })),
     ];
-    const projectedTotal = proj.reduce((s, p) => s + p.projected, 0);
-    return { points, projectedTotal };
-  }, [data, horizon, growth, lookback]);
+    const observedTotal = observed.reduce((s, p) => s + p.qb_revenue + p.depletion_revenue + p.instacart_revenue, 0);
+    const projectedTotal = projection.reduce((s, p) => s + p.projected, 0);
+    return { points, observedTotal, projectedTotal, dailyAvg };
+  }, [data, start, end, observedEnd, bucket, growth, today]);
+
+  const todayKey = bucket === "day" ? isoDay(today) : monthKey(today);
 
   return (
     <section className="border-2 border-foreground p-4" style={{ borderRadius: 0 }}>
@@ -194,13 +184,10 @@ export function BrickMortarTimeline() {
         <div className="flex items-center gap-2">
           <Store className="h-4 w-4 text-primary" />
           <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">Brick & Mortar Sales Timeline</h2>
-          <span className="text-[10px] uppercase tracking-brand text-muted-foreground">· {lookback.label} actual + {horizon.label} projection</span>
+          <span className="text-[10px] uppercase tracking-brand text-muted-foreground">· {rangeLabel(start, end)} · {bucket}ly</span>
         </div>
-        <HorizonControls
-          lookbackKey={lookbackKey} setLookbackKey={setLookbackKey}
-          horizonKey={horizonKey} setHorizonKey={setHorizonKey}
-          growthKey={growthKey} setGrowthKey={setGrowthKey}
-        />
+        <DateRangeControls start={start} end={end} setStart={setStart} setEnd={setEnd}
+          growthKey={growthKey} setGrowthKey={setGrowthKey} />
       </header>
 
       <CaveatBanner
@@ -210,7 +197,7 @@ export function BrickMortarTimeline() {
           "Depletion reports are market-level only (state/distributor totals — no account or SKU-by-store breakdown). They arrive 30–60 days late via distributor PDFs parsed through Lindy/AI, and are shown as a directional cross-check against QB — not a per-account velocity.",
           "Because depletions are market-level, account-level velocity metrics (CPPW, TDP, sell-through by store) are not computable today and won't be until scan data (Nielsen/Circana) or distributor account-level feeds land.",
           "Instacart: ad-attributed revenue from Instacart Ads (hybrid digital + retail) — included as the closest brick-and-mortar signal we currently have.",
-          "Not yet wired: Nielsen scan, retail-media platforms, Yahoo DSP — once available this tile will split into off-premise vs. on-premise vs. retail-media-driven, and unlock true store-level velocity.",
+          "Projection past today uses the trailing 90-day daily average (real data) compounded by the selected growth rate — pure naive forecast, not MMM.",
         ]}
       />
 
@@ -219,26 +206,27 @@ export function BrickMortarTimeline() {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <Stat label={`QB trailing ${lookback.label}`} value={`$${Math.round(data.total).toLocaleString()}`} hint="source of truth" />
-            <Stat label="Avg / day" value={`$${Math.round(data.dailyAvg).toLocaleString()}`} hint="qb + dep + instacart" />
-            <Stat label={`Projected ${horizon.label}`} value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={growth.label.toLowerCase()} />
+            <Stat label="Observed (QB+dep+IC)" value={`$${Math.round(chart.observedTotal).toLocaleString()}`} hint={`${isoDay(start)} → ${isoDay(observedEnd)}`} />
+            <Stat label="Trailing 90d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint="projection base" />
+            <Stat label="Projected" value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={end > today ? `${isoDay(today)} → ${isoDay(end)} · ${growthKey}` : "no future range"} />
             <Stat label="QB / dep lines" value={`${data.qbRows} / ${data.depRows}`} hint="dep = market-level" />
           </div>
           <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>
               <ComposedChart data={chart.points} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d) => horizon.bucket === "month" ? d : d.slice(5)} />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
                 <Tooltip
                   contentStyle={{ borderRadius: 0, border: "2px solid hsl(var(--foreground))", fontSize: 12 }}
                   formatter={(value: any, name: string) => [`$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, name]}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
+                <ReferenceLine x={todayKey} stroke="hsl(var(--foreground))" strokeDasharray="2 2" label={{ value: "today", position: "top", fontSize: 10, fill: "hsl(var(--foreground))" }} />
                 <Area type="monotone" dataKey="qb_revenue" stackId="actual" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.35)" name="QuickBooks (wholesale)" />
                 <Area type="monotone" dataKey="depletion_revenue" stackId="actual" stroke="hsl(220 70% 45%)" fill="hsl(220 70% 45% / 0.3)" name="Depletions (modeled $)" />
                 <Area type="monotone" dataKey="instacart_revenue" stackId="actual" stroke="hsl(30 90% 50%)" fill="hsl(30 90% 50% / 0.3)" name="Instacart" />
-                <Line type="monotone" dataKey="projected" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={false} name={`Projection (${growth.label})`} />
+                <Line type="monotone" dataKey="projected" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={false} name={`Projection (${growthKey})`} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -248,26 +236,23 @@ export function BrickMortarTimeline() {
   );
 }
 
+const HALO_COEFFICIENT = 0.08;
+
 export function BrandLiftTimeline() {
-  const [lookbackKey, setLookbackKey] = useState<LookbackKey>(DEFAULT_LOOKBACK);
-  const [horizonKey, setHorizonKey] = useState<HorizonKey>("30d");
-  const [growthKey, setGrowthKey] = useState<GrowthKey>("flat");
-  const lookback = LOOKBACKS.find((l) => l.key === lookbackKey)!;
-  const horizon = HORIZONS.find((h) => h.key === horizonKey)!;
-  const growth = GROWTH_OPTS.find((g) => g.key === growthKey)!;
+  const [start, setStart] = useState<Date>(defaultStart);
+  const [end, setEnd] = useState<Date>(defaultEnd);
+  const [growthKey, setGrowthKey] = useState<string>("flat");
+  const today = todayUTC();
+  const growth = GROWTH_MAP[growthKey] ?? 0;
 
-  const since = useMemo(() => {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - lookback.days);
-    return isoDay(d);
-  }, [lookback.days]);
-
-  // Default modeled halo coefficient — DTC conversion spend → incremental B&M sales.
-  // Calibrated from a literature prior of ~5–12% halo on lower-funnel ads.
-  const HALO_COEFFICIENT = 0.08;
+  const observedEnd = end < today ? end : today;
+  const totalSpanDays = Math.max(1, daysBetween(start, end));
+  const bucket = pickBucket(totalSpanDays);
+  const since = isoDay(start);
+  const until = isoDay(observedEnd);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["brand-lift-timeline", since, lookback.days],
+    queryKey: ["brand-lift-range", since, until],
     queryFn: async () => {
       const channelsRes = await supabase
         .from("ad_channels" as any)
@@ -280,96 +265,111 @@ export function BrandLiftTimeline() {
         ? await supabase
             .from("ad_performance_daily" as any)
             .select("date, spend, conversions, revenue, channel_id")
-            .gte("date", since)
+            .gte("date", since).lte("date", until)
             .in("channel_id", dtcIds)
-            .limit(100000)
+            .limit(200000)
         : { data: [] as any[] };
 
-      const byDay = new Map<string, { date: string; dtc_spend: number; dtc_revenue: number; modeled_lift: number; cumulative_lift: number }>();
+      const byDay = new Map<string, { date: string; dtc_spend: number; dtc_revenue: number; modeled_lift: number }>();
       for (const r of (rows ?? []) as any[]) {
         const ch = channelMap.get(r.channel_id);
         const platform = ch?.platform ?? "";
         const objective = (ch?.objective ?? "").toLowerCase();
-        // Conversion-objective ads on DTC platforms (Meta / Google) are the lift source.
         const isConversion = objective.includes("conversion") || objective.includes("sales") || objective.includes("purchase");
         if (!["meta", "google"].includes(platform)) continue;
         const d = r.date;
-        if (!byDay.has(d)) byDay.set(d, { date: d, dtc_spend: 0, dtc_revenue: 0, modeled_lift: 0, cumulative_lift: 0 });
+        if (!byDay.has(d)) byDay.set(d, { date: d, dtc_spend: 0, dtc_revenue: 0, modeled_lift: 0 });
         const row = byDay.get(d)!;
         const spend = Number(r.spend ?? 0);
         row.dtc_spend += spend;
         row.dtc_revenue += Number(r.revenue ?? 0);
-        if (isConversion) row.modeled_lift += spend * HALO_COEFFICIENT;
-        else row.modeled_lift += spend * (HALO_COEFFICIENT / 2); // softer halo on awareness
+        row.modeled_lift += spend * (isConversion ? HALO_COEFFICIENT : HALO_COEFFICIENT / 2);
       }
-
-      // Build dense series + cumulative
-      const arr: { date: string; dtc_spend: number; dtc_revenue: number; modeled_lift: number; cumulative_lift: number }[] = [];
-      let cum = 0;
-      for (let i = 0; i < lookback.days; i++) {
-        const d = new Date(since);
-        d.setUTCDate(d.getUTCDate() + i);
-        const key = isoDay(d);
-        const row = byDay.get(key) ?? { date: key, dtc_spend: 0, dtc_revenue: 0, modeled_lift: 0, cumulative_lift: 0 };
-        cum += row.modeled_lift;
-        row.cumulative_lift = cum;
-        arr.push(row);
-      }
-
-      const totalSpend = arr.reduce((s, p) => s + p.dtc_spend, 0);
-      const totalDtcRev = arr.reduce((s, p) => s + p.dtc_revenue, 0);
-      const avgDailySpend = arr.length ? totalSpend / arr.length : 0;
-      const avgDailyLift = arr.length ? cum / arr.length : 0;
-      return { observed: arr, totalSpend, totalDtcRev, totalLift: cum, coefficient: HALO_COEFFICIENT, avgDailySpend, avgDailyLift };
+      return { byDay };
     },
   });
 
   const chart = useMemo(() => {
-    if (!data || !Array.isArray(data.observed)) return { points: [] as any[], projSpend: 0, projLift: 0 };
-    const today = new Date();
-    const useMonthly = lookback.bucket === "month" || horizon.bucket === "month";
-    if (!useMonthly) {
-      let cum = data.totalLift;
-      const proj = [] as any[];
-      for (let i = 1; i <= horizon.days; i++) {
-        const d = new Date(today); d.setUTCDate(d.getUTCDate() + i);
-        const yrs = i / 365;
-        const spend = data.avgDailySpend * Math.pow(1 + growth.rate, yrs);
-        const lift = data.avgDailyLift * Math.pow(1 + growth.rate, yrs);
-        cum += lift;
-        proj.push({ date: isoDay(d), dtc_spend: spend, dtc_revenue: 0, modeled_lift: lift, cumulative_lift: cum });
+    if (!data) return { points: [] as any[], totalSpend: 0, totalLift: 0, totalDtcRev: 0, avgDailySpend: 0, avgDailyLift: 0, projSpend: 0, projLift: 0 };
+
+    // Observed buckets
+    const keys = bucketIterator(start, observedEnd, bucket);
+    const observed = keys.map((k) => {
+      const row = { date: k, dtc_spend: 0, dtc_revenue: 0, modeled_lift: 0, cumulative_lift: 0 };
+      if (bucket === "day") {
+        const d = data.byDay.get(k);
+        if (d) { row.dtc_spend = d.dtc_spend; row.dtc_revenue = d.dtc_revenue; row.modeled_lift = d.modeled_lift; }
+      } else {
+        for (const [day, d] of data.byDay.entries()) {
+          if (day.startsWith(k)) {
+            row.dtc_spend += d.dtc_spend;
+            row.dtc_revenue += d.dtc_revenue;
+            row.modeled_lift += d.modeled_lift;
+          }
+        }
       }
-      const projSpend = proj.reduce((s, p) => s + p.dtc_spend, 0);
-      const projLift = proj.reduce((s, p) => s + p.modeled_lift, 0);
-      return { points: [...data.observed, ...proj], projSpend, projLift };
+      return row;
+    });
+
+    // Trailing 90-day daily averages from real data
+    const trailingStart = new Date(today); trailingStart.setUTCDate(trailingStart.getUTCDate() - 90);
+    let spendSum = 0, liftSum = 0, n = 0;
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(trailingStart); d.setUTCDate(d.getUTCDate() + i);
+      const r = data.byDay.get(isoDay(d));
+      n++;
+      if (r) { spendSum += r.dtc_spend; liftSum += r.modeled_lift; }
     }
-    // Monthly bucketing
-    const obsByMonth = new Map<string, any>();
-    for (const p of data.observed) {
-      const k = p.date.slice(0, 7);
-      if (!obsByMonth.has(k)) obsByMonth.set(k, { date: k, dtc_spend: 0, dtc_revenue: 0, modeled_lift: 0, cumulative_lift: 0 });
-      const row = obsByMonth.get(k)!;
-      row.dtc_spend += p.dtc_spend;
-      row.dtc_revenue += p.dtc_revenue;
-      row.modeled_lift += p.modeled_lift;
+    const avgDailySpend = n ? spendSum / n : 0;
+    const avgDailyLift = n ? liftSum / n : 0;
+
+    // Project
+    const projection: { date: string; dtc_spend: number; dtc_revenue: number; modeled_lift: number; cumulative_lift: number }[] = [];
+    if (end > today) {
+      if (bucket === "day") {
+        const days = daysBetween(today, end);
+        for (let i = 1; i <= days; i++) {
+          const d = new Date(today); d.setUTCDate(d.getUTCDate() + i);
+          const yrs = i / 365;
+          projection.push({
+            date: isoDay(d),
+            dtc_spend: avgDailySpend * Math.pow(1 + growth, yrs),
+            dtc_revenue: 0,
+            modeled_lift: avgDailyLift * Math.pow(1 + growth, yrs),
+            cumulative_lift: 0,
+          });
+        }
+      } else {
+        const cur = new Date(today); cur.setUTCDate(1); cur.setUTCMonth(cur.getUTCMonth() + 1);
+        let m = 1;
+        while (cur <= end) {
+          const yrs = m / 12;
+          projection.push({
+            date: monthKey(cur),
+            dtc_spend: avgDailySpend * 30 * Math.pow(1 + growth, yrs),
+            dtc_revenue: 0,
+            modeled_lift: avgDailyLift * 30 * Math.pow(1 + growth, yrs),
+            cumulative_lift: 0,
+          });
+          cur.setUTCMonth(cur.getUTCMonth() + 1);
+          m++;
+        }
+      }
     }
-    const obsArr = Array.from(obsByMonth.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+    const all = [...observed, ...projection];
     let cum = 0;
-    for (const r of obsArr) { cum += r.modeled_lift; r.cumulative_lift = cum; }
-    const months = Math.ceil(horizon.days / 30);
-    const proj = [] as any[];
-    for (let m = 1; m <= months; m++) {
-      const d = new Date(today); d.setUTCMonth(d.getUTCMonth() + m);
-      const yrs = m / 12;
-      const spend = data.avgDailySpend * 30 * Math.pow(1 + growth.rate, yrs);
-      const lift = data.avgDailyLift * 30 * Math.pow(1 + growth.rate, yrs);
-      cum += lift;
-      proj.push({ date: monthKey(d), dtc_spend: spend, dtc_revenue: 0, modeled_lift: lift, cumulative_lift: cum });
-    }
-    const projSpend = proj.reduce((s, p) => s + p.dtc_spend, 0);
-    const projLift = proj.reduce((s, p) => s + p.modeled_lift, 0);
-    return { points: [...obsArr, ...proj], projSpend, projLift };
-  }, [data, horizon, growth, lookback]);
+    for (const r of all) { cum += r.modeled_lift; r.cumulative_lift = cum; }
+
+    const totalSpend = observed.reduce((s, p) => s + p.dtc_spend, 0);
+    const totalLift = observed.reduce((s, p) => s + p.modeled_lift, 0);
+    const totalDtcRev = observed.reduce((s, p) => s + p.dtc_revenue, 0);
+    const projSpend = projection.reduce((s, p) => s + p.dtc_spend, 0);
+    const projLift = projection.reduce((s, p) => s + p.modeled_lift, 0);
+    return { points: all, totalSpend, totalLift, totalDtcRev, avgDailySpend, avgDailyLift, projSpend, projLift };
+  }, [data, start, end, observedEnd, bucket, growth, today]);
+
+  const todayKey = bucket === "day" ? isoDay(today) : monthKey(today);
 
   return (
     <section className="border-2 border-foreground p-4" style={{ borderRadius: 0 }}>
@@ -377,13 +377,10 @@ export function BrandLiftTimeline() {
         <div className="flex items-center gap-2">
           <Store className="h-4 w-4 text-primary" />
           <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">Brand Lift Model — DTC Ads → B&M Halo</h2>
-          <span className="text-[10px] uppercase tracking-brand text-muted-foreground">· {lookback.label} actual · {horizon.label} horizon</span>
+          <span className="text-[10px] uppercase tracking-brand text-muted-foreground">· {rangeLabel(start, end)} · {bucket}ly</span>
         </div>
-        <HorizonControls
-          lookbackKey={lookbackKey} setLookbackKey={setLookbackKey}
-          horizonKey={horizonKey} setHorizonKey={setHorizonKey}
-          growthKey={growthKey} setGrowthKey={setGrowthKey}
-        />
+        <DateRangeControls start={start} end={end} setStart={setStart} setEnd={setEnd}
+          growthKey={growthKey} setGrowthKey={setGrowthKey} />
       </header>
 
       <CaveatBanner
@@ -391,8 +388,8 @@ export function BrandLiftTimeline() {
         items={[
           `Halo coefficient is a literature prior (${(HALO_COEFFICIENT * 100).toFixed(0)}% of conversion-ad spend → incremental off-premise sales, half that for awareness).`,
           "True incrementality needs holdout tests or a media-mix model (MMM). Treat this as a planning floor, not attribution.",
-          "DTC sources today = Meta + Google conversion campaigns. Retail media (Walmart Connect, Kroger Precision, etc.) and Yahoo DSP are not yet ingested.",
-          "When Nielsen scan + retail-media data land, this tile will switch from a coefficient to a calibrated MMM with DTC vs. B&M decomposition.",
+          "Inputs are real Meta + Google daily spend/conversion data over the selected range. Retail media (Walmart Connect, Kroger Precision) and Yahoo DSP not yet ingested.",
+          "Projection past today uses trailing 90-day daily Meta+Google spend (real data) compounded by selected growth rate.",
         ]}
       />
 
@@ -401,16 +398,16 @@ export function BrandLiftTimeline() {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <Stat label={`Spend ${lookback.label}`} value={`$${Math.round(data.totalSpend).toLocaleString()}`} hint="actual" />
-            <Stat label={`Lift ${lookback.label}`} value={`$${Math.round(data.totalLift).toLocaleString()}`} hint={`at ${(data.coefficient * 100).toFixed(0)}% halo`} />
-            <Stat label={`Projected spend ${horizon.label}`} value={`$${Math.round(chart.projSpend).toLocaleString()}`} hint={growth.label.toLowerCase()} />
-            <Stat label={`Projected lift ${horizon.label}`} value={`$${Math.round(chart.projLift).toLocaleString()}`} hint={growth.label.toLowerCase()} />
+            <Stat label="Observed spend" value={`$${Math.round(chart.totalSpend).toLocaleString()}`} hint="actual Meta+Google" />
+            <Stat label="Observed lift" value={`$${Math.round(chart.totalLift).toLocaleString()}`} hint={`at ${(HALO_COEFFICIENT * 100).toFixed(0)}% halo`} />
+            <Stat label="Projected spend" value={`$${Math.round(chart.projSpend).toLocaleString()}`} hint={growthKey} />
+            <Stat label="Projected lift" value={`$${Math.round(chart.projLift).toLocaleString()}`} hint={growthKey} />
           </div>
           <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>
               <ComposedChart data={chart.points} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d) => horizon.bucket === "month" ? d : d.slice(5)} />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
                 <YAxis yAxisId="left" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
                 <Tooltip
@@ -418,6 +415,7 @@ export function BrandLiftTimeline() {
                   formatter={(value: any, name: string) => [`$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, name]}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
+                <ReferenceLine yAxisId="left" x={todayKey} stroke="hsl(var(--foreground))" strokeDasharray="2 2" label={{ value: "today", position: "top", fontSize: 10, fill: "hsl(var(--foreground))" }} />
                 <Line yAxisId="left" type="monotone" dataKey="dtc_spend" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="DTC spend" />
                 <Line yAxisId="left" type="monotone" dataKey="modeled_lift" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Modeled B&M lift" />
                 <Area yAxisId="right" type="monotone" dataKey="cumulative_lift" stroke="hsl(220 70% 45%)" fill="hsl(220 70% 45% / 0.15)" name="Cumulative lift" />
@@ -427,45 +425,6 @@ export function BrandLiftTimeline() {
         </>
       )}
     </section>
-  );
-}
-
-function HorizonControls({
-  lookbackKey, setLookbackKey, horizonKey, setHorizonKey, growthKey, setGrowthKey,
-}: {
-  lookbackKey: LookbackKey; setLookbackKey: (k: LookbackKey) => void;
-  horizonKey: HorizonKey; setHorizonKey: (k: HorizonKey) => void;
-  growthKey: GrowthKey; setGrowthKey: (k: GrowthKey) => void;
-}) {
-  return (
-    <div className="flex items-center gap-1 flex-wrap">
-      <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">history</span>
-      {LOOKBACKS.map((l) => (
-        <Button key={l.key} size="sm" variant={lookbackKey === l.key ? "default" : "outline"}
-          onClick={() => setLookbackKey(l.key)} style={{ borderRadius: 0 }}
-          className="uppercase tracking-brand text-[10px] h-7 px-2">
-          {l.label}
-        </Button>
-      ))}
-      <span className="text-[10px] uppercase tracking-brand text-muted-foreground mx-1">·</span>
-      <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">project</span>
-      {HORIZONS.map((h) => (
-        <Button key={h.key} size="sm" variant={horizonKey === h.key ? "default" : "outline"}
-          onClick={() => setHorizonKey(h.key)} style={{ borderRadius: 0 }}
-          className="uppercase tracking-brand text-[10px] h-7 px-2">
-          {h.label}
-        </Button>
-      ))}
-      <span className="text-[10px] uppercase tracking-brand text-muted-foreground mx-1">·</span>
-      <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">growth</span>
-      {GROWTH_OPTS.map((g) => (
-        <Button key={g.key} size="sm" variant={growthKey === g.key ? "default" : "outline"}
-          onClick={() => setGrowthKey(g.key)} style={{ borderRadius: 0 }}
-          className="uppercase tracking-brand text-[10px] h-7 px-2">
-          {g.label}
-        </Button>
-      ))}
-    </div>
   );
 }
 

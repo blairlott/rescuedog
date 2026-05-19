@@ -1039,7 +1039,7 @@ export function MixingBoardPanel() {
           <div className="mb-4">
             <SectionLabel>Master KPIs · trailing 30d</SectionLabel>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-1.5">
-              <KpiMeter label="True ROAS" value={k.trueRoas} target={3.0} min={0} max={6} kind="x" sub="rev/spend" />
+              <KpiMeter label="True ROAS" value={k.trueRoas} target={3.0} min={0} max={15} kind="x" sub="rev/spend" />
               <KpiMeter label="CTR" value={k.ctr} target={0.02} min={0} max={0.05} kind="pct" sub="clicks/impr" />
               <KpiMeter label="CVR" value={k.cvr} target={0.03} min={0} max={0.08} kind="pct" sub="conv/clicks" />
               <KpiMeter label="AOV" value={k.aov} target={120} min={0} max={250} kind="usd" sub="per order" />

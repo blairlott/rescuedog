@@ -76,16 +76,15 @@ export function DualCheckoutConfirm({
         </div>
 
         <div className="space-y-3 py-2">
-          {/* Step 1 — Wine */}
+          {/* Wine tab */}
           <div className="flex gap-3 border border-primary/40 bg-primary/[0.04] p-3">
-            <div className="flex-shrink-0 w-7 h-7 bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-              1
+            <div className="flex-shrink-0 w-7 h-7 bg-primary text-primary-foreground flex items-center justify-center">
+              <Wine className="h-3.5 w-3.5" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-1">
-                <Wine className="h-3.5 w-3.5 text-primary" />
                 <span className="text-xs font-bold uppercase tracking-brand">
-                  Wine — continues here
+                  Wine — opens in a new tab
                 </span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -95,18 +94,13 @@ export function DualCheckoutConfirm({
             </div>
           </div>
 
-          <div className="flex justify-center">
-            <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
-          </div>
-
-          {/* Step 2 — Merch */}
+          {/* Merch tab */}
           <div className="flex gap-3 border border-border p-3">
-            <div className="flex-shrink-0 w-7 h-7 bg-foreground text-background flex items-center justify-center text-xs font-bold">
-              2
+            <div className="flex-shrink-0 w-7 h-7 bg-foreground text-background flex items-center justify-center">
+              <ShoppingBag className="h-3.5 w-3.5" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-1">
-                <ShoppingBag className="h-3.5 w-3.5" />
                 <span className="text-xs font-bold uppercase tracking-brand">
                   Merch — opens in a new tab
                 </span>
@@ -120,6 +114,10 @@ export function DualCheckoutConfirm({
 
           {/* What to expect */}
           <div className="border-t border-dashed border-border pt-3 space-y-1.5">
+            <div className="flex items-start gap-2 text-[11px] text-muted-foreground">
+              <ArrowRight className="h-3 w-3 mt-0.5 flex-shrink-0" />
+              <span><strong className="text-foreground">2 tabs</strong> will open — finish each to complete your order.</span>
+            </div>
             <div className="flex items-start gap-2 text-[11px] text-muted-foreground">
               <CreditCard className="h-3 w-3 mt-0.5 flex-shrink-0" />
               <span><strong className="text-foreground">2 charges</strong> on your statement — one from Rescue Dog, one from Vinoshipper.</span>
@@ -145,7 +143,7 @@ export function DualCheckoutConfirm({
             onClick={onConfirm}
             className="sm:flex-1 bg-primary hover:bg-primary/90"
           >
-            Got it — start checkout
+            Open both checkouts
           </Button>
         </DialogFooter>
       </DialogContent>

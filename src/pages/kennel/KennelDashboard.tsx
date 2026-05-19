@@ -16,6 +16,7 @@ import { IngestionStatusPanel } from "@/components/kennel/IngestionStatusPanel";
 import { CronStatusPanel } from "@/components/kennel/CronStatusPanel";
 import { MixingBoardPanel } from "@/components/kennel/MixingBoardPanel";
 import { AiInsights } from "@/components/kennel/AiInsights";
+import { ExternalSignalsPanel } from "@/components/kennel/ExternalSignalsPanel";
 import { RefreshButton } from "@/components/kennel/RefreshButton";
 import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
 import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
@@ -480,6 +481,10 @@ export default function KennelDashboard() {
               {
                 id: "ai-insights",
                 node: <AiInsights snapshot={aiSnapshot} rangeLabel={periodMeta.label} />,
+              },
+              {
+                id: "external-signals",
+                node: <ExternalSignalsPanel />,
               },
               {
                 id: "paid-media",

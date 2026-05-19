@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -58,27 +58,9 @@ export function DateRangeControls({
   growthKey?: string; setGrowthKey?: (k: string) => void;
   extraSlot?: React.ReactNode;
 }) {
-  const min = MIN_START;
-  const max = useMemo(() => maxEnd(), []);
-
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      <DatePill label="Start" value={start} onChange={setStart}
-        disabled={(d) => d < min || d > end || d > max} />
-      <span className="text-[10px] uppercase tracking-brand text-muted-foreground">→</span>
-      <DatePill label="End" value={end} onChange={setEnd}
-        disabled={(d) => d < start || d > max || d < min} />
-
-      <span className="text-[10px] uppercase tracking-brand text-muted-foreground mx-1">·</span>
-      {PRESETS.map((p) => (
-        <Button key={p.label} size="sm" variant="outline"
-          onClick={() => { setStart(p.start()); setEnd(p.end()); }}
-          style={{ borderRadius: 0 }}
-          className="uppercase tracking-brand text-[10px] h-7 px-2"
-        >
-          {p.label}
-        </Button>
-      ))}
+      <DateRangePopover start={start} end={end} setStart={setStart} setEnd={setEnd} />
 
       {setGrowthKey && (
         <>
@@ -104,34 +86,124 @@ export function DateRangeControls({
   );
 }
 
-function DatePill({ label, value, onChange, disabled }: {
-  label: string; value: Date; onChange: (d: Date) => void;
-  disabled?: (d: Date) => boolean;
+function DateRangePopover({
+  start, end, setStart, setEnd,
+}: {
+  start: Date; end: Date;
+  setStart: (d: Date) => void; setEnd: (d: Date) => void;
 }) {
+  const min = MIN_START;
+  const max = useMemo(() => maxEnd(), []);
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"start" | "end">("start");
+  const toYear = new Date().getFullYear() + 3;
+
+  const applyPreset = (p: (typeof PRESETS)[number]) => {
+    setStart(p.start());
+    setEnd(p.end());
+    setOpen(false);
+  };
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" style={{ borderRadius: 0 }}
-          className="uppercase tracking-brand text-[10px] h-7 px-2 gap-1 font-normal"
+          className="uppercase tracking-brand text-[10px] h-7 px-3 gap-2 font-normal"
         >
           <CalendarIcon className="h-3 w-3" />
-          <span className="text-muted-foreground">{label}:</span>
-          <span className="font-bold">{format(value, "MMM d, yyyy")}</span>
+          <span className="font-bold">{format(start, "MMM d, yyyy")}</span>
+          <span className="text-muted-foreground">→</span>
+          <span className="font-bold">{format(end, "MMM d, yyyy")}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={value}
-          onSelect={(d) => d && onChange(d)}
-          disabled={disabled}
-          defaultMonth={value}
-          captionLayout="dropdown-buttons"
-          fromYear={2018}
-          toYear={new Date().getFullYear() + 3}
-          initialFocus
-          className={cn("p-3 pointer-events-auto")}
-        />
+      <PopoverContent
+        align="start"
+        className="p-0 w-auto border-2 border-foreground"
+        style={{ borderRadius: 0 }}
+      >
+        <div className="flex">
+          {/* Preset rail */}
+          <div className="flex flex-col border-r border-border bg-muted/30 p-2 gap-1 min-w-[140px]">
+            <div className="text-[10px] uppercase tracking-brand text-muted-foreground px-2 py-1">
+              Quick ranges
+            </div>
+            {PRESETS.map((p) => (
+              <button
+                key={p.label}
+                onClick={() => applyPreset(p)}
+                className="text-left text-xs px-2 py-1.5 hover:bg-foreground hover:text-background uppercase tracking-brand transition-colors"
+                style={{ borderRadius: 0 }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Calendar pane */}
+          <div className="flex flex-col">
+            <div className="flex border-b border-border">
+              <button
+                onClick={() => setTab("start")}
+                className={cn(
+                  "flex-1 text-[10px] uppercase tracking-brand py-2 px-3 transition-colors",
+                  tab === "start"
+                    ? "bg-foreground text-background font-bold"
+                    : "hover:bg-muted text-muted-foreground"
+                )}
+                style={{ borderRadius: 0 }}
+              >
+                Start · {format(start, "MMM d, yyyy")}
+              </button>
+              <button
+                onClick={() => setTab("end")}
+                className={cn(
+                  "flex-1 text-[10px] uppercase tracking-brand py-2 px-3 transition-colors border-l border-border",
+                  tab === "end"
+                    ? "bg-foreground text-background font-bold"
+                    : "hover:bg-muted text-muted-foreground"
+                )}
+                style={{ borderRadius: 0 }}
+              >
+                End · {format(end, "MMM d, yyyy")}
+              </button>
+            </div>
+            {tab === "start" ? (
+              <Calendar
+                key="start-cal"
+                mode="single"
+                selected={start}
+                onSelect={(d) => { if (d) { setStart(d); setTab("end"); } }}
+                disabled={(d) => d < min || d > end || d > max}
+                defaultMonth={start}
+                captionLayout="dropdown-buttons"
+                fromYear={2018}
+                toYear={toYear}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            ) : (
+              <Calendar
+                key="end-cal"
+                mode="single"
+                selected={end}
+                onSelect={(d) => { if (d) { setEnd(d); setOpen(false); } }}
+                disabled={(d) => d < start || d > max || d < min}
+                defaultMonth={end}
+                captionLayout="dropdown-buttons"
+                fromYear={2018}
+                toYear={toYear}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            )}
+            <div className="flex justify-end border-t border-border px-3 py-2 gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setOpen(false)}
+                style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7">
+                Done
+              </Button>
+            </div>
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
   );

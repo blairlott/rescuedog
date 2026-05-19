@@ -39,8 +39,8 @@ function bucketIterator(start: Date, end: Date, bucket: "day" | "month"): string
   return Array.from(new Set(out));
 }
 
-export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: setStartProp, setEnd: setEndProp }: {
-  start?: Date; end?: Date; setStart?: (d: Date) => void; setEnd?: (d: Date) => void;
+export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: setStartProp, setEnd: setEndProp, hidePicker }: {
+  start?: Date; end?: Date; setStart?: (d: Date) => void; setEnd?: (d: Date) => void; hidePicker?: boolean;
 } = {}) {
   const [startLocal, setStartLocal] = useState<Date>(defaultStart);
   const [endLocal, setEndLocal] = useState<Date>(defaultEnd);
@@ -120,7 +120,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
     // Build observed buckets (start..min(end, today))
     const observedKeys = bucketIterator(start, observedEnd, bucket);
     const observed = observedKeys.map((k) => {
-      const point = { date: k, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: 0 };
+      const point: any = { date: k, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: null };
       if (bucket === "day") {
         const d = data.byDay.get(k);
         if (d) { point.qb_revenue = d.qb_revenue; point.depletion_revenue = d.depletion_revenue; point.instacart_revenue = d.instacart_revenue; }
@@ -175,7 +175,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
 
     const points = [
       ...observed,
-      ...projection.map((p) => ({ date: p.date, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: p.projected })),
+      ...projection.map((p) => ({ date: p.date, qb_revenue: null, depletion_revenue: null, instacart_revenue: null, projected: p.projected })),
     ];
     const observedTotal = observed.reduce((s, p) => s + p.qb_revenue + p.depletion_revenue + p.instacart_revenue, 0);
     const projectedTotal = projection.reduce((s, p) => s + p.projected, 0);
@@ -192,8 +192,25 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
           <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">Brick & Mortar Sales Timeline</h2>
           <span className="text-[10px] uppercase tracking-brand text-muted-foreground">· {rangeLabel(start, end)} · {bucket}ly</span>
         </div>
-        <DateRangeControls start={start} end={end} setStart={setStart} setEnd={setEnd}
-          growthKey={growthKey} setGrowthKey={setGrowthKey} />
+        {hidePicker ? (
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">growth</span>
+            {[
+              { key: "flat", label: "Flat" },
+              { key: "g10", label: "+10%/yr" },
+              { key: "g25", label: "+25%/yr" },
+            ].map((g) => (
+              <button key={g.key} onClick={() => setGrowthKey(g.key)}
+                className={`uppercase tracking-brand text-[10px] h-7 px-2 border-2 ${growthKey === g.key ? "bg-foreground text-background border-foreground" : "border-border text-foreground"}`}
+                style={{ borderRadius: 0 }}>
+                {g.label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <DateRangeControls start={start} end={end} setStart={setStart} setEnd={setEnd}
+            growthKey={growthKey} setGrowthKey={setGrowthKey} />
+        )}
       </header>
 
       <CaveatBanner
@@ -244,8 +261,8 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
 
 const HALO_COEFFICIENT = 0.08;
 
-export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: setStartProp, setEnd: setEndProp }: {
-  start?: Date; end?: Date; setStart?: (d: Date) => void; setEnd?: (d: Date) => void;
+export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: setStartProp, setEnd: setEndProp, hidePicker }: {
+  start?: Date; end?: Date; setStart?: (d: Date) => void; setEnd?: (d: Date) => void; hidePicker?: boolean;
 } = {}) {
   const [startLocal, setStartLocal] = useState<Date>(defaultStart);
   const [endLocal, setEndLocal] = useState<Date>(defaultEnd);
@@ -307,7 +324,7 @@ export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: se
     // Observed buckets
     const keys = bucketIterator(start, observedEnd, bucket);
     const observed = keys.map((k) => {
-      const row = { date: k, dtc_spend: 0, dtc_revenue: 0, modeled_lift: 0, cumulative_lift: 0 };
+      const row: any = { date: k, dtc_spend: 0, dtc_revenue: 0, modeled_lift: 0, cumulative_lift: 0, _observed: true };
       if (bucket === "day") {
         const d = data.byDay.get(k);
         if (d) { row.dtc_spend = d.dtc_spend; row.dtc_revenue = d.dtc_revenue; row.modeled_lift = d.modeled_lift; }
@@ -336,7 +353,7 @@ export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: se
     const avgDailyLift = n ? liftSum / n : 0;
 
     // Project
-    const projection: { date: string; dtc_spend: number; dtc_revenue: number; modeled_lift: number; cumulative_lift: number }[] = [];
+    const projection: any[] = [];
     if (end > today) {
       if (bucket === "day") {
         const days = daysBetween(today, end);
@@ -346,9 +363,10 @@ export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: se
           projection.push({
             date: isoDay(d),
             dtc_spend: avgDailySpend * Math.pow(1 + growth, yrs),
-            dtc_revenue: 0,
+            dtc_revenue: null,
             modeled_lift: avgDailyLift * Math.pow(1 + growth, yrs),
             cumulative_lift: 0,
+            _observed: false,
           });
         }
       } else {
@@ -359,9 +377,10 @@ export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: se
           projection.push({
             date: monthKey(cur),
             dtc_spend: avgDailySpend * 30 * Math.pow(1 + growth, yrs),
-            dtc_revenue: 0,
+            dtc_revenue: null,
             modeled_lift: avgDailyLift * 30 * Math.pow(1 + growth, yrs),
             cumulative_lift: 0,
+            _observed: false,
           });
           cur.setUTCMonth(cur.getUTCMonth() + 1);
           m++;
@@ -371,7 +390,7 @@ export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: se
 
     const all = [...observed, ...projection];
     let cum = 0;
-    for (const r of all) { cum += r.modeled_lift; r.cumulative_lift = cum; }
+    for (const r of all) { cum += (r.modeled_lift ?? 0); r.cumulative_lift = cum; }
 
     const totalSpend = observed.reduce((s, p) => s + p.dtc_spend, 0);
     const totalLift = observed.reduce((s, p) => s + p.modeled_lift, 0);
@@ -391,8 +410,25 @@ export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: se
           <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">Brand Lift Model — DTC Ads → B&M Halo</h2>
           <span className="text-[10px] uppercase tracking-brand text-muted-foreground">· {rangeLabel(start, end)} · {bucket}ly</span>
         </div>
-        <DateRangeControls start={start} end={end} setStart={setStart} setEnd={setEnd}
-          growthKey={growthKey} setGrowthKey={setGrowthKey} />
+        {hidePicker ? (
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">growth</span>
+            {[
+              { key: "flat", label: "Flat" },
+              { key: "g10", label: "+10%/yr" },
+              { key: "g25", label: "+25%/yr" },
+            ].map((g) => (
+              <button key={g.key} onClick={() => setGrowthKey(g.key)}
+                className={`uppercase tracking-brand text-[10px] h-7 px-2 border-2 ${growthKey === g.key ? "bg-foreground text-background border-foreground" : "border-border text-foreground"}`}
+                style={{ borderRadius: 0 }}>
+                {g.label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <DateRangeControls start={start} end={end} setStart={setStart} setEnd={setEnd}
+            growthKey={growthKey} setGrowthKey={setGrowthKey} />
+        )}
       </header>
 
       <CaveatBanner

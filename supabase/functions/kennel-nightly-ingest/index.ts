@@ -53,6 +53,9 @@ Deno.serve(async (req) => {
     { name: "google",          fn: "kennel-ingest-google",    body: { days } },
     { name: "instacart",       fn: "kennel-ingest-instacart", body: { days } },
     { name: "mailchimp_sync",  fn: "kennel-mailchimp-sync",   body: {} },
+    { name: "winback_meta",    fn: "kennel-winback-meta-sync",   body: {} },
+    { name: "winback_google",  fn: "kennel-winback-google-sync", body: {} },
+    { name: "winback_recs",    fn: "kennel-winback-auto-recs",   body: {} },
   ];
 
   const summary: any[] = [];

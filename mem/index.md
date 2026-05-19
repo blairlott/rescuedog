@@ -77,3 +77,4 @@
 - [v3 Shopify→VS Merch Migration](mem://plans/v3-shopify-to-vs-merch-migration) — How existing dropship_partners/skus port from Shopify storefront to VS Injector
 - [Partner Ops Rules](mem://features/partner-ops-rules) — Lindy-triggered vs-tracking-verify, marketplace approval flow, wine 3PL relay exemption, promotion gates
 - [Kennel Ad Optimization](mem://features/kennel-ad-optimization) — DoW, geo, seasonality, retention-risk tables feeding ad bid/budget rules; CONSUMER-only Vinoshipper baseline
+- [Winback Automation](mem://features/winback-automation) — Tiered 60/120/240/365 winback sync across Mailchimp/Meta/Google with auto-recs into Kennel

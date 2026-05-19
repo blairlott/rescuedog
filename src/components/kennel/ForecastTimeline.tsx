@@ -78,10 +78,53 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     },
   });
 
+  // Historical actuals from ad_performance_daily, joined to platform via ad_channels.
+  const { data: history } = useQuery({
+    queryKey: ["forecast-history", activePlatform, isoDay(start), isoDay(today)],
+    queryFn: async () => {
+      const { data: channels } = await supabase
+        .from("ad_channels" as any)
+        .select("id, platform");
+      const ids = (channels ?? [])
+        .filter((c: any) => activePlatform === "all" ? true : c.platform === activePlatform)
+        .map((c: any) => c.id);
+      if (ids.length === 0) return [] as Point[];
+      const { data: rows } = await supabase
+        .from("ad_performance_daily" as any)
+        .select("date, spend, revenue, channel_id")
+        .in("channel_id", ids)
+        .gte("date", isoDay(start))
+        .lte("date", isoDay(today))
+        .order("date", { ascending: true });
+      // Aggregate by date.
+      const map = new Map<string, { spend: number; revenue: number }>();
+      for (const r of (rows ?? []) as any[]) {
+        const cur = map.get(r.date) ?? { spend: 0, revenue: 0 };
+        cur.spend += Number(r.spend) || 0;
+        cur.revenue += Number(r.revenue) || 0;
+        map.set(r.date, cur);
+      }
+      return Array.from(map.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, v]) => ({
+          date,
+          spend: v.spend,
+          revenue: v.revenue,
+          revenue_lower: v.revenue,
+          revenue_upper: v.revenue,
+          roas: v.spend > 0 ? v.revenue / v.spend : 0,
+        })) as Point[];
+    },
+  });
+
   const chartData = useMemo(() => {
-    if (!data?.series?.points) return [];
-    return data.series.points.slice(0, horizonDays);
-  }, [data, horizonDays]);
+    const todayIso = isoDay(today);
+    const hist = (history ?? []).filter((p) => p.date <= todayIso);
+    const future = (data?.series?.points ?? [])
+      .filter((p) => p.date > todayIso)
+      .slice(0, horizonDays);
+    return [...hist, ...future];
+  }, [data, history, horizonDays, today]);
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;
@@ -196,6 +239,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
+                <ReferenceLine yAxisId="left" x={isoDay(today)} stroke="hsl(var(--foreground))" strokeDasharray="2 2" label={{ value: "Today", position: "top", fontSize: 10 }} />
                 <Area yAxisId="left" dataKey="revenue_upper" stroke="none" fill="hsl(var(--primary) / 0.15)" name="Revenue range" stackId="band" />
                 <Area yAxisId="left" dataKey="revenue_lower" stroke="none" fill="hsl(var(--background))" stackId="band" legendType="none" />
                 <Line yAxisId="left" type="monotone" dataKey="spend" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Spend" />

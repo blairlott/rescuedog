@@ -65,6 +65,7 @@ interface SyncRow { channel_id: string; last_primary_sync: string | null; }
 export default function KennelDashboard() {
   const [range, setRange] = useState<Range>(30);
   const [syncing, setSyncing] = useState(false);
+  const [optimizationOpen, setOptimizationOpen] = useState(false);
   const navigate = useNavigate();
   const qc = useQueryClient();
 

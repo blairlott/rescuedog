@@ -22,7 +22,7 @@ import { CartTrustBlock } from "@/components/cart/CartTrustBlock";
 import { CartGiftToggle } from "@/components/cart/CartGiftToggle";
 import { CartSaveForLater } from "@/components/cart/CartSaveForLater";
 import { CartLineExtras } from "@/components/cart/CartLineExtras";
-import { CartGiftMode, readGiftMode } from "@/components/cart/CartGiftMode";
+import { CartGiftMode, readGiftMode, isGiftModeReady } from "@/components/cart/CartGiftMode";
 import { useGiftWrapSettings } from "@/hooks/useGiftWrapSettings";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Percent } from "lucide-react";
@@ -31,6 +31,7 @@ import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
 import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInterstitial";
 import { CartLineSizePicker } from "@/components/cart/CartLineSizePicker";
 import { addLinesAndGoToHostedCart } from "@/lib/vinoshipperInjector";
+import { supabase } from "@/integrations/supabase/client";
 
 const LAST_ORDER_KEY = "rdw_last_order";
 const PENDING_WINE_KEY = "rdw_pending_wine_checkout";

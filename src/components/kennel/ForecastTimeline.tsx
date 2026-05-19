@@ -275,6 +275,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
         shipping: s?.shipping ?? 0,
         ship_pct: s?.ship_pct ?? 0,
         ship_per_order: s?.ship_per_order ?? 0,
+        net_revenue: (Number(p.revenue) || 0) - (Number(p.spend) || 0),
       };
     });
   }, [chartData, shipping]);
@@ -295,6 +296,8 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
       avgFutRoas:  futSpend  > 0 ? futRev  / futSpend  : 0,
       futRevLower: sum(fut, "revenue_lower"),
       futRevUpper: sum(fut, "revenue_upper"),
+      histNet: histRev - histSpend,
+      futNet:  futRev  - futSpend,
     };
   }, [chartData, todayKey]);
 

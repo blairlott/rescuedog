@@ -7282,6 +7282,20 @@ export type Database = {
       is_executive: { Args: { _user_id: string }; Returns: boolean }
       is_sales_team: { Args: { _user_id: string }; Returns: boolean }
       is_wine_club_manager: { Args: { _user_id: string }; Returns: boolean }
+      kennel_cron_status: {
+        Args: never
+        Returns: {
+          active: boolean
+          jobid: number
+          jobname: string
+          last_run_duration_ms: number
+          last_run_finished_at: string
+          last_run_return_message: string
+          last_run_started_at: string
+          last_run_status: string
+          schedule: string
+        }[]
+      }
       kennel_review_recommendation: {
         Args: { _action: string; _notes?: string; _rec_id: string }
         Returns: {

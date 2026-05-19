@@ -77,6 +77,12 @@ export default function AdminAbResultsPage() {
   const lovable = rows?.find((r) => r.site_variant === "lovable");
   const legacy = rows?.find((r) => r.site_variant === "legacy");
 
+  const lvSess = lovable?.sessions ?? 0;
+  const lgSess = legacy?.sessions ?? 0;
+  const totalSess = lvSess + lgSess;
+  const lvSplit = totalSess ? (lvSess / totalSess) * 100 : 0;
+  const lgSplit = totalSess ? (lgSess / totalSess) * 100 : 0;
+
   const Metric = ({
     label,
     lv,
@@ -140,6 +146,45 @@ export default function AdminAbResultsPage() {
           </div>
         ) : (
           <div className="bg-background border border-border p-6">
+            <div className="mb-6 pb-6 border-b border-border">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] uppercase tracking-brand font-bold text-muted-foreground">
+                  Observed traffic split ({WINDOWS.find((w) => w.days === days)?.label})
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  Total sessions: <span className="font-mono font-bold text-foreground">{totalSess.toLocaleString()}</span>
+                </p>
+              </div>
+              {totalSess === 0 ? (
+                <p className="text-xs text-muted-foreground">No sessions in this window yet.</p>
+              ) : (
+                <>
+                  <div className="h-8 w-full flex border border-border overflow-hidden">
+                    <div
+                      className="bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground"
+                      style={{ width: `${lvSplit}%` }}
+                    >
+                      {lvSplit >= 8 ? `${lvSplit.toFixed(1)}%` : ""}
+                    </div>
+                    <div
+                      className="bg-foreground flex items-center justify-center text-[10px] font-bold text-background"
+                      style={{ width: `${lgSplit}%` }}
+                    >
+                      {lgSplit >= 8 ? `${lgSplit.toFixed(1)}%` : ""}
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-[10px] mt-2 uppercase tracking-brand">
+                    <span className="text-primary font-bold">Lovable {lvSplit.toFixed(1)}%</span>
+                    <span className="text-muted-foreground font-bold">Legacy {lgSplit.toFixed(1)}%</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2 leading-tight">
+                    Sanity check: this should roughly match the <code>WEIGHT_LOVABLE</code> value in the
+                    WordPress snippet (e.g. 0.20 → ~20% Lovable). Sticky cookies and direct hits to
+                    rescuedog.lovable.app will skew Lovable slightly higher than the configured weight.
+                  </p>
+                </>
+              )}
+            </div>
             <table className="w-full">
               <thead>
                 <tr className="border-b-2 border-foreground">

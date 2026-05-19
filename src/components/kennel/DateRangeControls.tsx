@@ -96,6 +96,7 @@ function DateRangePopover({
 }) {
   const min = MIN_START;
   const max = useMemo(() => maxEnd(), []);
+  const today = useMemo(() => todayUTC(), []);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"start" | "end">("start");
   const toYear = new Date().getFullYear() + 3;
@@ -175,11 +176,11 @@ function DateRangePopover({
                 mode="single"
                 selected={start}
                 onSelect={(d) => { if (d) { setStart(d); setTab("end"); } }}
-                disabled={(d) => d < min || d > end || d > max}
+                disabled={(d) => d < min || d > end || d > today}
                 defaultMonth={start}
                 captionLayout="dropdown-buttons"
                 fromYear={2018}
-                toYear={toYear}
+                toYear={new Date().getFullYear()}
                 initialFocus
                 className={cn("p-3 pointer-events-auto")}
               />

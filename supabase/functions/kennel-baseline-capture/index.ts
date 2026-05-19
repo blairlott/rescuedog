@@ -11,8 +11,10 @@ const META_GRAPH_VERSION = "v21.0";
 
 async function fetchMetaBudgets(): Promise<Array<{ campaign_id: string; daily_budget_cents: number | null }>> {
   const token = Deno.env.get("META_ADS_ACCESS_TOKEN");
-  const adAccount = Deno.env.get("META_ADS_ACCOUNT_ID");
-  if (!token || !adAccount) return [];
+  const rawAccount = Deno.env.get("META_ADS_ACCOUNT_ID");
+  if (!token || !rawAccount) return [];
+  // Normalize: accept "act_123" or "123" — always send "act_123" to Graph.
+  const adAccount = `act_${rawAccount.replace(/^act_/, "")}`;
   try {
     const url = `https://graph.facebook.com/${META_GRAPH_VERSION}/${adAccount}/campaigns?fields=id,name,daily_budget,status&limit=200&access_token=${encodeURIComponent(token)}`;
     const res = await fetch(url);

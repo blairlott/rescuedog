@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2 } from "lucide-react";
+import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2, ListTree, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -494,6 +494,70 @@ export function MixingBoardPanel() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftDow, draftMo, draftGeo, data, todayDow, todayMo]);
 
+  // ---- Change Summary: explicit list of every parameter delta vs baseline,
+  // with the metrics each one is expected to move. Drives the executive panel.
+  type DeltaRow = {
+    key: string;
+    group: "DoW" | "Month" | "Geo";
+    label: string;
+    baseline: number;
+    next: number;
+    pctChange: number;
+    impacts: string[];
+  };
+  const deltas = useMemo<DeltaRow[]>(() => {
+    const rows: DeltaRow[] = [];
+    const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    for (const [k, v] of Object.entries(draftDow)) {
+      const i = Number(k);
+      const base = dowBaseline(i);
+      if (Math.abs(base - v) < 0.005) continue;
+      rows.push({
+        key: `dow-${i}`,
+        group: "DoW",
+        label: DAY_NAMES[i],
+        baseline: base,
+        next: v,
+        pctChange: base > 0 ? (v / base - 1) * 100 : 0,
+        impacts: ["Meta/Google bid prices on this weekday", "Daily spend pacing", "Click volume & CTR mix"],
+      });
+    }
+    for (const [k, v] of Object.entries(draftMo)) {
+      const m = Number(k);
+      const base = moBaseline(m);
+      if (Math.abs(base - v) < 0.005) continue;
+      rows.push({
+        key: `mo-${m}`,
+        group: "Month",
+        label: MONTH_NAMES[m - 1],
+        baseline: base,
+        next: v,
+        pctChange: base > 0 ? (v / base - 1) * 100 : 0,
+        impacts: ["Monthly ad budget cap", "Seasonal share of voice", "Forecasted revenue this month"],
+      });
+    }
+    const geoMap = new Map((data?.geo ?? []).map(g => [g.state, g]));
+    for (const [k, v] of Object.entries(draftGeo)) {
+      const g = geoMap.get(k);
+      const base = g ? Number(g.modifier) : 1;
+      if (Math.abs(base - v) < 0.005) continue;
+      rows.push({
+        key: `geo-${k}`,
+        group: "Geo",
+        label: `${k}${g?.tier ? ` · ${g.tier}` : ""}`,
+        baseline: base,
+        next: v,
+        pctChange: base > 0 ? (v / base - 1) * 100 : 0,
+        impacts: ["State-level bid adjustment", "Geo-weighted ROAS", "Acquisition cost in this state"],
+      });
+    }
+    // Sort: largest absolute change first.
+    rows.sort((a, b) => Math.abs(b.pctChange) - Math.abs(a.pctChange));
+    return rows;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftDow, draftMo, draftGeo, data]);
+
   const resetDraft = () => {
     setDraftDow({});
     setDraftMo({});
@@ -959,6 +1023,90 @@ export function MixingBoardPanel() {
           <div className="mt-2 text-[9px] uppercase tracking-brand text-white/40">
             Drag a knob or use ↑/↓ (Shift = larger step, Home = revert). Overrides take precedence over the nightly auto-computed value.
           </div>
+        </div>
+
+        {/* CHANGE SUMMARY — explicit deltas + expected metric impact */}
+        <div className="mt-4 border border-white/15 bg-black/40 p-3" style={{ borderRadius: 0 }}>
+          <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+            <div className="flex items-center gap-1.5">
+              <ListTree className="h-3.5 w-3.5 text-[hsl(45,95%,55%)]" />
+              <span className="text-[10px] uppercase tracking-brand font-bold text-white/80">
+                Change summary
+              </span>
+              <span className="text-[9px] uppercase tracking-brand text-white/40">
+                Parameter deltas vs baseline
+              </span>
+            </div>
+            <span className="text-[9px] uppercase tracking-brand text-white/50 tabular-nums">
+              {deltas.length} {deltas.length === 1 ? "change" : "changes"}
+            </span>
+          </div>
+
+          {deltas.length === 0 ? (
+            <div className="text-[10px] uppercase tracking-brand text-white/30 py-3 text-center">
+              No pending changes — every fader matches the baseline.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="text-[9px] uppercase tracking-brand text-white/40 border-b border-white/10">
+                    <th className="text-left font-bold py-1.5 pr-2 w-16">Group</th>
+                    <th className="text-left font-bold py-1.5 pr-2">Parameter</th>
+                    <th className="text-right font-bold py-1.5 px-2 w-20">Baseline</th>
+                    <th className="text-right font-bold py-1.5 px-2 w-20">New</th>
+                    <th className="text-right font-bold py-1.5 px-2 w-20">Δ</th>
+                    <th className="text-left font-bold py-1.5 pl-3">Expected metric impact</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deltas.map(d => {
+                    const up = d.pctChange > 0;
+                    const tone = Math.abs(d.pctChange) < 1
+                      ? "text-white/60"
+                      : up
+                        ? "text-[hsl(142,76%,55%)]"
+                        : "text-[hsl(0,75%,65%)]";
+                    return (
+                      <tr key={d.key} className="border-b border-white/5 last:border-0 hover:bg-white/[0.03]">
+                        <td className="py-1.5 pr-2">
+                          <span className="text-[9px] uppercase tracking-brand font-bold text-white/50 border border-white/15 px-1.5 py-0.5" style={{ borderRadius: 0 }}>
+                            {d.group}
+                          </span>
+                        </td>
+                        <td className="py-1.5 pr-2 text-white/90 font-medium">{d.label}</td>
+                        <td className="py-1.5 px-2 text-right tabular-nums text-white/60">{d.baseline.toFixed(2)}×</td>
+                        <td className="py-1.5 px-2 text-right tabular-nums text-white">
+                          <span className="inline-flex items-center gap-1">
+                            <ArrowRight className="h-3 w-3 text-white/30" />
+                            {d.next.toFixed(2)}×
+                          </span>
+                        </td>
+                        <td className={`py-1.5 px-2 text-right tabular-nums font-bold ${tone}`}>
+                          {up ? "+" : ""}{d.pctChange.toFixed(0)}%
+                        </td>
+                        <td className="py-1.5 pl-3 text-white/70">
+                          <ul className="flex flex-wrap gap-x-3 gap-y-0.5">
+                            {d.impacts.map((m, idx) => (
+                              <li key={idx} className="flex items-center gap-1">
+                                <span className={`h-1 w-1 ${up ? "bg-[hsl(142,76%,55%)]" : "bg-[hsl(0,75%,65%)]"}`} />
+                                <span className="text-[10px]">{m}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <div className="mt-2 pt-2 border-t border-white/10 text-[9px] uppercase tracking-brand text-white/40">
+                Roll-up: blended index {preview.blended.toFixed(2)}× ({preview.blendedDelta >= 1 ? "+" : ""}{((preview.blendedDelta - 1) * 100).toFixed(0)}% vs auto) ·
+                projected daily spend ${preview.projDailySpend.toFixed(0)} (was ${preview.dailySpend.toFixed(0)}) ·
+                projected ROAS {preview.projRoas.toFixed(2)}× (was {preview.trueRoas.toFixed(2)}×).
+              </div>
+            </div>
+          )}
         </div>
         </TooltipProvider>
       )}

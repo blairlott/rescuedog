@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2, ListTree, ArrowRight } from "lucide-react";
+import { Sliders, RotateCcw, Save, FlaskConical, TrendingUp, Minus, TrendingDown, Wand2, ListTree, ArrowRight, Columns2 } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -250,6 +250,41 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Single row in the side-by-side baseline vs what-if compare grid. */
+function CompareRow({
+  label,
+  value,
+  delta,
+  deltaUp,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  delta?: string;
+  deltaUp?: boolean;
+  tone?: "default" | "muted" | "spend" | "roas";
+}) {
+  const valueTone =
+    tone === "muted" ? "text-white/60"
+    : tone === "spend" ? "text-[hsl(142,76%,55%)]"
+    : tone === "roas" ? "text-[hsl(45,95%,55%)]"
+    : "text-white";
+  const deltaTone = delta
+    ? deltaUp ? "text-[hsl(142,76%,55%)]" : "text-[hsl(0,75%,65%)]"
+    : "";
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[9px] uppercase tracking-brand text-white/40">{label}</span>
+      <div className="flex items-baseline gap-1.5">
+        <span className={`text-sm font-bold tabular-nums ${valueTone}`}>{value}</span>
+        {delta && (
+          <span className={`text-[9px] tabular-nums font-bold ${deltaTone}`}>{delta}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Generic KPI meter: any reasonable metric with a target/baseline + range. */
 function KpiMeter({
   label,
@@ -493,6 +528,10 @@ export function MixingBoardPanel() {
     return { blended, blendedBase, blendedDelta, projDailySpend, dailySpend, projRoas, trueRoas, geoLift, dirtyCount };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftDow, draftMo, draftGeo, data, todayDow, todayMo]);
+
+  // Side-by-side compare mode: render a frozen "Baseline" column alongside the
+  // live what-if values. Toggle persists in component state only.
+  const [compareMode, setCompareMode] = useState(true);
 
   // ---- Change Summary: explicit list of every parameter delta vs baseline,
   // with the metrics each one is expected to move. Drives the executive panel.
@@ -942,11 +981,11 @@ export function MixingBoardPanel() {
 
         {/* WHAT-IF PREVIEW BAR */}
         <div className="mt-4 border border-[hsl(45,95%,55%)]/40 bg-black/40 p-3" style={{ borderRadius: 0 }}>
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-white/10">
             <div className="flex items-center gap-1.5">
               <FlaskConical className="h-3.5 w-3.5 text-[hsl(45,95%,55%)]" />
               <span className="text-[10px] uppercase tracking-brand font-bold text-[hsl(45,95%,75%)]">
-                What-if preview
+                Signals
               </span>
               {preview.dirtyCount > 0 && (
                 <span className="text-[9px] uppercase tracking-brand text-[hsl(45,95%,55%)] bg-[hsl(45,95%,55%)]/15 px-1.5 py-0.5">
@@ -954,40 +993,110 @@ export function MixingBoardPanel() {
                 </span>
               )}
             </div>
-
-            <div className="flex items-center gap-1">
-              <span className="text-[9px] uppercase tracking-brand text-white/40">Today's blend</span>
-              <span className="text-sm font-bold tabular-nums text-white">{preview.blended.toFixed(2)}×</span>
-              <span className="text-[9px] tabular-nums text-white/40">
-                ({preview.blendedDelta >= 1 ? "+" : ""}{((preview.blendedDelta - 1) * 100).toFixed(0)}% vs auto)
-              </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCompareMode(v => !v)}
+                className={`flex items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-brand font-bold border ${
+                  compareMode
+                    ? "bg-[hsl(45,95%,55%)] text-black border-[hsl(45,95%,55%)]"
+                    : "bg-transparent text-white/70 border-white/20 hover:bg-white/10"
+                }`}
+                style={{ borderRadius: 0 }}
+                title="Show the baseline signals side-by-side with what-if"
+              >
+                <Columns2 className="h-3 w-3" />
+                Compare {compareMode ? "on" : "off"}
+              </button>
             </div>
+          </div>
 
-            <div className="flex items-center gap-1">
-              <span className="text-[9px] uppercase tracking-brand text-white/40">Proj. daily spend</span>
-              <span className="text-sm font-bold tabular-nums text-[hsl(142,76%,55%)]">
-                ${preview.projDailySpend.toFixed(0)}
-              </span>
-              <span className="text-[9px] tabular-nums text-white/40">
-                (was ${preview.dailySpend.toFixed(0)})
-              </span>
+          {compareMode ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {/* BASELINE COLUMN */}
+              <div className="border border-white/15 bg-black/40 p-2.5" style={{ borderRadius: 0 }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[9px] uppercase tracking-brand font-bold text-white/50">
+                    Baseline · auto-computed
+                  </span>
+                  <span className="text-[8px] uppercase tracking-brand text-white/30">Frozen reference</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-white/70">
+                  <CompareRow label="Today's blend" value={`${preview.blendedBase.toFixed(2)}×`} tone="muted" />
+                  <CompareRow label="Daily spend" value={`$${preview.dailySpend.toFixed(0)}`} tone="muted" />
+                  <CompareRow label="Geo lift" value="1.00×" tone="muted" />
+                  <CompareRow label="True ROAS" value={`${preview.trueRoas.toFixed(2)}×`} tone="muted" />
+                </div>
+              </div>
+              {/* WHAT-IF COLUMN */}
+              <div className="border border-[hsl(45,95%,55%)]/40 bg-[hsl(45,95%,55%)]/5 p-2.5" style={{ borderRadius: 0 }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[9px] uppercase tracking-brand font-bold text-[hsl(45,95%,75%)]">
+                    What-if · live preview
+                  </span>
+                  <span className="text-[8px] uppercase tracking-brand text-white/40">Drag faders to update</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <CompareRow
+                    label="Today's blend"
+                    value={`${preview.blended.toFixed(2)}×`}
+                    delta={`${preview.blendedDelta >= 1 ? "+" : ""}${((preview.blendedDelta - 1) * 100).toFixed(0)}%`}
+                    deltaUp={preview.blendedDelta >= 1}
+                  />
+                  <CompareRow
+                    label="Daily spend"
+                    value={`$${preview.projDailySpend.toFixed(0)}`}
+                    delta={`${preview.projDailySpend - preview.dailySpend >= 0 ? "+" : ""}$${(preview.projDailySpend - preview.dailySpend).toFixed(0)}`}
+                    deltaUp={preview.projDailySpend >= preview.dailySpend}
+                    tone="spend"
+                  />
+                  <CompareRow
+                    label="Geo lift"
+                    value={`${preview.geoLift.toFixed(2)}×`}
+                    delta={`${preview.geoLift >= 1 ? "+" : ""}${((preview.geoLift - 1) * 100).toFixed(0)}%`}
+                    deltaUp={preview.geoLift >= 1}
+                  />
+                  <CompareRow
+                    label="Proj. ROAS"
+                    value={`${preview.projRoas.toFixed(2)}×`}
+                    delta={`${preview.projRoas - preview.trueRoas >= 0 ? "+" : ""}${(preview.projRoas - preview.trueRoas).toFixed(2)}×`}
+                    deltaUp={preview.projRoas >= preview.trueRoas}
+                    tone="roas"
+                  />
+                </div>
+              </div>
             </div>
-
-            <div className="flex items-center gap-1">
-              <span className="text-[9px] uppercase tracking-brand text-white/40">Geo lift</span>
-              <span className="text-sm font-bold tabular-nums text-white">{(preview.geoLift).toFixed(2)}×</span>
+          ) : (
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] uppercase tracking-brand text-white/40">Today's blend</span>
+                <span className="text-sm font-bold tabular-nums text-white">{preview.blended.toFixed(2)}×</span>
+                <span className="text-[9px] tabular-nums text-white/40">
+                  ({preview.blendedDelta >= 1 ? "+" : ""}{((preview.blendedDelta - 1) * 100).toFixed(0)}% vs auto)
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] uppercase tracking-brand text-white/40">Proj. daily spend</span>
+                <span className="text-sm font-bold tabular-nums text-[hsl(142,76%,55%)]">
+                  ${preview.projDailySpend.toFixed(0)}
+                </span>
+                <span className="text-[9px] tabular-nums text-white/40">(was ${preview.dailySpend.toFixed(0)})</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] uppercase tracking-brand text-white/40">Geo lift</span>
+                <span className="text-sm font-bold tabular-nums text-white">{preview.geoLift.toFixed(2)}×</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] uppercase tracking-brand text-white/40">Proj. ROAS</span>
+                <span className="text-sm font-bold tabular-nums text-[hsl(45,95%,55%)]">
+                  {preview.projRoas.toFixed(2)}×
+                </span>
+                <span className="text-[9px] tabular-nums text-white/40">(was {preview.trueRoas.toFixed(2)}×)</span>
+              </div>
             </div>
+          )}
 
-            <div className="flex items-center gap-1">
-              <span className="text-[9px] uppercase tracking-brand text-white/40">Proj. ROAS</span>
-              <span className="text-sm font-bold tabular-nums text-[hsl(45,95%,55%)]">
-                {preview.projRoas.toFixed(2)}×
-              </span>
-              <span className="text-[9px] tabular-nums text-white/40">
-                (was {preview.trueRoas.toFixed(2)}×)
-              </span>
-            </div>
-
+          <div className="mt-3 pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
             <div className="ml-auto flex items-center gap-2">
               <Button
                 size="sm"

@@ -650,6 +650,34 @@ Deno.serve(async (req) => {
                 .maybeSingle();
               prof = data;
             }
+            // A/B attribution: look up the most recent checkout intent for
+            // this buyer (within 48h) so we can stamp site_variant on the
+            // GA4 purchase event. Fail-open on any error.
+            let abVariant: string | null = null;
+            let abTestKey: string | null = null;
+            let abGa4ClientId: string | null = null;
+            let abGclid: string | null = null;
+            try {
+              const lookupEmail = (prof?.email ?? buyerEmail ?? "").toLowerCase().trim();
+              if (lookupEmail) {
+                const { data: intent } = await supabase
+                  .from("ab_checkout_intents")
+                  .select("site_variant, ab_test, ga4_client_id, gclid, created_at")
+                  .eq("email", lookupEmail)
+                  .gte("created_at", new Date(Date.now() - 48 * 3600 * 1000).toISOString())
+                  .order("created_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (intent) {
+                  abVariant = (intent as any).site_variant ?? null;
+                  abTestKey = (intent as any).ab_test ?? null;
+                  abGa4ClientId = (intent as any).ga4_client_id ?? null;
+                  abGclid = (intent as any).gclid ?? null;
+                }
+              }
+            } catch (e) {
+              console.warn("[ab-intent] lookup failed", e);
+            }
             const result = await forwardPurchaseConversion({
               orderId: payload.identifier,
               valueCents: subtotalCents,
@@ -664,11 +692,14 @@ Deno.serve(async (req) => {
               country: shipAddr?.country ?? "US",
               fbc: null,
               fbp: null,
-              gclid: null,
+              gclid: abGclid,
+              ga4ClientId: abGa4ClientId,
+              siteVariant: abVariant,
+              abTest: abTestKey,
               debug: debugMode,
               metaTestEventCode: metaTestCode,
             });
-            notes += ` | conv ga4=${result.ga4.skipped ? "skip" : result.ga4.ok ? "ok" : "err"} meta=${result.meta.skipped ? "skip" : result.meta.ok ? "ok" : "err"}`;
+            notes += ` | conv ga4=${result.ga4.skipped ? "skip" : result.ga4.ok ? "ok" : "err"} meta=${result.meta.skipped ? "skip" : result.meta.ok ? "ok" : "err"}${abVariant ? ` | ab=${abVariant}` : " | ab=none"}`;
             if (debugMode) notes += ` | DEBUG`;
             if (result.ga4.error) console.error("[conv-ga4]", result.ga4.error);
             if (result.meta.error) console.error("[conv-meta]", result.meta.error);

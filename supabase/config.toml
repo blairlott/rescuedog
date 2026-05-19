@@ -25,6 +25,8 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.vinoshipper-webhook]
     verify_jwt = false
+  [functions.vinoshipper-poll]
+    verify_jwt = false
   [functions.kennel-ingest]
     verify_jwt = false
   [functions.kennel-reconcile]

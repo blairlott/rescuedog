@@ -77,7 +77,6 @@ export default function KennelCapiPage() {
       });
       if (error) throw error;
       toast.success("Test event sent — check Meta Events Manager → Test Events");
-      console.log("CAPI test result", data);
       setTestOrder((p) => ({ ...p, order_id: `test-${Date.now()}` }));
       load();
     } catch (e: any) {

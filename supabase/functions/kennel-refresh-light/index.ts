@@ -34,19 +34,32 @@ Deno.serve(async (req) => {
 
   const ingestSecret = Deno.env.get("KENNEL_INGEST_SECRET") ?? "";
 
+  const functionBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1`;
   const targets = [
     { name: "kennel-ingest-google",    body: { days } },
     { name: "kennel-ingest-meta",      body: { days } },
     { name: "kennel-ingest-instacart", body: { days } },
-    { name: "vinoshipper-poll",        body: {}, headers: { "x-kennel-ingest-secret": ingestSecret } },
+    { name: "vinoshipper-poll",        body: {}, useIngestSecret: true },
   ];
 
   const results = await Promise.allSettled(
     targets.map(async (t) => {
-      const r = await admin.functions.invoke(t.name, {
-        body: t.body,
-        headers: (t as any).headers,
-      });
+      if ((t as any).useIngestSecret) {
+        if (!ingestSecret) throw new Error(`${t.name}: KENNEL_INGEST_SECRET missing`);
+        const response = await fetch(`${functionBase}/${t.name}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-kennel-ingest-secret": ingestSecret,
+          },
+          body: JSON.stringify(t.body),
+        });
+        const data = await response.json().catch(async () => ({ body: await response.text().catch(() => "") }));
+        if (!response.ok) throw new Error(`${t.name}: ${response.status} ${JSON.stringify(data).slice(0, 300)}`);
+        return { name: t.name, ok: true, data };
+      }
+
+      const r = await admin.functions.invoke(t.name, { body: t.body });
       if (r.error) throw new Error(`${t.name}: ${r.error.message ?? r.error}`);
       return { name: t.name, ok: true, data: r.data };
     }),

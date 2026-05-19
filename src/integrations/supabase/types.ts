@@ -4332,6 +4332,54 @@ export type Database = {
         }
         Relationships: []
       }
+      kennel_soft_signals: {
+        Row: {
+          category: string
+          channel: string | null
+          confidence: string
+          created_at: string
+          created_by: string | null
+          effective_date: string | null
+          extracted: Json
+          id: string
+          region: string | null
+          signal_text: string
+          sku: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          channel?: string | null
+          confidence?: string
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          extracted?: Json
+          id?: string
+          region?: string | null
+          signal_text: string
+          sku?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          channel?: string | null
+          confidence?: string
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          extracted?: Json
+          id?: string
+          region?: string | null
+          signal_text?: string
+          sku?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           created_at: string

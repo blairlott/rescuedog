@@ -75,8 +75,13 @@ export const J = (status: number, body: unknown) =>
 
 export async function isAuthorized(req: Request, sb: SupabaseClient): Promise<boolean> {
   if (req.headers.get("apikey") === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return true;
+  const secret = Deno.env.get("KENNEL_INGEST_SECRET");
+  if (secret && req.headers.get("x-kennel-secret") === secret) return true;
   const auth = req.headers.get("authorization");
   if (!auth) return false;
+  // Service-role JWT via Authorization header (gateway sometimes strips apikey)
+  const bearer = auth.replace(/^Bearer\s+/i, "");
+  if (bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return true;
   const { data: { user } } = await sb.auth.getUser(auth.replace("Bearer ", ""));
   if (!user) return false;
   const { data } = await sb.rpc("is_ad_ops", { _user_id: user.id });

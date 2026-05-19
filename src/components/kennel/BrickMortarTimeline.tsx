@@ -39,9 +39,15 @@ function bucketIterator(start: Date, end: Date, bucket: "day" | "month"): string
   return Array.from(new Set(out));
 }
 
-export function BrickMortarTimeline() {
-  const [start, setStart] = useState<Date>(defaultStart);
-  const [end, setEnd] = useState<Date>(defaultEnd);
+export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: setStartProp, setEnd: setEndProp }: {
+  start?: Date; end?: Date; setStart?: (d: Date) => void; setEnd?: (d: Date) => void;
+} = {}) {
+  const [startLocal, setStartLocal] = useState<Date>(defaultStart);
+  const [endLocal, setEndLocal] = useState<Date>(defaultEnd);
+  const start = startProp ?? startLocal;
+  const end = endProp ?? endLocal;
+  const setStart = setStartProp ?? setStartLocal;
+  const setEnd = setEndProp ?? setEndLocal;
   const [growthKey, setGrowthKey] = useState<string>("flat");
   const today = todayUTC();
   const growth = GROWTH_MAP[growthKey] ?? 0;
@@ -238,9 +244,15 @@ export function BrickMortarTimeline() {
 
 const HALO_COEFFICIENT = 0.08;
 
-export function BrandLiftTimeline() {
-  const [start, setStart] = useState<Date>(defaultStart);
-  const [end, setEnd] = useState<Date>(defaultEnd);
+export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: setStartProp, setEnd: setEndProp }: {
+  start?: Date; end?: Date; setStart?: (d: Date) => void; setEnd?: (d: Date) => void;
+} = {}) {
+  const [startLocal, setStartLocal] = useState<Date>(defaultStart);
+  const [endLocal, setEndLocal] = useState<Date>(defaultEnd);
+  const start = startProp ?? startLocal;
+  const end = endProp ?? endLocal;
+  const setStart = setStartProp ?? setStartLocal;
+  const setEnd = setEndProp ?? setEndLocal;
   const [growthKey, setGrowthKey] = useState<string>("flat");
   const today = todayUTC();
   const growth = GROWTH_MAP[growthKey] ?? 0;

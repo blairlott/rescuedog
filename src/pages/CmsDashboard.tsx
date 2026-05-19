@@ -641,6 +641,7 @@ const CmsDashboard = () => {
           {/* ── Settings Tab ──────────────────────────────── */}
           <TabsContent value="settings">
             <CartSettingsPanel />
+            <GiftWrapSettingsPanel />
           </TabsContent>
 
           {/* ── Import Tab ────────────────────────────────── */}

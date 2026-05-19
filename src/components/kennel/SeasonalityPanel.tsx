@@ -63,6 +63,10 @@ export function SeasonalityPanel() {
 
       {isLoading ? (
         <p className="text-xs text-muted-foreground">Loading…</p>
+      ) : !data || data.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          No seasonality curve yet — hit Recompute to build the month-of-year index from lifetime consumer revenue.
+        </p>
       ) : (
         <div className="grid grid-cols-12 gap-1 items-end" style={{ height: 140 }}>
           {(data ?? []).map(r => {

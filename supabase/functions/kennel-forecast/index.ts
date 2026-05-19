@@ -146,18 +146,39 @@ Deno.serve(async (req) => {
     const roasCeiling = baselineRoas > 0 ? baselineRoas * 3 : Number.POSITIVE_INFINITY;
     const roasFloor   = baselineRoas > 0 ? baselineRoas * 0.3 : 0;
 
+    // ---- CAGR-based growth (DTC paid-media convention) --------------------
+    // Compare trailing 90 days vs prior 90 days and annualize. Falls back to
+    // shorter windows for thin history, and clamps to ±100% YoY to avoid
+    // runaway compounding from a single noisy quarter.
+    function cagr(series: number[]): number {
+      const n = series.length;
+      if (n < 60) return 0;
+      const win = Math.min(90, Math.floor(n / 2));
+      const recent = series.slice(n - win);
+      const prior  = series.slice(n - 2 * win, n - win);
+      const r = sum(recent), p = sum(prior);
+      if (p <= 0 || r <= 0) return 0;
+      const periodsPerYear = 365 / win;
+      const growth = Math.pow(r / p, periodsPerYear) - 1;
+      return Math.max(-0.5, Math.min(1.0, growth)); // clamp -50%..+100% YoY
+    }
+    const revCagr   = cagr(revSeries);
+    const spendCagr = cagr(spendSeries);
+    // Daily compounding factors derived from annual CAGR.
+    const revDaily   = Math.pow(1 + revCagr,   1 / 365);
+    const spendDaily = Math.pow(1 + spendCagr, 1 / 365);
+
     const series: any[] = [];
     let cumSpend = 0, cumRev = 0;
     for (let h = 1; h <= horizon; h++) {
       const futureDate = new Date(lastDate.getTime() + h * 86400000);
       const dow = futureDate.getUTCDay();
-      const xi = lastIdx + h;
-      const rawSpend   = Math.max(0, spendReg.intercept + spendReg.slope * xi) * spendSeason[dow] * spendTilt;
-      const trendSpend = Math.max(spendFloor * spendSeason[dow] * spendTilt, rawSpend);
-      // Project revenue with its own regression + seasonality (preserves trend
-      // and growth), then clamp implied ROAS to a band around baseline so a
-      // diverging spend/revenue pair can't blow up or collapse the ratio.
-      const rawRev   = Math.max(0, revReg.intercept + revReg.slope * xi) * revSeason[dow] * revenueTilt;
+      // CAGR-based projection: baseline daily × compounded growth × DoW seasonality.
+      const growthSpend = Math.pow(spendDaily, h);
+      const growthRev   = Math.pow(revDaily,   h);
+      const rawSpend = Math.max(spendFloor, baselineSpend * growthSpend) * spendSeason[dow] * spendTilt;
+      const trendSpend = rawSpend;
+      const rawRev   = baselineRev * growthRev * revSeason[dow] * revenueTilt;
       let trendRev   = rawRev;
       if (trendSpend > 0 && baselineRoas > 0) {
         const implied = trendRev / trendSpend;
@@ -201,8 +222,8 @@ Deno.serve(async (req) => {
       upper_bound: Math.round(series.reduce((s, p) => s + p.revenue_upper, 0) * 100) / 100,
       confidence: 0.80,
       model: "linreg_dow_seasonality_v1",
-      series: { points: series, summary, strategy_mode: { goal, pace }, baseline: { roas: Math.round(baselineRoas * 1000) / 1000, daily_spend: Math.round(baselineSpend * 100) / 100, days: recent28Spend.length } },
-      narrative: `${horizon}-day projection from ${dates.length} days of history, anchored on 28-day baseline ROAS ${baselineRoas.toFixed(2)}x. Goal ${goal}/100, Pace ${pace}/100.`,
+      series: { points: series, summary, strategy_mode: { goal, pace }, baseline: { roas: Math.round(baselineRoas * 1000) / 1000, daily_spend: Math.round(baselineSpend * 100) / 100, daily_revenue: Math.round(baselineRev * 100) / 100, days: recent28Spend.length, revenue_cagr: Math.round(revCagr * 1000) / 1000, spend_cagr: Math.round(spendCagr * 1000) / 1000 } },
+      narrative: `${horizon}-day projection: baseline ROAS ${baselineRoas.toFixed(2)}x, revenue CAGR ${(revCagr*100).toFixed(1)}%, spend CAGR ${(spendCagr*100).toFixed(1)}% (90d vs prior 90d, annualized). Goal ${goal}/100, Pace ${pace}/100.`,
       generated_at: new Date().toISOString(),
       valid_until: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
     };

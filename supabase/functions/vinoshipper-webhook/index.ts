@@ -504,6 +504,29 @@ Deno.serve(async (req) => {
         // TODO: GET /orders/{id} from Vinoshipper, then update wine_club_shipments
         // (status, tracking_number, total_cents, etc.) where vinoshipper_order_id matches.
         notes = "ORDER event received; detail fetch pending Vinoshipper API key";
+        // Gift recipient + club shipment emails.
+        try {
+          const p = payload as unknown as Record<string, any>;
+          const vsCustomerId =
+            p?.customerId ?? p?.customer_id ?? p?.data?.customerId ?? null;
+          const buyerEmail = p?.email ?? null;
+          if (payload.event === "CREATED" || payload.event === "UPDATED") {
+            const giftNote = await maybeSendGiftIncomingEmail(
+              supabase,
+              payload.identifier,
+              vsCustomerId,
+              buyerEmail,
+            );
+            notes += ` | ${giftNote}`;
+          }
+          if (payload.event === "TRACKING_NUMBER") {
+            const trackNote = await handleTrackingForOrder(supabase, payload.identifier);
+            notes += ` | ${trackNote}`;
+          }
+        } catch (e) {
+          console.error("[order-email-dispatch]", e);
+          notes += ` | order-email err: ${String(e)}`;
+        }
         // Welcome series backup trigger: covers guest-checkout customers who
         // never created a site account. enqueue_welcome_series is idempotent
         // (per-email dedupe) so repeat orders won't re-trigger.

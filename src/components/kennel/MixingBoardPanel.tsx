@@ -831,6 +831,50 @@ export function MixingBoardPanel() {
           </Tooltip>
         </div>
 
+        {/* SCENARIO PRESETS */}
+        <div className="mt-4 flex flex-wrap items-center gap-2 border border-white/10 bg-black/40 p-2" style={{ borderRadius: 0 }}>
+          <span className="text-[10px] uppercase tracking-brand font-bold text-white/60 px-1">
+            Scenario
+          </span>
+          {([
+            { id: "boost", label: "Boost +20%", icon: TrendingUp, hint: "Multiply every baseline by 1.2× (clamped)" },
+            { id: "hold",  label: "Hold 1.00×", icon: Minus,      hint: "Flatten every fader to neutral 1.0×" },
+            { id: "pull",  label: "Pull −20%", icon: TrendingDown, hint: "Multiply every baseline by 0.8× (clamped)" },
+            { id: "auto",  label: "Auto",       icon: Wand2,       hint: "Revert to nightly auto-computed values" },
+          ] as const).map(p => {
+            const Icon = p.icon;
+            const isActive = activePreset === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => applyPreset(p.id)}
+                title={p.hint}
+                className={`flex items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-brand font-bold border transition-colors ${
+                  isActive
+                    ? "bg-[hsl(45,95%,55%)] text-black border-[hsl(45,95%,55%)]"
+                    : "bg-transparent text-white/70 border-white/20 hover:bg-white/10 hover:text-white"
+                }`}
+                style={{ borderRadius: 0 }}
+              >
+                <Icon className="h-3 w-3" />
+                {p.label}
+              </button>
+            );
+          })}
+          <div className={`flex items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-brand font-bold border ${
+            activePreset === "custom"
+              ? "bg-white/10 text-white border-white/40"
+              : "text-white/40 border-white/10"
+          }`} style={{ borderRadius: 0 }}>
+            <Sliders className="h-3 w-3" />
+            Custom
+          </div>
+          <span className="ml-auto text-[9px] uppercase tracking-brand text-white/40">
+            Compare signals below — nothing saves until you hit Save.
+          </span>
+        </div>
+
         {/* WHAT-IF PREVIEW BAR */}
         <div className="mt-4 border border-[hsl(45,95%,55%)]/40 bg-black/40 p-3" style={{ borderRadius: 0 }}>
           <div className="flex flex-wrap items-center gap-4">

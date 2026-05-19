@@ -12,12 +12,14 @@ type VsInjector = {
   onProductAdd: (productId: number, qty?: number) => Promise<unknown>;
   cartOpen: () => void;
   getCart?: () => { id?: string; cartId?: string; uuid?: string } | null;
+  getCartCheckout?: () => URL;
+  getLinkParams?: (url: URL) => Promise<URL>;
 };
 
 const getVs = (): VsInjector | null => {
   try {
-    const w = (window.top ?? window) as unknown as { Vinoshipper?: VsInjector };
-    return w?.Vinoshipper ?? null;
+    const w = window as unknown as { Vinoshipper?: VsInjector };
+    return w.Vinoshipper ?? null;
   } catch {
     return null;
   }
@@ -68,19 +70,20 @@ export async function addLinesAndOpenCart(lines: VsCartLine[]): Promise<void> {
  * to checkout" flow — skips the slide-out drawer entirely.
  */
 export async function addLinesAndGoToHostedCart(lines: VsCartLine[]): Promise<void> {
-  const vs = await waitForVinoshipper();
+  const vs = await waitForVinoshipper(10000);
   if (!vs) throw new Error("Vinoshipper Injector did not load");
   for (const line of lines) {
     if (!Number.isFinite(line.productId) || line.quantity <= 0) continue;
     await vs.onProductAdd(line.productId, line.quantity);
   }
   // Pull the server-side cart id the injector just created.
+  const checkoutUrl = vs.getCartCheckout?.() ?? new URL("/cart", "https://vinoshipper.com");
   const cart = vs.getCart?.() ?? null;
-  const cartId =
-    (cart && (cart.cartId || cart.id || cart.uuid)) || null;
-  const ret = encodeURIComponent(window.location.href);
-  const url = cartId
-    ? `https://vinoshipper.com/cart?cartId=${encodeURIComponent(cartId)}&ret=${ret}`
-    : `https://vinoshipper.com/cart?ret=${ret}`;
-  window.location.href = url;
+  const cartId = cart && (cart.cartId || cart.id || cart.uuid);
+  if (cartId && !checkoutUrl.searchParams.has("cartId")) {
+    checkoutUrl.searchParams.set("cartId", cartId);
+  }
+  checkoutUrl.searchParams.set("ret", window.location.href);
+  const finalUrl = vs.getLinkParams ? await vs.getLinkParams(checkoutUrl) : checkoutUrl;
+  window.location.href = finalUrl.toString();
 }

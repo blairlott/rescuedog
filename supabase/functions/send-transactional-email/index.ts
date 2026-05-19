@@ -16,6 +16,58 @@ const SENDER_DOMAIN = "notify.rescuedog.com"
 // even though actual sending uses the subdomain above.
 const FROM_DOMAIN = "notify.rescuedog.com"
 
+// Customer-service routing.
+// All customer-facing emails reply to info@ (never no-reply) and BCC info@
+// for internal visibility. Shipping issues are routed to Vinoshipper's
+// customer service for fastest resolution.
+const REPLY_TO_EMAIL = 'info@rescuedogwines.com'
+const BCC_EMAIL = 'info@rescuedogwines.com'
+const SHIPPING_SUPPORT_EMAIL = 'customerservice@vinoshipper.com'
+
+// Templates whose recipient is internal staff/partners (not the end customer).
+// These skip reply-to override, the BCC copy, and the shipping support note.
+const INTERNAL_TEMPLATES = new Set<string>([
+  'donation-admin-notification',
+  'wholesale-admin-notification',
+  'stale-accounts-rep-alert',
+  'stale-accounts-summary',
+  'dropship-partner-po',
+  'wine-club-staff-action',
+  'kennel-access-invite',
+  'reviewer-invite',
+])
+
+function buildSupportFooterHtml(): string {
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0;border-top:1px solid #e5e5e5;">
+      <tr><td style="padding:18px 28px;font-family:'Nunito Sans','Avenir Next',Arial,sans-serif;font-size:12px;color:#666;line-height:1.6;">
+        <strong style="color:#000;">Need help?</strong> Reply to this email and we'll get back to you at
+        <a href="mailto:${REPLY_TO_EMAIL}" style="color:#c30017;text-decoration:none;">${REPLY_TO_EMAIL}</a>.<br/>
+        <strong style="color:#000;">Shipping or tracking question?</strong> For fastest resolution, contact our shipping partner directly at
+        <a href="mailto:${SHIPPING_SUPPORT_EMAIL}" style="color:#c30017;text-decoration:none;">${SHIPPING_SUPPORT_EMAIL}</a>.
+      </td></tr>
+    </table>
+  `
+}
+
+function buildSupportFooterText(): string {
+  return [
+    '',
+    '----',
+    `Need help? Reply to this email and we'll get back to you at ${REPLY_TO_EMAIL}.`,
+    `Shipping or tracking question? For fastest resolution, contact our shipping partner directly at ${SHIPPING_SUPPORT_EMAIL}.`,
+  ].join('\n')
+}
+
+function injectSupportFooterHtml(html: string): string {
+  const footer = buildSupportFooterHtml()
+  // Insert just before </body> if present, otherwise append.
+  if (/<\/body>/i.test(html)) {
+    return html.replace(/<\/body>/i, `${footer}</body>`)
+  }
+  return html + footer
+}
+
 // Generate a cryptographically random 32-byte hex token
 function generateToken(): string {
   const bytes = new Uint8Array(32)
@@ -278,10 +330,10 @@ Deno.serve(async (req) => {
   }
 
   // 4. Render React Email template to HTML and plain text
-  const html = await renderAsync(
+  let html = await renderAsync(
     React.createElement(template.component, templateData)
   )
-  const plainText = await renderAsync(
+  let plainText = await renderAsync(
     React.createElement(template.component, templateData),
     { plainText: true }
   )
@@ -291,6 +343,16 @@ Deno.serve(async (req) => {
     typeof template.subject === 'function'
       ? template.subject(templateData)
       : template.subject
+
+  // Customer-facing emails get a shared support footer (reply-to info@,
+  // shipping questions routed to Vinoshipper) and a BCC to info@.
+  // Internal staff/partner notifications skip this entirely.
+  const isCustomerFacing = !INTERNAL_TEMPLATES.has(templateName)
+  if (isCustomerFacing) {
+    html = injectSupportFooterHtml(html)
+    plainText = plainText + buildSupportFooterText()
+  }
+  const replyTo = isCustomerFacing ? REPLY_TO_EMAIL : undefined
 
   // 5. Enqueue the pre-rendered email for async processing by the dispatcher.
   // The dispatcher (process-email-queue) handles sending, retries, and rate-limit backoff.
@@ -314,6 +376,7 @@ Deno.serve(async (req) => {
       html,
       text: plainText,
       purpose: 'transactional',
+      reply_to: replyTo,
       label: templateName,
       idempotency_key: idempotencyKey,
       unsubscribe_token: unsubscribeToken,
@@ -343,6 +406,81 @@ Deno.serve(async (req) => {
   }
 
   console.log('Transactional email enqueued', { templateName, effectiveRecipient })
+
+  // 6. BCC fallback: the Lovable email SDK does not support a `bcc` field, so
+  // we enqueue a second copy to info@ for customer-facing sends. Skip if the
+  // primary recipient is already info@ to avoid duplicate sends.
+  if (isCustomerFacing && effectiveRecipient.toLowerCase() !== BCC_EMAIL.toLowerCase()) {
+    const bccMessageId = crypto.randomUUID()
+    const bccSubject = `[BCC: ${effectiveRecipient}] ${resolvedSubject}`
+
+    // Ensure an unsubscribe token exists for the BCC address.
+    let bccUnsubToken: string
+    const { data: existingBccToken } = await supabase
+      .from('email_unsubscribe_tokens')
+      .select('token, used_at')
+      .eq('email', BCC_EMAIL.toLowerCase())
+      .maybeSingle()
+
+    if (existingBccToken && !existingBccToken.used_at) {
+      bccUnsubToken = existingBccToken.token
+    } else {
+      bccUnsubToken = generateToken()
+      await supabase
+        .from('email_unsubscribe_tokens')
+        .upsert(
+          { token: bccUnsubToken, email: BCC_EMAIL.toLowerCase() },
+          { onConflict: 'email', ignoreDuplicates: true }
+        )
+      const { data: stored } = await supabase
+        .from('email_unsubscribe_tokens')
+        .select('token')
+        .eq('email', BCC_EMAIL.toLowerCase())
+        .maybeSingle()
+      if (stored?.token) bccUnsubToken = stored.token
+    }
+
+    await supabase.from('email_send_log').insert({
+      message_id: bccMessageId,
+      template_name: `${templateName}-bcc`,
+      recipient_email: BCC_EMAIL,
+      status: 'pending',
+    })
+
+    const { error: bccEnqueueError } = await supabase.rpc('enqueue_email', {
+      queue_name: 'transactional_emails',
+      payload: {
+        message_id: bccMessageId,
+        to: BCC_EMAIL,
+        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+        sender_domain: SENDER_DOMAIN,
+        subject: bccSubject,
+        html,
+        text: plainText,
+        purpose: 'transactional',
+        reply_to: replyTo,
+        label: `${templateName}-bcc`,
+        idempotency_key: `${idempotencyKey}:bcc`,
+        unsubscribe_token: bccUnsubToken,
+        queued_at: new Date().toISOString(),
+      },
+    })
+
+    if (bccEnqueueError) {
+      console.error('Failed to enqueue BCC copy', {
+        error: bccEnqueueError,
+        templateName,
+      })
+      await supabase.from('email_send_log').insert({
+        message_id: bccMessageId,
+        template_name: `${templateName}-bcc`,
+        recipient_email: BCC_EMAIL,
+        status: 'failed',
+        error_message: 'Failed to enqueue BCC copy',
+      })
+      // Don't fail the primary send — BCC is best-effort.
+    }
+  }
 
   return new Response(
     JSON.stringify({ success: true, queued: true }),

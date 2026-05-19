@@ -275,6 +275,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
         shipping: s?.shipping ?? 0,
         ship_pct: s?.ship_pct ?? 0,
         ship_per_order: s?.ship_per_order ?? 0,
+        net_revenue: (Number(p.revenue) || 0) - (Number(p.spend) || 0),
       };
     });
   }, [chartData, shipping]);
@@ -295,6 +296,8 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
       avgFutRoas:  futSpend  > 0 ? futRev  / futSpend  : 0,
       futRevLower: sum(fut, "revenue_lower"),
       futRevUpper: sum(fut, "revenue_upper"),
+      histNet: histRev - histSpend,
+      futNet:  futRev  - futSpend,
     };
   }, [chartData, todayKey]);
 
@@ -418,6 +421,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
               <Stat
                 label={`Actual Revenue · ${isoDay(start).slice(0,7)} → today`}
                 value={`$${summary.histRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                hint={`Net $${summary.histNet.toLocaleString(undefined, { maximumFractionDigits: 0 })} (rev − ad spend)`}
               />
               <Stat
                 label={`Forecast Spend · next ${horizonDays}d`}
@@ -427,7 +431,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
               <Stat
                 label={`Forecast Revenue · next ${horizonDays}d`}
                 value={`$${summary.futRev.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-                hint={`Range $${summary.futRevLower.toLocaleString(undefined, { maximumFractionDigits: 0 })} – $${summary.futRevUpper.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                hint={`Net $${summary.futNet.toLocaleString(undefined, { maximumFractionDigits: 0 })} · range $${summary.futRevLower.toLocaleString(undefined, { maximumFractionDigits: 0 })}–$${summary.futRevUpper.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
               />
             </div>
           )}
@@ -470,6 +474,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
                 <Bar yAxisId="left" dataKey="shipping" fill="hsl(var(--muted-foreground) / 0.35)" name="Shipping cost" />
                 <Line yAxisId="left" type="monotone" dataKey="spend" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} name="Spend" />
                 <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Revenue" />
+                <Line yAxisId="left" type="monotone" dataKey="net_revenue" stroke="hsl(150 60% 35%)" strokeWidth={2} dot={false} name="Net revenue (rev − ad spend)" />
                 <Line yAxisId="right" type="monotone" dataKey="roas" stroke="hsl(220 70% 45%)" strokeWidth={2} strokeDasharray="4 4" dot={false} name="ROAS" />
               </ComposedChart>
             </ResponsiveContainer>

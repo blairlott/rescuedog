@@ -70,12 +70,12 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         .map((c) => c.id);
 
       // Paginated fetch — Supabase caps at 1000/page; .limit() above that silently truncates.
-      const pageAll = async <T,>(builder: (from: number, to: number) => Promise<{ data: T[] | null }>): Promise<T[]> => {
+      const pageAll = async <T,>(builder: (from: number, to: number) => PromiseLike<{ data: T[] | null }>): Promise<T[]> => {
         const out: T[] = [];
         const pageSize = 1000;
         let from = 0;
         while (true) {
-          const { data: rows } = await builder(from, from + pageSize - 1);
+          const { data: rows } = await Promise.resolve(builder(from, from + pageSize - 1));
           if (!rows || rows.length === 0) break;
           out.push(...rows);
           if (rows.length < pageSize) break;
@@ -84,27 +84,27 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         return out;
       };
       const [qbRows, depRows, icRows] = await Promise.all([
-        pageAll<any>((f, t) => supabase
+        pageAll<any>((f, t) => (supabase
           .from("bm_finance_entries" as any)
           .select("date, amount_cents, channel, entry_type")
           .gte("date", since).lte("date", until)
           .in("entry_type", ["revenue", "income", "sales"])
           .order("date", { ascending: true })
-          .range(f, t)),
-        pageAll<any>((f, t) => supabase
+          .range(f, t) as any)),
+        pageAll<any>((f, t) => (supabase
           .from("depletion_report_lines" as any)
           .select("period_end, units, cases")
           .gte("period_end", since).lte("period_end", until)
           .order("period_end", { ascending: true })
-          .range(f, t)),
+          .range(f, t) as any)),
         instacartChannelIds.length
-          ? pageAll<any>((f, t) => supabase
+          ? pageAll<any>((f, t) => (supabase
               .from("ad_performance_daily" as any)
               .select("date, revenue, channel_id")
               .gte("date", since).lte("date", until)
               .in("channel_id", instacartChannelIds)
               .order("date", { ascending: true })
-              .range(f, t))
+              .range(f, t) as any))
           : Promise.resolve([] as any[]),
       ]);
 

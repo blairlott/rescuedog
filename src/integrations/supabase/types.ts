@@ -50,6 +50,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ab_events: {
+        Row: {
+          ab_test: string | null
+          created_at: string
+          event_type: string
+          id: string
+          path: string | null
+          session_id: string | null
+          site_variant: string
+          value_cents: number | null
+        }
+        Insert: {
+          ab_test?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          path?: string | null
+          session_id?: string | null
+          site_variant: string
+          value_cents?: number | null
+        }
+        Update: {
+          ab_test?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          path?: string | null
+          session_id?: string | null
+          site_variant?: string
+          value_cents?: number | null
+        }
+        Relationships: []
+      }
       access_requests: {
         Row: {
           created_at: string
@@ -7444,6 +7477,16 @@ export type Database = {
       }
     }
     Functions: {
+      ab_results_summary: {
+        Args: { _since?: string }
+        Returns: {
+          add_to_carts: number
+          checkout_intents: number
+          pageviews: number
+          sessions: number
+          site_variant: string
+        }[]
+      }
       approve_executive_decision: {
         Args: { _action: string; _decision_id: string }
         Returns: {

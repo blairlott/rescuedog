@@ -51,6 +51,11 @@ const DATASETS: Record<string, DatasetConfig> = {
     table: "vs_abandoned_carts",
     timeColumn: "abandoned_at",
   },
+  kennel_insights: {
+    table: "kennel_insights",
+    timeColumn: "created_at",
+    allowedFilters: ["insight_type", "source", "severity"],
+  },
 };
 
 const DEFAULT_LIMIT = 1000;

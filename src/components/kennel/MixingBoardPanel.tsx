@@ -569,6 +569,42 @@ export function MixingBoardPanel() {
   // live what-if values. Toggle persists in component state only.
   const [compareMode, setCompareMode] = useState(true);
 
+  // ---- Guardrail warnings: per-fader + aggregate (spend swing, ROAS drop, etc.)
+  type Warn = { level: "warn" | "danger"; label: string; detail: string };
+  const warnings = useMemo<Warn[]>(() => {
+    const out: Warn[] = [];
+    const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+    // Per-fader band checks
+    for (const [k, v] of Object.entries(draftDow)) {
+      const name = DAY_NAMES[Number(k)];
+      if (v <= 0.501 || v >= 1.999) out.push({ level: "danger", label: `${name} pinned at hard ${v <= 0.501 ? "min" : "max"}`, detail: `${v.toFixed(2)}× — bid pacing will be jagged. Consider a smoother value.` });
+      else if (v < 0.7 || v > 1.5) out.push({ level: "warn", label: `${name} outside 0.70–1.50× band`, detail: `Value ${v.toFixed(2)}× will produce outsized swings vs typical DoW lift.` });
+    }
+    for (const [k, v] of Object.entries(draftMo)) {
+      const name = MONTH_NAMES[Number(k) - 1];
+      if (v <= 0.301 || v >= 2.999) out.push({ level: "danger", label: `${name} pinned at hard ${v <= 0.301 ? "min" : "max"}`, detail: `${v.toFixed(2)}× — monthly budget cap will hit the clamp.` });
+      else if (v < 0.5 || v > 2.0) out.push({ level: "warn", label: `${name} outside 0.50–2.00× band`, detail: `Value ${v.toFixed(2)}× will skew the seasonality curve.` });
+    }
+    for (const [k, v] of Object.entries(draftGeo)) {
+      if (v <= 0.501 || v >= 1.999) out.push({ level: "danger", label: `${k} pinned at hard ${v <= 0.501 ? "min" : "max"}`, detail: `${v.toFixed(2)}× — geo bid will saturate.` });
+      else if (v < 0.7 || v > 1.5) out.push({ level: "warn", label: `${k} outside 0.70–1.50× band`, detail: `Value ${v.toFixed(2)}× is unusual for a state-level adjustment.` });
+    }
+
+    // Aggregate impact checks (only when we have a meaningful baseline)
+    if (preview.dailySpend > 0) {
+      const swing = preview.projDailySpend / preview.dailySpend;
+      if (swing >= 1.5) out.push({ level: "danger", label: `Daily spend +${((swing - 1) * 100).toFixed(0)}%`, detail: `Projected $${preview.projDailySpend.toFixed(0)}/day vs $${preview.dailySpend.toFixed(0)} baseline — exceeds the 1.5× safety threshold.` });
+      else if (swing <= 0.6) out.push({ level: "warn", label: `Daily spend −${((1 - swing) * 100).toFixed(0)}%`, detail: `Projected $${preview.projDailySpend.toFixed(0)}/day — risk of starving the auction below 0.6× baseline.` });
+    }
+    if (preview.trueRoas > 0) {
+      const roasRatio = preview.projRoas / preview.trueRoas;
+      if (roasRatio <= 0.85) out.push({ level: "danger", label: `Projected ROAS drop ${((1 - roasRatio) * 100).toFixed(0)}%`, detail: `${preview.projRoas.toFixed(2)}× vs ${preview.trueRoas.toFixed(2)}× baseline — below 3.0× target risk.` });
+    }
+    return out;
+  }, [draftDow, draftMo, draftGeo, preview]);
+
   // ---- Change Summary: explicit list of every parameter delta vs baseline,
   // with the metrics each one is expected to move. Drives the executive panel.
   type DeltaRow = {

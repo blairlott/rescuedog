@@ -752,28 +752,6 @@ export const CartDrawer = () => {
                       ? "Wine ships via our compliance partner, Vinoshipper."
                       : "Merch ships from our US fulfillment partners."}
                 </p>
-
-                <Accordion type="single" collapsible>
-                  <AccordionItem value="legacy" className="border-0">
-                    <AccordionTrigger className="text-[11px] uppercase tracking-brand text-muted-foreground py-1 hover:no-underline">
-                      Use unified single-transaction checkout (beta)
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-2 pt-2">
-                      <Button
-                        onClick={() => { setIsOpen(false); navigate("/checkout"); }}
-                        variant="outline"
-                        className="w-full"
-                        size="lg"
-                        disabled={isLoading || isSyncing || !purchaseAllowed}
-                      >
-                        Try unified checkout · ${(totalPrice + wrapFee).toFixed(2)}
-                      </Button>
-                      <p className="text-[10px] text-muted-foreground leading-tight">
-                        Combines wine + merch into one card form and one charge. Requires Vinoshipper Order API live mode.
-                      </p>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
               </div>
             </>
           )}

@@ -31,6 +31,7 @@ import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
 import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInterstitial";
 import { CartLineSizePicker } from "@/components/cart/CartLineSizePicker";
 import { addLinesAndGoToHostedCart } from "@/lib/vinoshipperInjector";
+import { recordCheckoutIntent } from "@/lib/abCheckoutIntent";
 import { supabase } from "@/integrations/supabase/client";
 
 const LAST_ORDER_KEY = "rdw_last_order";
@@ -352,6 +353,10 @@ export const CartDrawer = () => {
     logCheckoutEvent("wine_injector_hosted_cart", { lines: vsLines.length });
     try {
       setIsOpen(false);
+      // A/B attribution: stash variant + GA4 client_id before VS takes over,
+      // so the webhook can stitch the resulting purchase to the right arm.
+      const { data: authUserForAb } = await supabase.auth.getUser();
+      recordCheckoutIntent({ email: authUserForAb?.user?.email ?? null, cartId: null });
       await addLinesAndGoToHostedCart(vsLines);
     } catch (err) {
       console.error("[checkout] VS injector failed:", err);

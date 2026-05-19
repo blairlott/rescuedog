@@ -44,6 +44,9 @@ export interface ConversionInput {
   // and Meta receives a test_event_code so events appear in Test Events only.
   debug?: boolean;
   metaTestEventCode?: string | null;
+  // A/B test attribution (set by webhook from ab_checkout_intents lookup).
+  siteVariant?: string | null;   // "lovable" | "legacy"
+  abTest?: string | null;        // e.g. "rdw_replatform_v1"
 }
 
 async function sha256Lower(input: string | null | undefined): Promise<string | undefined> {
@@ -79,6 +82,8 @@ async function sendGa4(input: ConversionInput): Promise<{ ok: boolean; skipped?:
           currency: input.currency || "USD",
           ...(input.debug ? { debug_mode: true } : {}),
           ...(input.gclid ? { gclid: input.gclid } : {}),
+          ...(input.siteVariant ? { site_variant: input.siteVariant } : {}),
+          ...(input.abTest ? { ab_test: input.abTest } : {}),
         },
       },
     ],

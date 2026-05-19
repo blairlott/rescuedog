@@ -166,11 +166,11 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
 
   const chartData = useMemo(() => {
     const todayIso = isoDay(today);
-    const hist = (history ?? []).filter((p) => p.date <= todayIso);
+    const hist = (history ?? []).filter((p) => p.date <= todayKey);
     // Re-bucket the forecast series so its granularity matches history (avoids a daily/monthly
     // x-axis cliff at the "today" boundary on long ranges).
     const futRaw = (data?.series?.points ?? [])
-      .filter((p) => p.date > todayIso)
+      .filter((p) => keyOf(p.date) > todayKey)
       .slice(0, horizonDays);
     const futMap = new Map<string, Point>();
     for (const p of futRaw) {
@@ -188,8 +188,17 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     const future = Array.from(futMap.values())
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((p) => ({ ...p, roas: p.spend > 0 ? p.revenue / p.spend : 0 }));
-    return [...hist, ...future];
-  }, [data, history, horizonDays, today, bucket]);
+    const todayMarker = {
+      date: todayKey,
+      spend: null,
+      revenue: null,
+      revenue_lower: null,
+      revenue_upper: null,
+      roas: null,
+      todayMarker: 1,
+    } as unknown as Point & { todayMarker: number };
+    return [...hist, todayMarker, ...future];
+  }, [data, history, horizonDays, todayKey, bucket]);
 
   // Boundary tick = today, bucketed the same way as the x-axis so it lines up with a real tick.
   // (Comparing "2026-05" > "2026-05-19" lexicographically gives the wrong answer — always compare in bucket-space.)

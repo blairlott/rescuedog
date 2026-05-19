@@ -183,8 +183,11 @@ Deno.serve(async (req) => {
     const [{ data: metaExisting }, { data: ociExisting }] = await Promise.all([
       admin.from("meta_capi_events").select("order_id")
         .in("order_id", invoices).eq("test_mode", false).eq("success", true),
+      // Dedup only on truly-uploaded rows. `partial_failure` and `error` rows
+      // are eligible for retry — otherwise a bad source-side format (e.g. the
+      // MM/DD/YYYY date bug) permanently blackholes those conversions.
       admin.from("oci_upload_log").select("order_id")
-        .in("order_id", invoices).in("status", ["uploaded", "partial_failure"]),
+        .in("order_id", invoices).eq("status", "uploaded"),
     ]);
     metaSent = new Set((metaExisting ?? []).map((r: any) => String(r.order_id)));
     ociSent = new Set((ociExisting ?? []).map((r: any) => String(r.order_id)).filter(Boolean));

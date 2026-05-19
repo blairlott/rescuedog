@@ -1050,11 +1050,11 @@ export function MixingBoardPanel() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[auto_auto_1fr_auto] gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[auto_auto_1fr_auto] gap-4 min-w-0">
           {/* DAY OF WEEK */}
-          <div>
+          <div className="min-w-0">
             <SectionLabel>Day of week</SectionLabel>
-            <div className="flex gap-0.5 border border-white/10 bg-black/30 p-1">
+            <div className="grid grid-cols-7 gap-0.5 border border-white/10 bg-black/30 p-1">
               {DAYS.map((d, i) => {
                 const r = dowMap.get(i);
                 const dayName = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][i];
@@ -1091,9 +1091,9 @@ export function MixingBoardPanel() {
           </div>
 
           {/* MONTH */}
-          <div>
+          <div className="min-w-0">
             <SectionLabel>Month of year</SectionLabel>
-            <div className="flex gap-0.5 border border-white/10 bg-black/30 p-1">
+            <div className="grid grid-cols-6 sm:grid-cols-12 gap-0.5 border border-white/10 bg-black/30 p-1">
               {MONTHS.map((m, i) => {
                 const month = i + 1;
                 const monthName = ["January","February","March","April","May","June","July","August","September","October","November","December"][i];

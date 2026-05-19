@@ -7,6 +7,9 @@ import { ChannelPerformanceTable, type ChannelRow } from "@/components/kennel/Ch
 import { SpendChart, type SpendDatum } from "@/components/kennel/SpendChart";
 import { VinoshipperPanel } from "@/components/kennel/VinoshipperPanel";
 import { BidModifiersPanel } from "@/components/kennel/BidModifiersPanel";
+import { GeoModifiersPanel } from "@/components/kennel/GeoModifiersPanel";
+import { SeasonalityPanel } from "@/components/kennel/SeasonalityPanel";
+import { RetentionRiskPanel } from "@/components/kennel/RetentionRiskPanel";
 import { AiInsights } from "@/components/kennel/AiInsights";
 import { RefreshButton } from "@/components/kennel/RefreshButton";
 import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
@@ -386,6 +389,9 @@ export default function KennelDashboard() {
           <section className="space-y-2">
             <h2 className="text-xs uppercase tracking-brand font-bold text-muted-foreground">Ad optimization</h2>
             <BidModifiersPanel />
+            <SeasonalityPanel />
+            <GeoModifiersPanel />
+            <RetentionRiskPanel />
           </section>
 
           <section className="space-y-2">

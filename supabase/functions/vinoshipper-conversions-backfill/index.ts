@@ -42,6 +42,25 @@ async function sha256Hex(input: string | null | undefined): Promise<string | nul
     .join("");
 }
 
+/**
+ * Normalize a transaction date to ISO `YYYY-MM-DD`.
+ * Accepts: `YYYY-MM-DD`, `MM/DD/YYYY`, `M/D/YYYY`, Date objects, or full ISO strings.
+ * Falls back to today (UTC) only as a last resort to avoid Google rejecting the whole batch.
+ */
+function toIsoDate(v: unknown): string {
+  if (v instanceof Date && !isNaN(v.getTime())) return v.toISOString().slice(0, 10);
+  const s = String(v ?? "").trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (mdy) {
+    const [, m, d, y] = mdy;
+    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  const t = Date.parse(s);
+  if (!isNaN(t)) return new Date(t).toISOString().slice(0, 10);
+  return new Date().toISOString().slice(0, 10);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);

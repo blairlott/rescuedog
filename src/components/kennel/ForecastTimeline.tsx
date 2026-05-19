@@ -120,7 +120,11 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
             const k = keyOf(r.date);
             const cur = map.get(k) ?? { spend: 0, revenue: 0 };
             cur.spend += Number(r.spend) || 0;
-            cur.revenue += Number(r.revenue) || 0;
+            // For platform=all we take revenue from business_revenue_facts below
+            // (total DTC). Adding attributed paid revenue here would double-count.
+            if (activePlatform !== "all") {
+              cur.revenue += Number(r.revenue) || 0;
+            }
             map.set(k, cur);
           }
           if (rows.length < pageSize) break;

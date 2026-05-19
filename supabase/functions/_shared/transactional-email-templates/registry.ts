@@ -26,6 +26,10 @@ import { template as welcome5Nudge } from './welcome-5-nudge.tsx'
 import { template as wineClubStaffAction } from './wine-club-staff-action.tsx'
 import { template as merchCheckoutReminder } from './merch-checkout-reminder.tsx'
 import { template as kennelAccessInvite } from './kennel-access-invite.tsx'
+import { template as giftRecipientIncoming } from './gift-recipient-incoming.tsx'
+import { template as giftRecipientShipped } from './gift-recipient-shipped.tsx'
+import { template as clubShipmentShipped } from './club-shipment-shipped.tsx'
+import { template as clubGiftShipmentShipped } from './club-gift-shipment-shipped.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'ambassador-welcome': ambassadorWelcome,
@@ -45,4 +49,8 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'wine-club-staff-action': wineClubStaffAction,
   'merch-checkout-reminder': merchCheckoutReminder,
   'kennel-access-invite': kennelAccessInvite,
+  'gift-recipient-incoming': giftRecipientIncoming,
+  'gift-recipient-shipped': giftRecipientShipped,
+  'club-shipment-shipped': clubShipmentShipped,
+  'club-gift-shipment-shipped': clubGiftShipmentShipped,
 }

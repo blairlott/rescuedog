@@ -4926,6 +4926,30 @@ export type Database = {
         }
         Relationships: []
       }
+      order_email_settings: {
+        Row: {
+          description: string | null
+          enabled: boolean
+          template_name: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          enabled?: boolean
+          template_name: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          enabled?: boolean
+          template_name?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           cost_cents: number | null
@@ -6687,7 +6711,10 @@ export type Database = {
           cancelled_at: string | null
           claimed_at: string | null
           created_at: string | null
+          gift_duration_months: number | null
           gift_message: string | null
+          gift_recipient_email: string | null
+          gift_recipient_name: string | null
           grandfathered_discount_percent: number | null
           id: string
           imported_at: string | null
@@ -6715,7 +6742,10 @@ export type Database = {
           cancelled_at?: string | null
           claimed_at?: string | null
           created_at?: string | null
+          gift_duration_months?: number | null
           gift_message?: string | null
+          gift_recipient_email?: string | null
+          gift_recipient_name?: string | null
           grandfathered_discount_percent?: number | null
           id?: string
           imported_at?: string | null
@@ -6743,7 +6773,10 @@ export type Database = {
           cancelled_at?: string | null
           claimed_at?: string | null
           created_at?: string | null
+          gift_duration_months?: number | null
           gift_message?: string | null
+          gift_recipient_email?: string | null
+          gift_recipient_name?: string | null
           grandfathered_discount_percent?: number | null
           id?: string
           imported_at?: string | null
@@ -7045,6 +7078,69 @@ export type Database = {
           reason?: string | null
           severity?: string
           state?: string
+        }
+        Relationships: []
+      }
+      wine_order_gift_intents: {
+        Row: {
+          bottle_count: number
+          buyer_email: string | null
+          buyer_name: string | null
+          buyer_user_id: string | null
+          created_at: string
+          expires_at: string
+          gift_message: string | null
+          gift_wrap: boolean
+          id: string
+          matched_at: string | null
+          matched_vs_order_id: string | null
+          recipient_email: string
+          recipient_emailed_at: string | null
+          recipient_name: string
+          recipient_shipped_emailed_at: string | null
+          source: string
+          subtotal_cents: number | null
+          vinoshipper_customer_id: string | null
+        }
+        Insert: {
+          bottle_count?: number
+          buyer_email?: string | null
+          buyer_name?: string | null
+          buyer_user_id?: string | null
+          created_at?: string
+          expires_at?: string
+          gift_message?: string | null
+          gift_wrap?: boolean
+          id?: string
+          matched_at?: string | null
+          matched_vs_order_id?: string | null
+          recipient_email: string
+          recipient_emailed_at?: string | null
+          recipient_name: string
+          recipient_shipped_emailed_at?: string | null
+          source?: string
+          subtotal_cents?: number | null
+          vinoshipper_customer_id?: string | null
+        }
+        Update: {
+          bottle_count?: number
+          buyer_email?: string | null
+          buyer_name?: string | null
+          buyer_user_id?: string | null
+          created_at?: string
+          expires_at?: string
+          gift_message?: string | null
+          gift_wrap?: boolean
+          id?: string
+          matched_at?: string | null
+          matched_vs_order_id?: string | null
+          recipient_email?: string
+          recipient_emailed_at?: string | null
+          recipient_name?: string
+          recipient_shipped_emailed_at?: string | null
+          source?: string
+          subtotal_cents?: number | null
+          vinoshipper_customer_id?: string | null
         }
         Relationships: []
       }

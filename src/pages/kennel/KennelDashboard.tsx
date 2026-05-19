@@ -410,18 +410,7 @@ export default function KennelDashboard() {
           <p className="text-sm text-muted-foreground mt-1">{periodMeta.label === "YTD" ? "Year to date" : `Last ${periodMeta.label}`} · all channels</p>
         </div>
         <div className="flex gap-1 items-center flex-wrap">
-          {RANGE_TABS.map((tab) => (
-            <Button
-              key={String(tab.value)}
-              size="sm"
-              variant={range === tab.value ? "default" : "outline"}
-              onClick={() => setRange(tab.value)}
-              style={{ borderRadius: 0 }}
-              className="uppercase tracking-brand text-xs"
-            >
-              {tab.label}
-            </Button>
-          ))}
+          <DateRangeControls start={start} end={end} setStart={setStart} setEnd={setEnd} />
           <Button
             size="sm"
             variant="outline"

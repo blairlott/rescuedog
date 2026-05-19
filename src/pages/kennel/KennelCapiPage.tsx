@@ -264,7 +264,7 @@ export default function KennelCapiPage() {
               <div className="text-xs text-muted-foreground truncate">
                 {oauthHealth == null
                   ? "Click check to probe the refresh token."
-                  : oauthHealth.healthy
+                  : oauthHealth.healthy === true
                   ? `Healthy · customer ${oauthHealth.customer_id}`
                   : `Failed · ${oauthHealth.hint ?? oauthHealth.error}`}
               </div>

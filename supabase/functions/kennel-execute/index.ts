@@ -390,9 +390,29 @@ Deno.serve(async (req) => {
 
     // Auto-execute hook: if approved and per-channel guardrails allow, dispatch immediately.
     let autoResult: any = null;
+    let supersededCount = 0;
     if (action === "approve") {
       const { data: freshRec } = await admin.from("ad_recommendations").select("*").eq("id", recommendation_id).maybeSingle();
       if (freshRec) {
+        // Supersede other pending recs targeting the same channel+kind+entity.
+        const entityId = freshRec.payload?.entity_id ?? null;
+        const q = admin
+          .from("ad_recommendations")
+          .update({
+            status: "rejected",
+            rejection_reason: `Superseded by approved recommendation ${freshRec.id.slice(0, 8)}`,
+            reviewed_by: userId,
+            reviewed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("status", "pending")
+          .eq("kind", freshRec.kind)
+          .neq("id", freshRec.id);
+        if (freshRec.channel_id) q.eq("channel_id", freshRec.channel_id);
+        if (entityId) q.eq("payload->>entity_id", String(entityId));
+        const { data: superseded } = await q.select("id");
+        supersededCount = superseded?.length ?? 0;
+
         const decision = await shouldAutoExecute(admin, freshRec);
         if (decision.go) {
           autoResult = await runExecute(admin, recommendation_id, userId, "auto", notes ?? "auto-executed after approve");
@@ -401,7 +421,7 @@ Deno.serve(async (req) => {
         }
       }
     }
-    return json({ ok: true, recommendation: data, auto: autoResult });
+    return json({ ok: true, recommendation: data, auto: autoResult, superseded: supersededCount });
   }
 
   // execute / rollback paths

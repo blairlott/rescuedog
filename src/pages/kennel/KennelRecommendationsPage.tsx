@@ -69,8 +69,9 @@ export default function KennelRecommendationsPage() {
   const filtered = useMemo(() => {
     const list = filter === "all" ? recs : recs.filter((r) => r.status === filter);
     if (filter === "pending") {
+      // Newest first
       return [...list].sort(
-        (a, b) => b.projected_impact_cents * b.confidence - a.projected_impact_cents * a.confidence,
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
     }
     return list;
@@ -84,7 +85,10 @@ export default function KennelRecommendationsPage() {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success(`Recommendation ${action}d`);
+      const sup = (data as any)?.superseded ?? 0;
+      toast.success(
+        `Recommendation ${action}d${sup > 0 ? ` · ${sup} duplicate${sup === 1 ? "" : "s"} cleared` : ""}`,
+      );
     } catch (e: any) {
       toast.error(e.message ?? "Action failed");
     } finally {

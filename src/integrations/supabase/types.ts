@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ab_checkout_intents: {
+        Row: {
+          ab_test: string
+          cart_id: string | null
+          created_at: string
+          email: string | null
+          ga4_client_id: string | null
+          gclid: string | null
+          id: string
+          site_variant: string
+          user_agent: string | null
+        }
+        Insert: {
+          ab_test: string
+          cart_id?: string | null
+          created_at?: string
+          email?: string | null
+          ga4_client_id?: string | null
+          gclid?: string | null
+          id?: string
+          site_variant: string
+          user_agent?: string | null
+        }
+        Update: {
+          ab_test?: string
+          cart_id?: string | null
+          created_at?: string
+          email?: string | null
+          ga4_client_id?: string | null
+          gclid?: string | null
+          id?: string
+          site_variant?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       access_requests: {
         Row: {
           created_at: string

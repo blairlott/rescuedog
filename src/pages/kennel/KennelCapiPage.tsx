@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Send, Activity, Flame, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Send, Activity, Flame, CheckCircle2, XCircle, Clock, ShieldCheck } from "lucide-react";
 
 const SHARP = { borderRadius: 0 } as const;
 
@@ -36,6 +36,12 @@ export default function KennelCapiPage() {
     test_event_code: "TEST12345",
   });
   const [sending, setSending] = useState(false);
+  const [checkingHealth, setCheckingHealth] = useState(false);
+  const [oauthHealth, setOauthHealth] = useState<
+    | { healthy: true; customer_id: string; checked_at: string; auto_enabled_oci?: boolean }
+    | { healthy: false; error: string; hint?: string | null; checked_at: string }
+    | null
+  >(null);
 
   const load = async () => {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -52,6 +58,27 @@ export default function KennelCapiPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const checkGoogleHealth = async () => {
+    setCheckingHealth(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("google-ads-health", { body: {} });
+      if (error) throw error;
+      setOauthHealth(data as any);
+      if ((data as any)?.healthy) {
+        toast.success("Google OAuth healthy", {
+          description: (data as any)?.auto_enabled_oci ? "OCI LTV upload auto-enabled." : "OCI flag already on.",
+        });
+      } else {
+        toast.error("Google OAuth unhealthy", { description: (data as any)?.hint ?? (data as any)?.error });
+      }
+      load();
+    } catch (e: any) {
+      toast.error("Health check failed", { description: e?.message ?? String(e) });
+    } finally {
+      setCheckingHealth(false);
+    }
+  };
 
   const toggleFlag = async (key: string, next: boolean) => {
     const { error } = await supabase.from("app_settings").upsert({ key, value: next }, { onConflict: "key" });
@@ -228,6 +255,23 @@ export default function KennelCapiPage() {
               <div className="text-xs text-muted-foreground">Auto-flips on when Google OAuth healthy</div>
             </div>
             <Switch checked={ociEnabled} onCheckedChange={(v) => toggleFlag("kennel_oci_enabled", v)} />
+          </div>
+          <div className="border-t border-border pt-3 flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-xs text-muted-foreground uppercase flex items-center gap-1">
+                <ShieldCheck className="h-3 w-3" /> Google OAuth
+              </div>
+              <div className="text-xs text-muted-foreground truncate">
+                {oauthHealth == null
+                  ? "Click check to probe the refresh token."
+                  : oauthHealth.healthy
+                  ? `Healthy · customer ${oauthHealth.customer_id}`
+                  : `Failed · ${oauthHealth.hint ?? oauthHealth.error}`}
+              </div>
+            </div>
+            <Button size="sm" variant="outline" style={SHARP} onClick={checkGoogleHealth} disabled={checkingHealth}>
+              {checkingHealth ? "Checking…" : "Check"}
+            </Button>
           </div>
         </Card>
       </div>

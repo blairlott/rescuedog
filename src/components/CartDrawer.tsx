@@ -79,7 +79,6 @@ export const CartDrawer = () => {
   const [vsCheckoutOpen, setVsCheckoutOpen] = useState(false);
   const [dualConfirmOpen, setDualConfirmOpen] = useState(false);
   const [shopifyHandoffOpen, setShopifyHandoffOpen] = useState(false);
-  const pendingShopifyUrlRef = useRef<string | null>(null);
   // Surfaces a manual "Resume wine checkout" button as a fallback whenever
   // the auto-resume bailed (snapshot mismatch, expired, or user dismissed
   // the toast before clicking the action).

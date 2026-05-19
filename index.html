@@ -26,6 +26,21 @@
       })(window,document,'script','dataLayer','GTM-NHTH66HM');
     </script>
     <!-- End Google Tag Manager -->
+    <!-- Vinoshipper Injector — owns wine cart + checkout (PCI / age verify / tax / shipping). -->
+    <script>
+      window.document.addEventListener('vinoshipper:loaded', function () {
+        try {
+          window.top.Vinoshipper.init(2212, {
+            theme: 'red',
+            cartPosition: 'end',
+            cartButton: false,
+          });
+        } catch (e) {
+          console.error('[Vinoshipper] init failed', e);
+        }
+      }, false);
+    </script>
+    <script src="https://vinoshipper.com/injector/index.js" async></script>
   </head>
 
   <body>

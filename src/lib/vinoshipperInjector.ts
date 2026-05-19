@@ -11,7 +11,7 @@
 type VsInjector = {
   onProductAdd: (productId: number, qty?: number) => Promise<unknown>;
   cartOpen: () => void;
-  getCart?: () => unknown;
+  getCart?: () => { id?: string; cartId?: string; uuid?: string } | null;
 };
 
 const getVs = (): VsInjector | null => {
@@ -60,4 +60,27 @@ export async function addLinesAndOpenCart(lines: VsCartLine[]): Promise<void> {
     await vs.onProductAdd(line.productId, line.quantity);
   }
   vs.cartOpen();
+}
+
+/**
+ * Push all lines into the Vinoshipper cart, then redirect the browser to
+ * Vinoshipper's hosted cart page (cartId + ret URL). This is the "one click
+ * to checkout" flow — skips the slide-out drawer entirely.
+ */
+export async function addLinesAndGoToHostedCart(lines: VsCartLine[]): Promise<void> {
+  const vs = await waitForVinoshipper();
+  if (!vs) throw new Error("Vinoshipper Injector did not load");
+  for (const line of lines) {
+    if (!Number.isFinite(line.productId) || line.quantity <= 0) continue;
+    await vs.onProductAdd(line.productId, line.quantity);
+  }
+  // Pull the server-side cart id the injector just created.
+  const cart = vs.getCart?.() ?? null;
+  const cartId =
+    (cart && (cart.cartId || cart.id || cart.uuid)) || null;
+  const ret = encodeURIComponent(window.location.href);
+  const url = cartId
+    ? `https://vinoshipper.com/cart?cartId=${encodeURIComponent(cartId)}&ret=${ret}`
+    : `https://vinoshipper.com/cart?ret=${ret}`;
+  window.location.href = url;
 }

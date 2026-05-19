@@ -5,7 +5,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { CORS, J, FactRow, isAuthorized, makeAdminClient, writeFacts, ensureChannel } from "../_shared/facts-writer.ts";
 
-const BASE = "https://ads.instacart.com/api/v2";
+const BASE = "https://api.ads.instacart.com/api/v2";
 const ADV = Deno.env.get("INSTACART_ADS_ADVERTISER_ID");
 const WINDOW_DAYS = 90; // Instacart Reports API caps date ranges around this
 

@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { TrendingUp, RefreshCw } from "lucide-react";
 import {
-  DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween, formatAxisDate,
+  DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween, formatAxisDate, pickBucket,
 } from "./DateRangeControls";
 
 type Point = {
@@ -34,7 +34,7 @@ type ForecastRow = {
   generated_at: string;
 };
 
-const PLATFORM_OPTS = ["all", "meta", "google", "instacart"] as const;
+const PLATFORM_OPTS = ["all", "meta", "google"] as const;
 type PlatformOpt = typeof PLATFORM_OPTS[number];
 
 interface Props {
@@ -45,9 +45,11 @@ interface Props {
   end?: Date;
   setStart?: (d: Date) => void;
   setEnd?: (d: Date) => void;
+  /** When the range picker is rendered higher up in the page, hide this tile's copy. */
+  hidePicker?: boolean;
 }
 
-export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp, setStart: setStartProp, setEnd: setEndProp }: Props) {
+export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp, setStart: setStartProp, setEnd: setEndProp, hidePicker }: Props) {
   const qc = useQueryClient();
   const [platform, setPlatform] = useState<PlatformOpt>(lockPlatform ?? "all");
   const [busy, setBusy] = useState(false);
@@ -62,9 +64,12 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
   const horizonDays = Math.max(1, Math.min(1095, daysBetween(today, end > today ? end : today)));
 
   const activePlatform = lockPlatform ?? platform;
+  const spanDays = Math.max(1, daysBetween(start, end));
+  const bucket = pickBucket(spanDays);
+  const keyOf = (date: string) => bucket === "day" ? date : date.slice(0, 7);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["forecast", activePlatform],
+    queryKey: ["forecast", activePlatform, horizonDays, lookbackDays],
     queryFn: async () => {
       const { data } = await supabase
         .from("ad_forecasts" as any)
@@ -90,9 +95,6 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
         .map((c: any) => c.id);
       const startIso = isoDay(start);
       const todayIso = isoDay(today);
-      const spanDays = Math.max(1, daysBetween(start, today));
-      const bucketMonthly = spanDays > 120;
-      const keyOf = (date: string) => bucketMonthly ? date.slice(0, 7) : date;
 
       // 1) Paid spend + paid-attributed revenue from ad_performance_daily.
       const map = new Map<string, { spend: number; revenue: number }>();
@@ -163,11 +165,29 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
   const chartData = useMemo(() => {
     const todayIso = isoDay(today);
     const hist = (history ?? []).filter((p) => p.date <= todayIso);
-    const future = (data?.series?.points ?? [])
+    // Re-bucket the forecast series so its granularity matches history (avoids a daily/monthly
+    // x-axis cliff at the "today" boundary on long ranges).
+    const futRaw = (data?.series?.points ?? [])
       .filter((p) => p.date > todayIso)
       .slice(0, horizonDays);
+    const futMap = new Map<string, Point>();
+    for (const p of futRaw) {
+      const k = keyOf(p.date);
+      const cur = futMap.get(k);
+      if (!cur) {
+        futMap.set(k, { ...p, date: k });
+      } else {
+        cur.spend += p.spend;
+        cur.revenue += p.revenue;
+        cur.revenue_lower += p.revenue_lower;
+        cur.revenue_upper += p.revenue_upper;
+      }
+    }
+    const future = Array.from(futMap.values())
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((p) => ({ ...p, roas: p.spend > 0 ? p.revenue / p.spend : 0 }));
     return [...hist, ...future];
-  }, [data, history, horizonDays, today]);
+  }, [data, history, horizonDays, today, bucket]);
 
   // Boundary tick = the date where forecast begins (first future point), or today if absent.
   const boundaryDate = useMemo(() => {
@@ -221,7 +241,8 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
   const firstRunRef = useRef(true);
   useEffect(() => {
     if (firstRunRef.current) { firstRunRef.current = false; return; }
-    const t = setTimeout(() => { generate(); }, 400);
+    if (busy) return;
+    const t = setTimeout(() => { generate(); }, 1500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isoDay(start), isoDay(end), activePlatform]);
@@ -231,7 +252,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
       <header className="flex items-center justify-between mb-3 flex-wrap gap-3">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" />
-          <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">E-commerce Predictive Timeline</h2>
+          <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">Paid Media Predictive Timeline</h2>
           <span className="text-[10px] uppercase tracking-brand text-muted-foreground">
             · {isoDay(start)} → {isoDay(end)} · {lookbackDays}d hist / {horizonDays}d horizon
           </span>
@@ -254,17 +275,26 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
               ))}
             </div>
           )}
-          <DateRangeControls
-            start={start} end={end} setStart={setStart} setEnd={setEnd}
-            extraSlot={
-              <Button size="sm" variant="outline" onClick={generate} disabled={busy}
-                style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7 px-2 ml-1"
-              >
-                <RefreshCw className={`h-3 w-3 mr-1 ${busy ? "animate-spin" : ""}`} />
-                {busy ? "Modeling…" : "Regenerate"}
-              </Button>
-            }
-          />
+          {hidePicker ? (
+            <Button size="sm" variant="outline" onClick={generate} disabled={busy}
+              style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7 px-2 ml-1"
+            >
+              <RefreshCw className={`h-3 w-3 mr-1 ${busy ? "animate-spin" : ""}`} />
+              {busy ? "Modeling…" : "Regenerate"}
+            </Button>
+          ) : (
+            <DateRangeControls
+              start={start} end={end} setStart={setStart} setEnd={setEnd}
+              extraSlot={
+                <Button size="sm" variant="outline" onClick={generate} disabled={busy}
+                  style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7 px-2 ml-1"
+                >
+                  <RefreshCw className={`h-3 w-3 mr-1 ${busy ? "animate-spin" : ""}`} />
+                  {busy ? "Modeling…" : "Regenerate"}
+                </Button>
+              }
+            />
+          )}
         </div>
       </header>
 

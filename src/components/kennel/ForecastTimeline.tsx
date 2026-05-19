@@ -364,7 +364,18 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
               />
             </div>
           )}
-          <div style={{ width: "100%", height: 280 }}>
+          <div className="relative" style={{ width: "100%", height: 280 }}>
+            {todayMarkerRatio !== null && (
+              <div
+                className="pointer-events-none absolute top-0 bottom-8 z-10"
+                style={{ left: `calc(${todayMarkerRatio * 100}% + ${28 - todayMarkerRatio * 42}px)` }}
+              >
+                <div className="h-full border-l-2 border-foreground" />
+                <div className="absolute -top-4 -translate-x-1/2 bg-background px-1 text-[10px] font-extrabold uppercase tracking-brand text-foreground">
+                  Today
+                </div>
+              </div>
+            )}
             <ResponsiveContainer>
               <ComposedChart data={chartData} margin={{ top: 24, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />

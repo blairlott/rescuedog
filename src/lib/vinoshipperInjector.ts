@@ -9,6 +9,7 @@
  * Source: https://developer.vinoshipper.com/docs/injector-methods
  */
 type VsInjector = {
+  initCartData?: (cartId?: string | null) => Promise<unknown>;
   onProductAdd: (productId: number, qty?: number) => Promise<unknown>;
   cartOpen: () => void;
   getCart?: () => { id?: string; cartId?: string; uuid?: string } | null;
@@ -72,6 +73,9 @@ export async function addLinesAndOpenCart(lines: VsCartLine[]): Promise<void> {
 export async function addLinesAndGoToHostedCart(lines: VsCartLine[]): Promise<void> {
   const vs = await waitForVinoshipper(10000);
   if (!vs) throw new Error("Vinoshipper Injector did not load");
+  if (!vs.getCart?.()?.cartId) {
+    await vs.initCartData?.(null);
+  }
   for (const line of lines) {
     if (!Number.isFinite(line.productId) || line.quantity <= 0) continue;
     await vs.onProductAdd(line.productId, line.quantity);

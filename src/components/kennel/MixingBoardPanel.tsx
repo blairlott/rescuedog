@@ -250,6 +250,41 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Single row in the side-by-side baseline vs what-if compare grid. */
+function CompareRow({
+  label,
+  value,
+  delta,
+  deltaUp,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  delta?: string;
+  deltaUp?: boolean;
+  tone?: "default" | "muted" | "spend" | "roas";
+}) {
+  const valueTone =
+    tone === "muted" ? "text-white/60"
+    : tone === "spend" ? "text-[hsl(142,76%,55%)]"
+    : tone === "roas" ? "text-[hsl(45,95%,55%)]"
+    : "text-white";
+  const deltaTone = delta
+    ? deltaUp ? "text-[hsl(142,76%,55%)]" : "text-[hsl(0,75%,65%)]"
+    : "";
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[9px] uppercase tracking-brand text-white/40">{label}</span>
+      <div className="flex items-baseline gap-1.5">
+        <span className={`text-sm font-bold tabular-nums ${valueTone}`}>{value}</span>
+        {delta && (
+          <span className={`text-[9px] tabular-nums font-bold ${deltaTone}`}>{delta}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Generic KPI meter: any reasonable metric with a target/baseline + range. */
 function KpiMeter({
   label,

@@ -14,6 +14,7 @@ import IntelligencePanel from "@/components/kennel/IntelligencePanel";
 import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
 import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
 import { RefreshButton } from "@/components/kennel/RefreshButton";
+import { CronStatusPanel } from "@/components/kennel/CronStatusPanel";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -473,6 +474,10 @@ export default function KennelChannelsPage() {
           <RefreshCw className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
         </Button>
         <RefreshButton label="Refresh data" invalidateKeys={["forecast"]} className="ml-2" />
+      </div>
+
+      <div className="mb-4">
+        <CronStatusPanel />
       </div>
 
       {current?.level === "campaign" && (platform === "meta" || platform === "google" || platform === "instacart") && (

@@ -76,8 +76,12 @@ export function BidModifiersPanel() {
 
       {isLoading ? (
         <p className="text-xs text-muted-foreground">Loading…</p>
+      ) : !data || data.length === 0 || data.every(r => !r.sample_days) ? (
+        <p className="text-xs text-muted-foreground">
+          No samples yet — hit Recompute to seed day-of-week modifiers from the last {data?.[0]?.source_window_days ?? 90} days.
+        </p>
       ) : (
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
           {DAYS.map((label, i) => {
             const row = data?.find(r => r.day_of_week === i);
             const mod = Number(row?.modifier ?? 1);
@@ -90,18 +94,21 @@ export function BidModifiersPanel() {
             return (
               <div
                 key={i}
-                className={`p-2 border ${isToday ? "border-foreground border-2 bg-muted" : "border-border"}`}
+                className={`p-1.5 sm:p-2 border min-w-0 ${isToday ? "border-foreground border-2 bg-muted" : "border-border"}`}
                 style={{ borderRadius: 0 }}
-                title={row?.notes ?? ""}
+                title={(row?.notes ?? "") + (isToday ? " (today)" : "")}
               >
-                <div className="text-[10px] uppercase tracking-brand text-muted-foreground font-bold">
-                  {label}{isToday ? " · today" : ""}
+                <div className="flex items-center justify-between gap-1 text-[10px] uppercase tracking-brand text-muted-foreground font-bold">
+                  <span>{label}</span>
+                  {isToday && (
+                    <span className="text-[8px] px-1 bg-foreground text-background leading-tight">NOW</span>
+                  )}
                 </div>
-                <div className={`text-lg font-bold tabular-nums ${tone} flex items-center gap-1`}>
-                  <Icon className="h-4 w-4" />
-                  {formatPct(mod)}
+                <div className={`text-base sm:text-lg font-bold tabular-nums ${tone} flex items-center gap-1`}>
+                  <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="truncate">{formatPct(mod)}</span>
                 </div>
-                <div className="text-[10px] text-muted-foreground tabular-nums">
+                <div className="text-[10px] text-muted-foreground tabular-nums truncate">
                   ×{mod.toFixed(2)} · {row?.sample_days ?? 0}d
                 </div>
               </div>

@@ -8682,11 +8682,17 @@ export type Database = {
       wine_subscriptions: {
         Row: {
           cadence: string
+          card_exp_month: number | null
+          card_exp_year: number | null
+          card_expiry_notice_sent_at: string | null
+          card_last4: string | null
           created_at: string
           discount_percent: number
+          dunning_stage: number
           failure_count: number
           id: string
           last_charged_at: string | null
+          last_dunning_sent_at: string | null
           last_error: string | null
           last_order_id: string | null
           next_ship_date: string | null
@@ -8707,11 +8713,17 @@ export type Database = {
         }
         Insert: {
           cadence?: string
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_expiry_notice_sent_at?: string | null
+          card_last4?: string | null
           created_at?: string
           discount_percent?: number
+          dunning_stage?: number
           failure_count?: number
           id?: string
           last_charged_at?: string | null
+          last_dunning_sent_at?: string | null
           last_error?: string | null
           last_order_id?: string | null
           next_ship_date?: string | null
@@ -8732,11 +8744,17 @@ export type Database = {
         }
         Update: {
           cadence?: string
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_expiry_notice_sent_at?: string | null
+          card_last4?: string | null
           created_at?: string
           discount_percent?: number
+          dunning_stage?: number
           failure_count?: number
           id?: string
           last_charged_at?: string | null
+          last_dunning_sent_at?: string | null
           last_error?: string | null
           last_order_id?: string | null
           next_ship_date?: string | null

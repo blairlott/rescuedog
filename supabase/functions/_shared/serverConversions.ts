@@ -184,6 +184,15 @@ export async function forwardPurchaseConversion(input: ConversionInput): Promise
   ga4: { ok: boolean; skipped?: boolean; error?: string; debug?: any };
   meta: { ok: boolean; skipped?: boolean; error?: string; debug?: any };
 }> {
+  // Suppress all paid-media signals for internal/test accounts so they
+  // never pollute ad attribution, audiences, or optimization.
+  const { isInternalEmail } = await import("./internalUsers.ts");
+  if (isInternalEmail(input.email)) {
+    return {
+      ga4: { ok: true, skipped: true, error: "internal_user_suppressed" },
+      meta: { ok: true, skipped: true, error: "internal_user_suppressed" },
+    };
+  }
   const [ga4, meta] = await Promise.all([sendGa4(input), sendMetaCapi(input)]);
   return { ga4, meta };
 }

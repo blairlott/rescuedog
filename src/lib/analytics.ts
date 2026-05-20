@@ -7,6 +7,8 @@
  * All events follow GA4 ecommerce schema so a single GTM tag works for both
  * the wine site and /merch.
  */
+import { isInternalVisitor } from "./internalUsers";
+
 type DLItem = {
   item_id: string;
   item_name: string;
@@ -19,6 +21,8 @@ type DLItem = {
 
 function push(event: string, payload: Record<string, unknown>) {
   if (typeof window === "undefined") return;
+  // Suppress all GTM/GA4/Meta/TikTok/Pinterest signals for internal/test users.
+  if (isInternalVisitor()) return;
   try {
     const w = window as unknown as { dataLayer?: Array<Record<string, unknown>> };
     w.dataLayer = w.dataLayer || [];

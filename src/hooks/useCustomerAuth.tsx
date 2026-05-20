@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { setInternalUserEmail } from "@/lib/internalUsers";
 
 interface CustomerAuthContextType {
   user: User | null;
@@ -42,6 +43,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        setInternalUserEmail(session?.user?.email ?? null);
         if (session?.user) {
           // Defer to avoid running inside the auth callback
           setTimeout(() => ensureVinoshipperLink(session.user.id), 0);
@@ -53,6 +55,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      setInternalUserEmail(session?.user?.email ?? null);
       if (session?.user) {
         setTimeout(() => ensureVinoshipperLink(session.user.id), 0);
       }

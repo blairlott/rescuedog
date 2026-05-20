@@ -113,6 +113,12 @@ async function sendMetaEvent(
   const token = Deno.env.get("META_CAPI_TOKEN");
   if (!pixelId || !token) return { ok: true, skipped: true as const };
 
+  // Suppress internal/test accounts from paid-media signals.
+  const { isInternalEmail } = await import("../_shared/internalUsers.ts");
+  if (isInternalEmail(body.email)) {
+    return { ok: true, skipped: true as const };
+  }
+
   const [em, ph, fn, ln, ct, st, zp, country] = await Promise.all([
     sha256Lower(body.email),
     sha256Lower(body.phone?.replace(/\D/g, "")),

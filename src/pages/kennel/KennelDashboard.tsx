@@ -438,6 +438,8 @@ export default function KennelDashboard() {
 
           <StrategyMixPanel scope="global" />
 
+          <AiInsights snapshot={aiSnapshot} rangeLabel={periodMeta.label} />
+
           <p className="text-[11px] uppercase tracking-brand text-muted-foreground">
             Hover any section below and drag the handle on the left to reorder. Order is saved to this browser.
           </p>
@@ -445,10 +447,6 @@ export default function KennelDashboard() {
           <SortableDashboard
             storageKey="kennel-dashboard-order-v2"
             items={([
-              {
-                id: "ai-insights",
-                node: <AiInsights snapshot={aiSnapshot} rangeLabel={periodMeta.label} />,
-              },
               {
                 id: "channel-breakdown",
                 node: (

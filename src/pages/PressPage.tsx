@@ -9,7 +9,7 @@ const FACTS = [
   { label: "Region", value: "Lodi, CA — sustainably farmed" },
   { label: "Giveback", value: "50% of profits to 501(c)(3) dog-rescue partners" },
   { label: "Distribution", value: "DTC + wholesale across most U.S. states" },
-  { label: "Wine Club", value: "'The Pack' — access-based loyalty, 20% off" },
+  { label: "Wine Club", value: "'The Pack' — access-based loyalty, 20% off (25% on full cases)" },
   { label: "Ambassador program", value: "12% commission, managed via impact.com" },
 ];
 

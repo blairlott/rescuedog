@@ -74,6 +74,10 @@ export function PackSignupPopup() {
         status: "email_captured",
         source: "pack_signup_popup",
       });
+      // Push to Mailchimp (best-effort; failure shouldn't block UX)
+      supabase.functions.invoke("pack-subscribe", {
+        body: { email, source: "pack_signup_popup" },
+      }).catch((err) => console.warn("[pack-subscribe] mailchimp sync failed", err));
       try { localStorage.setItem(SHARED_DISMISS_KEY, "true"); } catch {}
       setDone(true);
       toast.success("Welcome to The Pack");

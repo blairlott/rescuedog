@@ -202,6 +202,66 @@ export type Database = {
           },
         ]
       }
+      ad_campaigns: {
+        Row: {
+          clicks_mtd: number
+          conversions_mtd: number
+          created_at: string
+          daily_budget_cents: number | null
+          external_id: string | null
+          id: string
+          impressions_mtd: number
+          last_synced_at: string | null
+          lifetime_budget_cents: number | null
+          metadata: Json
+          name: string
+          objective: string | null
+          platform_slug: string
+          sales_mtd_cents: number
+          spend_mtd_cents: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          clicks_mtd?: number
+          conversions_mtd?: number
+          created_at?: string
+          daily_budget_cents?: number | null
+          external_id?: string | null
+          id?: string
+          impressions_mtd?: number
+          last_synced_at?: string | null
+          lifetime_budget_cents?: number | null
+          metadata?: Json
+          name: string
+          objective?: string | null
+          platform_slug: string
+          sales_mtd_cents?: number
+          spend_mtd_cents?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          clicks_mtd?: number
+          conversions_mtd?: number
+          created_at?: string
+          daily_budget_cents?: number | null
+          external_id?: string | null
+          id?: string
+          impressions_mtd?: number
+          last_synced_at?: string | null
+          lifetime_budget_cents?: number | null
+          metadata?: Json
+          name?: string
+          objective?: string | null
+          platform_slug?: string
+          sales_mtd_cents?: number
+          spend_mtd_cents?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ad_channels: {
         Row: {
           api_endpoint: string | null
@@ -444,6 +504,50 @@ export type Database = {
           },
         ]
       }
+      ad_groups: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          default_bid_cents: number | null
+          external_id: string | null
+          id: string
+          metadata: Json
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          default_bid_cents?: number | null
+          external_id?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          default_bid_cents?: number | null
+          external_id?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_groups_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_guardrails: {
         Row: {
           auto_execute_enabled: boolean
@@ -506,6 +610,90 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_keywords: {
+        Row: {
+          ad_group_id: string | null
+          bid_cents: number | null
+          campaign_id: string | null
+          clicks_30d: number
+          conversions_30d: number
+          created_at: string
+          external_id: string | null
+          id: string
+          impressions_30d: number
+          keyword: string
+          last_synced_at: string | null
+          match_type: string
+          metadata: Json
+          platform_slug: string
+          quality_score: number | null
+          sales_30d_cents: number
+          spend_30d_cents: number
+          status: string
+          suggested_bid_cents: number | null
+          updated_at: string
+        }
+        Insert: {
+          ad_group_id?: string | null
+          bid_cents?: number | null
+          campaign_id?: string | null
+          clicks_30d?: number
+          conversions_30d?: number
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          impressions_30d?: number
+          keyword: string
+          last_synced_at?: string | null
+          match_type?: string
+          metadata?: Json
+          platform_slug: string
+          quality_score?: number | null
+          sales_30d_cents?: number
+          spend_30d_cents?: number
+          status?: string
+          suggested_bid_cents?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ad_group_id?: string | null
+          bid_cents?: number | null
+          campaign_id?: string | null
+          clicks_30d?: number
+          conversions_30d?: number
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          impressions_30d?: number
+          keyword?: string
+          last_synced_at?: string | null
+          match_type?: string
+          metadata?: Json
+          platform_slug?: string
+          quality_score?: number | null
+          sales_30d_cents?: number
+          spend_30d_cents?: number
+          status?: string
+          suggested_bid_cents?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_keywords_ad_group_id_fkey"
+            columns: ["ad_group_id"]
+            isOneToOne: false
+            referencedRelation: "ad_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_keywords_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ad_campaigns"
             referencedColumns: ["id"]
           },
         ]
@@ -687,6 +875,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ad_platforms: {
+        Row: {
+          alcohol_compliant: boolean | null
+          api_maturity: string | null
+          category: string
+          created_at: string
+          display_name: string
+          docs_url: string | null
+          fit_score: number
+          homepage_url: string | null
+          id: string
+          last_evaluated_at: string | null
+          metadata: Json
+          notes: string | null
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          alcohol_compliant?: boolean | null
+          api_maturity?: string | null
+          category?: string
+          created_at?: string
+          display_name: string
+          docs_url?: string | null
+          fit_score?: number
+          homepage_url?: string | null
+          id?: string
+          last_evaluated_at?: string | null
+          metadata?: Json
+          notes?: string | null
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          alcohol_compliant?: boolean | null
+          api_maturity?: string | null
+          category?: string
+          created_at?: string
+          display_name?: string
+          docs_url?: string | null
+          fit_score?: number
+          homepage_url?: string | null
+          id?: string
+          last_evaluated_at?: string | null
+          metadata?: Json
+          notes?: string | null
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       ad_recommendations: {
         Row: {
@@ -871,6 +1113,68 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_search_terms: {
+        Row: {
+          clicks: number
+          conversions: number
+          created_at: string
+          id: string
+          impressions: number
+          keyword_id: string | null
+          metadata: Json
+          observed_at: string
+          platform_slug: string
+          query: string
+          resolved_at: string | null
+          resolved_by: string | null
+          sales_cents: number
+          spend_cents: number
+          suggested_action: string | null
+        }
+        Insert: {
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          id?: string
+          impressions?: number
+          keyword_id?: string | null
+          metadata?: Json
+          observed_at?: string
+          platform_slug: string
+          query: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sales_cents?: number
+          spend_cents?: number
+          suggested_action?: string | null
+        }
+        Update: {
+          clicks?: number
+          conversions?: number
+          created_at?: string
+          id?: string
+          impressions?: number
+          keyword_id?: string | null
+          metadata?: Json
+          observed_at?: string
+          platform_slug?: string
+          query?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          sales_cents?: number
+          spend_cents?: number
+          suggested_action?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_search_terms_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "ad_keywords"
             referencedColumns: ["id"]
           },
         ]
@@ -6114,6 +6418,51 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_radar_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          dismissed_at: string | null
+          dismissed_by: string | null
+          id: string
+          platform_slug: string
+          projected_value: Json | null
+          recommended_action: string | null
+          severity: string
+          source_url: string | null
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          platform_slug: string
+          projected_value?: Json | null
+          recommended_action?: string | null
+          severity?: string
+          source_url?: string | null
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          platform_slug?: string
+          projected_value?: Json | null
+          recommended_action?: string | null
+          severity?: string
+          source_url?: string | null
+          summary?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       product_reviews: {
         Row: {
           body: string | null
@@ -8503,6 +8852,7 @@ export type Database = {
         }
         Returns: number
       }
+      platform_radar_open_count: { Args: never; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {

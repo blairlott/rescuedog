@@ -109,6 +109,9 @@ const KennelOciLogPage = lazy(() => import("./pages/kennel/KennelOciLogPage"));
 const KennelBackfillsPage = lazy(() => import("./pages/kennel/KennelBackfillsPage"));
 const KennelSelfHealthPage = lazy(() => import("./pages/kennel/KennelSelfHealthPage"));
 const KennelProposalsPage = lazy(() => import("./pages/kennel/KennelProposalsPage"));
+const KennelInstacartAdsPage = lazy(() => import("./pages/kennel/KennelInstacartAdsPage"));
+const KennelKeywordsPage = lazy(() => import("./pages/kennel/KennelKeywordsPage"));
+const KennelPlatformRadarPage = lazy(() => import("./pages/kennel/KennelPlatformRadarPage"));
 const ExecutiveCommandCenter = lazy(() => import("./pages/intelligence/ExecutiveCommandCenter"));
 import { v2Routes } from "./v2/routes";
 import { v3Routes } from "./v3/routes";
@@ -255,6 +258,9 @@ function AppContent() {
         <Route path="integrations" element={<KennelIntegrationsPage />} />
         <Route path="media-buying" element={<KennelMediaBuyingPage />} />
         <Route path="creative-studio" element={<KennelCreativeStudioPage />} />
+        <Route path="instacart-ads" element={<KennelInstacartAdsPage />} />
+        <Route path="keywords" element={<KennelKeywordsPage />} />
+        <Route path="platform-radar" element={<KennelPlatformRadarPage />} />
       </Route>
       <Route path="/intelligence" element={<KennelGuard><ExecutiveCommandCenter /></KennelGuard>} />
       {v2Routes()}

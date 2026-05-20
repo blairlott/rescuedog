@@ -1,8 +1,7 @@
 // Captures today's daily_budget per campaign + MTD spend per channel into guardrail_baseline.
 // Flips prior is_current=true rows to false. Run via pg_cron at 08:00 UTC (00:00 PT) or manually from Settings.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }

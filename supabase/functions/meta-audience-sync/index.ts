@@ -2,8 +2,7 @@
 // Body: { segment_id?: string, segment_key?: string, cadence?: 'weekly'|'monthly' }
 // If cadence given, loops all enabled segments matching that cadence.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 const GRAPH = "https://graph.facebook.com/v21.0";
 const BATCH = 10000;
 

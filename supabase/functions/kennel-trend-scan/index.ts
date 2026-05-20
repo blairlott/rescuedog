@@ -1,7 +1,6 @@
 // Nightly trend scanner. Writes findings to kennel_insights with daily_values for sparklines.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 type Insight = {
   insight_type: string;
   scope_key: string;

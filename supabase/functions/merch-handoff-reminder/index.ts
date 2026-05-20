@@ -1,6 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 /**
  * Scans pending_merch_handoffs for rows in status='pending' that were
  * created more than REMINDER_AFTER_MINUTES ago and emails the customer

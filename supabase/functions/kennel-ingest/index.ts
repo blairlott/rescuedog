@@ -2,8 +2,7 @@
 // Accepts batched performance snapshots and/or recommendations.
 // HMAC-SHA256 verified via header `x-kennel-signature: sha256=<hex>` over the raw request body.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 const ingestHeaders = {
   ...corsHeaders,
   "Access-Control-Allow-Headers":

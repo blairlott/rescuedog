@@ -8,8 +8,7 @@
 //
 // Auth: this fn is invoked server-to-server by vs-dropship-bridge OR by the
 // /v3/admin/printful-sim UI for manual testing.
-
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3";
 

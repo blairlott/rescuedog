@@ -1,4 +1,4 @@
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 import { getGoogleAdsAccessToken, buildGoogleAdsHeaders, isAuthError } from '../_shared/googleAdsAuth.ts';
 
 // Public proxy: Lindy POSTs a GAQL query with a shared bearer token.

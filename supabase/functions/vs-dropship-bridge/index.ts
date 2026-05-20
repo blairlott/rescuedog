@@ -13,8 +13,7 @@
 //    API-platform store using each line's `vendor_variant_id` (sync_variant_id).
 //  - For other partners: writes the order + items only and leaves dispatch to ops / dispatch-fulfillment.
 // See mem/specs/v3-vs-dropship-bridge-spec.md.
-
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3";
 import { vsFetch, type VsWebhookPayload } from "../_shared/vinoshipper.ts";

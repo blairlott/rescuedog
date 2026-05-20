@@ -3,8 +3,7 @@
 // ratio over the last 60 minutes is poor (or all recent dispatches failed),
 // sends a direct Resend email to ops bypassing the Lindy path that may be down.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
 const ADMIN_URL = "https://rescuedog.lovable.app";
 const FROM = "Kennel Health <alerts@rescuedogwines.com>";

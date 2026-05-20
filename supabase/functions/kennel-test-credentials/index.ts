@@ -3,7 +3,7 @@
 // Body: { provider: "yahoo_dsp" | "openweather" | "mailchimp" | "delivery_webhooks" }
 // Returns: { ok: bool, status: "success" | "missing" | "invalid" | "skipped", detail?: string }
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 import { getCredentials } from "../_shared/credentials.ts";
 
 const J = (status: number, body: unknown) =>

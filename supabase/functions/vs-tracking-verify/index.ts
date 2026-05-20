@@ -9,8 +9,7 @@
 // function fabricates a "verified" response so the UI can be exercised.
 //
 // Body: { dropship_order_id?: string, simulate?: boolean, all_pending?: boolean }
-
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { z } from "npm:zod@3";
 import { vsFetch, vsLiveMode } from "../_shared/vinoshipper.ts";

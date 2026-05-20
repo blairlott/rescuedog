@@ -5,8 +5,7 @@
 // confirmed, swap the stub for a real call to:
 //   POST https://vinoshipper.com/api/v3/p/orders/check-compliance
 // (see _shared/vinoshipper.ts for auth helpers).
-
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 import { z } from "npm:zod@3";
 
 const BodySchema = z.object({

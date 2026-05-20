@@ -2,8 +2,7 @@
 // + Vinoshipper poll. Returns aggregate status. Called from the dashboard
 // "Refresh" button.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 function J(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
     status,

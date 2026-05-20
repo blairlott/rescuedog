@@ -6,8 +6,7 @@
 // No writes to VS or Shopify in this phase.
 //
 // See mem/plans/v3-shopify-to-vs-merch-migration.md.
-
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 Deno.serve(async (req) => {

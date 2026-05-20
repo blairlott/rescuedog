@@ -2,8 +2,7 @@
 // auto-pause for Instacart Ads (extensible to other platforms).
 // Cron-driven. Idempotent per (date + entity + rule) via idempotency_key.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 const INSTACART_BASE = "https://api.ads.instacart.com/api/v3";
 const INSTACART_TOKEN_URL = "https://api.ads.instacart.com/oauth/token";
 

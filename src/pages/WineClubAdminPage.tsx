@@ -249,6 +249,8 @@ const WineClubAdminPage = () => {
   const { data: shipments, isLoading: shipmentsLoading } = useAllShipments();
   const { data: managers, refetch: refetchManagers } = useWineClubManagers();
   const qc = useQueryClient();
+  const [memberStatusFilter, setMemberStatusFilter] = useState<string>("all");
+  const [memberSourceFilter, setMemberSourceFilter] = useState<string>("all");
 
   if (authLoading || accessLoading) {
     return (
@@ -265,6 +267,17 @@ const WineClubAdminPage = () => {
   const activeCount = memberships?.filter((m) => m.status === "active").length || 0;
   const totalCount = memberships?.length || 0;
   const pendingShipments = shipments?.filter((s) => ["draft", "ai_suggested", "admin_approved"].includes(s.status)).length || 0;
+
+  const statusCounts = (memberships || []).reduce<Record<string, number>>((acc, m) => {
+    acc[m.status] = (acc[m.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  const filteredMembers = (memberships || []).filter((m) => {
+    if (memberStatusFilter !== "all" && m.status !== memberStatusFilter) return false;
+    if (memberSourceFilter !== "all" && m.source !== memberSourceFilter) return false;
+    return true;
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -341,6 +354,46 @@ const WineClubAdminPage = () => {
                   <p className="text-sm text-muted-foreground">Members will appear here when customers join the wine club.</p>
                 </div>
               ) : (
+                <>
+                  <div className="flex items-center gap-2 flex-wrap mb-4">
+                    {[
+                      { value: "all", label: "All", count: memberships.length },
+                      { value: "active", label: "Active", count: statusCounts.active || 0 },
+                      { value: "paused", label: "On Hold", count: statusCounts.paused || 0 },
+                      { value: "cancelled", label: "Inactive", count: statusCounts.cancelled || 0 },
+                      { value: "pending", label: "Pending", count: statusCounts.pending || 0 },
+                    ].map((f) => (
+                      <Button
+                        key={f.value}
+                        variant={memberStatusFilter === f.value ? "default" : "outline"}
+                        size="sm"
+                        className="text-xs uppercase tracking-brand"
+                        onClick={() => setMemberStatusFilter(f.value)}
+                      >
+                        {f.label}
+                        <Badge variant="secondary" className="ml-2 text-xs">{f.count}</Badge>
+                      </Button>
+                    ))}
+                    <div className="h-6 w-px bg-border mx-2" />
+                    {[
+                      { value: "all", label: "All sources" },
+                      { value: "new", label: "New signups" },
+                      { value: "legacy", label: "Legacy (VS)" },
+                    ].map((f) => (
+                      <Button
+                        key={f.value}
+                        variant={memberSourceFilter === f.value ? "default" : "outline"}
+                        size="sm"
+                        className="text-xs uppercase tracking-brand"
+                        onClick={() => setMemberSourceFilter(f.value)}
+                      >
+                        {f.label}
+                      </Button>
+                    ))}
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      Showing {filteredMembers.length} of {memberships.length}
+                    </span>
+                  </div>
                 <div className="border border-border overflow-auto">
                   <Table>
                     <TableHeader>
@@ -356,7 +409,13 @@ const WineClubAdminPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {memberships.map((m) => (
+                      {filteredMembers.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                            No members match the current filters.
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredMembers.map((m) => (
                         <TableRow key={m.id}>
                           <TableCell className="font-medium">{m.tier?.name || "—"}</TableCell>
                           <TableCell>
@@ -403,6 +462,7 @@ const WineClubAdminPage = () => {
                     </TableBody>
                   </Table>
                 </div>
+                </>
               )}
             </TabsContent>
 

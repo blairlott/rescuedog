@@ -448,34 +448,30 @@ export const CartDrawer = () => {
 
   const runDualCheckout = () => {
     setDualConfirmOpen(false);
-    // Open BOTH popups synchronously inside this confirm-button click —
-    // that's the only gesture we get, so any window.open() that happens
-    // after the async VS injector boot would be blocked by Safari/Chrome.
-    // Merch goes first (URL is already ready), wine popup is handed to
-    // the injector to redirect once the VS hosted cart URL resolves.
-    const merchUrl = getShopifyCheckoutUrl();
-    const merchPopup = merchUrl ? window.open(merchUrl, "_blank", "noopener,noreferrer") : null;
-    const winePopup = window.open("about:blank", "_blank");
-    logCheckoutEvent("dual_checkout_started", {
-      wine_items: wineItems.length,
-      merch_items: merchItems.length,
-      merch_popup_blocked: !merchPopup,
-      wine_popup_blocked: !winePopup,
-    });
-    if (merchUrl && !merchPopup) {
-      // Merch popup was blocked — surface a clear retry rather than dropping
-      // the order. Wine popup (if it opened) gets closed so we don't leave
-      // an orphan blank tab.
-      try { winePopup?.close(); } catch {}
-      toast.error("Please allow popups", {
-        description: "Your browser blocked the checkout tabs. Allow popups for this site, then click Checkout again.",
-      });
-      return;
-    }
+    // NEW dual-checkout flow — no second popup, no popup-blocker roulette.
+    //
+    // Browsers reliably allow ONE window.open() per user gesture; the second
+    // (wine) tab was getting silently swallowed by Safari/Chrome, so the
+    // customer only ever saw the merch tab open.
+    //
+    // Instead we keep wine fully in-app via the VinoshipperCheckoutModal
+    // (which already supports a merch handoff CTA after the wine order
+    // succeeds). Order of operations:
+    //   1. Close the cart drawer
+    //   2. Open the in-app wine checkout modal
+    // The modal's built-in "Continue to merch" handoff fires a *fresh*
+    // user gesture to open Shopify in a new tab after wine completes —
+    // no popup blocker, no orphan tabs, no dropped orders.
     try {
       localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items: merchItems, savedAt: new Date().toISOString() }));
     } catch {}
-    handleCheckoutWines(winePopup);
+    logCheckoutEvent("dual_checkout_started", {
+      wine_items: wineItems.length,
+      merch_items: merchItems.length,
+      flow: "inline_modal",
+    });
+    setIsOpen(false);
+    setVsCheckoutOpen(true);
   };
 
   return (

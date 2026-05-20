@@ -8,7 +8,9 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { US_STATES } from "@/lib/usStates";
 import type { WineClubTier, JoinClubData } from "@/hooks/useWineClub";
-import { ArrowLeft, Wine, Gift, Percent } from "lucide-react";
+import { ArrowLeft, Wine, Gift, Percent, ShieldCheck, AlertTriangle } from "lucide-react";
+import { VinoshipperClubHandoff } from "./VinoshipperClubHandoff";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 
 const winePreferenceOptions = [
   "Bold Reds",
@@ -27,6 +29,10 @@ interface ClubSignupFormProps {
 }
 
 export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSignupFormProps) {
+  const { user } = useCustomerAuth();
+  const [handoffOpen, setHandoffOpen] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [form, setForm] = useState({
     shipping_address_line1: "",
     shipping_address_line2: "",
@@ -50,6 +56,9 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Always persist a local membership draft so we capture preferences,
+    // gift data, rescue partner picks, etc. — Vinoshipper only owns the
+    // card capture + recurring billing.
     onSubmit({
       tier_id: tier.id,
       shipping_address_line1: form.shipping_address_line1,
@@ -61,6 +70,13 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
       is_gift: form.is_gift,
       gift_message: form.is_gift ? form.gift_message : undefined,
     });
+
+    // If this tier is linked to a Vinoshipper Club, immediately open the
+    // inline VS handoff so the customer can enter card-on-file without
+    // leaving /club.
+    if (tier.vinoshipper_join_url) {
+      setHandoffOpen(true);
+    }
   };
 
   const frequencyLabel: Record<string, string> = {
@@ -249,13 +265,56 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
         </div>
       </div>
 
-      {/* Payment Simulation Notice */}
-      <div className="border border-brand-gold/30 bg-brand-gold/5 p-4 mb-8 text-sm">
-        <p className="font-bold text-foreground mb-1">💳 Payment (Simulated)</p>
-        <p className="text-muted-foreground">
-          Payment processing is not yet live. Your membership will be created in simulation mode.
-        </p>
-      </div>
+      {/* Name (used to prefill the Vinoshipper payment step) */}
+      {tier.vinoshipper_join_url && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div>
+            <Label htmlFor="first_name">First Name *</Label>
+            <Input
+              id="first_name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="last_name">Last Name *</Label>
+            <Input
+              id="last_name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Payment notice */}
+      {tier.vinoshipper_join_url ? (
+        <div className="border border-border bg-muted/30 p-4 mb-8 text-sm flex gap-3">
+          <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold text-foreground mb-1">Secure card on file</p>
+            <p className="text-muted-foreground text-xs">
+              After you continue, our compliance & shipping partner (Vinoshipper)
+              will open a secure payment step right here on this page to save your
+              card. Future club shipments ship and bill automatically.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="border border-brand-gold/30 bg-brand-gold/5 p-4 mb-8 text-sm flex gap-3">
+          <AlertTriangle className="h-5 w-5 text-brand-gold shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold text-foreground mb-1">Payment setup pending</p>
+            <p className="text-muted-foreground text-xs">
+              This tier isn't fully linked to Vinoshipper yet. Your preferences
+              and shipping address will be saved, and our team will reach out to
+              complete payment setup before your first shipment.
+            </p>
+          </div>
+        </div>
+      )}
 
       <Button
         type="submit"
@@ -266,16 +325,38 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
           !form.shipping_city ||
           !form.shipping_state ||
           !form.shipping_zip ||
+          (!!tier.vinoshipper_join_url && (!firstName || !lastName)) ||
           (form.is_gift && (!form.gift_recipient_name || !form.gift_recipient_email))
         }
         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold py-6"
       >
         {isSubmitting
           ? "Processing..."
+          : tier.vinoshipper_join_url
+          ? `Continue to Secure Payment`
           : form.is_gift
           ? `Gift ${tier.name}`
           : `Join ${tier.name}`}
       </Button>
+
+      {tier.vinoshipper_join_url && (
+        <VinoshipperClubHandoff
+          open={handoffOpen}
+          onClose={() => setHandoffOpen(false)}
+          joinUrl={tier.vinoshipper_join_url}
+          tierName={tier.name}
+          prefill={{
+            email: user?.email ?? undefined,
+            firstName,
+            lastName,
+            address1: form.shipping_address_line1,
+            address2: form.shipping_address_line2,
+            city: form.shipping_city,
+            state: form.shipping_state,
+            zip: form.shipping_zip,
+          }}
+        />
+      )}
     </form>
   );
 }

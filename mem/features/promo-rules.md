@@ -11,7 +11,8 @@ Audited from rescuedogwines.com on 2026-05-10. **DTC pricing raised May 2026** (
 - Email signup: subscribers receive a code for 10% off their next order (footer capture).
 
 ## Shipping (a la carte)
-- Flat $9.99 on orders of 6+ bottles (continental US, where allowed).
+- **Flat $9.99 on orders of 6–11 bottles** (continental US, where allowed).
+- **12+ bottles: shipping included** (full case threshold — updated May 2026, previously 6+).
 - Under 6 bottles: standard variable shipping.
 - Wine Club scheduled cadence shipments: shipping included (never "free").
 - Mother's Day 6-Pack and similar curated bundles: shipping included.

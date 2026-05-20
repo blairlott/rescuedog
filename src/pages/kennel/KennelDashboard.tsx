@@ -448,6 +448,8 @@ export default function KennelDashboard() {
 
           <StrategyMixPanel scope="global" />
 
+          <WineClubGrowthPanel start={start} end={end} rangeLabel={periodMeta.label} />
+
           <p className="text-[11px] uppercase tracking-brand text-muted-foreground">
             Hover any section below and drag the handle on the left to reorder. Order is saved to this browser.
           </p>
@@ -455,10 +457,6 @@ export default function KennelDashboard() {
           <SortableDashboard
             storageKey="kennel-dashboard-order-v2"
             items={([
-              {
-                id: "wine-club-growth",
-                node: <WineClubGrowthPanel start={start} end={end} rangeLabel={periodMeta.label} />,
-              },
               {
                 id: "channel-breakdown",
                 node: (

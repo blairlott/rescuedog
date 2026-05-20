@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendCapiEventSafe } from "../_shared/metaCapiEvent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,6 +60,33 @@ Deno.serve(async (req) => {
         vinoshipper_order_id: vsOrderId, dispatch_error: null,
       }).eq("id", shipment_id);
       await svc.from("wine_club_events").insert({ user_id: m.user_id, event_type: "shipment_dispatched", metadata: { shipment_id, vsOrderId } });
+      // Meta CAPI: StartTrial on the member's FIRST dispatched shipment.
+      try {
+        const { count: prevDispatched } = await svc
+          .from("wine_club_shipments")
+          .select("id", { count: "exact", head: true })
+          .eq("membership_id", m.id)
+          .eq("status", "shipped")
+          .neq("id", shipment_id);
+        if ((prevDispatched ?? 0) === 0) {
+          const { data: prof } = await svc.from("profiles").select("email, full_name").eq("id", m.user_id).maybeSingle();
+          const [first, ...rest] = (prof?.full_name ?? "").split(" ");
+          void sendCapiEventSafe({
+            eventName: "StartTrial",
+            eventId: `start_${shipment_id}`,
+            valueCents: ship.total_cents ?? 0,
+            email: prof?.email ?? null,
+            firstName: first || null,
+            lastName: rest.join(" ") || null,
+            city: m.shipping_city ?? null,
+            state: m.shipping_state ?? null,
+            zip: m.shipping_zip ?? null,
+            country: "us",
+            customData: { shipment_id, membership_id: m.id, vinoshipper_order_id: vsOrderId },
+          });
+        }
+      } catch (e) { console.error("CAPI StartTrial (non-fatal)", e); }
+
       try {
         const { data: prof } = await svc.from("profiles").select("email").eq("id", m.user_id).maybeSingle();
         if (prof?.email) await svc.functions.invoke("send-transactional-email", { body: { template: "wine-club-shipment-dispatched", to: prof.email, data: { shipment_id, vsOrderId } } });

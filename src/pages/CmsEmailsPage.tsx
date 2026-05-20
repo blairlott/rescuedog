@@ -34,12 +34,11 @@ export default function CmsEmailsPage() {
   const [sending, setSending] = useState(false);
 
   const { data, isFetching, refetch } = useQuery({
-    queryKey: ["email-qa-logs", hours],
+    queryKey: ["email-qa-logs"],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("email-qa-logs", {
         method: "GET" as any,
         body: undefined,
-        // @ts-ignore — pass query via custom URL fetch
       });
       if (error) throw error;
       return data as {
@@ -84,6 +83,8 @@ export default function CmsEmailsPage() {
 
   const stats = data?.stats;
   const templates = data?.templates ?? [];
+  const cutoff = Date.now() - hours * 3600 * 1000;
+  const visibleLogs = (data?.logs ?? []).filter(r => new Date(r.created_at).getTime() >= cutoff);
 
   return (
     <div className="min-h-screen bg-background p-6 max-w-7xl mx-auto">
@@ -171,7 +172,7 @@ export default function CmsEmailsPage() {
             </tr>
           </thead>
           <tbody>
-            {(data?.logs ?? []).map(r => (
+            {visibleLogs.map(r => (
               <tr key={r.id} className="border-t border-border">
                 <td className="p-2 whitespace-nowrap text-xs text-muted-foreground">
                   {new Date(r.created_at).toLocaleString()}
@@ -184,7 +185,7 @@ export default function CmsEmailsPage() {
                 <td className="p-2 text-xs text-destructive max-w-md truncate">{r.error_message ?? ""}</td>
               </tr>
             ))}
-            {!data?.logs?.length && (
+            {!visibleLogs.length && (
               <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No emails in this window.</td></tr>
             )}
           </tbody>

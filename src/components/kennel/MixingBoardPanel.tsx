@@ -1422,11 +1422,11 @@ export function MixingBoardPanel() {
           )}
 
           <div className="mt-3 pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
-            <div className="ml-auto flex items-center gap-2">
+            <div className="sm:ml-auto flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white hover:bg-white/10"
+                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white hover:bg-white/10 flex-1 sm:flex-none"
                 onClick={resetDraft}
                 disabled={preview.dirtyCount === 0 || saving}
               >
@@ -1436,7 +1436,7 @@ export function MixingBoardPanel() {
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white hover:bg-white/10"
+                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white hover:bg-white/10 flex-1 sm:flex-none"
                 onClick={exportCsv}
                 title="Download scenario as CSV"
               >
@@ -1446,7 +1446,7 @@ export function MixingBoardPanel() {
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white hover:bg-white/10"
+                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white hover:bg-white/10 flex-1 sm:flex-none"
                 onClick={exportPdf}
                 title="Download shareable PDF report"
               >
@@ -1456,7 +1456,7 @@ export function MixingBoardPanel() {
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white/70 hover:bg-white/10"
+                className="h-7 text-[10px] uppercase tracking-brand border-white/20 text-white/70 hover:bg-white/10 flex-1 sm:flex-none"
                 onClick={clearAllOverrides}
                 disabled={saving}
                 title="Wipe all saved overrides and revert to nightly auto-computed values"
@@ -1465,7 +1465,7 @@ export function MixingBoardPanel() {
               </Button>
               <Button
                 size="sm"
-                className="h-7 text-[10px] uppercase tracking-brand bg-[hsl(45,95%,55%)] text-black hover:bg-[hsl(45,95%,65%)]"
+                className="h-7 text-[10px] uppercase tracking-brand bg-[hsl(45,95%,55%)] text-black hover:bg-[hsl(45,95%,65%)] flex-1 sm:flex-none"
                 onClick={saveDraft}
                 disabled={preview.dirtyCount === 0 || saving}
               >

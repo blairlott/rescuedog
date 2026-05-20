@@ -97,17 +97,37 @@ Deno.serve(async (req) => {
     const service = createClient(SUPABASE_URL, SERVICE);
     const { data: tiers, error: tiersErr } = await service
       .from("wine_club_tiers")
-      .select("id, name, slug, vinoshipper_club_id, vinoshipper_join_url");
+      .select("id, name, slug, frequency, bottle_count, wine_type, vinoshipper_club_id, vinoshipper_join_url");
     if (tiersErr) throw tiersErr;
 
-    // Normalize clubs.
+    const parseClub = (name: string) => {
+      const n = name.toLowerCase();
+      let freq: string | null = null;
+      if (/yearly|annual\b|holiday/.test(n) && !/bi.?annual|bi.?yearly/.test(n)) freq = "yearly";
+      else if (/bi.?annual|bi.?yearly|2x.?yearly/.test(n)) freq = "bi-annual";
+      else if (/quarter/.test(n)) freq = "quarterly";
+      else if (/month/.test(n)) freq = "monthly";
+      const m = n.match(/(\d+)\s*(?:bottle|bottles|btl)/);
+      const bottles = m ? parseInt(m[1], 10) : null;
+      let wineType: string | null = null;
+      const isRed = /\bred\b/.test(n);
+      const isWhite = /\bwhite\b|sparkling/.test(n);
+      const isMixed = /\bmixed\b/.test(n);
+      if (isMixed) wineType = "mixed";
+      else if (isRed && !isWhite) wineType = "red";
+      else if (isWhite && !isRed) wineType = "white";
+      return { freq, bottles, wineType };
+    };
+
+    // Normalize clubs (including parsed structural fields).
     const normalizedClubs = clubs.map((c: any) => {
       const id = String(c.id ?? c.clubId ?? c.club_id ?? "");
       const name = String(c.name ?? c.title ?? c.displayName ?? "");
       const joinUrl =
         c.joinUrl ?? c.join_url ?? c.signupUrl ?? c.signup_url ?? c.url ??
         (id ? `https://vinoshipper.com/shop/${producerId}/club/${id}` : null);
-      return { id, name, normName: norm(name), joinUrl, raw: c };
+      const parsed = parseClub(name);
+      return { id, name, normName: norm(name), joinUrl, parsed, raw: c };
     }).filter((c: any) => c.id);
 
     // Match tiers → clubs.
@@ -118,6 +138,17 @@ Deno.serve(async (req) => {
     for (const tier of tiers || []) {
       const tn = norm(tier.name);
       let match = normalizedClubs.find((c: any) => c.normName === tn);
+      // Structural match: same frequency + bottle count + wine type.
+      if (!match) {
+        const tierFreq = (tier as any).frequency?.toLowerCase();
+        const tierWine = (tier as any).wine_type?.toLowerCase();
+        const tierBottles = (tier as any).bottle_count;
+        match = normalizedClubs.find((c: any) =>
+          c.parsed.freq === tierFreq &&
+          c.parsed.bottles === tierBottles &&
+          c.parsed.wineType === tierWine
+        );
+      }
       if (!match) {
         // Fallback: substring match either direction.
         match = normalizedClubs.find((c: any) =>

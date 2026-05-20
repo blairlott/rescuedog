@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { MetricCard } from "@/components/kennel/MetricCard";
 import { Sparkles, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { computeWineClubSignupValue, type WineClubSignupValue } from "@/lib/wineClubSignupValue";
 
 interface Props {
   start: Date;
@@ -53,6 +54,11 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
         pv: ((pvRes.data as any) || []) as { event_type: string; path: string; session_id: string | null; created_at: string }[],
       };
     },
+  });
+
+  const { data: signupValue } = useQuery({
+    queryKey: ["kennel-wine-club-signup-value"],
+    queryFn: computeWineClubSignupValue,
   });
 
   const stats = useMemo(() => {
@@ -115,20 +121,21 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
       .reduce((sum, r) => sum + (tierMapAll.get(r.tier_id)?.price_cents ?? 0), 0);
     const netMrrCents = newMrrCents - churnedMrrCents;
     const avgTierCents = activeRows.length > 0 ? activeMrrCents / activeRows.length : (data.tiers[0]?.price_cents ?? 0);
-    // 18mo retention assumption for LTV target on Meta OUTCOME_LEADS value optimization
-    const ltvTarget = (avgTierCents / 100) * 18;
+    const leadValue = signupValue?.lead_value_usd ?? +(avgTierCents / 100 * 0.55).toFixed(2);
+    const ltvTarget = signupValue?.predicted_ltv_usd ?? +(avgTierCents / 100 * 6 * 0.55).toFixed(2);
+    const targetCpl = signupValue?.target_cpl_max_usd ?? Math.max(8, Math.round(ltvTarget * 0.15));
 
     // Meta OUTCOME_LEADS opportunity (Lindy is wiring this campaign)
     plays.push({
       intent: "high",
-      headline: `Meta OUTCOME_LEADS → feed Pack signups (target LTV $${ltvTarget.toFixed(0)})`,
-      detail: `Lindy is spinning up an OUTCOME_LEADS ad set in Meta. Send 'club_signup_start' + 'club_signup_complete' as Lead/CompleteRegistration events with value=$${(avgTierCents / 100).toFixed(0)} (avg tier MRR) and predicted_ltv=$${ltvTarget.toFixed(0)}. Seed the audience with a 1% lookalike of current active members${tierRows[0]?.tier ? ` weighted toward ${tierRows[0].tier.name}` : ""}, exclude existing members + cancellations, and route creative to /wine-club with mission-first hook. Optimize for Lead with a 7-day click window so the algo learns on the full join flow, not just CTA click.`,
+      headline: `Meta OUTCOME_LEADS → send $${leadValue.toFixed(2)} per signup (predicted LTV $${ltvTarget.toFixed(2)})`,
+      detail: `Lindy: send 'club_signup_complete' to Meta CAPI as a Lead/CompleteRegistration event with value=${leadValue.toFixed(2)} USD and predicted_ltv=${ltvTarget.toFixed(2)} USD. Methodology: ${signupValue?.methodology ?? "avg active tier × 55% margin, projected over 6 months retention"}. Cap auto-bidding at CPL ≤ $${targetCpl.toFixed(0)} (~15% of LTV). Seed lookalike from active members${tierRows[0]?.tier ? ` weighted toward ${tierRows[0].tier.name}` : ""}, exclude existing members + cancellations, optimize for Lead with a 7-day click window.`,
     });
     if (netMrrCents !== 0 || activeMrrCents > 0) {
       plays.push({
         intent: netMrrCents < 0 ? "high" : "med",
         headline: `Recurring revenue: $${(activeMrrCents / 100).toLocaleString()} MRR · net ${netMrrCents >= 0 ? "+" : ""}$${(netMrrCents / 100).toLocaleString()}`,
-        detail: `New ${(newMrrCents / 100).toLocaleString()} vs churned ${(churnedMrrCents / 100).toLocaleString()} this period. Use this MRR delta as the headline KPI for the Meta lead campaign — target CPL ≤ $${Math.max(8, Math.round(ltvTarget * 0.15)).toFixed(0)} (≈15% of LTV) and reallocate budget weekly from channels that aren't producing recurring sign-ups.`,
+        detail: `New $${(newMrrCents / 100).toLocaleString()} vs churned $${(churnedMrrCents / 100).toLocaleString()} this period. Reallocate budget weekly toward channels that produce signups under the $${targetCpl.toFixed(0)} CPL cap.`,
       });
     }
 
@@ -204,7 +211,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
       avgTierCents,
       ltvTarget,
     };
-  }, [data, start, end]);
+  }, [data, start, end, signupValue]);
 
   return (
     <section className="space-y-2">
@@ -216,6 +223,40 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
         <div className="text-muted-foreground text-sm">Loading club signal…</div>
       ) : (
         <>
+          {signupValue && (
+            <div className="border-2 border-primary bg-primary/5 p-4" style={{ borderRadius: 0 }}>
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <div className="text-[10px] uppercase tracking-brand font-bold text-primary">
+                    Signup value · sent to ad platforms
+                  </div>
+                  <div className="flex items-baseline gap-4 mt-1 flex-wrap">
+                    <div>
+                      <div className="text-2xl font-bold tabular-nums text-foreground">${signupValue.lead_value_usd.toFixed(2)}</div>
+                      <div className="text-[10px] uppercase tracking-brand text-muted-foreground">per Lead event</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold tabular-nums text-foreground">${signupValue.predicted_ltv_usd.toFixed(2)}</div>
+                      <div className="text-[10px] uppercase tracking-brand text-muted-foreground">predicted_ltv ({signupValue.retention_months}mo)</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold tabular-nums text-foreground">${signupValue.target_cpl_max_usd.toFixed(0)}</div>
+                      <div className="text-[10px] uppercase tracking-brand text-muted-foreground">max CPL · bid cap</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[11px] text-muted-foreground max-w-md leading-relaxed">
+                  {signupValue.methodology}
+                  {signupValue.source === "computed" && (
+                    <span className="block mt-1 text-[10px] uppercase tracking-brand">
+                      Override via <code className="font-mono">app_settings.wine_club_signup_lead_value_cents</code>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <MetricCard
               label="Active members"

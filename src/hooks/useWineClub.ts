@@ -95,14 +95,36 @@ export function useJoinClub() {
   return useMutation({
     mutationFn: async (data: JoinClubData) => {
       if (!user) throw new Error("Must be logged in");
-      const { error } = await supabase.from("wine_club_memberships").insert({
+      const { data: inserted, error } = await supabase.from("wine_club_memberships").insert({
         user_id: user.id,
         ...data,
         payment_status: "simulated",
         status: "active",
         next_shipment_date: getNextShipmentDate(),
-      });
+      }).select("id").maybeSingle();
       if (error) throw error;
+
+      // Fire Meta CAPI Lead + CompleteRegistration with the computed signup value
+      // so OUTCOME_LEADS bidding optimizes on real $ value. Best-effort — never throw.
+      try {
+        const { getFbc, getFbp } = await import("@/lib/metaAttribution");
+        await supabase.functions.invoke("meta-capi-lead", {
+          body: {
+            event_id: inserted?.id,
+            email: user.email ?? null,
+            city: data.shipping_city,
+            state: data.shipping_state,
+            zip: data.shipping_zip,
+            country: "us",
+            tier_id: data.tier_id,
+            fbc: getFbc(),
+            fbp: getFbp(),
+            user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+          },
+        });
+      } catch (e) {
+        console.warn("[wine-club] CAPI Lead fire failed (non-fatal)", e);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["wine-club-membership"] });

@@ -32,6 +32,9 @@ interface MemberRow {
   legacy_email?: string | null;
   legacy_name?: string | null;
   legacy_club_name?: string | null;
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
+  cancellation_source?: string | null;
 }
 
 function useWineClubAccess() {
@@ -279,6 +282,20 @@ const WineClubAdminPage = () => {
     return true;
   });
 
+  const recentlyCancelled = (memberships || [])
+    .filter((m) => m.source === "new" && m.cancelled_at)
+    .sort((a, b) => new Date(b.cancelled_at!).getTime() - new Date(a.cancelled_at!).getTime())
+    .slice(0, 10);
+
+  const reasonLabels: Record<string, string> = {
+    too_expensive: "Too expensive",
+    too_much_wine: "Too much wine",
+    moving: "Moving",
+    selection: "Selection",
+    pause: "Wants to pause",
+    other: "Other",
+  };
+
   const handleSignOut = async () => {
     await signOut();
   };
@@ -355,6 +372,52 @@ const WineClubAdminPage = () => {
                 </div>
               ) : (
                 <>
+                  {recentlyCancelled.length > 0 && (
+                    <div className="border border-border mb-6">
+                      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                        <h3 className="text-sm font-bold uppercase tracking-brand text-foreground">
+                          Recently Cancelled
+                        </h3>
+                        <span className="text-xs text-muted-foreground">
+                          Last {recentlyCancelled.length}
+                        </span>
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Tier</TableHead>
+                            <TableHead>Cancelled</TableHead>
+                            <TableHead>Reason</TableHead>
+                            <TableHead>Source</TableHead>
+                            <TableHead>Location</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {recentlyCancelled.map((m) => (
+                            <TableRow key={`cancelled-${m.id}`}>
+                              <TableCell className="font-medium">{m.tier?.name || "—"}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {m.cancelled_at ? new Date(m.cancelled_at).toLocaleDateString() : "—"}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {m.cancellation_reason
+                                  ? reasonLabels[m.cancellation_reason] || m.cancellation_reason
+                                  : <span className="text-muted-foreground">—</span>}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-xs uppercase">
+                                  {(m.cancellation_source || "unknown").replace(/_/g, " ")}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {m.shipping_city && m.shipping_state ? `${m.shipping_city}, ${m.shipping_state}` : "—"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 flex-wrap mb-4">
                     {[
                       { value: "all", label: "All", count: memberships.length },

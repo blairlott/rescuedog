@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendCapiEventSafe } from "../_shared/metaCapiEvent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,6 +58,21 @@ Deno.serve(async (req) => {
     if (body.action === "skip") {
       await svc.from("wine_club_shipments").update({ status: "skipped", updated_at: new Date().toISOString() }).eq("id", shipment.id);
       await svc.from("wine_club_events").insert({ user_id: user.id, event_type: "shipment_skipped", metadata: { shipment_id: shipment.id } });
+      // Meta CAPI lifecycle: ShipmentSkipped (best-effort)
+      try {
+        const { data: prof } = await svc.from("profiles").select("email, full_name").eq("id", user.id).maybeSingle();
+        const [first, ...rest] = (prof?.full_name ?? "").split(" ");
+        void sendCapiEventSafe({
+          eventName: "ShipmentSkipped",
+          eventId: `skip_${shipment.id}`,
+          valueCents: 0,
+          email: prof?.email ?? user.email ?? null,
+          firstName: first || null,
+          lastName: rest.join(" ") || null,
+          country: "us",
+          customData: { shipment_id: shipment.id, membership_id: m.id ?? null },
+        });
+      } catch (e) { console.error("CAPI ShipmentSkipped (non-fatal)", e); }
       return json({ ok: true, status: "skipped" });
     }
 

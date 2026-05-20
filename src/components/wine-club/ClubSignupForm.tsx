@@ -82,7 +82,7 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
         onClick={onBack}
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to club selection
+        <ArrowLeft className="h-4 w-4" /> {backLabel ?? "Back to club selection"}
       </button>
 
       {/* Selected Tier Summary */}
@@ -104,7 +104,8 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
         </div>
       </div>
 
-      {/* Gift Toggle */}
+      {/* Gift Toggle (hidden when adding a gift from the member dashboard) */}
+      {!lockGift && (
       <div className="border border-border p-5 mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -119,7 +120,6 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
             onCheckedChange={(checked) => update("is_gift", checked)}
           />
         </div>
-
         {form.is_gift && (
           <div className="mt-4 pt-4 border-t border-border space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -158,6 +158,53 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
           </div>
         )}
       </div>
+      )}
+
+      {/* Locked-gift recipient inputs (member adding a gift) */}
+      {lockGift && (
+        <div className="border border-primary bg-primary/5 p-5 mb-8 space-y-4">
+          <div className="flex items-center gap-3">
+            <Gift className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-bold text-foreground">Gift Recipient</p>
+              <p className="text-xs text-muted-foreground">Who is this membership for?</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="gift_name">Recipient's Name *</Label>
+              <Input
+                id="gift_name"
+                value={form.gift_recipient_name}
+                onChange={(e) => update("gift_recipient_name", e.target.value)}
+                placeholder="Their full name"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="gift_email">Recipient's Email *</Label>
+              <Input
+                id="gift_email"
+                type="email"
+                value={form.gift_recipient_email}
+                onChange={(e) => update("gift_recipient_email", e.target.value)}
+                placeholder="their@email.com"
+                required
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="gift_message">Gift Message (optional)</Label>
+            <Textarea
+              id="gift_message"
+              value={form.gift_message}
+              onChange={(e) => update("gift_message", e.target.value)}
+              placeholder="Add a personal note to your gift..."
+              rows={3}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Shipping Address */}
       <div className="mb-8">

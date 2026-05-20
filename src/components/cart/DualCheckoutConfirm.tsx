@@ -34,11 +34,13 @@ export function DualCheckoutConfirm({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
-            Your order ships in two parts
+            Wine first, then a one-click merch handoff
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">
-            Federal law requires wine to be sold through a licensed shipper.
-            Your merch and wine will check out separately — here's what to expect.
+            Federal law requires wine to ship through a licensed partner, so
+            wine and merch are billed separately. We'll handle wine right here
+            in this window — when it's placed, you'll get a single button to
+            finish merch. No popups to fight with.
           </DialogDescription>
         </DialogHeader>
 
@@ -76,7 +78,7 @@ export function DualCheckoutConfirm({
         </div>
 
         <div className="space-y-3 py-2">
-          {/* Wine tab */}
+          {/* Wine step — in-app */}
           <div className="flex gap-3 border border-primary/40 bg-primary/[0.04] p-3">
             <div className="flex-shrink-0 w-7 h-7 bg-primary text-primary-foreground flex items-center justify-center">
               <Wine className="h-3.5 w-3.5" />
@@ -84,7 +86,7 @@ export function DualCheckoutConfirm({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="text-xs font-bold uppercase tracking-brand">
-                  Wine — opens in a new tab
+                  Step 1 · Wine — checks out here
                 </span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -94,7 +96,7 @@ export function DualCheckoutConfirm({
             </div>
           </div>
 
-          {/* Merch tab */}
+          {/* Merch step — one-click handoff after wine */}
           <div className="flex gap-3 border border-border p-3">
             <div className="flex-shrink-0 w-7 h-7 bg-foreground text-background flex items-center justify-center">
               <ShoppingBag className="h-3.5 w-3.5" />
@@ -102,7 +104,7 @@ export function DualCheckoutConfirm({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="text-xs font-bold uppercase tracking-brand">
-                  Merch — opens in a new tab
+                  Step 2 · Merch — one-click after wine
                 </span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -116,7 +118,7 @@ export function DualCheckoutConfirm({
           <div className="border-t border-dashed border-border pt-3 space-y-1.5">
             <div className="flex items-start gap-2 text-[11px] text-muted-foreground">
               <ArrowRight className="h-3 w-3 mt-0.5 flex-shrink-0" />
-              <span><strong className="text-foreground">2 tabs</strong> will open — finish each to complete your order.</span>
+              <span><strong className="text-foreground">Stays in this window</strong> — wine first, then a handoff button for merch.</span>
             </div>
             <div className="flex items-start gap-2 text-[11px] text-muted-foreground">
               <CreditCard className="h-3 w-3 mt-0.5 flex-shrink-0" />
@@ -143,7 +145,7 @@ export function DualCheckoutConfirm({
             onClick={onConfirm}
             className="sm:flex-1 bg-primary hover:bg-primary/90"
           >
-            Open both checkouts
+            Start wine checkout
           </Button>
         </DialogFooter>
       </DialogContent>

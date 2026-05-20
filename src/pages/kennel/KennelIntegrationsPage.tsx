@@ -155,7 +155,7 @@ const PROVIDERS: ProviderDef[] = [
   {
     id: "instacart_ads",
     label: "Instacart Ads",
-    description: "Sponsored Product + display on Instacart marketplace.",
+    description: "Sponsored Product + display on Instacart marketplace (docs.instacart.com/ads). Our Instacart rep can help wire this up.",
     envFallbackPrefix: "INSTACART_ADS",
     category: "Retail Media",
     keys: [
@@ -164,10 +164,21 @@ const PROVIDERS: ProviderDef[] = [
     ],
   },
   {
-    id: "carrot_ads",
-    label: "Carrot Ads",
-    description: "Independent grocer retail-media network (Carrot Network) — complements Instacart for non-Instacart grocers.",
-    envFallbackPrefix: "CARROT_ADS",
+    id: "swiftly_ads",
+    label: "Swiftly Ads",
+    description: "Retail-media network powering independent and regional grocers (swiftly.com) — complements Instacart for non-Instacart banners.",
+    envFallbackPrefix: "SWIFTLY_ADS",
+    category: "Retail Media",
+    keys: [
+      { key: "api_key",       label: "API Key", secret: true },
+      { key: "advertiser_id", label: "Advertiser ID" },
+    ],
+  },
+  {
+    id: "rosie_ads",
+    label: "Rosie Ads",
+    description: "E-commerce + sponsored placements across the Rosie independent grocer network (rosieapp.com).",
+    envFallbackPrefix: "ROSIE_ADS",
     category: "Retail Media",
     keys: [
       { key: "api_key",       label: "API Key", secret: true },

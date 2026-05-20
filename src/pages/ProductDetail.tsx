@@ -425,14 +425,16 @@ const ProductDetail = () => {
                 </Select>
               </div>
 
-              {/* Subscribe & Save */}
-              <SubscribeAndSave
-                price={parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount) * quantity}
-                onSubscriptionChange={(isSub, freq) => {
-                  setSubscribeMode(isSub);
-                  setSubFrequency(freq);
-                }}
-              />
+              {/* Subscribe & Save — excluded for sampler bundles and non-wine */}
+              {!isSamplerBundle && !isMerch && (
+                <SubscribeAndSave
+                  price={parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount) * quantity}
+                  onSubscriptionChange={(isSub, freq) => {
+                    setSubscribeMode(isSub);
+                    setSubFrequency(freq);
+                  }}
+                />
+              )}
 
               {/* Bulk pricing note */}
               {quantity >= 6 && (

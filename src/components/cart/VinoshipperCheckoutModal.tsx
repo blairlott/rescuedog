@@ -386,14 +386,44 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
     if (!open) setMerchHandoffReady(null);
   }, [open]);
 
+  /**
+   * Append PCI-safe pre-fill params to the Shopify checkout URL so the
+   * customer doesn't re-type their email / shipping address on the merch
+   * side. Card data is NEVER passed — Shopify Checkout / Shop Pay handles
+   * payment. If the email matches a Shop Pay account, the card auto-fills
+   * on Shopify's side.
+   */
+  const buildPrefilledMerchUrl = (baseUrl: string): string => {
+    try {
+      const url = new URL(baseUrl);
+      const [firstName, ...rest] = (form.name || "").trim().split(/\s+/);
+      const lastName = rest.join(" ");
+      const set = (k: string, v?: string | null) => {
+        if (v && v.trim()) url.searchParams.set(k, v.trim());
+      };
+      set("checkout[email]", form.email);
+      set("checkout[shipping_address][first_name]", firstName);
+      set("checkout[shipping_address][last_name]", lastName);
+      set("checkout[shipping_address][address1]", form.address);
+      set("checkout[shipping_address][city]", form.city);
+      set("checkout[shipping_address][province]", form.state);
+      set("checkout[shipping_address][zip]", form.zip);
+      set("checkout[shipping_address][country]", "US");
+      return url.toString();
+    } catch {
+      return baseUrl;
+    }
+  };
+
   const handleContinueToMerch = () => {
     if (!merchHandoffReady) return;
     const handoff = merchHandoffReady.handoff;
+    const prefilledUrl = buildPrefilledMerchUrl(handoff.checkoutUrl);
     // Fresh user gesture — popups are allowed here.
-    const win = window.open(handoff.checkoutUrl, "_blank");
+    const win = window.open(prefilledUrl, "_blank");
     if (!win) {
       // Popup blocked — fall back to same-tab nav.
-      window.location.href = handoff.checkoutUrl;
+      window.location.href = prefilledUrl;
       return;
     }
     onOpenChange(false);

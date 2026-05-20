@@ -5047,6 +5047,63 @@ export type Database = {
         }
         Relationships: []
       }
+      media_library: {
+        Row: {
+          alt_text: string | null
+          copy_body: string | null
+          created_at: string
+          description: string | null
+          file_path: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          kind: string
+          metadata: Json
+          mime_type: string | null
+          status: string
+          tags: string[]
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          copy_body?: string | null
+          created_at?: string
+          description?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          mime_type?: string | null
+          status?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          copy_body?: string | null
+          created_at?: string
+          description?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          mime_type?: string | null
+          status?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       merch_bundles: {
         Row: {
           badge_label: string | null

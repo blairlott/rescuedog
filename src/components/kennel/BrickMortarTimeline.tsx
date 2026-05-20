@@ -294,7 +294,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       return point;
     });
 
-    // Use independent 24-month QB history (or fall back to selected-range data) to derive
+    // Use independent 24-month B&M history (or fall back to selected-range data) to derive
     // baseline daily run-rate, historical CAGR, and seasonal index by calendar month.
     const histByDay = history?.byDay ?? data.byDay;
     const seasonal = buildSeasonalIndex(histByDay);
@@ -312,8 +312,8 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       if (row) baseSum += row.qb_revenue;
     }
     const dailyAvg = baseDays ? baseSum / baseDays : 0;
-    // "flat" mode = use historical CAGR; explicit g10/g25 = override the historical rate.
-    const effectiveGrowth = growthKey === "flat" ? histCagr : growth;
+    // Growth controls are literal planning rates; Flat means no CAGR uplift.
+    const effectiveGrowth = growth;
 
     // Project from today → end using seasonal index × growth compounding.
     const projection: { date: string; projected: number }[] = [];
@@ -418,9 +418,9 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <Stat label="Observed (QB only)" value={`$${Math.round(chart.observedTotal).toLocaleString()}`} hint={`${isoDay(start)} → ${isoDay(observedEnd)}`} />
-            <Stat label="Trailing 365d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint={`QB base · anchor ${isoDay(chart.anchor)} · CAGR ${(chart.cagr * 100).toFixed(1)}%`} />
-            <Stat label="Projected" value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={end > today ? `${isoDay(today)} → ${isoDay(end)} · ${growthKey === "flat" ? "historical CAGR" : growthKey} · seasonal` : "no future range"} />
-            <Stat label="Observed + Projected" value={`$${Math.round(chart.observedTotal + chart.projectedTotal).toLocaleString()}`} hint={`${data.qbRows.toLocaleString()} QB · ${data.depRows.toLocaleString()} dep lines`} />
+            <Stat label="Trailing 365d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint={`B&M base · anchor ${isoDay(chart.anchor)} · CAGR ${(chart.cagr * 100).toFixed(1)}%`} />
+            <Stat label="Projected" value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={end > today ? `${isoDay(today)} → ${isoDay(end)} · ${GROWTH_LABELS[growthKey] ?? growthKey} · seasonal` : "no future range"} />
+            <Stat label="Observed + Projected" value={`$${Math.round(chart.observedTotal + chart.projectedTotal).toLocaleString()}`} hint={`${data.factRows.toLocaleString()} B&M facts · ${data.qbRows.toLocaleString()} QB fallback · ${data.depRows.toLocaleString()} dep lines`} />
           </div>
           <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>
@@ -440,7 +440,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <ReferenceLine x={todayKey} stroke="hsl(var(--foreground))" strokeDasharray="2 2" label={{ value: "today", position: "top", fontSize: 10, fill: "hsl(var(--foreground))" }} />
-                <Area type="monotone" dataKey="qb_revenue" stackId="actual" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.35)" name="QuickBooks (wholesale)" />
+                <Area type="monotone" dataKey="qb_revenue" stackId="actual" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.35)" name="B&M actual revenue" />
                 <Line type="monotone" dataKey="depletion_revenue" stroke="hsl(220 70% 45%)" strokeWidth={1.5} strokeDasharray="3 3" dot={false} name="Depletions (signal · modeled @ $9/btl)" />
                 <Line type="monotone" dataKey="instacart_revenue" stroke="hsl(30 90% 50%)" strokeWidth={1.5} strokeDasharray="3 3" dot={false} name="Instacart (signal · ad-attributed)" />
                 <Line type="monotone" dataKey="projected" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={false} name={`Projection (${growthKey})`} />
@@ -451,7 +451,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
             tileId="brick-mortar"
             rangeLabel={rangeLabel(start, end)}
             tileData={{
-              model: "trailing 365-day QB baseline × calendar-month seasonal index × historical CAGR (or growth override), not MMM",
+              model: "trailing 365-day B&M baseline × calendar-month seasonal index × selected growth rate, not MMM",
               growth_mode: growthKey,
               historical_cagr: chart.cagr,
               seasonal_index_by_month: chart.seasonal,

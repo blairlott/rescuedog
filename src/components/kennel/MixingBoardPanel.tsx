@@ -1010,11 +1010,11 @@ export function MixingBoardPanel() {
 
   return (
     <div
-      className="border-2 border-foreground p-2 sm:p-4 text-white"
+      className="border-2 border-[hsl(0,0%,35%)] p-2 sm:p-4 text-white"
       style={{
         borderRadius: 0,
         background:
-          "linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%)",
+          "linear-gradient(180deg, #4a4a4a 0%, #2e2e2e 100%)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.8)",
       }}
     >

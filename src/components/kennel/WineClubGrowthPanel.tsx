@@ -66,6 +66,18 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
     },
   });
 
+  // Mailchimp "Wine Club" tagged member count — fetched via edge function so
+  // we don't expose the API key client-side. Falls back to 0 on any error.
+  const { data: mailchimpClubCount } = useQuery({
+    queryKey: ["kennel-mailchimp-club-count"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("kennel-mailchimp-club-count", { body: {} });
+      if (error) return 0;
+      return Number((data as any)?.count ?? 0);
+    },
+    staleTime: 5 * 60_000,
+  });
+
   const { data: signupValue } = useQuery({
     queryKey: ["kennel-wine-club-signup-value"],
     queryFn: computeWineClubSignupValue,
@@ -84,12 +96,17 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
     const activeAppNow = m.filter(r => r.status === "active").length;
     // Distinct Vinoshipper active members (lowercased email dedup).
     const vsEmails = new Set<string>();
-    for (const r of data.vsActiveEmails) {
+    for (const r of (data.vsActiveEmails ?? [])) {
       const e = r.customer_email?.trim().toLowerCase();
       if (e) vsEmails.add(e);
     }
     const activeVsNow = vsEmails.size;
-    const activeNow = activeAppNow + activeVsNow;
+    const activeMailchimpNow = Math.max(0, mailchimpClubCount ?? 0);
+    // Vinoshipper is source of truth. Mailchimp tags may overlap with VS
+    // emails but typically include subscribers tagged manually or via Zaps
+    // that aren't in VS yet; report it as a separate signal rather than
+    // double-counting blindly. Headline = max(vs, mailchimp) + app.
+    const activeNow = Math.max(activeVsNow, activeMailchimpNow) + activeAppNow;
     const newInPeriod = m.filter(r => inRange(r.joined_at ?? r.created_at) && r.origin !== "vinoshipper_legacy").length;
     const cancelledInPeriod = m.filter(r => inRange(r.cancelled_at)).length;
     const giftsInPeriod = m.filter(r => r.is_gift && inRange(r.joined_at ?? r.created_at)).length;
@@ -211,6 +228,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
       activeNow,
       activeAppNow,
       activeVsNow,
+      activeMailchimpNow,
       newInPeriod,
       cancelledInPeriod,
       giftsInPeriod,
@@ -281,7 +299,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
             <MetricCard
               label="Active members"
               value={stats.activeNow.toLocaleString()}
-              hint={`Vinoshipper ${stats.activeVsNow.toLocaleString()} + app ${stats.activeAppNow.toLocaleString()}`}
+              hint={`VS ${stats.activeVsNow.toLocaleString()} · MC ${stats.activeMailchimpNow.toLocaleString()} · app ${stats.activeAppNow.toLocaleString()}`}
             />
             <MetricCard
               label={`New signups (${rangeLabel})`}

@@ -35,7 +35,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
   const toIso = end.toISOString();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["kennel-wine-club-growth", fromIso, toIso],
+    queryKey: ["kennel-wine-club-growth", "vs-paged-v2", fromIso, toIso],
     queryFn: async () => {
       const [tiersRes, mRes, pvRes, vsActiveEmails] = await Promise.all([
         supabase.from("wine_club_tiers" as any).select("id, name, slug, price_cents").eq("is_active", true),

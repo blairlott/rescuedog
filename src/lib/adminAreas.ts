@@ -51,7 +51,7 @@ export const ADMIN_AREAS: AdminArea[] = [
     title: "The Kennel",
     desc: "Ad ops command center — spend, ROAS, recommendations.",
     icon: Megaphone,
-    roles: ["owner", "admin", "ad_ops_manager"],
+    roles: ["owner", "admin", "ad_ops_manager", "executive", "kennel_viewer"],
   },
 ];
 

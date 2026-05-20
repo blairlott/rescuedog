@@ -23,6 +23,7 @@ import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
 import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
 import { BrickMortarTimeline, BrandLiftTimeline } from "@/components/kennel/BrickMortarTimeline";
 import { WineClubGrowthPanel, fetchWineClubAiSlice } from "@/components/kennel/WineClubGrowthPanel";
+import { WineClubTimeline } from "@/components/kennel/WineClubTimeline";
 import { DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween } from "@/components/kennel/DateRangeControls";
 import { SortableDashboard, type SortableItem } from "@/components/kennel/SortableDashboard";
 import { Button } from "@/components/ui/button";
@@ -447,6 +448,8 @@ export default function KennelDashboard() {
           <BrandLiftTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} hidePicker />
 
           <StrategyMixPanel scope="global" />
+
+          <WineClubTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} hidePicker />
 
           <WineClubGrowthPanel start={start} end={end} rangeLabel={periodMeta.label} />
 

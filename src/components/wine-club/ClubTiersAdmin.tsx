@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RefreshCw, CheckCircle2, AlertCircle, ExternalLink, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -92,6 +93,20 @@ export function ClubTiersAdmin() {
       },
     }));
 
+  const toggleActive = async (t: TierRow, next: boolean) => {
+    const { error } = await supabase
+      .from("wine_club_tiers")
+      .update({ is_active: next })
+      .eq("id", t.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${t.name} is now ${next ? "active" : "inactive"}`);
+    qc.invalidateQueries({ queryKey: ["admin-wine-club-tiers"] });
+    qc.invalidateQueries({ queryKey: ["wine-club-tiers"] });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -137,6 +152,7 @@ export function ClubTiersAdmin() {
           <TableHeader>
             <TableRow>
               <TableHead>Tier</TableHead>
+              <TableHead>Active</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>VS Club ID</TableHead>
               <TableHead>Join URL</TableHead>
@@ -146,7 +162,7 @@ export function ClubTiersAdmin() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={6}>Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7}>Loading...</TableCell></TableRow>
             ) : (tiers || []).map((t) => {
               const edit = editing[t.id];
               const linked = !!t.vinoshipper_club_id && !!t.vinoshipper_join_url;
@@ -159,6 +175,13 @@ export function ClubTiersAdmin() {
                     </div>
                   </TableCell>
                   <TableCell>
+                    <Switch
+                      checked={t.is_active}
+                      onCheckedChange={(v) => toggleActive(t, v)}
+                      aria-label={`Toggle ${t.name}`}
+                    />
+                  </TableCell>
+                  <TableCell>
                     {linked ? (
                       <Badge className="bg-green-100 text-green-800 text-xs">
                         <CheckCircle2 className="h-3 w-3 mr-1" /> Linked
@@ -167,9 +190,6 @@ export function ClubTiersAdmin() {
                       <Badge variant="outline" className="text-xs">
                         <AlertCircle className="h-3 w-3 mr-1" /> Not linked
                       </Badge>
-                    )}
-                    {!t.is_active && (
-                      <Badge variant="secondary" className="ml-1 text-xs">inactive</Badge>
                     )}
                   </TableCell>
                   <TableCell className="font-mono text-xs">

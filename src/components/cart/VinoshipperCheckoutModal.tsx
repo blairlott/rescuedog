@@ -16,6 +16,8 @@ import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useCheckoutIntentStore } from "@/stores/checkoutIntentStore";
 import { supabase } from "@/integrations/supabase/client";
 import { getFbc, getFbp, getGclaw, getGclid } from "@/lib/metaAttribution";
+import { addLinesAndGoToHostedCart } from "@/lib/vinoshipperInjector";
+import { recordCheckoutIntent } from "@/lib/abCheckoutIntent";
 import {
   VS_FLAT_SHIPPING_USD,
   VS_MEMBER_DISCOUNT_PERCENT,
@@ -62,6 +64,10 @@ interface AccessPoint {
  * vinoshipper_webhook_logs row and clears the cart.
  */
 export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHandoff, onWineOrderPlaced }: Props) {
+  // Live mode: card + shipping captured on Vinoshipper's hosted cart for PCI
+  // compliance. The modal becomes a branded review screen + age confirmation.
+  // Simulation mode keeps the full in-modal form for demo / iPhone walkthroughs.
+  const liveMode = !VS_SIMULATION;
   const { user } = useCustomerAuth();
   const { data: membership } = useMyMembership();
   const { items, clearCart, removeItem } = useCartStore();

@@ -59,7 +59,7 @@ export default function KennelCreativeStudioPage() {
 
   const [file, setFile] = useState<File | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
-  const [brand, setBrand] = useState<"wine" | "merch">("wine");
+  const [brand, setBrand] = useState<"wine" | "merch" | "none">("wine");
   const [ratios, setRatios] = useState<string[]>(["1:1", "9:16", "16:9"]);
   const [outputTypes, setOutputTypes] = useState({ images: true, copy: true, video: true });
   const [brief, setBrief] = useState("");
@@ -219,6 +219,7 @@ export default function KennelCreativeStudioPage() {
               duration: videoDuration,
               caption: videoCaption || null,
               source_url: src,
+              brand,
             }),
           );
         }
@@ -322,18 +323,27 @@ export default function KennelCreativeStudioPage() {
 
           <div>
             <Label className="text-sm font-medium">2. Brand lockup</Label>
-            <div className="flex gap-2 mt-2">
-              {(["wine", "merch"] as const).map((b) => (
+            <div className="flex gap-2 mt-2 flex-wrap">
+              {(["wine", "merch", "none"] as const).map((b) => (
                 <Button
                   key={b}
                   variant={brand === b ? "default" : "outline"}
                   size="sm"
                   onClick={() => setBrand(b)}
                 >
-                  {b === "wine" ? "Wine (Black RDW)" : "Merch (HD Rescue Dog)"}
+                  {b === "wine"
+                    ? "Wine (Black RDW)"
+                    : b === "merch"
+                    ? "Merch (HD Rescue Dog)"
+                    : "None (unbranded)"}
                 </Button>
               ))}
             </div>
+            {brand === "none" && (
+              <p className="text-xs text-muted-foreground mt-1">
+                No logo or brand bar applied. Useful for organic, UGC, or partner-supplied creative.
+              </p>
+            )}
           </div>
 
           <div>

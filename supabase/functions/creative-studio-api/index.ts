@@ -236,7 +236,7 @@ async function handleKenBurnsRender(req: Request) {
   const key = await getCreatomateKey();
   if (!key) return json({ error: "creatomate_not_configured" }, 412);
 
-  const { job_id, ratio, duration, caption, source_url } = await req.json();
+  const { job_id, ratio, duration, caption, source_url, brand } = await req.json();
   const dims = ratioToDims(ratio ?? "9:16");
   const dur = Math.max(5, Math.min(30, duration ?? 8));
 
@@ -301,16 +301,18 @@ async function handleKenBurnsRender(req: Request) {
     });
   }
 
-  // Brand bar
-  source.elements.push({
-    type: "rectangle",
-    y: "100%",
-    x: "50%",
-    y_alignment: "100%",
-    width: "100%",
-    height: "1.2 vmin",
-    fill_color: "#c30017",
-  });
+  // Brand bar (skip when brand === "none" for unbranded / organic / UGC creative)
+  if (brand !== "none") {
+    source.elements.push({
+      type: "rectangle",
+      y: "100%",
+      x: "50%",
+      y_alignment: "100%",
+      width: "100%",
+      height: "1.2 vmin",
+      fill_color: "#c30017",
+    });
+  }
 
   const r = await fetch("https://api.creatomate.com/v1/renders", {
     method: "POST",

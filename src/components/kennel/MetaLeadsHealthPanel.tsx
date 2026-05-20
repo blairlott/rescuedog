@@ -19,6 +19,7 @@ import { toast } from "sonner";
  */
 
 const LEARNING_THRESHOLD_PER_WEEK = 50;
+const PRIMARY_EVENT: "CompleteRegistration" | "Lead" = "CompleteRegistration";
 
 interface Row {
   event_name: string;
@@ -52,8 +53,8 @@ export function MetaLeadsHealthPanel() {
   const stats = useMemo(() => {
     const rows = data ?? [];
     const now = Date.now();
-    const liveLeads = rows.filter(r => !r.test_mode && r.event_name === "Lead" && r.success);
-    const last7d = liveLeads.filter(r => now - new Date(r.sent_at).getTime() <= 7 * 86400_000).length;
+    const livePrimary = rows.filter(r => !r.test_mode && r.event_name === PRIMARY_EVENT && r.success);
+    const last7d = livePrimary.filter(r => now - new Date(r.sent_at).getTime() <= 7 * 86400_000).length;
     const last24hTests = rows.filter(r => r.test_mode && now - new Date(r.sent_at).getTime() <= 86400_000).length;
     const recent = rows.filter(r => !r.test_mode).slice(0, 50);
     const successRate = recent.length > 0 ? recent.filter(r => r.success).length / recent.length : null;
@@ -106,8 +107,9 @@ export function MetaLeadsHealthPanel() {
             Meta Leads — Learning Phase Health
           </h2>
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-            Switch OUTCOME_LEADS optimization from <code>CompleteRegistration</code> to <code>Lead</code> only when
-            7-day Leads ≥ 50 AND success rate ≥ 95%.
+            Primary optimization event: <code>CompleteRegistration</code> (card-on-file required at signup —
+            no lead-only step exists). Target: ≥ 50 server-confirmed registrations / 7d to exit learning.
+            <code>Lead</code> still fires server-side as a secondary signal for retargeting audiences.
           </p>
         </div>
         <button
@@ -127,7 +129,7 @@ export function MetaLeadsHealthPanel() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Leads/week vs threshold */}
           <div className="border-2 border-foreground p-3" style={{ borderRadius: 0 }}>
-            <div className="text-[10px] uppercase tracking-brand text-muted-foreground font-bold">Live Leads · last 7d</div>
+            <div className="text-[10px] uppercase tracking-brand text-muted-foreground font-bold">Live CompleteRegistration · last 7d</div>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="text-2xl font-bold text-foreground">{stats.last7d}</span>
               <span className="text-xs text-muted-foreground">/ {LEARNING_THRESHOLD_PER_WEEK} threshold</span>
@@ -140,9 +142,9 @@ export function MetaLeadsHealthPanel() {
             </div>
             <div className="text-[11px] mt-2 flex items-center gap-1.5">
               {onThreshold ? (
-                <><CheckCircle2 className="h-3 w-3 text-primary" /> <span className="text-foreground">Out of learning — safe to switch optimization to Lead</span></>
+                <><CheckCircle2 className="h-3 w-3 text-primary" /> <span className="text-foreground">Out of learning — CBO safe to enable</span></>
               ) : (
-                <><AlertTriangle className="h-3 w-3 text-foreground/60" /> <span className="text-muted-foreground">{LEARNING_THRESHOLD_PER_WEEK - stats.last7d} more Leads needed this week</span></>
+                <><AlertTriangle className="h-3 w-3 text-foreground/60" /> <span className="text-muted-foreground">{LEARNING_THRESHOLD_PER_WEEK - stats.last7d} more registrations needed this week</span></>
               )}
             </div>
           </div>

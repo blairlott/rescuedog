@@ -631,13 +631,20 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
           ))}
           <div className="border-t border-border my-2" />
           <Row label="Subtotal" value={subtotal} />
+          {discountActive && (
+            <Row
+              label={`Club join discount (${memberPct}%)`}
+              value={-memberDiscount}
+              accent
+            />
+          )}
           {showMemberSavingsHint && (
             <div className="flex justify-between text-[11px] uppercase tracking-brand text-primary">
               <span>
-                {joiningClub ? "Club perk (next order)" : `Potential member savings (${memberPct}%)`}
+                Member savings ({memberPct}%)
               </span>
               <span className="font-bold">
-                {joiningClub ? "applied after join" : `~$${(discountable * memberPct / 100).toFixed(2)} at checkout`}
+                ~${(discountable * memberPct / 100).toFixed(2)} applied at checkout
               </span>
             </div>
           )}

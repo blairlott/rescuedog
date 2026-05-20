@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCartSync } from "@/hooks/useCartSync";
+import { useAbandonedCartSnapshot } from "@/hooks/useAbandonedCartSnapshot";
 import { lazy, Suspense, useEffect } from "react";
 import { captureFbclid, captureGclid } from "@/lib/metaAttribution";
 import { initVariantHandshake } from "@/lib/abVariant";
@@ -125,6 +126,7 @@ const PageFallback = () => (
 
 function AppContent() {
   useCartSync();
+  useAbandonedCartSnapshot();
   useEffect(() => {
     captureFbclid();
     captureGclid();

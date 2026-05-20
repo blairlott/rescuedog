@@ -219,6 +219,7 @@ export default function KennelCreativeStudioPage() {
               duration: videoDuration,
               caption: videoCaption || null,
               source_url: src,
+              brand,
             }),
           );
         }

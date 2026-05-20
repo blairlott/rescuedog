@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ReferenceLine,
 } from "recharts";
-import { Store, Info } from "lucide-react";
+import { Store, Info, RefreshCw } from "lucide-react";
 import {
   DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay,
   monthKey, pickBucket, daysBetween, formatAxisDate,
@@ -43,18 +43,29 @@ function buildSeasonalIndex(byDay: Map<string, { qb_revenue: number }>): number[
   return dailyByMonth.map((v) => (v > 0 ? v / mean : 1));
 }
 
-/** Historical CAGR from trailing 12 months vs the prior 12 months of QB revenue. */
-function computeHistoricalCagr(byDay: Map<string, { qb_revenue: number }>, today: Date): number {
-  const y1Start = new Date(today); y1Start.setUTCDate(y1Start.getUTCDate() - 365);
-  const y2Start = new Date(today); y2Start.setUTCDate(y2Start.getUTCDate() - 730);
+/** Historical CAGR from trailing 12 months vs the prior 12 months of QB revenue,
+ * anchored to the supplied reference date (typically the latest QB activity). */
+function computeHistoricalCagr(byDay: Map<string, { qb_revenue: number }>, ref: Date): number {
+  const y1Start = new Date(ref); y1Start.setUTCDate(y1Start.getUTCDate() - 365);
+  const y2Start = new Date(ref); y2Start.setUTCDate(y2Start.getUTCDate() - 730);
   let last12 = 0, prev12 = 0;
   for (const [day, row] of byDay.entries()) {
     const d = new Date(day + "T00:00:00Z");
-    if (d >= y1Start && d < today) last12 += row.qb_revenue;
+    if (d >= y1Start && d < ref) last12 += row.qb_revenue;
     else if (d >= y2Start && d < y1Start) prev12 += row.qb_revenue;
   }
   if (prev12 <= 0 || last12 <= 0) return 0;
   return last12 / prev12 - 1;
+}
+
+/** Most recent date with non-zero QB revenue in the history map. */
+function latestQbDate(byDay: Map<string, { qb_revenue: number }>): Date | null {
+  let max: string | null = null;
+  for (const [day, row] of byDay.entries()) {
+    if (!row.qb_revenue) continue;
+    if (!max || day > max) max = day;
+  }
+  return max ? new Date(max + "T00:00:00Z") : null;
 }
 
 function rangeLabel(start: Date, end: Date) {
@@ -87,6 +98,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
   const [growthKey, setGrowthKey] = useState<string>("flat");
   const today = todayUTC();
   const growth = GROWTH_MAP[growthKey] ?? 0;
+  const queryClient = useQueryClient();
 
   const observedEnd = end < today ? end : today;
   const projectStart = today;
@@ -230,9 +242,12 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
     // baseline daily run-rate, historical CAGR, and seasonal index by calendar month.
     const histByDay = history?.byDay ?? data.byDay;
     const seasonal = buildSeasonalIndex(histByDay);
-    const histCagr = computeHistoricalCagr(histByDay, today);
-    // Baseline = trailing 365-day QB daily average (deseasonalized denominator: just mean daily).
-    const baseStart = new Date(today); baseStart.setUTCDate(baseStart.getUTCDate() - 365);
+    // Anchor baseline + CAGR to the latest QB activity date, not strict "today".
+    // QuickBooks data lags real-time by days/weeks/months; using "today" would zero
+    // out the trailing window whenever the feed is behind, killing the forecast.
+    const anchor = latestQbDate(histByDay) ?? today;
+    const histCagr = computeHistoricalCagr(histByDay, anchor);
+    const baseStart = new Date(anchor); baseStart.setUTCDate(baseStart.getUTCDate() - 365);
     let baseSum = 0; let baseDays = 0;
     for (let i = 0; i < 365; i++) {
       const d = new Date(baseStart); d.setUTCDate(d.getUTCDate() + i);
@@ -283,7 +298,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
     ];
     const observedTotal = observed.reduce((s, p) => s + (p.qb_revenue ?? 0), 0);
     const projectedTotal = projection.reduce((s, p) => s + p.projected, 0);
-    return { points, observedTotal, projectedTotal, dailyAvg, cagr: histCagr, seasonal };
+    return { points, observedTotal, projectedTotal, dailyAvg, cagr: histCagr, seasonal, anchor };
   }, [data, history, start, end, observedEnd, bucket, growth, growthKey, today]);
 
   const todayKey = bucket === "day" ? isoDay(today) : monthKey(today);
@@ -310,10 +325,34 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
                 {g.label}
               </button>
             ))}
+            <button
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ["bm-timeline-range"] });
+                queryClient.invalidateQueries({ queryKey: ["bm-history-qb"] });
+              }}
+              className="uppercase tracking-brand text-[10px] h-7 px-2 border-2 border-border text-foreground hover:bg-foreground hover:text-background flex items-center gap-1"
+              style={{ borderRadius: 0 }}
+              title="Refresh data"
+            >
+              <RefreshCw className="h-3 w-3" /> Refresh
+            </button>
           </div>
         ) : (
           <DateRangeControls start={start} end={end} setStart={setStart} setEnd={setEnd}
-            growthKey={growthKey} setGrowthKey={setGrowthKey} />
+            growthKey={growthKey} setGrowthKey={setGrowthKey}
+            extraSlot={
+              <button
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: ["bm-timeline-range"] });
+                  queryClient.invalidateQueries({ queryKey: ["bm-history-qb"] });
+                }}
+                className="uppercase tracking-brand text-[10px] h-7 px-2 border-2 border-border text-foreground hover:bg-foreground hover:text-background flex items-center gap-1 ml-1"
+                style={{ borderRadius: 0 }}
+                title="Refresh data"
+              >
+                <RefreshCw className="h-3 w-3" /> Refresh
+              </button>
+            } />
         )}
       </header>
 
@@ -334,7 +373,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <Stat label="Observed (QB only)" value={`$${Math.round(chart.observedTotal).toLocaleString()}`} hint={`${isoDay(start)} → ${isoDay(observedEnd)}`} />
-            <Stat label="Trailing 365d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint={`QB base · CAGR ${(chart.cagr * 100).toFixed(1)}%`} />
+            <Stat label="Trailing 365d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint={`QB base · anchor ${isoDay(chart.anchor)} · CAGR ${(chart.cagr * 100).toFixed(1)}%`} />
             <Stat label="Projected" value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={end > today ? `${isoDay(today)} → ${isoDay(end)} · ${growthKey === "flat" ? "historical CAGR" : growthKey} · seasonal` : "no future range"} />
             <Stat label="Observed + Projected" value={`$${Math.round(chart.observedTotal + chart.projectedTotal).toLocaleString()}`} hint={`${data.qbRows.toLocaleString()} QB · ${data.depRows.toLocaleString()} dep lines`} />
           </div>

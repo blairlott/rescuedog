@@ -15,6 +15,7 @@ import { Wine, Users, Package, Sparkles, UserPlus, LogOut, Shield, Settings } fr
 import { useState } from "react";
 import { toast } from "sonner";
 import { ClubTiersAdmin } from "@/components/wine-club/ClubTiersAdmin";
+import { LegacyMembersAdmin } from "@/components/wine-club/LegacyMembersAdmin";
 
 interface MemberRow {
   id: string;
@@ -276,6 +277,9 @@ const WineClubAdminPage = () => {
               <TabsTrigger value="tiers">
                 <Settings className="h-4 w-4 mr-1" /> Tiers
               </TabsTrigger>
+              <TabsTrigger value="legacy">
+                <Users className="h-4 w-4 mr-1" /> Legacy Import
+              </TabsTrigger>
               {access.canManageManagers && (
                 <TabsTrigger value="managers">
                   <Shield className="h-4 w-4 mr-1" /> Managers
@@ -398,6 +402,10 @@ const WineClubAdminPage = () => {
 
             <TabsContent value="tiers" className="mt-6">
               <ClubTiersAdmin />
+            </TabsContent>
+
+            <TabsContent value="legacy" className="mt-6">
+              <LegacyMembersAdmin />
             </TabsContent>
 
             {access.canManageManagers && (

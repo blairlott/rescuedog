@@ -430,6 +430,8 @@ export default function KennelDashboard() {
         <div className="text-muted-foreground text-sm">Loading…</div>
       ) : (
         <>
+          <AiInsights snapshot={aiSnapshot} rangeLabel={periodMeta.label} />
+
           <ForecastTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} hidePicker />
 
           <BrickMortarTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} hidePicker />
@@ -437,8 +439,6 @@ export default function KennelDashboard() {
           <BrandLiftTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} hidePicker />
 
           <StrategyMixPanel scope="global" />
-
-          <AiInsights snapshot={aiSnapshot} rangeLabel={periodMeta.label} />
 
           <p className="text-[11px] uppercase tracking-brand text-muted-foreground">
             Hover any section below and drag the handle on the left to reorder. Order is saved to this browser.

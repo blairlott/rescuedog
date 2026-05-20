@@ -299,7 +299,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
             <MetricCard
               label="Active members"
               value={stats.activeNow.toLocaleString()}
-              hint={`Vinoshipper ${stats.activeVsNow.toLocaleString()} + app ${stats.activeAppNow.toLocaleString()}`}
+              hint={`VS ${stats.activeVsNow.toLocaleString()} · MC ${stats.activeMailchimpNow.toLocaleString()} · app ${stats.activeAppNow.toLocaleString()}`}
             />
             <MetricCard
               label={`New signups (${rangeLabel})`}

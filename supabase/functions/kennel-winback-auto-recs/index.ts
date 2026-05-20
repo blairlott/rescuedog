@@ -31,7 +31,31 @@ Deno.serve(async (req) => {
   const headerSecret = req.headers.get("x-kennel-ingest-secret") ?? "";
   const auth = req.headers.get("Authorization") ?? "";
   const isService = auth === `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
-  if (!isService && (!secret || headerSecret !== secret)) return J(401, { error: "unauthorized" });
+  const hasSecret = !!secret && headerSecret === secret;
+
+  let isAuthorizedUser = false;
+  if (!isService && !hasSecret && auth.startsWith("Bearer ")) {
+    try {
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: auth } } },
+      );
+      const token = auth.replace("Bearer ", "");
+      const { data } = await userClient.auth.getClaims(token);
+      const uid = data?.claims?.sub;
+      if (uid) {
+        const { data: ok } = await userClient.rpc("is_ad_ops", { _user_id: uid });
+        isAuthorizedUser = !!ok;
+      }
+    } catch (_) {
+      isAuthorizedUser = false;
+    }
+  }
+
+  if (!isService && !hasSecret && !isAuthorizedUser) {
+    return J(401, { error: "unauthorized" });
+  }
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 

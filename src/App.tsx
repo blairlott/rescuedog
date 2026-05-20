@@ -142,7 +142,7 @@ function AppContent() {
   // A/B funnel: log one pageview per route change (skips internal admin tools).
   useEffect(() => {
     if (path.startsWith("/admin") || path.startsWith("/cms") || path.startsWith("/crm") ||
-        path.startsWith("/kennel") || path.startsWith("/dropship") || path.startsWith("/club/admin")) {
+        path.startsWith("/kennel") || path.startsWith("/dropship") || path.startsWith("/club/admin") || path.startsWith("/club-admin")) {
       return;
     }
     logAbEvent("pageview", { path });
@@ -182,6 +182,7 @@ function AppContent() {
       <Route path="/pairings" element={<Pairings />} />
       <Route path="/pairings/:slug" element={<PairingDetail />} />
       <Route path="/club" element={<WineClubPage />} />
+      <Route path="/club-admin" element={<Navigate to="/club/admin" replace />} />
       <Route path="/club/admin" element={<WineClubAdminPage />} />
       <Route path="/club/login" element={<WineClubLoginPage />} />
       <Route path="/club/reset-password" element={<WineClubResetPasswordPage />} />

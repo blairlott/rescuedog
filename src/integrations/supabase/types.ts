@@ -3903,6 +3903,42 @@ export type Database = {
         }
         Relationships: []
       }
+      kennel_campaign_windows: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_date: string
+          entity_id: string
+          id: string
+          label: string | null
+          notes: string | null
+          platform: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          entity_id: string
+          id?: string
+          label?: string | null
+          notes?: string | null
+          platform: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          entity_id?: string
+          id?: string
+          label?: string | null
+          notes?: string | null
+          platform?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kennel_entity_aliases: {
         Row: {
           created_at: string

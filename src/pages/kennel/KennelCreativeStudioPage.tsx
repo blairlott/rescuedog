@@ -59,7 +59,7 @@ export default function KennelCreativeStudioPage() {
 
   const [file, setFile] = useState<File | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
-  const [brand, setBrand] = useState<"wine" | "merch">("wine");
+  const [brand, setBrand] = useState<"wine" | "merch" | "none">("wine");
   const [ratios, setRatios] = useState<string[]>(["1:1", "9:16", "16:9"]);
   const [outputTypes, setOutputTypes] = useState({ images: true, copy: true, video: true });
   const [brief, setBrief] = useState("");

@@ -60,6 +60,11 @@ export default function KennelCreativeStudioPage() {
   const [file, setFile] = useState<File | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [brand, setBrand] = useState<"wine" | "merch" | "none">("wine");
+  // Brand NAME used in headlines/copy is independent of the visual lockup —
+  // we always include a brand mention, but the user picks whether copy says
+  // "Rescue Dog Wines" (wine catalog, compliant) or just "Rescue Dog" (merch,
+  // mission-led, or non-wine creative).
+  const [copyBrand, setCopyBrand] = useState<"Rescue Dog Wines" | "Rescue Dog">("Rescue Dog Wines");
   const [ratios, setRatios] = useState<string[]>(["1:1", "9:16", "16:9"]);
   const [outputTypes, setOutputTypes] = useState({ images: true, copy: true, video: true });
   const [brief, setBrief] = useState("");
@@ -206,7 +211,7 @@ export default function KennelCreativeStudioPage() {
         tasks.push(callApi("reformat", { job_id: job.id, ratios }));
       }
       if (outputTypes.copy) {
-        tasks.push(callApi("copy-iterate", { job_id: job.id, brief, tones }));
+        tasks.push(callApi("copy-iterate", { job_id: job.id, brief, tones, copy_brand: copyBrand }));
       }
       if (outputTypes.video) {
         if (!creatomateReady) {

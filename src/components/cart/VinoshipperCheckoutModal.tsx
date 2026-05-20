@@ -524,7 +524,9 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
                 ? `Shipping (${shipMethod === "ups_ap" ? "UPS Access Point" : `included, ${VS_SHIPPING_THRESHOLD_BOTTLES}+ bottles`})`
                 : shipMethod === "ups_ap"
                   ? "Shipping (UPS Access Point — save $5)"
-                  : "Shipping (Home delivery, adult signature)"
+                  : totalBottles >= VS_FLAT_SHIPPING_MIN_BOTTLES
+                    ? `Shipping (flat $${VS_FLAT_SHIPPING_USD.toFixed(2)} — add ${VS_SHIPPING_THRESHOLD_BOTTLES - totalBottles} more for included)`
+                    : "Shipping (Home delivery, adult signature)"
             }
             value={shipping}
           />

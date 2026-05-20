@@ -3,7 +3,7 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2 } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
 import { CrmBreadcrumbs } from "@/components/crm/CrmBreadcrumbs";
@@ -21,6 +21,7 @@ export default function CrmLayout() {
     { to: "/crm", label: "Dashboard", icon: LayoutDashboard },
     { to: "/crm/map", label: "Map", icon: Map },
     { to: "/crm/routes", label: "Route Planner", icon: Route },
+    ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/intelligence", label: "Intelligence", icon: Brain }] : []),
     ...(roleInfo?.isAmbassadorManager ? [{ to: "/crm/ambassadors", label: "Ambassadors", icon: Heart }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/margin", label: "Margin", icon: TrendingUp }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/compliance", label: "Compliance", icon: ShieldCheck }] : []),

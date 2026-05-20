@@ -6177,6 +6177,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ops_digest_runs: {
+        Row: {
+          created_at: string
+          digest_date: string
+          email_error: string | null
+          email_status: string
+          html: string | null
+          id: string
+          recipients: string[]
+          summary: Json
+        }
+        Insert: {
+          created_at?: string
+          digest_date: string
+          email_error?: string | null
+          email_status?: string
+          html?: string | null
+          id?: string
+          recipients?: string[]
+          summary?: Json
+        }
+        Update: {
+          created_at?: string
+          digest_date?: string
+          email_error?: string | null
+          email_status?: string
+          html?: string | null
+          id?: string
+          recipients?: string[]
+          summary?: Json
+        }
+        Relationships: []
+      }
       order_email_settings: {
         Row: {
           description: string | null

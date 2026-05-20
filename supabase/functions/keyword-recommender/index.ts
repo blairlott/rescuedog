@@ -16,11 +16,12 @@ const SYSTEM = `You optimize paid-search keyword portfolios across Instacart, Go
 
 You are given a JSON dataset of keywords (with 30d performance) and search terms (queries that triggered ads). Produce a ranked list of high-impact actions.
 
-Output strict JSON: {"recommendations":[{"platform","keyword","match_type","action","current_bid_cents","suggested_bid_cents","reason","priority","estimated_monthly_impact_cents"}]}
+Output strict JSON: {"recommendations":[{"platform","keyword","match_type","action","current_bid_cents","suggested_bid_cents","reason","priority","confidence","estimated_monthly_impact_cents","campaign_external_id"}]}
 
 Actions: "raise_bid" | "lower_bid" | "pause" | "add_negative" | "promote_search_term" | "cross_pollinate".
 For cross_pollinate, set "reason" to include the source platform.
 Priority: 1 (urgent) to 5 (nice-to-have).
+Confidence: 0.0-1.0 — how sure you are this action will improve ROAS. Reserve ≥0.85 for very strong signal (e.g. ACOS > 150% with >20 clicks → pause).
 Limit to 25 highest-impact recommendations. Be ruthless about ACOS > 100% (pause or lower bid).`;
 
 Deno.serve(async (req) => {
@@ -93,11 +94,17 @@ Deno.serve(async (req) => {
     // Persist as ad_recommendations for the existing review workflow.
     let saved = 0;
     for (const r of recs.slice(0, 25)) {
+      const conf = Math.max(0, Math.min(1, Number(r.confidence ?? 0.5)));
+      const impact = Math.max(0, Math.round(Number(r.estimated_monthly_impact_cents ?? 0)));
       const { error } = await admin.from("ad_recommendations").insert({
         kind: "keyword_optimization",
         status: "pending",
         title: `${r.action} • ${r.platform} • "${r.keyword ?? ""}"`,
         summary: r.reason ?? "",
+        rationale: r.reason ?? null,
+        confidence: conf,
+        projected_impact_cents: impact,
+        source: "native",
         payload: r,
         expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
       });

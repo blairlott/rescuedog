@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MetricCard } from "@/components/kennel/MetricCard";
-import { Sparkles, Search } from "lucide-react";
+import { Sparkles, Search, CheckCircle2, XCircle, Pause, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 
 function dollars(c: number | null | undefined) { return `$${((c ?? 0) / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}`; }
 function pct(n: number | null | undefined) { return n == null || !isFinite(n) ? "—" : `${(n * 100).toFixed(1)}%`; }
 
 export default function KennelKeywordsPage() {
+  const qc = useQueryClient();
   const [platform, setPlatform] = useState<string>("all");
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
@@ -36,6 +37,49 @@ export default function KennelKeywordsPage() {
       return (data as any[]) ?? [];
     },
   });
+
+  const { data: pendingRecs = [] } = useQuery({
+    queryKey: ["all-pending-recs"],
+    queryFn: async () => {
+      const { data } = await supabase.from("ad_recommendations" as any)
+        .select("id,title,summary,confidence,projected_impact_cents,payload,created_at")
+        .eq("status", "pending").eq("kind", "keyword_optimization")
+        .order("projected_impact_cents", { ascending: false }).limit(50);
+      return (data as any[]) ?? [];
+    },
+  });
+
+  function invalidate() {
+    qc.invalidateQueries({ queryKey: ["all-keywords"] });
+    qc.invalidateQueries({ queryKey: ["all-pending-recs"] });
+  }
+
+  async function executeRec(rec: any) {
+    const p = rec.payload ?? {};
+    if (p.platform !== "instacart") {
+      toast.info(`Auto-execution available only for Instacart today. Apply manually on ${p.platform}.`);
+      return;
+    }
+    const { data: kws } = await supabase.from("ad_keywords" as any).select("id")
+      .eq("platform_slug", "instacart").eq("keyword", p.keyword)
+      .eq("match_type", String(p.match_type ?? "broad").toLowerCase()).maybeSingle();
+    if (!kws) { toast.error("Keyword not found locally"); return; }
+    let body: any;
+    if (p.action === "raise_bid" || p.action === "lower_bid") {
+      body = { action: "set_keyword_bid", keyword_id: (kws as any).id, bid_cents: p.suggested_bid_cents, recommendation_id: rec.id };
+    } else if (p.action === "pause") {
+      body = { action: "pause_keyword", keyword_id: (kws as any).id, recommendation_id: rec.id };
+    } else { toast.error(`Action ${p.action} requires manual handling`); return; }
+    const { data, error } = await supabase.functions.invoke("instacart-ads-execute", { body });
+    if (error || !(data as any)?.ok) toast.error((error as any)?.message ?? (data as any)?.partner_error ?? "Execute failed");
+    else { toast.success(`Executed: ${p.action}`); invalidate(); }
+  }
+
+  async function rejectRec(id: string) {
+    const { error } = await supabase.from("ad_recommendations" as any)
+      .update({ status: "rejected", reviewed_at: new Date().toISOString() }).eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Rejected"); invalidate(); }
+  }
 
   const filtered = useMemo(() =>
     rows.filter((r) => !q || r.keyword?.toLowerCase().includes(q.toLowerCase())),
@@ -103,6 +147,51 @@ export default function KennelKeywordsPage() {
         <MetricCard label="Sales (30d)" value={dollars(totals.sales)} />
         <MetricCard label="Blended ACOS" value={pct(totals.acos)} />
       </div>
+
+      {pendingRecs.length > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="text-xs uppercase tracking-brand font-semibold text-muted-foreground">
+              AI recommendations ({pendingRecs.length})
+            </div>
+            <div className="space-y-2">
+              {pendingRecs.map((r: any) => {
+                const p = r.payload ?? {};
+                const conf = Number(r.confidence ?? 0);
+                return (
+                  <div key={r.id} className="flex items-center justify-between border border-border p-3 text-sm gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge>{p.platform ?? "?"}</Badge>
+                        <Badge variant="outline">{p.action}</Badge>
+                        <span className="font-medium">"{p.keyword}"</span>
+                        <span className="text-xs text-muted-foreground">{p.match_type}</span>
+                        {p.current_bid_cents ? (
+                          <span className="text-xs tabular-nums">
+                            {dollars(p.current_bid_cents)} → {dollars(p.suggested_bid_cents)}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1 truncate">{r.summary ?? p.reason}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Confidence {(conf * 100).toFixed(0)}% · Est. impact {dollars(p.estimated_monthly_impact_cents ?? r.projected_impact_cents)}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button size="sm" onClick={() => executeRec(r)}>
+                        <CheckCircle2 className="h-3 w-3 mr-1" /> Execute
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => rejectRec(r.id)}>
+                        <XCircle className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex gap-3 items-center flex-wrap">
         <Select value={platform} onValueChange={setPlatform}>

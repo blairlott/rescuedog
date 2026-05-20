@@ -378,6 +378,13 @@ export type Database = {
             referencedRelation: "ad_recommendations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ad_execution_log_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "v_instacart_recommendations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ad_forecasts: {
@@ -9090,6 +9097,90 @@ export type Database = {
           stripe_fee_cents: number | null
         }
         Relationships: []
+      }
+      v_instacart_recommendations: {
+        Row: {
+          channel_id: string | null
+          confidence: number | null
+          created_at: string | null
+          executed_at: string | null
+          expires_at: string | null
+          id: string | null
+          ingest_request_id: string | null
+          kind: string | null
+          payload: Json | null
+          projected_impact_cents: number | null
+          rationale: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rollback_state: Json | null
+          source: string | null
+          status: string | null
+          summary: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          channel_id?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          executed_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          ingest_request_id?: string | null
+          kind?: string | null
+          payload?: Json | null
+          projected_impact_cents?: number | null
+          rationale?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rollback_state?: Json | null
+          source?: string | null
+          status?: string | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          channel_id?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          executed_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          ingest_request_id?: string | null
+          kind?: string | null
+          payload?: Json | null
+          projected_impact_cents?: number | null
+          rationale?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rollback_state?: Json | null
+          source?: string | null
+          status?: string | null
+          summary?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_recommendations_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "ad_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_recommendations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

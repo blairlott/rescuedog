@@ -39,6 +39,26 @@ function seasonalFactors(dates: string[], ys: number[]): number[] {
   return sums.map((s, i) => (cnts[i] === 0 ? 1 : (s / cnts[i]) / mean));
 }
 
+/**
+ * Calendar-month seasonal index (mean = 1.0) derived from per-day values.
+ * Works on whatever history is supplied; needs at least one full year for
+ * a meaningful all-12-month index — months without history default to 1.0.
+ */
+function monthlySeasonalFactors(dates: string[], ys: number[]): number[] {
+  const sums = new Array(12).fill(0);
+  const cnts = new Array(12).fill(0);
+  for (let i = 0; i < dates.length; i++) {
+    const m = new Date(dates[i] + "T00:00:00Z").getUTCMonth();
+    sums[m] += ys[i];
+    cnts[m] += 1;
+  }
+  const dailyByMonth = sums.map((s, i) => (cnts[i] ? s / cnts[i] : 0));
+  const observed = dailyByMonth.filter((v) => v > 0);
+  const mean = observed.length ? observed.reduce((a, b) => a + b, 0) / observed.length : 0;
+  if (!mean) return new Array(12).fill(1);
+  return dailyByMonth.map((v) => (v > 0 ? v / mean : 1));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -74,14 +94,39 @@ Deno.serve(async (req) => {
 
   // Lookback window
   const since = new Date(Date.now() - lookback * 86400000).toISOString().slice(0, 10);
+  // Always pull a deeper window (up to 24 months) for seasonal-index estimation,
+  // independent of the user-selected lookback used for trend/CAGR.
+  const seasonalSince = new Date(Date.now() - 730 * 86400000).toISOString().slice(0, 10);
   const { data: channels } = await admin.from("ad_channels").select("id, platform");
   const chById = new Map<string, string>((channels ?? []).map((c: any) => [c.id, c.platform]));
-  const { data: rowsRaw } = await admin
-    .from("ad_performance_daily")
-    .select("channel_id, date, spend, revenue, conversions")
-    .gte("date", since)
-    .order("date");
-  const rows: DailyRow[] = (rowsRaw ?? []).map((r: any) => ({
+  // Page through to get full history (Supabase caps at 1000/page).
+  const pageAll = async (gteDate: string): Promise<any[]> => {
+    const out: any[] = [];
+    const pageSize = 1000; let from = 0;
+    while (true) {
+      const { data: rows } = await admin
+        .from("ad_performance_daily")
+        .select("channel_id, date, spend, revenue, conversions")
+        .gte("date", gteDate)
+        .order("date")
+        .range(from, from + pageSize - 1);
+      if (!rows || rows.length === 0) break;
+      out.push(...rows);
+      if (rows.length < pageSize) break;
+      from += pageSize;
+    }
+    return out;
+  };
+  const seasonalRowsRaw = await pageAll(seasonalSince);
+  const rowsRaw = seasonalRowsRaw.filter((r: any) => r.date >= since);
+  const rows: DailyRow[] = rowsRaw.map((r: any) => ({
+    date: r.date,
+    platform: chById.get(r.channel_id) ?? "unknown",
+    spend: Number(r.spend ?? 0),
+    revenue: Number(r.revenue ?? 0),
+    conversions: Number(r.conversions ?? 0),
+  }));
+  const seasonalRows: DailyRow[] = seasonalRowsRaw.map((r: any) => ({
     date: r.date,
     platform: chById.get(r.channel_id) ?? "unknown",
     spend: Number(r.spend ?? 0),
@@ -114,6 +159,21 @@ Deno.serve(async (req) => {
     const revReg   = linreg(xs, revSeries);
     const spendSeason = seasonalFactors(dates, spendSeries);
     const revSeason   = seasonalFactors(dates, revSeries);
+
+    // Monthly seasonal index computed on the deeper 24-month window so it
+    // captures real calendar-month patterns even when lookback is short.
+    const seasonalSubset = plat === "all" ? seasonalRows : seasonalRows.filter((r) => r.platform === plat);
+    const seasonByDate = new Map<string, { spend: number; revenue: number }>();
+    for (const r of seasonalSubset) {
+      const cur = seasonByDate.get(r.date) ?? { spend: 0, revenue: 0 };
+      cur.spend += r.spend; cur.revenue += r.revenue;
+      seasonByDate.set(r.date, cur);
+    }
+    const seasonDates = Array.from(seasonByDate.keys()).sort();
+    const seasonSpendSeries = seasonDates.map((d) => seasonByDate.get(d)!.spend);
+    const seasonRevSeries   = seasonDates.map((d) => seasonByDate.get(d)!.revenue);
+    const spendMonthSeason = monthlySeasonalFactors(seasonDates, seasonSpendSeries);
+    const revMonthSeason   = monthlySeasonalFactors(seasonDates, seasonRevSeries);
 
     const lastIdx = xs[xs.length - 1];
     const lastDate = new Date(dates[dates.length - 1] + "T00:00:00Z");
@@ -173,12 +233,13 @@ Deno.serve(async (req) => {
     for (let h = 1; h <= horizon; h++) {
       const futureDate = new Date(lastDate.getTime() + h * 86400000);
       const dow = futureDate.getUTCDay();
+      const moy = futureDate.getUTCMonth();
       // CAGR-based projection: baseline daily × compounded growth × DoW seasonality.
       const growthSpend = Math.pow(spendDaily, h);
       const growthRev   = Math.pow(revDaily,   h);
-      const rawSpend = Math.max(spendFloor, baselineSpend * growthSpend) * spendSeason[dow] * spendTilt;
+      const rawSpend = Math.max(spendFloor, baselineSpend * growthSpend) * spendSeason[dow] * spendMonthSeason[moy] * spendTilt;
       const trendSpend = rawSpend;
-      const rawRev   = baselineRev * growthRev * revSeason[dow] * revenueTilt;
+      const rawRev   = baselineRev * growthRev * revSeason[dow] * revMonthSeason[moy] * revenueTilt;
       let trendRev   = rawRev;
       if (trendSpend > 0 && baselineRoas > 0) {
         const implied = trendRev / trendSpend;
@@ -222,8 +283,8 @@ Deno.serve(async (req) => {
       upper_bound: Math.round(series.reduce((s, p) => s + p.revenue_upper, 0) * 100) / 100,
       confidence: 0.80,
       model: "linreg_dow_seasonality_v1",
-      series: { points: series, summary, strategy_mode: { goal, pace }, baseline: { roas: Math.round(baselineRoas * 1000) / 1000, daily_spend: Math.round(baselineSpend * 100) / 100, daily_revenue: Math.round(baselineRev * 100) / 100, days: recent28Spend.length, revenue_cagr: Math.round(revCagr * 1000) / 1000, spend_cagr: Math.round(spendCagr * 1000) / 1000 } },
-      narrative: `${horizon}-day projection: baseline ROAS ${baselineRoas.toFixed(2)}x, revenue CAGR ${(revCagr*100).toFixed(1)}%, spend CAGR ${(spendCagr*100).toFixed(1)}% (90d vs prior 90d, annualized). Goal ${goal}/100, Pace ${pace}/100.`,
+      series: { points: series, summary, strategy_mode: { goal, pace }, baseline: { roas: Math.round(baselineRoas * 1000) / 1000, daily_spend: Math.round(baselineSpend * 100) / 100, daily_revenue: Math.round(baselineRev * 100) / 100, days: recent28Spend.length, revenue_cagr: Math.round(revCagr * 1000) / 1000, spend_cagr: Math.round(spendCagr * 1000) / 1000 }, seasonality: { dow_revenue: revSeason.map((v) => Math.round(v * 1000) / 1000), month_revenue: revMonthSeason.map((v) => Math.round(v * 1000) / 1000), month_spend: spendMonthSeason.map((v) => Math.round(v * 1000) / 1000), history_days: seasonDates.length } },
+      narrative: `${horizon}-day projection: baseline ROAS ${baselineRoas.toFixed(2)}x, revenue CAGR ${(revCagr*100).toFixed(1)}%, spend CAGR ${(spendCagr*100).toFixed(1)}% (90d vs prior 90d, annualized). Seasonality: day-of-week + calendar-month (24mo, ${seasonDates.length} days observed). Goal ${goal}/100, Pace ${pace}/100.`,
       generated_at: new Date().toISOString(),
       valid_until: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
     };

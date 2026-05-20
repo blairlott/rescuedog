@@ -20,6 +20,7 @@ const NAV = [
   { to: "/kennel/settings", label: "Settings", icon: Settings, end: false, viewerOk: false },
   { to: "/kennel/integrations", label: "Integrations", icon: Key, end: false, viewerOk: false },
   { to: "/kennel/media-buying", label: "Media Buying", icon: ShoppingBag, end: false, viewerOk: false },
+  { to: "/kennel/creative-studio", label: "Creative Studio", icon: Sparkles, end: false, viewerOk: false },
 ];
 
 export function KennelLayout() {

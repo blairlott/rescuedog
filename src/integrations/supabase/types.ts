@@ -1992,6 +1992,101 @@ export type Database = {
         }
         Relationships: []
       }
+      creative_jobs: {
+        Row: {
+          brand_lockup: string
+          created_at: string
+          destinations: Json
+          error: string | null
+          id: string
+          options: Json
+          output_types: Json
+          source_filename: string | null
+          source_url: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brand_lockup?: string
+          created_at?: string
+          destinations?: Json
+          error?: string | null
+          id?: string
+          options?: Json
+          output_types?: Json
+          source_filename?: string | null
+          source_url: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brand_lockup?: string
+          created_at?: string
+          destinations?: Json
+          error?: string | null
+          id?: string
+          options?: Json
+          output_types?: Json
+          source_filename?: string | null
+          source_url?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      creative_outputs: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          job_id: string
+          kind: string
+          meta: Json
+          platform: string | null
+          ratio: string | null
+          status: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          job_id: string
+          kind: string
+          meta?: Json
+          platform?: string | null
+          ratio?: string | null
+          status?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          job_id?: string
+          kind?: string
+          meta?: Json
+          platform?: string | null
+          ratio?: string | null
+          status?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_outputs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "creative_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_cohorts: {
         Row: {
           acquisition_month: string | null

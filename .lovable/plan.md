@@ -119,4 +119,11 @@ Phase 5 — Close the loop
 - Purchase OCI already covered by `vinoshipper-conversions-backfill` (15-min poll, hashed user_identifiers).
 - Logs every attempt to `oci_upload_log` with status `uploaded` / `partial_failure` / `error` / `skipped_no_identifier`.
 
-**Next up:** Phase 2 — Daily AI ops digest (#15), churn dashboard (#10), LTV cohort revenue (#11), unified customer map (#12).
+**Phase 2 batch 1 — shipped (#15 + #10 + #11)**
+- New edge fn `customer-cohorts-rebuild`: pages through `vs_transactions`, joins club status, computes per-email LTV, AOV, days-since-last-order, banded churn probability, segment (champion/loyal/regular/club_member/at_risk/lost/one_time), predicted 24-mo LTV. Upserts into `customer_cohorts` (already RLS'd to executives + ad ops).
+- New edge fn `ops-daily-digest`: composes yesterday's revenue, club joins/cancels, CAPI/OCI volume, open abandoned carts, top at-risk customers — and emails via Resend connector to the addresses in `app_settings.ops_digest_recipients`. Logs each run to new `ops_digest_runs` table.
+- New CRM page `/crm/intelligence` (admin-only nav link "Intelligence"): KPI cards (customers, realized LTV, predicted LTV, at-risk count, club/champion count), segment breakdown, top at-risk table, LTV-by-acquisition-month cohort matrix, recent digests log. "Rebuild cohorts" + "Send digest now" buttons for on-demand runs.
+- Cron: `customer-cohorts-rebuild-nightly` (04:15 UTC daily) + `ops-daily-digest` (13:00 UTC daily ≈ 8am EST).
+- Kill switch: `ops_digest_enabled`.
+
+**Next up:** Phase 2 batch 2 — unified customer map filters (#12), ambassador performance dashboard (#14), webhook activity viewer (#16).

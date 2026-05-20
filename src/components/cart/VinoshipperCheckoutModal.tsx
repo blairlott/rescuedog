@@ -140,15 +140,21 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   // (members get the higher 20% via Vinoshipper customer-group discount,
   // applied automatically at checkout — no code needed).
   // Case discount (20%) wins over the signup code (10%) when both could apply.
-  const signupPromo = !isMember && !joiningClub ? getSignupPromo() : null;
+  // Signup / case promo codes apply to anyone who is NOT already a member —
+  // including customers joining the club on this order, because VS won't have
+  // them in the member customer-group yet at the time this order is charged.
+  const signupPromo = !isMember ? getSignupPromo() : null;
   const caseEligible =
-    !isMember && !joiningClub && totalBottles >= fullCaseCount && caseDiscountCode;
+    !isMember && totalBottles >= fullCaseCount && caseDiscountCode;
   const activePromoCode = caseEligible
     ? caseDiscountCode
     : signupPromo?.code ?? null;
   const isSignupPromoActive = !!signupPromo && activePromoCode === signupPromo.code;
-  // Joining the club applies the same 20% member discount on this order.
-  const discountActive = isMember || joiningClub;
+  // Member discount preview is ONLY shown for actual members. Vinoshipper
+  // applies the 20% / 25%-case discount via the Wine Club customer group,
+  // and customers who join on this order aren't in the group yet when this
+  // first order is charged — so previewing the discount here would mislead.
+  const discountActive = isMember;
   // Bundles are excluded from member discount (matches Vinoshipper rule).
   const discountable = useMemo(() => discountEligibleSubtotal(items as any), [items]);
   // Members get 25% on full cases (12+ bottles), 20% otherwise — VS applies

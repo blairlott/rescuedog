@@ -12,15 +12,6 @@ import { ArrowLeft, Wine, Gift, Percent, ShieldCheck, AlertTriangle } from "luci
 import { VinoshipperClubHandoff } from "./VinoshipperClubHandoff";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 
-const winePreferenceOptions = [
-  "Bold Reds",
-  "Light Reds",
-  "Dry Whites",
-  "Sweet Whites",
-  "Sparkling",
-  "Rosé",
-];
-
 interface ClubSignupFormProps {
   tier: WineClubTier;
   onBack: () => void;
@@ -44,21 +35,15 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
     gift_recipient_name: "",
     gift_recipient_email: "",
   });
-  const [preferences, setPreferences] = useState<string[]>([]);
 
   const update = (key: string, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const togglePref = (pref: string) =>
-    setPreferences((prev) =>
-      prev.includes(pref) ? prev.filter((p) => p !== pref) : [...prev, pref]
-    );
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Always persist a local membership draft so we capture preferences,
-    // gift data, rescue partner picks, etc. — Vinoshipper only owns the
-    // card capture + recurring billing.
+    // Persist a local membership draft so we capture gift data, address,
+    // etc. Vinoshipper owns card capture + recurring billing, and members
+    // customize each release via the link Vinoshipper emails them.
     onSubmit({
       tier_id: tier.id,
       shipping_address_line1: form.shipping_address_line1,
@@ -66,7 +51,6 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
       shipping_city: form.shipping_city,
       shipping_state: form.shipping_state,
       shipping_zip: form.shipping_zip,
-      wine_preferences: preferences,
       is_gift: form.is_gift,
       gift_message: form.is_gift ? form.gift_message : undefined,
     });

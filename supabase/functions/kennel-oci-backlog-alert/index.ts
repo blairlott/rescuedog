@@ -83,6 +83,7 @@ Deno.serve(async (req) => {
     pending.length > BACKLOG_COUNT_THRESHOLD || oldestAgeHours >= BACKLOG_AGE_HOURS;
 
   let alertResult: any = { skipped: true };
+  let autoFlushResult: any = { skipped: true };
   if (shouldAlert) {
     try {
       const r = await fetch(
@@ -100,13 +101,41 @@ Deno.serve(async (req) => {
             spend_impact_cents: pendingValueCents,
             confidence: 0.95,
             deep_link: `https://rescuedog.lovable.app/kennel/oci-log`,
-            message: `${pending.length} conversions ($${(pendingValueCents / 100).toFixed(2)}) pending OCI upload. Oldest: ${oldestAgeHours.toFixed(0)}h. Lindy needs to POST to /google-ads-oci-upload with LINDY_PROXY_TOKEN.`,
+            message: `${pending.length} conversions ($${(pendingValueCents / 100).toFixed(2)}) pending OCI upload. Oldest: ${oldestAgeHours.toFixed(0)}h. Auto-flush attempted via vinoshipper-conversions-backfill.`,
           }),
         },
       );
       alertResult = { status: r.status, body: await r.json().catch(() => ({})) };
     } catch (e: any) {
       alertResult = { error: String(e?.message ?? e) };
+    }
+
+    // Auto-flush: call vinoshipper-conversions-backfill with the cron secret.
+    // It will pull the same eligible rows, dedup against oci_upload_log, and
+    // upload everything that isn't already marked `uploaded`. Skip Meta here
+    // since this loop is OCI-specific.
+    try {
+      const r2 = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/vinoshipper-conversions-backfill`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-kennel-cron-secret": ingestSecret ?? "",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            since_iso: since,
+            limit: 2000,
+            send_meta: false,
+            send_google: true,
+            dry_run: false,
+          }),
+        },
+      );
+      autoFlushResult = { status: r2.status, body: await r2.json().catch(() => ({})) };
+    } catch (e: any) {
+      autoFlushResult = { error: String(e?.message ?? e) };
     }
   }
 
@@ -119,5 +148,6 @@ Deno.serve(async (req) => {
     thresholds: { count: BACKLOG_COUNT_THRESHOLD, age_hours: BACKLOG_AGE_HOURS },
     alert_fired: shouldAlert,
     alert_result: alertResult,
+    auto_flush_result: autoFlushResult,
   });
 });

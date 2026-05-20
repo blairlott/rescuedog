@@ -87,7 +87,8 @@ async function recomposeImage(sourceUrl: string, ratio: string): Promise<string 
   return imgB64; // data URL
 }
 
-async function generateCopyVariants(brief: string, tones: string[]): Promise<any[]> {
+async function generateCopyVariants(brief: string, tones: string[], copyBrand: string): Promise<any[]> {
+  const brandName = copyBrand === "Rescue Dog" ? "Rescue Dog" : "Rescue Dog Wines";
   const r = await fetch(LOVABLE_AI_URL, {
     method: "POST",
     headers: {
@@ -100,11 +101,11 @@ async function generateCopyVariants(brief: string, tones: string[]): Promise<any
         {
           role: "system",
           content:
-            "You write performance ad copy for Rescue Dog Wines, a wine brand whose mission is helping dogs find their forever home. Voice: warm, mission-led, never gimmicky. Never say 'free shipping' — always 'shipping included'. Never quantify impact with specific numbers. Keep it short and punchy.",
+            `You write performance ad copy for ${brandName}, whose mission is helping dogs find their forever home. Voice: warm, mission-led, never gimmicky. Never say 'free shipping' — always 'shipping included'. Never quantify impact with specific numbers. Keep it short and punchy. EVERY variant MUST include the brand name "${brandName}" in either the headline or the subhead (preferably the headline). Do not abbreviate or substitute — use "${brandName}" verbatim.`,
         },
         {
           role: "user",
-          content: `Brief: ${brief}\n\nProduce one ad variant for EACH tone: ${tones.join(", ")}.\nReturn JSON only, with shape: { "variants": [ { "tone": string, "headline": string, "subhead": string, "cta": string, "caption": string, "hashtags": string[] } ] }`,
+          content: `Brand: ${brandName}\nBrief: ${brief}\n\nProduce one ad variant for EACH tone: ${tones.join(", ")}. Each variant MUST mention "${brandName}" verbatim in the headline or subhead.\nReturn JSON only, with shape: { "variants": [ { "tone": string, "headline": string, "subhead": string, "cta": string, "caption": string, "hashtags": string[] } ] }`,
         },
       ],
       response_format: { type: "json_object" },
@@ -218,15 +219,16 @@ async function handleReformat(req: Request) {
 }
 
 async function handleCopyIterate(req: Request) {
-  const { job_id, brief, tones } = await req.json();
+  const { job_id, brief, tones, copy_brand } = await req.json();
   const sb = admin();
   const useTones = (tones && tones.length ? tones : ["Mission", "Product", "Urgency", "Story"]) as string[];
-  const variants = await generateCopyVariants(brief ?? "", useTones);
+  const brandName = copy_brand === "Rescue Dog" ? "Rescue Dog" : "Rescue Dog Wines";
+  const variants = await generateCopyVariants(brief ?? "", useTones, brandName);
   const rows = variants.map((v) => ({
     job_id,
     kind: "copy" as const,
     status: "done" as const,
-    meta: v,
+    meta: { ...v, brand_name: brandName },
   }));
   if (rows.length) await sb.from("creative_outputs").insert(rows);
   return json({ variants });

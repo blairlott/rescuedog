@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Wine, Package, Calendar, Settings, Percent, RotateCcw, Loader2 } from "lucide-react";
+import { Wine, Package, Calendar, Settings, Percent, RotateCcw, Loader2, XCircle } from "lucide-react";
 import type { WineClubMembership, WineClubTier } from "@/hooks/useWineClub";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { toast } from "sonner";
 import { NextShipmentCustomizer } from "./NextShipmentCustomizer";
 import { NextShipmentCountdown } from "./NextShipmentCountdown";
+import { CancelMembershipDialog } from "./CancelMembershipDialog";
 
 const frequencyLabel: Record<string, string> = {
   monthly: "Monthly",
@@ -23,6 +24,7 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
   const tier = membership.tier;
   const [lastItems, setLastItems] = useState<any[] | null>(null);
   const [reordering, setReordering] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
 
   useEffect(() => {
@@ -168,6 +170,33 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
 
       {/* Next Shipment Customizer — handles its own skip CTA when a shipment exists */}
       <NextShipmentCustomizer membership={membership} />
+
+      {/* Cancel Membership */}
+      {membership.status !== "inactive" && (
+        <div className="mt-12 pt-6 border-t border-border flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold text-foreground">Cancel Membership</p>
+            <p className="text-xs text-muted-foreground">
+              You can rejoin anytime. Member pricing ends immediately.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCancelOpen(true)}
+            className="text-xs uppercase tracking-brand"
+          >
+            <XCircle className="h-4 w-4 mr-1.5" /> Cancel
+          </Button>
+        </div>
+      )}
+
+      <CancelMembershipDialog
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        membershipId={membership.id}
+        tierName={tier.name}
+      />
     </div>
   );
 }

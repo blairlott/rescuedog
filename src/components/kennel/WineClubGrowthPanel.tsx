@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { MetricCard } from "@/components/kennel/MetricCard";
 import { Sparkles, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { computeWineClubSignupValue, type WineClubSignupValue } from "@/lib/wineClubSignupValue";
+import { fetchActiveVsMemberEmails } from "@/lib/wineClubMembers";
 
 interface Props {
   start: Date;
@@ -27,28 +28,6 @@ interface Membership {
 function fmtPct(n: number) {
   if (!isFinite(n)) return "—";
   return `${(n * 100).toFixed(1)}%`;
-}
-
-export async function fetchActiveVsMemberEmails() {
-  const PAGE = 1000;
-  const emails = new Set<string>();
-  for (let from = 0; from < 50000; from += PAGE) {
-    const { data, error } = await supabase
-      .from("vs_transactions" as any)
-      .select("customer_email")
-      .eq("active_club_member", true)
-      .not("customer_email", "is", null)
-      .order("customer_email", { ascending: true })
-      .range(from, from + PAGE - 1);
-    if (error) break;
-    const rows = ((data as any) ?? []) as { customer_email: string | null }[];
-    for (const r of rows) {
-      const e = r.customer_email?.trim().toLowerCase();
-      if (e) emails.add(e);
-    }
-    if (rows.length < PAGE) break;
-  }
-  return emails;
 }
 
 export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Wine, Package, Calendar, Settings, Percent, RotateCcw, Loader2, XCircle } from "lucide-react";
+import { Wine, Package, Calendar, Settings, Percent, RotateCcw, Loader2, XCircle, Gift } from "lucide-react";
 import type { WineClubMembership, WineClubTier } from "@/hooks/useWineClub";
+import { useMyGiftMemberships } from "@/hooks/useWineClub";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCartStore } from "@/stores/cartStore";
@@ -8,6 +9,7 @@ import { toast } from "sonner";
 import { NextShipmentCustomizer } from "./NextShipmentCustomizer";
 import { NextShipmentCountdown } from "./NextShipmentCountdown";
 import { CancelMembershipDialog } from "./CancelMembershipDialog";
+import { GiftMembershipDialog } from "./GiftMembershipDialog";
 
 const frequencyLabel: Record<string, string> = {
   monthly: "Monthly",
@@ -25,7 +27,9 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
   const [lastItems, setLastItems] = useState<any[] | null>(null);
   const [reordering, setReordering] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [giftOpen, setGiftOpen] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
+  const { data: gifts } = useMyGiftMemberships();
 
   useEffect(() => {
     (async () => {

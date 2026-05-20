@@ -150,11 +150,16 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
     ? caseDiscountCode
     : signupPromo?.code ?? null;
   const isSignupPromoActive = !!signupPromo && activePromoCode === signupPromo.code;
-  // We never deduct the member discount in our preview — Vinoshipper is the
-  // source of truth and applies the customer-group discount at checkout.
-  // We only SHOW it as "potential savings" so the customer knows it's coming.
-  const discountActive = false;
-  const showMemberSavingsHint = isMember || joiningClub;
+  // UX rule:
+  //   - JOINING the club on this order → deduct the member discount in the
+  //     preview so the customer sees the immediate reward for joining (we
+  //     forward a club-signup promo code to VS so the totals match).
+  //   - Existing MEMBER → don't deduct; show as "potential savings" hint.
+  //     Vinoshipper applies the customer-group discount at checkout and is
+  //     the source of truth, so we never want our preview to disagree.
+  //   - Guest → nothing.
+  const discountActive = joiningClub;
+  const showMemberSavingsHint = isMember && !joiningClub;
   // Bundles are excluded from member discount (matches Vinoshipper rule).
   const discountable = useMemo(() => discountEligibleSubtotal(items as any), [items]);
   // Members get 25% on full cases (12+ bottles), 20% otherwise — VS applies
@@ -175,8 +180,8 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   // UPS Access Point: $5 off home delivery, min $0
   const shipping =
     shipMethod === "ups_ap" ? Math.max(0, baseShipping - 5) : baseShipping;
-  const tax = subtotal * 0.07; // sim flat 7% — VS recalculates at checkout
-  const total = subtotal + shipping + tax;
+  const tax = (subtotal - memberDiscount) * 0.07; // sim flat 7% — VS recalculates at checkout
+  const total = subtotal - memberDiscount + shipping + tax;
 
   const update = (k: keyof typeof form, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));

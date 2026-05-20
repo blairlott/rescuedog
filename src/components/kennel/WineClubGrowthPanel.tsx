@@ -223,6 +223,40 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
         <div className="text-muted-foreground text-sm">Loading club signal…</div>
       ) : (
         <>
+          {signupValue && (
+            <div className="border-2 border-primary bg-primary/5 p-4" style={{ borderRadius: 0 }}>
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <div className="text-[10px] uppercase tracking-brand font-bold text-primary">
+                    Signup value · sent to ad platforms
+                  </div>
+                  <div className="flex items-baseline gap-4 mt-1 flex-wrap">
+                    <div>
+                      <div className="text-2xl font-bold tabular-nums text-foreground">${signupValue.lead_value_usd.toFixed(2)}</div>
+                      <div className="text-[10px] uppercase tracking-brand text-muted-foreground">per Lead event</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold tabular-nums text-foreground">${signupValue.predicted_ltv_usd.toFixed(2)}</div>
+                      <div className="text-[10px] uppercase tracking-brand text-muted-foreground">predicted_ltv ({signupValue.retention_months}mo)</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold tabular-nums text-foreground">${signupValue.target_cpl_max_usd.toFixed(0)}</div>
+                      <div className="text-[10px] uppercase tracking-brand text-muted-foreground">max CPL · bid cap</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[11px] text-muted-foreground max-w-md leading-relaxed">
+                  {signupValue.methodology}
+                  {signupValue.source === "computed" && (
+                    <span className="block mt-1 text-[10px] uppercase tracking-brand">
+                      Override via <code className="font-mono">app_settings.wine_club_signup_lead_value_cents</code>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <MetricCard
               label="Active members"

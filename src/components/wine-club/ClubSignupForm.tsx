@@ -221,32 +221,9 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
         </div>
       </div>
 
-      {/* Wine Preferences */}
-      <div className="mb-8">
-        <h3 className="text-lg font-bold text-foreground mb-2">Wine Preferences</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          {form.is_gift
-            ? "What does the recipient enjoy? This helps us curate the perfect selection."
-            : "Help us curate the perfect selection for you. Select all that apply."}
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {winePreferenceOptions.map((pref) => (
-            <label
-              key={pref}
-              className={`flex items-center gap-2 border p-3 cursor-pointer transition-colors ${
-                preferences.includes(pref)
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <Checkbox
-                checked={preferences.includes(pref)}
-                onCheckedChange={() => togglePref(pref)}
-              />
-              <span className="text-sm text-foreground">{pref}</span>
-            </label>
-          ))}
-        </div>
+      {/* Customization note — sets expectation that Vinoshipper emails the customization link */}
+      <div className="mb-8 border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+        Before each release, Vinoshipper will email you a link to your customization page where you can swap or adjust wines before the deadline.
       </div>
 
       {/* Name (used to prefill the Vinoshipper payment step) */}

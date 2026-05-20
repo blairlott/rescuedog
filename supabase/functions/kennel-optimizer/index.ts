@@ -282,6 +282,100 @@ Deno.serve(async (req) => {
   const campaigns = await fetchInstacartCampaignsAllFormats(tk.token, advertiserId);
   const campaignById = new Map(campaigns.map(c => [c.entity_id, c]));
 
+  // #1 + #2: Load explicit campaign end-date overrides and run an early
+  // window/dead-campaign sweep BEFORE pacing/bid logic. This guarantees that
+  // expired and zero-spend dead campaigns are paused/flagged even if they
+  // have no recent performance rows.
+  const { data: windowRows } = await admin
+    .from("kennel_campaign_windows")
+    .select("entity_id, end_date, label")
+    .eq("platform", "instacart");
+  const windowByEntity = new Map<string, { end_date: string; label: string | null }>(
+    (windowRows ?? []).map((w: any) => [String(w.entity_id), { end_date: String(w.end_date), label: w.label ?? null }]),
+  );
+  const todayDate = today;
+
+  const rowByEntity = new Map(rows.map(r => [r.entity_id, r]));
+
+  for (const c of campaigns) {
+    const name = String(c.raw?.name ?? c.raw?.campaign_name ?? "");
+    const status = String(c.raw?.status ?? c.raw?.state ?? "").toLowerCase();
+    const isPaused = status === "paused" || c.raw?.enabled === false;
+    const patchBase = PATCH_PATH_BY_FORMAT[c.format] ?? "/campaigns";
+
+    // #1: Expired event-window auto-pause.
+    const sniffed = sniffEventWindow(name);
+    const override = windowByEntity.get(c.entity_id);
+    const endDate = override?.end_date ?? sniffed?.end_date ?? null;
+    const expired = endDate !== null && endDate < todayDate;
+    if (expired && !isPaused) {
+      const idem = `${today}|instacart|pause_expired_window|campaign|${c.format}|${c.entity_id}`;
+      const { data: existing } = await admin
+        .from("kennel_optimizer_recommendations")
+        .select("id").eq("idempotency_key", idem).maybeSingle();
+      if (!existing) {
+        const reasoning = `Campaign window ended ${endDate} (${override?.label ?? sniffed?.event ?? "event"}); today is ${todayDate}. Auto-pausing post-window spend.`;
+        let st = "pending"; let applyResp: any = null;
+        if (s.auto_apply && !dryRun) {
+          const result = await patchInstacart(tk.token, advertiserId, `${patchBase}/${c.entity_id}`, { status: "paused" });
+          st = result.ok ? "applied" : "failed";
+          applyResp = { status: result.status, body: result.body };
+          if (result.ok) summary.applied++; else summary.errors++;
+        } else { summary.queued++; }
+        const r = rowByEntity.get(c.entity_id);
+        await admin.from("kennel_optimizer_recommendations").insert({
+          platform: "instacart", rule_type: "pause_expired_window",
+          entity_type: "campaign", entity_id: c.entity_id,
+          metric_window_days: s.lookback_days,
+          spend_cents: r?.spend_cents ?? null, revenue_cents: r?.revenue_cents ?? null,
+          roas: r?.roas ?? null, clicks: r?.clicks ?? null, conversions: r?.conversions ?? null,
+          reasoning, status: st,
+          applied_at: st === "applied" ? new Date().toISOString() : null,
+          apply_response: applyResp, idempotency_key: idem,
+        });
+        summary.pause_recs++;
+        await fireAlert({
+          event_type: "anomaly", channel: "instacart",
+          action: st === "applied" ? "auto_paused_expired_window" : "pause_recommended_expired_window",
+          spend_impact_cents: -(r?.spend_cents ?? 0),
+          confidence: 0.99,
+          deep_link: `https://rescuedog.lovable.app/kennel/recommendations`,
+          message: `${c.format} ${c.entity_id} (${name}): ${reasoning}`,
+        });
+      }
+    }
+
+    // #2: Confirmed-dead zero-spend flag.
+    // Criteria: campaign exists, lookback spend == $0, revenue < $50, not already
+    // paused. We file a recommendation (never auto-archive) so a human can
+    // confirm. Skip if it just expired above.
+    if (!expired && !isPaused) {
+      const r = rowByEntity.get(c.entity_id);
+      const spend = r?.spend_cents ?? 0;
+      const rev = r?.revenue_cents ?? 0;
+      if (spend === 0 && rev < 5000) {
+        const idem = `${today}|instacart|confirmed_dead|campaign|${c.format}|${c.entity_id}`;
+        const { data: existing } = await admin
+          .from("kennel_optimizer_recommendations")
+          .select("id").eq("idempotency_key", idem).maybeSingle();
+        if (!existing) {
+          const reasoning = `${s.lookback_days}d: $0 spend, $${(rev/100).toFixed(2)} revenue. Likely dead — recommend archive.`;
+          await admin.from("kennel_optimizer_recommendations").insert({
+            platform: "instacart", rule_type: "confirmed_dead",
+            entity_type: "campaign", entity_id: c.entity_id,
+            metric_window_days: s.lookback_days,
+            spend_cents: spend, revenue_cents: rev,
+            roas: 0, clicks: r?.clicks ?? 0, conversions: r?.conversions ?? 0,
+            reasoning, status: "pending",
+            idempotency_key: idem,
+          });
+          summary.queued++;
+          summary.pause_recs++;
+        }
+      }
+    }
+  }
+
   // --- Budget pacing across all campaigns (proportional to roas * conversions) ---
   if (s.budget_pacing_enabled) {
     const eligible = rows.filter(r => campaignById.has(r.entity_id) && Number(campaignById.get(r.entity_id)!.raw?.daily_budget_cents ?? 0) > 0);

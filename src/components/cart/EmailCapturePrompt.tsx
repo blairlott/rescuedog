@@ -53,6 +53,9 @@ export function EmailCapturePrompt() {
         status: "email_captured",
         source: "soft_prompt",
       });
+      supabase.functions.invoke("pack-subscribe", {
+        body: { email, source: "cart_email_capture" },
+      }).catch((err) => console.warn("[pack-subscribe] mailchimp sync failed", err));
       try { localStorage.setItem(KEY, JSON.stringify({ captured: true, email, at: Date.now() })); } catch {}
       toast.success("Saved! We'll hold your cart.");
       setOpen(false);

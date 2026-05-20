@@ -105,6 +105,9 @@ export function ExitIntentOffer() {
         status: "email_captured",
         source: "exit_intent_newsletter",
       });
+      supabase.functions.invoke("pack-subscribe", {
+        body: { email, source: "exit_intent_offer" },
+      }).catch((err) => console.warn("[pack-subscribe] mailchimp sync failed", err));
       saveSignupPromo(email);
       setRevealed(true);
       copyCode();

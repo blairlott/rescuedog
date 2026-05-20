@@ -25,6 +25,7 @@ import { BrickMortarTimeline, BrandLiftTimeline } from "@/components/kennel/Bric
 import { WineClubGrowthPanel, fetchWineClubAiSlice } from "@/components/kennel/WineClubGrowthPanel";
 import { WineClubTimeline } from "@/components/kennel/WineClubTimeline";
 import { MetaLeadsHealthPanel } from "@/components/kennel/MetaLeadsHealthPanel";
+import { KennelSystemHealthStrip } from "@/components/kennel/KennelSystemHealthStrip";
 import { DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween } from "@/components/kennel/DateRangeControls";
 import { SortableDashboard, type SortableItem } from "@/components/kennel/SortableDashboard";
 import { Button } from "@/components/ui/button";
@@ -370,6 +371,7 @@ export default function KennelDashboard() {
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1400px] min-w-0">
+      <KennelSystemHealthStrip />
       {lindyStale && (
         <div className="border-2 border-destructive bg-destructive/10 p-3 flex items-center gap-2 text-sm" style={{ borderRadius: 0 }}>
           <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />

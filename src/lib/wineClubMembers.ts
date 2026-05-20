@@ -9,6 +9,7 @@ type VsGiftRow = {
   ship_to_last_name: string | null;
   ship_to_street: string | null;
   ship_to_zip: string | null;
+  order_type: string | null;
 };
 
 export async function fetchActiveVsMemberEmails() {
@@ -54,9 +55,13 @@ export async function fetchActiveVsGiftRecipientKeys() {
     const { data, error } = await supabase
       .from("vs_transactions" as never)
       .select(
-        "customer_email, customer_last_name, customer_street, customer_zip, ship_to_last_name, ship_to_street, ship_to_zip",
+        "customer_email, customer_last_name, customer_street, customer_zip, ship_to_last_name, ship_to_street, ship_to_zip, order_type",
       )
       .eq("active_club_member", true)
+      // Second signal: VS tags one-off gift bottle purchases as
+      // active_club_member too, so require an actual WINE_CLUB order
+      // to qualify as a recurring gift membership.
+      .eq("order_type", "WINE_CLUB")
       .order("customer_email", { ascending: true })
       .range(from, from + PAGE - 1);
 

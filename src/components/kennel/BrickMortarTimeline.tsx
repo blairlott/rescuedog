@@ -402,13 +402,13 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       </header>
 
       <CaveatBanner
-        title="QuickBooks = source of truth · Depletions & Instacart = signals only"
+        title="B&M actuals drive the model · Depletions & Instacart = signals only"
         items={[
-          "QuickBooks is the source of truth for actual wholesale/B&M dollars — ledger-based, refreshed nightly, only entries tagged wholesale/B&M are counted here.",
-          "Depletion reports are SIGNALS — market-level distributor totals shown as a directional cross-check against QB. They are NOT added to revenue totals or the projection base (would double-count QB dollars).",
+          "Observed dollars use the same curated brick-and-mortar revenue facts as the dashboard, with legacy QuickBooks wholesale entries as fallback history.",
+          "Depletion reports are SIGNALS — market-level distributor totals shown as a directional cross-check. They are NOT added to revenue totals or the projection base (would double-count actual dollars).",
           "Because depletions are market-level, account-level velocity metrics (CPPW, TDP, sell-through by store) are not computable today and won't be until scan data (Nielsen/Circana) or distributor account-level feeds land.",
           "Instacart: ad-attributed revenue from Instacart Ads — shown as a SIGNAL only. Not added to B&M totals.",
-          "Projection past today uses a trailing 365-day QB baseline, scaled by a calendar-month seasonal index (24mo of QB history, mean = 1.0) and compounded by historical CAGR (last 12mo vs prior 12mo). Selecting +10%/+25% overrides the CAGR. Not MMM.",
+          "Projection past today uses a trailing 365-day B&M baseline, scaled by a calendar-month seasonal index (24mo history, mean = 1.0) and the selected growth rate. Not MMM.",
         ]}
       />
 

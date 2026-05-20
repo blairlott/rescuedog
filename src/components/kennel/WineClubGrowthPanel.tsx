@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { MetricCard } from "@/components/kennel/MetricCard";
 import { Sparkles, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { computeWineClubSignupValue, type WineClubSignupValue } from "@/lib/wineClubSignupValue";
 
 interface Props {
   start: Date;
@@ -53,6 +54,11 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
         pv: ((pvRes.data as any) || []) as { event_type: string; path: string; session_id: string | null; created_at: string }[],
       };
     },
+  });
+
+  const { data: signupValue } = useQuery({
+    queryKey: ["kennel-wine-club-signup-value"],
+    queryFn: computeWineClubSignupValue,
   });
 
   const stats = useMemo(() => {

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 const NAV = [
   { to: "/kennel", label: "Dashboard", icon: LayoutDashboard, end: true, viewerOk: true },
@@ -26,6 +27,38 @@ export function KennelLayout() {
   const { data: roleInfo } = useUserRole();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [killActive, setKillActive] = useState<string[]>([]);
+
+  // Live badges for self-health failures and pending rule proposals.
+  const { data: navBadges } = useQuery({
+    queryKey: ["kennel-nav-badges"],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      const [hRes, pRes] = await Promise.all([
+        supabase
+          .from("kennel_self_health" as any)
+          .select("function_name, ok, checked_at")
+          .gte("checked_at", since)
+          .order("checked_at", { ascending: false })
+          .limit(500),
+        supabase
+          .from("kennel_rule_suggestions" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending"),
+      ]);
+      const latest = new Map<string, any>();
+      for (const r of (hRes.data as any[]) ?? []) {
+        if (!latest.has(r.function_name)) latest.set(r.function_name, r);
+      }
+      const failing = Array.from(latest.values()).filter((r) => !r.ok).length;
+      return { failing, pending: pRes.count ?? 0 };
+    },
+  });
+  const badgeFor = (to: string): { count: number; tone: "red" | "amber" } | null => {
+    if (to === "/kennel/self-health" && (navBadges?.failing ?? 0) > 0) return { count: navBadges!.failing, tone: "red" };
+    if (to === "/kennel/proposals" && (navBadges?.pending ?? 0) > 0) return { count: navBadges!.pending, tone: "amber" };
+    return null;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -123,7 +156,21 @@ export function KennelLayout() {
               style={{ borderRadius: 0 }}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {(() => {
+                const b = badgeFor(item.to);
+                if (!b) return null;
+                return (
+                  <span
+                    className={`px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                      b.tone === "red" ? "bg-destructive text-destructive-foreground" : "bg-amber-500 text-black"
+                    }`}
+                    style={{ borderRadius: 0 }}
+                  >
+                    {b.count}
+                  </span>
+                );
+              })()}
             </NavLink>
           ))}
         </nav>

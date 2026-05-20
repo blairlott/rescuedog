@@ -29,6 +29,28 @@ function fmtPct(n: number) {
   return `${(n * 100).toFixed(1)}%`;
 }
 
+export async function fetchActiveVsMemberEmails() {
+  const PAGE = 1000;
+  const emails = new Set<string>();
+  for (let from = 0; from < 50000; from += PAGE) {
+    const { data, error } = await supabase
+      .from("vs_transactions" as any)
+      .select("customer_email")
+      .eq("active_club_member", true)
+      .not("customer_email", "is", null)
+      .order("customer_email", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) break;
+    const rows = ((data as any) ?? []) as { customer_email: string | null }[];
+    for (const r of rows) {
+      const e = r.customer_email?.trim().toLowerCase();
+      if (e) emails.add(e);
+    }
+    if (rows.length < PAGE) break;
+  }
+  return emails;
+}
+
 export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
   const fromIso = start.toISOString();
   const toIso = end.toISOString();
@@ -36,7 +58,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ["kennel-wine-club-growth", fromIso, toIso],
     queryFn: async () => {
-      const [tiersRes, mRes, pvRes, vsRes] = await Promise.all([
+      const [tiersRes, mRes, pvRes, vsActiveEmails] = await Promise.all([
         supabase.from("wine_club_tiers" as any).select("id, name, slug, price_cents").eq("is_active", true),
         supabase
           .from("wine_club_memberships" as any)
@@ -47,21 +69,13 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
           .gte("created_at", fromIso)
           .lte("created_at", toIso)
           .or("path.ilike.%wine-club%,path.ilike.%/club%"),
-        // Vinoshipper is the source of truth for active club members today —
-        // the native wine_club_memberships table only holds new app signups.
-        // Count distinct emails with active_club_member=true in vs_transactions.
-        supabase
-          .from("vs_transactions" as any)
-          .select("customer_email")
-          .eq("active_club_member", true)
-          .not("customer_email", "is", null)
-          .limit(50000),
+        fetchActiveVsMemberEmails(),
       ]);
       return {
         tiers: ((tiersRes.data as any) || []) as Tier[],
         memberships: ((mRes.data as any) || []) as Membership[],
         pv: ((pvRes.data as any) || []) as { event_type: string; path: string; session_id: string | null; created_at: string }[],
-        vsActiveEmails: ((vsRes.data as any) || []) as { customer_email: string | null }[],
+        vsActiveEmails,
       };
     },
   });
@@ -94,13 +108,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
     };
     const m = data.memberships;
     const activeAppNow = m.filter(r => r.status === "active").length;
-    // Distinct Vinoshipper active members (lowercased email dedup).
-    const vsEmails = new Set<string>();
-    for (const r of (data.vsActiveEmails ?? [])) {
-      const e = r.customer_email?.trim().toLowerCase();
-      if (e) vsEmails.add(e);
-    }
-    const activeVsNow = vsEmails.size;
+    const activeVsNow = data.vsActiveEmails.size;
     const activeMailchimpNow = Math.max(0, mailchimpClubCount ?? 0);
     // Vinoshipper is the system-of-record for paying members; native app
     // signups are additive. Mailchimp tag is shown as a separate signal in
@@ -249,7 +257,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
       avgTierCents,
       ltvTarget,
     };
-  }, [data, start, end, signupValue]);
+  }, [data, start, end, signupValue, mailchimpClubCount]);
 
   return (
     <section className="space-y-2">

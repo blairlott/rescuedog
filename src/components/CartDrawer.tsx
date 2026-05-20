@@ -593,6 +593,7 @@ export const CartDrawer = () => {
                       <CartSubscribeToggle
                         price={parseFloat(item.price.amount)}
                         quantity={item.quantity}
+                        cartSubtotal={totalPrice}
                       />
                     </div>
                   ))}

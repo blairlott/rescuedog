@@ -1,5 +1,4 @@
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 const TOKEN_URL = "https://api.ads.instacart.com/oauth/token";
 const DEFAULT_REDIRECT = "https://eskqaxmypgvwtsffcbsw.supabase.co/functions/v1/oauth-instacart-callback";
 

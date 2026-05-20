@@ -1,4 +1,4 @@
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getGoogleAdsAccessToken, isAuthError } from "../_shared/googleAdsAuth.ts";
 

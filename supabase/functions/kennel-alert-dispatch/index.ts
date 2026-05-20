@@ -1,8 +1,7 @@
 // Single entry point for Kennel ops alerts. Fans out to Resend (email) + Twilio (SMS).
 // Body: { event_type, channel?, action, spend_impact_cents?, confidence?, deep_link?, message? }
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }

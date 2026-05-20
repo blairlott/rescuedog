@@ -3,8 +3,7 @@
 // For approve/reject we call the SECURITY DEFINER RPC `kennel_review_recommendation`.
 // For execute we dispatch to the platform API (Meta wired live; others stubbed) then mark executed.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,

@@ -2,8 +2,7 @@
 // Meta (Graph API v21.0) and Google Ads (REST v18) are live. Instacart returns a stub response.
 // Auth: requires logged-in user with admin/owner or ad_ops_manager role.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 const META_GRAPH_VERSION = "v21.0";
 const GOOGLE_ADS_VERSION = "v21";
 const INSTACART_BASE = "https://api.ads.instacart.com/api/v3";

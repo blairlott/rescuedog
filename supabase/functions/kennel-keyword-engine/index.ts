@@ -3,8 +3,7 @@
 // scores them deterministically, auto-applies safe ones, gates risky ones.
 // Auth: ad ops / admin / owner only.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 const GOOGLE_ADS_VERSION = "v18";
 const INSTACART_BASE = "https://api.ads.instacart.com/api/v3";
 const INSTACART_TOKEN_URL = "https://api.ads.instacart.com/oauth/token";

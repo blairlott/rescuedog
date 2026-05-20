@@ -1,5 +1,4 @@
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 // Returns SHA-256 hash + length of selected secrets so values can be compared
 // byte-for-byte across projects without exposing them. Also flags trimmed-vs-raw
 // mismatches (a common cause of invalid_grant when pasting secrets).

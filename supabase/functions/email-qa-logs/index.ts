@@ -2,7 +2,7 @@
 // Returns deduplicated rows (latest status per message_id) plus summary stats
 // and the list of registered template names.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 import { TEMPLATES } from "../_shared/transactional-email-templates/registry.ts";
 
 Deno.serve(async (req) => {

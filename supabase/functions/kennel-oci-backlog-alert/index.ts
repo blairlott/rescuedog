@@ -4,8 +4,7 @@
 // event so Lindy / ad-ops sees it. Read-only against vs_transactions and
 // oci_upload_log; never writes uploads itself.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), {
     status: s,

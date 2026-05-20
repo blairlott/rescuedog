@@ -175,6 +175,63 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
       {/* Next Shipment Customizer — handles its own skip CTA when a shipment exists */}
       <NextShipmentCustomizer membership={membership} />
 
+      {/* Gift a Membership */}
+      <div className="mt-12 border border-primary bg-primary/5 p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Gift className="h-7 w-7 text-primary shrink-0" />
+            <div>
+              <h3 className="font-bold text-foreground">Gift a Membership</h3>
+              <p className="text-sm text-muted-foreground">
+                Send a Rescue Dog Wines club membership to someone who'd love it.
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={() => setGiftOpen(true)}
+            className="uppercase tracking-brand text-xs font-bold"
+          >
+            <Gift className="h-4 w-4 mr-1.5" /> Send a Gift
+          </Button>
+        </div>
+
+        {gifts && gifts.length > 0 && (
+          <div className="mt-6 pt-6 border-t border-primary/20">
+            <p className="text-xs font-bold uppercase tracking-brand text-muted-foreground mb-3">
+              Gifts you've sent
+            </p>
+            <ul className="space-y-2">
+              {gifts.map((g) => (
+                <li
+                  key={g.id}
+                  className="flex items-center justify-between text-sm border border-border bg-background p-3"
+                >
+                  <div>
+                    <p className="font-bold text-foreground">
+                      {g.tier?.name ?? "Wine Club"}
+                      {(g as any).gift_recipient_name && (
+                        <span className="text-muted-foreground font-normal">
+                          {" "}· for {(g as any).gift_recipient_name}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Sent {new Date(g.joined_at).toLocaleDateString()}
+                      {(g as any).gift_recipient_email
+                        ? ` to ${(g as any).gift_recipient_email}`
+                        : ""}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center px-2 py-1 bg-muted text-muted-foreground text-[10px] font-bold uppercase tracking-brand">
+                    {g.status}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
       {/* Cancel Membership */}
       {membership.status !== "inactive" && (
         <div className="mt-12 pt-6 border-t border-border flex items-center justify-between gap-4">
@@ -201,6 +258,8 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
         membershipId={membership.id}
         tierName={tier.name}
       />
+
+      <GiftMembershipDialog open={giftOpen} onOpenChange={setGiftOpen} />
     </div>
   );
 }

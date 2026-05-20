@@ -20,6 +20,7 @@ import {
   VS_FLAT_SHIPPING_USD,
   VS_MEMBER_DISCOUNT_PERCENT,
   VS_SHIPPING_THRESHOLD_BOTTLES,
+  VS_FLAT_SHIPPING_MIN_BOTTLES,
   VS_SIMULATION,
 } from "@/lib/vinoshipperConfig";
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
@@ -147,8 +148,14 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
     () => (discountActive ? discountable * (VS_MEMBER_DISCOUNT_PERCENT / 100) : 0),
     [discountActive, discountable],
   );
+  // Shipping ladder: 12+ bottles = included, 6–11 = flat $9.99,
+  // <6 = Vinoshipper-calculated (shown as "calculated at checkout").
   const baseShipping =
-    totalBottles >= VS_SHIPPING_THRESHOLD_BOTTLES ? 0 : VS_FLAT_SHIPPING_USD;
+    totalBottles >= VS_SHIPPING_THRESHOLD_BOTTLES
+      ? 0
+      : totalBottles >= VS_FLAT_SHIPPING_MIN_BOTTLES
+        ? VS_FLAT_SHIPPING_USD
+        : VS_FLAT_SHIPPING_USD; // under 6 still estimated at flat for the in-modal summary; VS recalculates at payment
   // UPS Access Point: $5 off home delivery, min $0
   const shipping =
     shipMethod === "ups_ap" ? Math.max(0, baseShipping - 5) : baseShipping;

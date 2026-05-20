@@ -417,7 +417,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <Stat label="Observed (QB only)" value={`$${Math.round(chart.observedTotal).toLocaleString()}`} hint={`${isoDay(start)} → ${isoDay(observedEnd)}`} />
+            <Stat label="Observed actuals" value={`$${Math.round(chart.observedTotal).toLocaleString()}`} hint={`${isoDay(start)} → ${isoDay(observedEnd)}`} />
             <Stat label="Trailing 365d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint={`B&M base · anchor ${isoDay(chart.anchor)} · CAGR ${(chart.cagr * 100).toFixed(1)}%`} />
             <Stat label="Projected" value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={end > today ? `${isoDay(today)} → ${isoDay(end)} · ${GROWTH_LABELS[growthKey] ?? growthKey} · seasonal` : "no future range"} />
             <Stat label="Observed + Projected" value={`$${Math.round(chart.observedTotal + chart.projectedTotal).toLocaleString()}`} hint={`${data.factRows.toLocaleString()} B&M facts · ${data.qbRows.toLocaleString()} QB fallback · ${data.depRows.toLocaleString()} dep lines`} />
@@ -458,7 +458,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
               observed_revenue: chart.observedTotal,
               projected_revenue: chart.projectedTotal,
               daily_average: chart.dailyAvg,
-              source_rows: { quickbooks: data.qbRows, depletions: data.depRows, instacart: data.icRows },
+              source_rows: { business_revenue_facts: data.factRows, quickbooks_fallback: data.qbRows, depletions: data.depRows, instacart: data.icRows },
             }}
           />
         </>

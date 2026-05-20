@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Wine, Package, Truck, Gift, Star, RefreshCw, ArrowRight, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -50,23 +49,12 @@ const frequencies = [
   { value: "quarterly", label: "Quarterly", discount: "" },
 ];
 
-const wineTypes = ["Red", "White", "Rosé", "Sparkling", "Surprise Me"];
-
 const SubscribePage = () => {
   const [selectedTier, setSelectedTier] = useState("enthusiast");
   const [frequency, setFrequency] = useState("monthly");
-  const [preferences, setPreferences] = useState<string[]>(["Surprise Me"]);
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", phone: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const togglePreference = (pref: string) => {
-    setPreferences(prev =>
-      prev.includes(pref)
-        ? prev.filter(p => p !== pref)
-        : [...prev.filter(p => p !== "Surprise Me"), pref]
-    );
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +74,6 @@ const SubscribePage = () => {
         subscription_type: "curated_box",
         tier: selectedTier,
         frequency,
-        wine_preferences: preferences,
         discount_percent: Math.round(((tier!.originalPrice - tier!.pricePerShipment) / tier!.originalPrice) * 100),
       } as any);
 

@@ -143,6 +143,10 @@ export function useJoinClub() {
         const { getFbc, getFbp } = await import("@/lib/metaAttribution");
         const fbc = getFbc();
         const fbp = getFbp();
+        // Pull gclaw cookie for Google Ads OCI on Subscribe.
+        const gclaw = typeof document !== "undefined"
+          ? (document.cookie.split("; ").find((c) => c.startsWith("gclaw="))?.split("=")[1] ?? null)
+          : null;
         await supabase.functions.invoke("meta-capi-lead", {
           body: {
             event_id: inserted?.id,
@@ -175,6 +179,24 @@ export function useJoinClub() {
             custom_data: { membership_id: inserted?.id, tier_id: data.tier_id },
           },
         });
+        // Google Ads OCI: fire Subscribe with computed annual value so Smart
+        // Bidding learns lead quality. Best-effort; respects kennel_oci_enabled.
+        try {
+          const { computeWineClubSignupValue } = await import("@/lib/wineClubSignupValue");
+          const value = await computeWineClubSignupValue();
+          await supabase.functions.invoke("google-ads-event", {
+            body: {
+              event_name: "Subscribe",
+              event_id: `sub_${inserted?.id ?? "unknown"}`,
+              value: value.predicted_ltv_usd || value.lead_value_usd || 0,
+              currency: "USD",
+              gclaw,
+              email: user.email ?? null,
+            },
+          });
+        } catch (e) {
+          console.warn("[wine-club] Google Ads OCI Subscribe fire failed (non-fatal)", e);
+        }
         // Mailchimp lifecycle: tag as active wine club member.
         if (user.email) {
           await supabase.functions.invoke("mailchimp-tag", {

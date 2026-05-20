@@ -27,7 +27,10 @@ export function readGiftMode(): GiftModeState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...EMPTY_STATE };
-    return { ...EMPTY_STATE, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    // Never auto-restore `enabled` from storage — gift mode must be
+    // explicitly turned on each session so the cart never defaults to it.
+    return { ...EMPTY_STATE, ...parsed, enabled: false };
   } catch {
     return { ...EMPTY_STATE };
   }
@@ -39,13 +42,21 @@ export function clearGiftMode() {
 
 export function isGiftModeReady(s: GiftModeState): boolean {
   if (!s.enabled) return false;
+  // Recipient email is optional. If provided, it must look valid.
+  const email = s.recipientEmail?.trim() ?? "";
+  if (!email) return true;
+  return /.+@.+\..+/.test(email);
+}
+
+export function hasGiftRecipientEmail(s: GiftModeState): boolean {
   const email = s.recipientEmail?.trim() ?? "";
   return email.length > 3 && /.+@.+\..+/.test(email);
 }
 
 export function CartGiftMode({ onChange }: { onChange?: (s: GiftModeState) => void }) {
   const [state, setState] = useState<GiftModeState>(() => readGiftMode());
-  const [open, setOpen] = useState(state.enabled);
+  // Never auto-open the panel on mount — gift mode is opt-in.
+  const [open, setOpen] = useState(false);
   const { enabled: wrapAvailable, feeCents } = useGiftWrapSettings();
 
   const update = (next: Partial<GiftModeState>) => {
@@ -104,7 +115,7 @@ export function CartGiftMode({ onChange }: { onChange?: (s: GiftModeState) => vo
               <div className="space-y-2">
                 <label className="block text-[10px] uppercase tracking-brand font-bold">
                   Recipient email
-                  <span className="text-primary"> *</span>
+                  <span className="text-muted-foreground font-normal normal-case tracking-normal"> (optional)</span>
                 </label>
                 <Input
                   type="email"
@@ -114,9 +125,9 @@ export function CartGiftMode({ onChange }: { onChange?: (s: GiftModeState) => vo
                   className="text-xs h-9 rounded-none"
                 />
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  We'll send the recipient a "gift is on the way" note plus a
-                  shipped notification with tracking. Vinoshipper does not
-                  email recipients — we handle that for you.
+                  Optional — if provided, we'll send the recipient a "gift is
+                  on the way" note plus a shipped notification with tracking.
+                  Leave blank to skip recipient emails.
                 </p>
               </div>
               <div className="space-y-2">

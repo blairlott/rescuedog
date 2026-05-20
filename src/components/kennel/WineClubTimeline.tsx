@@ -81,7 +81,7 @@ export function WineClubTimeline({
   const observedEnd = end < today ? end : today;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["wine-club-timeline"],
+    queryKey: ["wine-club-timeline", "vs-paged-v2"],
     queryFn: async () => {
       const [tiersRes, mRes, vsActiveEmails] = await Promise.all([
         supabase.from("wine_club_tiers" as any).select("id, name, price_cents"),

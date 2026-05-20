@@ -1,132 +1,70 @@
-# Kennel Phase 3.1 — Meta Audiences + Intelligence Layer (revised)
+# AI Creative Studio — `/kennel/creative-studio`
 
-Incorporates Claude's review. No auto-rec-creation in this round; Action button is human-click only.
+A self-service creative workbench that turns one source image (or short clip) into a full set of platform-ready assets, copy variants, and branded Ken Burns videos. Every output lands back in the existing CMS Media Library so Lindy and the platform APIs can pull from one place.
 
-## Pre-build confirmations
-1. Query `vs_transactions` schema (columns for SKU/line items, qty, ship state/zip, cart type, order total, email, timestamp) + earliest order date.
-2. Confirm ≥30 days history exists for baselines.
-3. Request `META_SYSTEM_USER_TOKEN` + `KENNEL_EXTERNAL_SIGNAL_SECRET` secrets (Blair generates Meta token separately).
+## What the user gets
 
-## Schema (single migration)
+1. **Upload** one or more source images (or pick existing assets from CMS Media).
+2. **Pick brand lockup per asset**: Wine (Black RDW logo, red #c30017) or Merch (HD Rescue Dog logo). Toggle per upload.
+3. **Pick destinations** (multi-select): Meta Feed 1:1, Meta Story/Reels 9:16, Pinterest 2:3, TikTok 9:16, YouTube 16:9, YouTube Short 9:16, Google Display 1.91:1, Email Hero 16:9, Web Hero 21:9, Carrot/Instacart 1:1, OOH 4:3.
+4. **Pick output types**: Static image set, Copy/headline/CTA iterations (3–5 variants), Ken Burns MP4 (5s / 10s / 15s with pan-zoom + logo lockup + optional caption + optional music bed).
+5. **Generate**. Progress shown per output. Results gallery with preview, download, "Send to CMS Media", and "Push to platform" (queues for the Media Buying console).
 
-### `sku_catalog` (NEW — varietal/color truth table)
-- `sku text PK, varietal text, color text ('red'|'white'|'rose'|'sparkling'|'other'), style text, active bool default true`
-- RLS: ad_ops/admin write, kennel_viewer read
-- Seed with current RDW SKUs (I'll query `wine_products` + `vs_transactions` distinct SKUs to seed)
+## Pipeline
 
-### `meta_audiences`
-- `id, segment_key text unique, segment_name, segment_query text, segment_kind text ('user_list'|'meta_rule_based')`
-- `meta_audience_id, meta_audience_name, meta_lookalike_id, lal_ratio numeric default 0.01`
-- `enabled bool, create_lal bool, sync_cadence text ('weekly'|'monthly')`
-- `last_sync_at, member_count int, notes text`
-- **RLS**: SELECT for `can_view_kennel`; INSERT/UPDATE/DELETE only for `is_ad_ops` (which already includes admin/owner)
+```text
+ Source image ──► Reformat job ──► Per-ratio AI recompose ──► Brand overlay ──► Save to Media
+                       │
+                       ├──► Copy iterations (Lovable AI) ──► Variant cards
+                       │
+                       └──► Ken Burns render ──► MP4 (pan+zoom keyframes, logo, caption, music) ──► Save to Media
+```
 
-### `meta_audience_sync_runs`
-- `id, segment_id fk, started_at, completed_at`
-- `records_pushed int, status text ('success'|'error'|'skipped_too_small'|'skipped_no_token')`
-- `executed_sql text` (exact SQL run, for audit)
-- `error_message text`
-- RLS: read = `can_view_kennel`; writes service-role only
+- **AI reformat / recompose**: Lovable AI Gateway, `google/gemini-3.1-flash-image-preview` (Nano Banana 2) — edit_image style call with prompt "Recompose for {ratio}, keep subject centered, extend background tastefully, no text." One call per selected ratio.
+- **Copy iterations**: `google/gemini-3-flash-preview` with structured output (zod) — returns `{ headline, subhead, cta, caption, hashtags[] }` × N variants, tone presets: Mission, Product, Urgency, Story.
+- **Ken Burns video**: Rendered server-side in an edge function using ffmpeg via `zoompan` filter on the recomposed still, with a PNG logo overlay (drawn from the chosen brand lockup), optional caption burn-in (drawtext), and an optional royalty-free music bed from a curated bucket. Output H.264 MP4, target ratio matches selected destination.
+- **Brand overlay**: Composited at render time. Wine lockup = Black RDW logo bottom-left + red #c30017 1px hairline; Merch lockup = HD Rescue Dog logo bottom-left. Safe-area aware per platform.
 
-### `kennel_insights`
-- `id, created_at, insight_type, scope_key text, title, summary, data jsonb`
-- `severity text ('info'|'warning'|'opportunity'|'high'|'medium'|'low')`
-- `source text ('internal'|'lindy_external'), urgency text, source_url text, expires_at`
-- `actioned bool default false, actioned_at, actioned_by uuid`
-- **Unique index**: `(insight_type, scope_key, date_trunc('day', created_at))` for dedupe
-- For trend-type insights, `data` MUST include `daily_values: number[14]` (UI sparklines read this directly)
-- RLS: read = `can_view_kennel`; insert/update = `is_ad_ops` + service-role; Lindy webhook uses service-role
+## Data model (new tables)
 
-### Read-only SQL executor
-- Postgres role `meta_segment_runner` with SELECT only on `vs_transactions` + `sku_catalog`
-- SECURITY DEFINER function `run_meta_segment_sql(_sql text)` that:
-  - rejects anything not starting with `SELECT`
-  - `SET LOCAL statement_timeout='30s'`
-  - `SET LOCAL transaction_read_only=on`
-  - executes as `meta_segment_runner` via `SET LOCAL ROLE`
-  - returns `(email text, phone text, first_name text, last_name text, city text, state text, zip text)`
-- Only ad_ops can EXECUTE this function
+- `creative_jobs` — id, user_id, source_asset_url, brand_lockup ('wine'|'merch'), destinations[], output_types[], status, created_at
+- `creative_outputs` — id, job_id, kind ('image'|'video'|'copy'), platform, ratio, url (Supabase Storage), meta (jsonb: copy fields, duration, etc.), status
+- Storage bucket: `creative-studio` (public read, authed write).
+- Brand assets bucket: `brand-lockups` seeded with both logos.
 
 ## Edge functions
 
-### `meta-audience-segments`
-- GET list / POST create / PATCH update / DELETE
-- ad_ops-only (verify via `is_ad_ops`)
-- Validates SQL passes `run_meta_segment_sql` dry-run (LIMIT 1) before save
+- `creative-reformat` — takes source + ratio list, calls Nano Banana 2 per ratio, writes results to storage, inserts `creative_outputs` rows.
+- `creative-copy-iterate` — takes source description + tone presets, returns N copy variants.
+- `creative-kenburns-render` — takes source, ratio, duration, brand_lockup, caption?, music?, runs ffmpeg (Deno binary) to produce MP4, uploads to storage.
 
-### `meta-audience-sync`
-- Pulls segment via `run_meta_segment_sql`
-- SHA-256 hash email (lowercase+trim) and phone (E.164 digits-only)
-- POSTs to `/v21.0/act_{ID}/customaudiences/{aud}/users` in 10k batches
-- Creates audience first if `meta_audience_id` null
-- **LAL guard**: if `member_count < 100` AND `create_lal=true`, skip LAL, log `status='skipped_too_small'`
-- If `META_SYSTEM_USER_TOKEN` missing → log `skipped_no_token`, return 200 with warning
-- Writes full `executed_sql` to `meta_audience_sync_runs`
+ffmpeg note: Deno edge runtime can't run ffmpeg natively. Two viable paths — (a) shell out using a hosted render worker via fly.io/Railway, or (b) use a third-party render API (Shotstack/Creatomate). **Default to option (b)** with Creatomate (single API key, JSON template) so we don't stand up new infra. If you'd rather self-host, swap to a Railway worker — same edge-function interface, different backend.
 
-### `kennel-trend-scan` (nightly 03:30 UTC)
-- **Rising SKU**: 7d order count vs prior 30d daily-avg per SKU; flag >25% lift (no impressions denominator)
-- **Geo spike**: 7d vs prior 30d state+zip; flag >2x
-- **Peak windows**: top-3 (dow, hour) by order count, rolling 90d
-- **Cohort reactivation**: customers tagged Lapsed who ordered in last 7d; flag if >5
-- **Fast 2nd-order velocity**: median time-to-2nd-order, 30d vs 90d
-- **AOV trend**: 7d rolling vs 30d baseline, ±10%
-- **SKU affinity**: top-3 co-occurrence pairs within 30d
-- All trend insights write `daily_values: number[14]` to `data`
-- Upsert deduped on `(insight_type, scope_key, current_date)`
+## UI (`src/pages/kennel/KennelCreativeStudioPage.tsx`)
 
-### `kennel-external-signal` (POST)
-- Auth: `x-kennel-signature` HMAC using **`KENNEL_EXTERNAL_SIGNAL_SECRET`** (not the ingest secret)
-- Zod-validated payload (signal_type, title, summary, source_url?, urgency, suggested_action?, expires_at?)
-- Writes to `kennel_insights` with `source='lindy_external'`
+- Step 1: Drop zone + "Pick from Media" picker.
+- Step 2: Per-asset brand toggle (Wine / Merch).
+- Step 3: Destination chips (grouped: Social, Display, Video, Email, OOH, Retail).
+- Step 4: Output type toggles + Ken Burns options (duration, caption text, music on/off).
+- Step 5: Generate. Live progress per output. Results grid with preview, copy text, download, "Save to CMS", "Queue for platform".
+- Sidebar: recent jobs list, regenerate, duplicate-with-tweaks.
 
-### `kennel-export` update
-- Add `kennel_insights` to `DATASETS` map so Lindy can read nightly
+## Routes & nav
 
-## Cron (pg_cron via insert tool)
-- `kennel-trend-scan-nightly`: `30 3 * * *`
-- `meta-audience-sync-weekly`: `0 4 * * 1` → loops segments where `sync_cadence='weekly'` (Recent Buyers, Lapsed, Abandoned Checkout)
-- `meta-audience-sync-monthly`: `0 4 1 * *` → loops segments where `sync_cadence='monthly'` (VIPs, varietal, stable ones)
+- Route: `/kennel/creative-studio`.
+- Sidebar link "Creative Studio" (Sparkles icon) under the existing CMS / Media group in `KennelLayout.tsx`.
 
-## Seed segments (with revised defaults)
-| segment_key | cadence | lal_ratio | create_lal |
-|---|---|---|---|
-| all_wine_buyers_24mo | monthly | 0.03 | true |
-| wine_club_members | monthly | — | false |
-| high_historical_revenue (renamed from "VIPs > $500 LTV") | monthly | 0.01 | true |
-| top_quintile_historical_revenue | monthly | 0.01 | true |
-| lapsed_buyers_90d | weekly | — | false |
-| recent_buyers_30d | weekly | — | false (exclusion list) |
-| high_aov_single_buyers | monthly | 0.03 | true |
-| red_wine_buyers | monthly | 0.05 | true |
-| white_rose_buyers | monthly | 0.05 | true |
-| case_buyers | monthly | 0.05 | true (LAL skipped if <100) |
-| fast_second_order | monthly | 0.03 | true (LAL skipped if <100) |
-| meta_video_75_180d | — | — | false (meta_rule_based) |
-| meta_abandoned_checkout_14d | weekly | — | false (meta_rule_based) |
-| meta_pdp_visitors_30d | weekly | — | false (meta_rule_based) |
+## Secrets
 
-Color/varietal segments JOIN `sku_catalog` (no hardcoded SKU strings).
+- `LOVABLE_API_KEY` — already present (image + copy).
+- `CREATOMATE_API_KEY` — new, only if you greenlight the third-party render path. I'll prompt for it right before wiring the Ken Burns function.
 
-## UI
+## Out of scope (this round)
 
-### `/crm/meta-audiences` (CrmLayout, ad_ops only)
-- Segment table: name, kind, cadence, member count, last sync, LAL status, "Sync Now", Meta Ads Manager deep link
-- Expandable sync history per segment (last 5 runs incl. `executed_sql` preview + status badges)
-- Add/edit modal with SQL editor (validates via dry-run before save)
-- Global "Sync All" button
-- Banner if `META_SYSTEM_USER_TOKEN` missing
+- Auto-pushing creatives into ad accounts (that's the Media Buying console once seats are API-connected).
+- Video-to-video reformat (source must be image for Ken Burns).
+- Audio sync / lipsync.
 
-### `/kennel/insights` (kennel nav, can_view_kennel)
-- Card feed, severity→recency sort
-- Filter bar: type, severity, source, actioned/unactioned
-- 14-day inline SVG sparklines for trend cards (reads `data.daily_values`)
-- External signals card group with urgency badge + source URL
-- **Action button = mark actioned only** (no auto-rec creation this round, per Claude's sequencing note)
-- Add nav entries to CRM + Kennel sidebars; register routes in `App.tsx`
+## Question before I build
 
-## What you'll get
-- 4 edge functions + cron + 2 routes
-- Lindy handoff message with HMAC contract for `kennel-external-signal`
-- Status banner if Meta token not yet set
-
-Proceeding on green light. Step 1 = schema migration (after I query `vs_transactions` to confirm column names so the segment SQL is correct on first try).
+**Ken Burns render backend**: Creatomate (fastest, ~$0.05/render, one API key) **or** stand up a small Railway worker (free-ish, more setup, you own the pipeline)? Reply "Creatomate" or "Railway" and I'll start.

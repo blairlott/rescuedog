@@ -262,6 +262,72 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
     onOpenChange(next);
   };
 
+  /**
+   * LIVE handoff to Vinoshipper's hosted cart.
+   * Card data and final shipping/tax are captured on vinoshipper.com — the
+   * modal above is purely a branded review + age-gate. Opening the popup
+   * synchronously inside the click preserves the user gesture so Safari /
+   * Chrome don't silently block it.
+   */
+  const goToVinoshipperHostedCart = async () => {
+    if (!ageOk) {
+      toast.error("Please confirm you are 21 or older");
+      return;
+    }
+    const wineLines = items.filter((i) => i.product.node.productKind === "wine");
+    const vsLines = wineLines
+      .map((i) => {
+        const raw = (i.product.node as any).vinoshipperProductId;
+        const pid = raw ? Number(raw) : NaN;
+        return { productId: pid, quantity: i.quantity };
+      })
+      .filter((l) => Number.isFinite(l.productId) && l.quantity > 0);
+
+    if (vsLines.length === 0) {
+      toast.error("Wine checkout unavailable", {
+        description: "This wine is missing its checkout mapping. Please refresh and try again.",
+      });
+      return;
+    }
+
+    const popup =
+      typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+
+    setSubmitting(true);
+    try {
+      // Stash A/B + GA attribution before VS takes over so the webhook can
+      // stitch the resulting purchase back to the right arm.
+      recordCheckoutIntent({ email: form.email || user?.email || null, cartId: null });
+      await addLinesAndGoToHostedCart(vsLines, popup);
+      try { localStorage.setItem("rdw_returning_customer", "true"); } catch {}
+      await markAbandonment("converted");
+
+      // If merch is also in the cart, swap to the merch handoff screen so
+      // the customer has a one-tap path back to finish merch after wine.
+      if (pendingMerchHandoff) {
+        setMerchHandoffReady({
+          orderId: `VS-PENDING-${Date.now()}`,
+          total,
+          bottles: totalBottles,
+          handoff: pendingMerchHandoff,
+        });
+      } else {
+        onOpenChange(false);
+        toast.success("Secure payment opened", {
+          description: "Finish your wine order on the Vinoshipper tab.",
+        });
+      }
+    } catch (err: any) {
+      try { popup?.close(); } catch {}
+      console.error("[vs-handoff] failed", err);
+      toast.error("Wine checkout unavailable", {
+        description: "We couldn't load the secure cart. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const placeOrder = async () => {
     if (!ageOk) {
       toast.error("Please confirm you are 21 or older");

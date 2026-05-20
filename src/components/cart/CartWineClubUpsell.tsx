@@ -123,31 +123,33 @@ export function CartWineClubUpsell() {
           {selectedTier?.description && (
             <p className="text-[11px] text-muted-foreground">{selectedTier.description}</p>
           )}
-          {selectedTier && subtotal > 0 && (() => {
+          {selectedTier && (() => {
             const shipmentPct = selectedTier.shipment_discount_percent ?? selectedTier.discount_percent;
             const alacartePct = selectedTier.discount_percent;
-            const shipmentSavings = subtotal * (shipmentPct / 100);
-            const alacarteSavings = subtotal * (alacartePct / 100);
             return (
               <div className="border border-primary/30 bg-background/60 p-2 text-[11px] space-y-1">
                 <div className="font-semibold uppercase tracking-brand text-foreground text-[10px]">
-                  Your savings on this ${subtotal.toFixed(2)} cart
+                  Your member perks (start with your next order)
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Scheduled shipment ({shipmentPct}% off)</span>
-                  <span className="font-bold text-primary">−${shipmentSavings.toFixed(2)}</span>
+                  <span className="text-muted-foreground">Scheduled club shipments</span>
+                  <span className="font-bold text-primary">{shipmentPct}% off</span>
                 </div>
                 {shipmentPct !== alacartePct && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">À la carte ({alacartePct}% off)</span>
-                    <span className="font-bold text-primary">−${alacarteSavings.toFixed(2)}</span>
+                    <span className="text-muted-foreground">À la carte re-orders</span>
+                    <span className="font-bold text-primary">{alacartePct}% off</span>
                   </div>
                 )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Full case (12+ bottles)</span>
+                  <span className="font-bold text-primary">25% off</span>
+                </div>
               </div>
             );
           })()}
-          <p className="text-[11px] text-primary font-medium">
-            ✓ Member discount applied to this order. First club shipment ships next cycle.
+          <p className="text-[11px] text-muted-foreground">
+            Membership activates after this order. Discounts apply to all future orders and scheduled shipments.
           </p>
           <p className="text-[10px] text-muted-foreground">
             Change tier anytime in your account · cancel after first shipment.

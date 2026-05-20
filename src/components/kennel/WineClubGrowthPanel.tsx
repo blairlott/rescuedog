@@ -397,6 +397,12 @@ export async function fetchWineClubAiSlice(start: Date, end: Date) {
     .map(([tid, count]) => ({ name: tierMap.get(tid)?.name ?? "Unknown", price: (tierMap.get(tid)?.price_cents ?? 0) / 100, signups: count }))
     .sort((a, b) => b.signups - a.signups)
     .slice(0, 5);
+  const activeRows = m.filter(r => r.status === "active");
+  const active_mrr = activeRows.reduce((s, r) => s + (tierMap.get(r.tier_id)?.price_cents ?? 0), 0) / 100;
+  const new_mrr = m.filter(r => inRange(r.joined_at ?? r.created_at) && r.origin !== "vinoshipper_legacy").reduce((s, r) => s + (tierMap.get(r.tier_id)?.price_cents ?? 0), 0) / 100;
+  const churned_mrr = m.filter(r => inRange(r.cancelled_at)).reduce((s, r) => s + (tierMap.get(r.tier_id)?.price_cents ?? 0), 0) / 100;
+  const avg_tier_price = activeRows.length > 0 ? active_mrr / activeRows.length : (tiers[0]?.price_cents ?? 0) / 100;
+  const target_ltv = avg_tier_price * 18; // 18mo retention assumption
   const sessions = new Set<string>();
   let pageviews = 0, starts = 0;
   for (const e of pv) {
@@ -419,5 +425,22 @@ export async function fetchWineClubAiSlice(start: Date, end: Date) {
       start_to_complete_rate: starts > 0 ? newInPeriod / starts : 0,
     },
     top_tiers,
+    recurring_revenue: {
+      active_mrr,
+      new_mrr,
+      churned_mrr,
+      net_mrr_delta: new_mrr - churned_mrr,
+      avg_tier_price,
+      target_ltv_18mo: target_ltv,
+    },
+    meta_outcome_leads_opportunity: {
+      status: "Lindy is provisioning an OUTCOME_LEADS ad set in Meta",
+      recommended_lead_value: avg_tier_price,
+      recommended_predicted_ltv: target_ltv,
+      target_cpl_max: Math.max(8, Math.round(target_ltv * 0.15)),
+      lookalike_seed: "active wine_club_memberships (status=active), exclude existing members and recent cancellations",
+      events_to_send: ["club_signup_start (Lead)", "club_signup_complete (CompleteRegistration, value=avg_tier_price)"],
+      landing_page: "/wine-club",
+    },
   };
 }

@@ -11,6 +11,7 @@ The Vinoshipper Injector and our deep-link handoff both give VS full ownership o
 | Tier | Audience | Mechanism in Vinoshipper |
 |---|---|---|
 | Member 20% off (all wine) | Wine Club members | **Customer Group** with permanent 20% discount. Members are tagged into the group via API by `vinoshipper-create-membership` edge fn. **No code required** — VS applies it automatically because the customer is identified. |
+| Member 25% off (full case, 12+) | Wine Club members | **Automatic discount** scoped to the Wine Club customer group with a 12-bottle minimum, non-stackable. VS picks the higher 25% rate over the 20% group rate when the cart qualifies — works on one-time AND recurring/S&S shipments. No code, no cart plumbing. |
 | Guest 10% case off (12+ bottles) | Non-members at full case | **Discount Code** (e.g. `CASE10`) configured in VS Marketing → Discount Codes with min-12-bottle rule. We surface the code in the cart and pass it to VS in the checkout payload / deep-link query string. VS validates the bottle count itself. |
 | Shipping included @ 6+ bottles | All | Configured in VS shipping rules (we just message it). |
 

@@ -24,6 +24,7 @@ import {
   VS_SHIPPING_THRESHOLD_BOTTLES,
   VS_FLAT_SHIPPING_MIN_BOTTLES,
   VS_SIMULATION,
+  memberDiscountPercent,
 } from "@/lib/vinoshipperConfig";
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
 import { useCartSettings } from "@/hooks/useCartSettings";
@@ -150,9 +151,12 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   const discountActive = isMember || joiningClub;
   // Bundles are excluded from member discount (matches Vinoshipper rule).
   const discountable = useMemo(() => discountEligibleSubtotal(items as any), [items]);
+  // Members get 25% on full cases (12+ bottles), 20% otherwise — VS applies
+  // the higher rate automatically via a non-stackable customer-group rule.
+  const memberPct = memberDiscountPercent(totalBottles);
   const memberDiscount = useMemo(
-    () => (discountActive ? discountable * (VS_MEMBER_DISCOUNT_PERCENT / 100) : 0),
-    [discountActive, discountable],
+    () => (discountActive ? discountable * (memberPct / 100) : 0),
+    [discountActive, discountable, memberPct],
   );
   // Shipping ladder: 12+ bottles = included, 6–11 = flat $9.99,
   // <6 = Vinoshipper-calculated (shown as "calculated at checkout").
@@ -363,7 +367,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
           wine_club_signup: joiningClub
             ? {
                 tier_id: clubTierId,
-                discount_applied_percent: VS_MEMBER_DISCOUNT_PERCENT,
+                discount_applied_percent: memberPct,
               }
             : null,
           totals: {
@@ -618,7 +622,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
           <Row label="Subtotal" value={subtotal} />
           {discountActive && (
             <Row
-              label={`${joiningClub ? "Club join" : "Member"} discount (${VS_MEMBER_DISCOUNT_PERCENT}%)`}
+              label={`${joiningClub ? "Club join" : "Member"} discount (${memberPct}%)`}
               value={-memberDiscount}
               accent
             />

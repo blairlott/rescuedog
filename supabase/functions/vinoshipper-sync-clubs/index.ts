@@ -107,15 +107,17 @@ Deno.serve(async (req) => {
       else if (/bi.?annual|bi.?yearly|2x.?yearly/.test(n)) freq = "bi-annual";
       else if (/quarter/.test(n)) freq = "quarterly";
       else if (/month/.test(n)) freq = "monthly";
-      const m = n.match(/(\d+)\s*(?:bottle|bottles|btl)/);
+      // Allow words between the number and "bottle" (e.g. "6 Mixed Bottle").
+      const m = n.match(/(\d+)[^\d]{0,30}?bottle/);
       const bottles = m ? parseInt(m[1], 10) : null;
       let wineType: string | null = null;
       const isRed = /\bred\b/.test(n);
-      const isWhite = /\bwhite\b|sparkling/.test(n);
+      const isWhite = /\bwhite\b/.test(n);
+      const isSparkling = /sparkling/.test(n);
       const isMixed = /\bmixed\b/.test(n);
       if (isMixed) wineType = "mixed";
-      else if (isRed && !isWhite) wineType = "red";
-      else if (isWhite && !isRed) wineType = "white";
+      else if (isRed && !isWhite && !isSparkling) wineType = "red";
+      else if ((isWhite || isSparkling) && !isRed) wineType = "white_sparkling";
       return { freq, bottles, wineType };
     };
 

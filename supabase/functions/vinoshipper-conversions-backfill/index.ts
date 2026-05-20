@@ -72,13 +72,19 @@ Deno.serve(async (req) => {
 
   // Auth: ad-ops user JWT.
   const authHeader = req.headers.get("Authorization") ?? "";
-  const jwt = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!jwt) return json({ error: "unauthorized" }, 401);
-  const { data: userData } = await admin.auth.getUser(jwt);
-  const uid = userData?.user?.id;
-  if (!uid) return json({ error: "unauthorized" }, 401);
-  const { data: roleOk } = await admin.rpc("is_ad_ops", { _user_id: uid });
-  if (!roleOk) return json({ error: "forbidden" }, 403);
+  // Auth: cron secret (for kennel-oci-backlog-alert auto-flush) OR ad-ops JWT.
+  const ingestSecret = Deno.env.get("KENNEL_INGEST_SECRET")?.trim();
+  const providedSecret = req.headers.get("x-kennel-cron-secret")?.trim();
+  const cronAuthorized = !!ingestSecret && providedSecret === ingestSecret;
+  if (!cronAuthorized) {
+    const jwt = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (!jwt) return json({ error: "unauthorized" }, 401);
+    const { data: userData } = await admin.auth.getUser(jwt);
+    const uid = userData?.user?.id;
+    if (!uid) return json({ error: "unauthorized" }, 401);
+    const { data: roleOk } = await admin.rpc("is_ad_ops", { _user_id: uid });
+    if (!roleOk) return json({ error: "forbidden" }, 403);
+  }
 
   let body: any = {};
   try { body = await req.json(); } catch { /* empty */ }

@@ -112,4 +112,11 @@ Phase 5 — Close the loop
   - Fires Meta CAPI `InitiateCheckout` once per cart on first email
 - Kill switch: `app_settings.abandoned_cart_enabled`.
 
-**Next up:** Google Ads OCI auto-upload on `Subscribe` + `Purchase` (needs operator to set `google_ads_subscribe_conversion_action_id` in app_settings), then Phase 2 (Team intelligence).
+**Google Ads OCI lifecycle (#18) — shipped**
+- New edge fn `google-ads-event` (auth-required) uploads a single offline conversion to Google Ads. Accepts `event_name`, `event_id`, `value`, `gclid`/`gclaw`, hashed `email`/`phone`. Respects `app_settings.kennel_oci_enabled` kill switch.
+- Conversion action resolution order: explicit `conversion_action_id` → `google_ads_<event>_conversion_action_id` → `google_ads_subscribe_conversion_action_id` → `kennel_oci_conversion_action_id`.
+- `useWineClub.useJoinClub` now fires `Subscribe` with predicted LTV (`computeWineClubSignupValue`) + reads the `gclaw` cookie for click match.
+- Purchase OCI already covered by `vinoshipper-conversions-backfill` (15-min poll, hashed user_identifiers).
+- Logs every attempt to `oci_upload_log` with status `uploaded` / `partial_failure` / `error` / `skipped_no_identifier`.
+
+**Next up:** Phase 2 — Daily AI ops digest (#15), churn dashboard (#10), LTV cohort revenue (#11), unified customer map (#12).

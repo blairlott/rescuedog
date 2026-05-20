@@ -680,7 +680,8 @@ export function MixingBoardPanel() {
 
   /** Scenario presets — apply a multiplier to every baseline value as a draft. */
   type Preset = "boost" | "hold" | "pull" | "auto" | "custom";
-  const [activePreset, setActivePreset] = useState<Preset>("custom");
+  // Default to "Auto" so the console opens in the safe, nightly-computed mode.
+  const [activePreset, setActivePreset] = useState<Preset>("auto");
 
   const applyPreset = (preset: Preset) => {
     if (preset === "auto") {

@@ -30,10 +30,10 @@ type EditSection = "hero" | "membership" | "faq" | null;
 
 const defaultFaqs = [
   { q: "How often will I receive shipments?", a: "Shipment frequency depends on the club tier you choose. Most clubs ship quarterly, but some offer monthly or bi-monthly options." },
-  { q: "Can I customize my selections?", a: "Yes! Before each shipment, you'll receive an email with your AI-curated selection. You can swap wines from the link in that email before the customization deadline." },
+  { q: "Can I customize my selections?", a: "Yes. Before each release, you'll receive an email from Vinoshipper with a link to your customization page where you can swap or adjust wines before the customization deadline." },
   { q: "Can I cancel anytime?", a: "Yes! There are no long-term commitments. You can cancel your membership at any time from your account." },
   { q: "Where do you ship?", a: "We ship to most states in the US. Check availability for your state during sign-up." },
-  { q: "How does AI curation work?", a: "Our AI learns your preferences over time and suggests wines you'll love. Every selection is reviewed by our team before shipping." },
+  { q: "Who picks the wines?", a: "Our team curates each release by hand, choosing wines that reflect the season and our latest releases. You can always swap selections through the Vinoshipper customization link before the deadline." },
 ];
 
 const WineClubPage = () => {

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { US_STATES } from "@/lib/usStates";
@@ -11,15 +10,6 @@ import type { WineClubTier, JoinClubData } from "@/hooks/useWineClub";
 import { ArrowLeft, Wine, Gift, Percent, ShieldCheck, AlertTriangle } from "lucide-react";
 import { VinoshipperClubHandoff } from "./VinoshipperClubHandoff";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
-
-const winePreferenceOptions = [
-  "Bold Reds",
-  "Light Reds",
-  "Dry Whites",
-  "Sweet Whites",
-  "Sparkling",
-  "Rosé",
-];
 
 interface ClubSignupFormProps {
   tier: WineClubTier;
@@ -44,21 +34,15 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
     gift_recipient_name: "",
     gift_recipient_email: "",
   });
-  const [preferences, setPreferences] = useState<string[]>([]);
 
   const update = (key: string, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const togglePref = (pref: string) =>
-    setPreferences((prev) =>
-      prev.includes(pref) ? prev.filter((p) => p !== pref) : [...prev, pref]
-    );
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Always persist a local membership draft so we capture preferences,
-    // gift data, rescue partner picks, etc. — Vinoshipper only owns the
-    // card capture + recurring billing.
+    // Persist a local membership draft so we capture gift data, address,
+    // etc. Vinoshipper owns card capture + recurring billing, and members
+    // customize each release via the link Vinoshipper emails them.
     onSubmit({
       tier_id: tier.id,
       shipping_address_line1: form.shipping_address_line1,
@@ -66,7 +50,6 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
       shipping_city: form.shipping_city,
       shipping_state: form.shipping_state,
       shipping_zip: form.shipping_zip,
-      wine_preferences: preferences,
       is_gift: form.is_gift,
       gift_message: form.is_gift ? form.gift_message : undefined,
     });
@@ -237,32 +220,9 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
         </div>
       </div>
 
-      {/* Wine Preferences */}
-      <div className="mb-8">
-        <h3 className="text-lg font-bold text-foreground mb-2">Wine Preferences</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          {form.is_gift
-            ? "What does the recipient enjoy? This helps us curate the perfect selection."
-            : "Help us curate the perfect selection for you. Select all that apply."}
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {winePreferenceOptions.map((pref) => (
-            <label
-              key={pref}
-              className={`flex items-center gap-2 border p-3 cursor-pointer transition-colors ${
-                preferences.includes(pref)
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <Checkbox
-                checked={preferences.includes(pref)}
-                onCheckedChange={() => togglePref(pref)}
-              />
-              <span className="text-sm text-foreground">{pref}</span>
-            </label>
-          ))}
-        </div>
+      {/* Customization note — sets expectation that Vinoshipper emails the customization link */}
+      <div className="mb-8 border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+        Before each release, Vinoshipper will email you a link to your customization page where you can swap or adjust wines before the deadline.
       </div>
 
       {/* Name (used to prefill the Vinoshipper payment step) */}

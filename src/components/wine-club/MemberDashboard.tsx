@@ -166,23 +166,6 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
         </p>
       </div>
 
-      {/* Wine Preferences */}
-      {membership.wine_preferences && membership.wine_preferences.length > 0 && (
-        <div className="border border-border p-6 mb-8">
-          <h3 className="font-bold text-foreground mb-3">Your Wine Preferences</h3>
-          <div className="flex flex-wrap gap-2">
-            {membership.wine_preferences.map((pref) => (
-              <span
-                key={pref}
-                className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold uppercase tracking-brand"
-              >
-                {pref}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Next Shipment Customizer — handles its own skip CTA when a shipment exists */}
       <NextShipmentCustomizer membership={membership} />
     </div>

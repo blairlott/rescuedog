@@ -54,7 +54,7 @@ export default function WineClubLoginPage() {
           <Wine className="h-12 w-12 text-primary mx-auto" />
           <h1 className="text-2xl font-bold text-foreground">Wine Club Manager</h1>
           <p className="text-muted-foreground text-sm">
-            Sign in to manage wine club memberships, shipments, and AI curation.
+            Sign in to manage wine club memberships and shipments.
           </p>
         </div>
 

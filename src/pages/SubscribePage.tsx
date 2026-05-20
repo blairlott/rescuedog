@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Wine, Package, Truck, Gift, Star, RefreshCw, ArrowRight, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -50,23 +49,12 @@ const frequencies = [
   { value: "quarterly", label: "Quarterly", discount: "" },
 ];
 
-const wineTypes = ["Red", "White", "Rosé", "Sparkling", "Surprise Me"];
-
 const SubscribePage = () => {
   const [selectedTier, setSelectedTier] = useState("enthusiast");
   const [frequency, setFrequency] = useState("monthly");
-  const [preferences, setPreferences] = useState<string[]>(["Surprise Me"]);
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", phone: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const togglePreference = (pref: string) => {
-    setPreferences(prev =>
-      prev.includes(pref)
-        ? prev.filter(p => p !== pref)
-        : [...prev.filter(p => p !== "Surprise Me"), pref]
-    );
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +74,6 @@ const SubscribePage = () => {
         subscription_type: "curated_box",
         tier: selectedTier,
         frequency,
-        wine_preferences: preferences,
         discount_percent: Math.round(((tier!.originalPrice - tier!.pricePerShipment) / tier!.originalPrice) * 100),
       } as any);
 
@@ -204,11 +191,10 @@ const SubscribePage = () => {
           </div>
         </section>
 
-        {/* Frequency & Preferences */}
+        {/* Frequency */}
         <section className="py-16 bg-secondary">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
-              {/* Frequency */}
+            <div className="max-w-xl mx-auto">
               <div>
                 <h2 className="text-sm font-bold tracking-wider uppercase text-muted-foreground mb-3">Step 2</h2>
                 <h3 className="text-2xl font-bold text-foreground mb-6">Delivery Frequency</h3>
@@ -239,29 +225,9 @@ const SubscribePage = () => {
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Wine Preferences */}
-              <div>
-                <h2 className="text-sm font-bold tracking-wider uppercase text-muted-foreground mb-3">Step 3</h2>
-                <h3 className="text-2xl font-bold text-foreground mb-6">Wine Preferences</h3>
-                <p className="text-sm text-muted-foreground mb-4">Select the types of wine you enjoy (pick as many as you like):</p>
-                <div className="space-y-3">
-                  {wineTypes.map(type => (
-                    <label
-                      key={type}
-                      className={`flex items-center gap-3 p-3 border cursor-pointer transition-all ${
-                        preferences.includes(type) ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
-                      }`}
-                    >
-                      <Checkbox
-                        checked={preferences.includes(type)}
-                        onCheckedChange={() => togglePreference(type)}
-                      />
-                      <span className="text-sm font-medium">{type}</span>
-                    </label>
-                  ))}
-                </div>
+                <p className="text-xs text-muted-foreground mt-4">
+                  Before each shipment, you'll get an email from Vinoshipper with a link to customize or swap wines before the deadline.
+                </p>
               </div>
             </div>
           </div>
@@ -283,10 +249,6 @@ const SubscribePage = () => {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Frequency</span>
                     <span className="font-semibold">{frequencies.find(f => f.value === frequency)?.label}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Preferences</span>
-                    <span className="font-semibold text-right">{preferences.join(", ")}</span>
                   </div>
                   <div className="border-t border-border pt-4">
                     <div className="flex justify-between">
@@ -313,7 +275,7 @@ const SubscribePage = () => {
 
               {/* Contact Form */}
               <div>
-                <h2 className="text-sm font-bold tracking-wider uppercase text-muted-foreground mb-3">Step 4</h2>
+                <h2 className="text-sm font-bold tracking-wider uppercase text-muted-foreground mb-3">Step 3</h2>
                 <h3 className="text-2xl font-bold text-foreground mb-6">Your Information</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">

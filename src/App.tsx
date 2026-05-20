@@ -63,6 +63,7 @@ const CrmResetPasswordPage = lazy(() => import("./pages/CrmResetPasswordPage"));
 const CmsLoginPage = lazy(() => import("./pages/CmsLoginPage"));
 const CmsDashboard = lazy(() => import("./pages/CmsDashboard"));
 const CmsExperimentsPage = lazy(() => import("./pages/CmsExperimentsPage"));
+const CmsDiscountsPage = lazy(() => import("./pages/CmsDiscountsPage"));
 const CmsEmailsPage = lazy(() => import("./pages/CmsEmailsPage"));
 const CmsMediaPage = lazy(() => import("./pages/CmsMediaPage"));
 const WineClubAdminPage = lazy(() => import("./pages/WineClubAdminPage"));

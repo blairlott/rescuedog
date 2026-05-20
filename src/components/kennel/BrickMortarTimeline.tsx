@@ -204,7 +204,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
   });
 
   const chart = useMemo(() => {
-    if (!data) return { points: [] as any[], observedTotal: 0, projectedTotal: 0, dailyAvg: 0 };
+    if (!data) return { points: [] as any[], observedTotal: 0, projectedTotal: 0, dailyAvg: 0, cagr: 0, seasonal: new Array(12).fill(1) as number[] };
 
     // Build observed buckets (start..min(end, today))
     const observedKeys = bucketIterator(start, observedEnd, bucket);
@@ -226,20 +226,25 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       return point;
     });
 
-    // Trailing 90-day daily average from the actual byDay data, used as projection base.
-    const trailingStart = new Date(today); trailingStart.setUTCDate(trailingStart.getUTCDate() - 90);
-    let trailingSum = 0; let trailingDays = 0;
-    for (let i = 0; i < 90; i++) {
-      const d = new Date(trailingStart); d.setUTCDate(d.getUTCDate() + i);
-      const k = isoDay(d);
-      const row = data.byDay.get(k);
-      trailingDays++;
-      // QB is the only source of truth for B&M dollars. Depletions and Instacart are signals, not sales.
-      if (row) trailingSum += row.qb_revenue;
+    // Use independent 24-month QB history (or fall back to selected-range data) to derive
+    // baseline daily run-rate, historical CAGR, and seasonal index by calendar month.
+    const histByDay = history?.byDay ?? data.byDay;
+    const seasonal = buildSeasonalIndex(histByDay);
+    const histCagr = computeHistoricalCagr(histByDay, today);
+    // Baseline = trailing 365-day QB daily average (deseasonalized denominator: just mean daily).
+    const baseStart = new Date(today); baseStart.setUTCDate(baseStart.getUTCDate() - 365);
+    let baseSum = 0; let baseDays = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(baseStart); d.setUTCDate(d.getUTCDate() + i);
+      const row = histByDay.get(isoDay(d));
+      baseDays++;
+      if (row) baseSum += row.qb_revenue;
     }
-    const dailyAvg = trailingDays ? trailingSum / trailingDays : 0;
+    const dailyAvg = baseDays ? baseSum / baseDays : 0;
+    // "flat" mode = use historical CAGR; explicit g10/g25 = override the historical rate.
+    const effectiveGrowth = growthKey === "flat" ? histCagr : growth;
 
-    // Project from today → end
+    // Project from today → end using seasonal index × growth compounding.
     const projection: { date: string; projected: number }[] = [];
     if (end > today) {
       if (bucket === "day") {
@@ -247,16 +252,25 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         for (let i = 1; i <= days; i++) {
           const d = new Date(today); d.setUTCDate(d.getUTCDate() + i);
           const yrs = i / 365;
-          projection.push({ date: isoDay(d), projected: dailyAvg * Math.pow(1 + growth, yrs) });
+          const m = d.getUTCMonth();
+          projection.push({
+            date: isoDay(d),
+            projected: dailyAvg * seasonal[m] * Math.pow(1 + effectiveGrowth, yrs),
+          });
         }
       } else {
-        // monthly forward from current month +1
         const cur = new Date(today);
         cur.setUTCDate(1); cur.setUTCMonth(cur.getUTCMonth() + 1);
         let m = 1;
         while (cur <= end) {
           const yrs = m / 12;
-          projection.push({ date: monthKey(cur), projected: dailyAvg * 30 * Math.pow(1 + growth, yrs) });
+          // Days in this calendar month
+          const daysInMonth = new Date(Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth() + 1, 0)).getUTCDate();
+          const monthIdx = cur.getUTCMonth();
+          projection.push({
+            date: monthKey(cur),
+            projected: dailyAvg * seasonal[monthIdx] * daysInMonth * Math.pow(1 + effectiveGrowth, yrs),
+          });
           cur.setUTCMonth(cur.getUTCMonth() + 1);
           m++;
         }
@@ -269,8 +283,8 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
     ];
     const observedTotal = observed.reduce((s, p) => s + (p.qb_revenue ?? 0), 0);
     const projectedTotal = projection.reduce((s, p) => s + p.projected, 0);
-    return { points, observedTotal, projectedTotal, dailyAvg };
-  }, [data, start, end, observedEnd, bucket, growth, today]);
+    return { points, observedTotal, projectedTotal, dailyAvg, cagr: histCagr, seasonal };
+  }, [data, history, start, end, observedEnd, bucket, growth, growthKey, today]);
 
   const todayKey = bucket === "day" ? isoDay(today) : monthKey(today);
 

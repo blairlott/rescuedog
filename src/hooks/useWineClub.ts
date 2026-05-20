@@ -71,10 +71,33 @@ export function useMyMembership() {
         .from("wine_club_memberships")
         .select("*, tier:wine_club_tiers!tier_id(*)")
         .eq("user_id", user!.id)
+        .eq("is_gift", false)
         .neq("status", "cancelled")
         .maybeSingle();
       if (error) throw error;
       return data as (WineClubMembership & { tier: WineClubTier }) | null;
+    },
+  });
+}
+
+/**
+ * Gift memberships the current user has purchased for others.
+ * Returned in newest-first order.
+ */
+export function useMyGiftMemberships() {
+  const { user } = useCustomerAuth();
+  return useQuery({
+    queryKey: ["wine-club-gifts", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("wine_club_memberships")
+        .select("*, tier:wine_club_tiers!tier_id(*)")
+        .eq("user_id", user!.id)
+        .eq("is_gift", true)
+        .order("joined_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as (WineClubMembership & { tier: WineClubTier })[];
     },
   });
 }
@@ -89,6 +112,8 @@ export interface JoinClubData {
   wine_preferences?: string[];
   is_gift?: boolean;
   gift_message?: string;
+  gift_recipient_name?: string;
+  gift_recipient_email?: string;
 }
 
 export function useJoinClub() {

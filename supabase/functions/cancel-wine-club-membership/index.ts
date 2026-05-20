@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { sendCapiEventSafe } from '../_shared/metaCapiEvent.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -100,6 +101,33 @@ Deno.serve(async (req) => {
     })
     .eq('id', membership.id);
   if (updErr) return json({ error: updErr.message }, 500);
+
+  // Fire Meta CAPI ClubCancelled lifecycle event (best-effort, never throws).
+  try {
+    const { data: prof } = await admin
+      .from('profiles').select('email, full_name').eq('id', userId).maybeSingle();
+    const [first, ...rest] = (prof?.full_name ?? '').split(' ');
+    void sendCapiEventSafe({
+      eventName: 'ClubCancelled',
+      eventId: membership.id,
+      valueCents: 0,
+      email: prof?.email ?? userData.user.email ?? null,
+      firstName: first || null,
+      lastName: rest.join(' ') || null,
+      city: membership.shipping_city ?? null,
+      state: membership.shipping_state ?? null,
+      zip: membership.shipping_zip ?? null,
+      country: 'us',
+      customData: {
+        membership_id: membership.id,
+        tier_id: membership.tier_id,
+        cancellation_reason: reason || null,
+        cancellation_source: 'self_serve',
+      },
+    });
+  } catch (e) {
+    console.error('CAPI ClubCancelled fire failed (non-fatal)', e);
+  }
 
   return json({
     ok: true,

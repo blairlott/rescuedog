@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { vsFindCustomerByEmail, vsLiveMode } from "../_shared/vinoshipper.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,7 @@ interface Body {
   action: Action;
   subscription_id?: string;
   sku?: string;
+  vs_product_id?: string;
   product_handle?: string;
   product_title?: string;
   product_image_url?: string;
@@ -36,18 +38,34 @@ Deno.serve(async (req) => {
 
     const body = (await req.json()) as Body;
     const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-    const apiKey = Deno.env.get("VINOSHIPPER_API_KEY");
-    let vinoshipperError: string | null = apiKey ? null : "VINOSHIPPER_API_KEY not configured — change recorded locally only";
+    let vinoshipperError: string | null = null;
 
     switch (body.action) {
       case "create": {
         if (!body.sku || !body.product_title) return json({ error: "sku and product_title required" }, 400);
+
+        // Resolve the Vinoshipper customer for this user (best-effort).
+        // Recurring charges fire against this customer's saved card.
+        let vsCustomerId: string | null = null;
+        if (vsLiveMode() && user.email) {
+          try {
+            const c = await vsFindCustomerByEmail(user.email);
+            vsCustomerId = c?.id != null ? String(c.id) : null;
+            if (!vsCustomerId) {
+              vinoshipperError = "No Vinoshipper customer found — complete one checkout first to save your card";
+            }
+          } catch (e) {
+            vinoshipperError = `Vinoshipper lookup failed: ${e instanceof Error ? e.message : String(e)}`;
+          }
+        }
+
         const { data, error } = await serviceClient
           .from("wine_subscriptions")
           .insert({
             user_id: user.id,
             sku: body.sku,
+            vs_product_id: body.vs_product_id ?? body.sku,
+            vs_customer_id: vsCustomerId,
             product_handle: body.product_handle,
             product_title: body.product_title,
             product_image_url: body.product_image_url,
@@ -56,6 +74,7 @@ Deno.serve(async (req) => {
             unit_price_cents: body.unit_price_cents ?? 0,
             discount_percent: body.discount_percent ?? 10,
             status: "active",
+            next_ship_date: new Date(Date.now() + cadenceMs(body.cadence ?? "monthly")).toISOString().slice(0, 10),
           })
           .select()
           .single();
@@ -122,4 +141,9 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function cadenceMs(cadence: string): number {
+  const days = cadence === "quarterly" ? 90 : cadence === "biannual" ? 180 : 30;
+  return days * 24 * 60 * 60 * 1000;
 }

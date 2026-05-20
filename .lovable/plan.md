@@ -91,3 +91,25 @@ Phase 5 — Close the loop
 - All lifecycle event_ids will be the row PK of the originating object (membership.id, order.id, etc.) so dedup is automatic
 - Add `meta_capi_status` column to relevant tables for observability
 - Webhook handlers stay synchronous to VS but fire CAPI async (no blocking)
+
+## Phase 1 — shipped after #17
+
+**Mailchimp wine club lifecycle sync**
+- New shared helper `_shared/mailchimpMember.ts` (upsert + tag, MD5 hash, logs to `mailchimp_lifecycle_events`).
+- New public edge fn `mailchimp-tag` (auth-required) for client triggers.
+- `useWineClub.useJoinClub` tags `wine_club_active` + `wc_tier_*`, removes `wine_club_cancelled` / `exclude_active_30d`, sets merge fields `WCSTATUS/WCTIER/WCJOIN`.
+- `cancel-wine-club-membership` removes `wine_club_active`, adds `wine_club_cancelled` + reason tag, sets `WCSTATUS=cancelled`, `WCCANCEL=date`.
+- Kill switch: `app_settings.mailchimp_wine_club_sync_enabled`.
+
+**Abandoned cart recovery (#26)**
+- New table `abandoned_carts` (RLS: admin-read only) with snapshot, recovery counters, CAPI flag.
+- `useAbandonedCartSnapshot` hook mounted in `AppContent` — debounced 8s, captures `_fbc`/`_fbp`/`gclaw` cookies.
+- Edge fn `cart-snapshot` (auth-required) upserts/clears the snapshot.
+- Edge fn `abandoned-cart-sweep` runs every 15 min via pg_cron `abandoned-cart-sweep-15min`:
+  - Email 1 at ≥ 2h (`recovery_emails_sent = 0`)
+  - Email 2 at ≥ 24h (`recovery_emails_sent = 1`)
+  - Expire at 72h
+  - Fires Meta CAPI `InitiateCheckout` once per cart on first email
+- Kill switch: `app_settings.abandoned_cart_enabled`.
+
+**Next up:** Google Ads OCI auto-upload on `Subscribe` + `Purchase` (needs operator to set `google_ads_subscribe_conversion_action_id` in app_settings), then Phase 2 (Team intelligence).

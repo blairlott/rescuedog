@@ -92,6 +92,7 @@ const AmbassadorDisclosurePage = lazy(() => import("./pages/AmbassadorDisclosure
 const CrmAmbassadorsPage = lazy(() => import("./pages/CrmAmbassadorsPage"));
 const CrmCompliancePage = lazy(() => import("./pages/crm/CrmCompliancePage"));
 const CrmLeadsPage = lazy(() => import("./pages/crm/CrmLeadsPage"));
+const CrmIntelligencePage = lazy(() => import("./pages/crm/CrmIntelligencePage"));
 const CrmLegacyMigrationPage = lazy(() => import("./pages/CrmLegacyMigrationPage"));
 const RewardsTermsPage = lazy(() => import("./pages/RewardsTermsPage"));
 const RewardsPage = lazy(() => import("./pages/RewardsPage"));
@@ -244,6 +245,7 @@ function AppContent() {
         <Route path="ambassadors" element={<CrmAmbassadorsPage />} />
         <Route path="compliance" element={<CrmCompliancePage />} />
         <Route path="leads" element={<CrmLeadsPage />} />
+        <Route path="intelligence" element={<CrmIntelligencePage />} />
         <Route path="legacy-migration" element={<CrmLegacyMigrationPage />} />
       </Route>
       <Route path="/dropship" element={<DropshipDashboard />} />

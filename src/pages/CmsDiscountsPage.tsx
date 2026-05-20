@@ -48,7 +48,7 @@ const empty = {
 
 export default function CmsDiscountsPage() {
   const nav = useNavigate();
-  const { user, loading } = useCmsAuth();
+  const { isCmsEditor, loading } = useCmsAuth();
   const { toast } = useToast();
   const [codes, setCodes] = useState<Code[]>([]);
   const [busy, setBusy] = useState(false);
@@ -56,8 +56,8 @@ export default function CmsDiscountsPage() {
   const [form, setForm] = useState<any>(empty);
 
   useEffect(() => {
-    if (!loading && !user) nav("/cms/login");
-  }, [user, loading, nav]);
+    if (!loading && !isCmsEditor) nav("/cms/login");
+  }, [isCmsEditor, loading, nav]);
 
   const refresh = async () => {
     setBusy(true);
@@ -67,7 +67,7 @@ export default function CmsDiscountsPage() {
     setCodes(data?.codes ?? []);
   };
 
-  useEffect(() => { if (user) refresh(); }, [user]);
+  useEffect(() => { if (isCmsEditor) refresh(); }, [isCmsEditor]);
 
   const save = async () => {
     setBusy(true);

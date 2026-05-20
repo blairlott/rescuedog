@@ -8286,6 +8286,8 @@ export type Database = {
       wine_club_memberships: {
         Row: {
           app_tier_config_id: string | null
+          cancellation_reason: string | null
+          cancellation_source: string | null
           cancelled_at: string | null
           claimed_at: string | null
           created_at: string | null
@@ -8317,6 +8319,8 @@ export type Database = {
         }
         Insert: {
           app_tier_config_id?: string | null
+          cancellation_reason?: string | null
+          cancellation_source?: string | null
           cancelled_at?: string | null
           claimed_at?: string | null
           created_at?: string | null
@@ -8348,6 +8352,8 @@ export type Database = {
         }
         Update: {
           app_tier_config_id?: string | null
+          cancellation_reason?: string | null
+          cancellation_source?: string | null
           cancelled_at?: string | null
           claimed_at?: string | null
           created_at?: string | null

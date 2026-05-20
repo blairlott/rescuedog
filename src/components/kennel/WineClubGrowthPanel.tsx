@@ -102,11 +102,11 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
     }
     const activeVsNow = vsEmails.size;
     const activeMailchimpNow = Math.max(0, mailchimpClubCount ?? 0);
-    // Vinoshipper is source of truth. Mailchimp tags may overlap with VS
-    // emails but typically include subscribers tagged manually or via Zaps
-    // that aren't in VS yet; report it as a separate signal rather than
-    // double-counting blindly. Headline = max(vs, mailchimp) + app.
-    const activeNow = Math.max(activeVsNow, activeMailchimpNow) + activeAppNow;
+    // Vinoshipper is the system-of-record for paying members; native app
+    // signups are additive. Mailchimp tag is shown as a separate signal in
+    // the hint but NOT summed into the headline (Mailchimp lags VS and
+    // double-counts manual tags). Headline = VS + app.
+    const activeNow = activeVsNow + activeAppNow;
     const newInPeriod = m.filter(r => inRange(r.joined_at ?? r.created_at) && r.origin !== "vinoshipper_legacy").length;
     const cancelledInPeriod = m.filter(r => inRange(r.cancelled_at)).length;
     const giftsInPeriod = m.filter(r => r.is_gift && inRange(r.joined_at ?? r.created_at)).length;

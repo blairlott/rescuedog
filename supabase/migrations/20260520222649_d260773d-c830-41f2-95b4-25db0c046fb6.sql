@@ -1,0 +1,2 @@
+DELETE FROM public.wine_club_shipments WHERE membership_id IN (SELECT id FROM public.wine_club_memberships WHERE payment_status = 'simulated');
+DELETE FROM public.wine_club_memberships WHERE payment_status = 'simulated';

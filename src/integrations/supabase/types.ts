@@ -5047,6 +5047,116 @@ export type Database = {
         }
         Relationships: []
       }
+      media_buying_activity: {
+        Row: {
+          activity_type: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          id: string
+          platform_id: string
+          summary: string
+        }
+        Insert: {
+          activity_type: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          platform_id: string
+          summary: string
+        }
+        Update: {
+          activity_type?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          platform_id?: string
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_buying_activity_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "media_buying_platforms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_buying_platforms: {
+        Row: {
+          api_connected_at: string | null
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          last_contacted_at: string | null
+          metadata: Json
+          monthly_budget_cents: number | null
+          name: string
+          notes: string | null
+          owner_id: string | null
+          priority: string
+          rep_email: string | null
+          rep_name: string | null
+          rep_phone: string | null
+          seat_activated_at: string | null
+          signup_url: string | null
+          slug: string
+          status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          api_connected_at?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_contacted_at?: string | null
+          metadata?: Json
+          monthly_budget_cents?: number | null
+          name: string
+          notes?: string | null
+          owner_id?: string | null
+          priority?: string
+          rep_email?: string | null
+          rep_name?: string | null
+          rep_phone?: string | null
+          seat_activated_at?: string | null
+          signup_url?: string | null
+          slug: string
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          api_connected_at?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_contacted_at?: string | null
+          metadata?: Json
+          monthly_budget_cents?: number | null
+          name?: string
+          notes?: string | null
+          owner_id?: string | null
+          priority?: string
+          rep_email?: string | null
+          rep_name?: string | null
+          rep_phone?: string | null
+          seat_activated_at?: string | null
+          signup_url?: string | null
+          slug?: string
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       media_library: {
         Row: {
           alt_text: string | null

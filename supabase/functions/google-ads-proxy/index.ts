@@ -11,8 +11,8 @@ Deno.serve(async (req) => {
 
   try {
     // 1. Authn: shared bearer
-    const auth = req.headers.get('Authorization') || '';
-    const token = auth.replace(/^Bearer\s+/i, '').trim();
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
     const expected = Deno.env.get('LINDY_PROXY_TOKEN');
     if (!expected || token !== expected) {
       return json({ error: 'unauthorized' }, 401);
@@ -35,15 +35,15 @@ Deno.serve(async (req) => {
     }
 
     // 3. Resolve Google Ads credentials + access token (shared helper)
-    const auth = await getGoogleAdsAccessToken({
+    const adsAuth = await getGoogleAdsAccessToken({
       customer_id: body.customer_id,
       login_customer_id: body.login_customer_id,
     });
-    if (isAuthError(auth)) {
-      const status = auth.error === 'google_oauth_failed' ? 502 : 500;
-      return json(auth, status);
+    if (isAuthError(adsAuth)) {
+      const status = adsAuth.error === 'google_oauth_failed' ? 502 : 500;
+      return json(adsAuth, status);
     }
-    const { accessToken, config } = auth;
+    const { accessToken, config } = adsAuth;
     const customerId = config.customerId;
     const headers = buildGoogleAdsHeaders(accessToken, config);
 

@@ -456,6 +456,10 @@ export default function KennelDashboard() {
             storageKey="kennel-dashboard-order-v2"
             items={([
               {
+                id: "wine-club-growth",
+                node: <WineClubGrowthPanel start={start} end={end} rangeLabel={periodMeta.label} />,
+              },
+              {
                 id: "channel-breakdown",
                 node: (
                   <section>

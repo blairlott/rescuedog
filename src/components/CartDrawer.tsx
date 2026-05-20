@@ -308,12 +308,12 @@ export const CartDrawer = () => {
     // we lose the React context. Best-effort: never block checkout on failure.
     const liveGift = readGiftMode();
     if (liveGift.enabled) {
+      // Recipient email is optional. If the value present is malformed,
+      // warn but do not block checkout — we'll just skip recipient emails.
       if (!isGiftModeReady(liveGift)) {
-        try { popup?.close(); } catch {}
-        toast.error("Recipient email required", {
-          description: "Gift Mode is on — please add the recipient's email so we can send their gift notifications.",
+        toast.message("Skipping recipient email", {
+          description: "The recipient email looks invalid — we'll send gift notifications to you instead.",
         });
-        return;
       }
       try {
         const { data: authUser } = await supabase.auth.getUser();
@@ -340,7 +340,7 @@ export const CartDrawer = () => {
             buyer_name: buyerName,
             vinoshipper_customer_id: vsCustomerId,
             recipient_name: liveGift.recipientName || "Friend",
-            recipient_email: liveGift.recipientEmail.trim(),
+            recipient_email: liveGift.recipientEmail?.trim() || null,
             gift_message: liveGift.message || null,
             gift_wrap: !!liveGift.wrap,
             bottle_count: bottleCount,

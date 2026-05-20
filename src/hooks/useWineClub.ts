@@ -17,6 +17,9 @@ export interface WineClubTier {
   features: string[];
   is_active: boolean;
   sort_order: number;
+  vinoshipper_club_id?: string | null;
+  vinoshipper_join_url?: string | null;
+  vinoshipper_last_synced_at?: string | null;
 }
 
 export interface WineClubMembership {

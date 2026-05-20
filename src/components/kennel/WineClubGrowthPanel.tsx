@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { MetricCard } from "@/components/kennel/MetricCard";
 import { Sparkles, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { computeWineClubSignupValue, type WineClubSignupValue } from "@/lib/wineClubSignupValue";
-import { fetchActiveVsMemberEmails } from "@/lib/wineClubMembers";
+import { fetchActiveVsMemberEmails, fetchActiveVsGiftRecipientKeys } from "@/lib/wineClubMembers";
 
 interface Props {
   start: Date;
@@ -35,9 +35,9 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
   const toIso = end.toISOString();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["kennel-wine-club-growth", "vs-paged-v2", fromIso, toIso],
+    queryKey: ["kennel-wine-club-growth", "vs-paged-v3-gifts", fromIso, toIso],
     queryFn: async () => {
-      const [tiersRes, mRes, pvRes, vsActiveEmails] = await Promise.all([
+      const [tiersRes, mRes, pvRes, vsActiveEmails, vsGiftRecipients] = await Promise.all([
         supabase.from("wine_club_tiers" as any).select("id, name, slug, price_cents").eq("is_active", true),
         supabase
           .from("wine_club_memberships" as any)
@@ -49,12 +49,14 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
           .lte("created_at", toIso)
           .or("path.ilike.%wine-club%,path.ilike.%/club%"),
         fetchActiveVsMemberEmails(),
+        fetchActiveVsGiftRecipientKeys(),
       ]);
       return {
         tiers: ((tiersRes.data as any) || []) as Tier[],
         memberships: ((mRes.data as any) || []) as Membership[],
         pv: ((pvRes.data as any) || []) as { event_type: string; path: string; session_id: string | null; created_at: string }[],
         vsActiveEmails,
+        vsGiftRecipients,
       };
     },
   });
@@ -88,12 +90,16 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
     const m = data.memberships;
     const activeAppNow = m.filter(r => r.status === "active").length;
     const activeVsNow = data.vsActiveEmails.size;
+    const vsGiftNow = data.vsGiftRecipients.size;
     const activeMailchimpNow = Math.max(0, mailchimpClubCount ?? 0);
     // Vinoshipper is the system-of-record for paying members; native app
-    // signups are additive. Mailchimp tag is shown as a separate signal in
-    // the hint but NOT summed into the headline (Mailchimp lags VS and
-    // double-counts manual tags). Headline = VS + app.
-    const activeNow = activeVsNow + activeAppNow;
+    // signups are additive. VS doesn't flag gift memberships, so we infer
+    // them from shipping-address mismatches and add each distinct gift
+    // recipient on top (the purchaser is already counted in activeVsNow).
+    // Mailchimp tag is shown as a separate signal in the hint but NOT
+    // summed into the headline (lags VS, double-counts manual tags).
+    // Headline = VS purchasers + VS gift recipients + app.
+    const activeNow = activeVsNow + vsGiftNow + activeAppNow;
     const newInPeriod = m.filter(r => inRange(r.joined_at ?? r.created_at) && r.origin !== "vinoshipper_legacy").length;
     const cancelledInPeriod = m.filter(r => inRange(r.cancelled_at)).length;
     const giftsInPeriod = m.filter(r => r.is_gift && inRange(r.joined_at ?? r.created_at)).length;
@@ -215,6 +221,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
       activeNow,
       activeAppNow,
       activeVsNow,
+      vsGiftNow,
       activeMailchimpNow,
       newInPeriod,
       cancelledInPeriod,
@@ -286,7 +293,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
             <MetricCard
               label="Active members"
               value={stats.activeNow.toLocaleString()}
-              hint={`VS ${stats.activeVsNow.toLocaleString()} · MC ${stats.activeMailchimpNow.toLocaleString()} · app ${stats.activeAppNow.toLocaleString()}`}
+              hint={`VS ${stats.activeVsNow.toLocaleString()} + ${stats.vsGiftNow.toLocaleString()} gift · app ${stats.activeAppNow.toLocaleString()} · MC ${stats.activeMailchimpNow.toLocaleString()}`}
             />
             <MetricCard
               label={`New signups (${rangeLabel})`}

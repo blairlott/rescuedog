@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, RefreshCw, Trash2, Loader2 } from "lucide-react";
+import { CopyLinkButton } from "@/components/ambassador/CopyLinkButton";
 
 type Code = {
   id: string;
@@ -30,6 +31,7 @@ type Code = {
   shopify_mirror_error: string | null;
   vs_mirror_status: string | null;
   vs_mirror_error: string | null;
+  starts_at?: string | null;
 };
 
 const empty = {
@@ -105,6 +107,34 @@ export default function CmsDiscountsPage() {
     refresh();
   };
 
+  const markVsMirrored = async (c: Code) => {
+    await supabase.functions.invoke("discount-admin", { body: { action: "update", payload: { id: c.id, vs_mirror_status: "synced" } } });
+    toast({ title: "Marked mirrored", description: `${c.code} flagged as live in Vinoshipper` });
+    refresh();
+  };
+
+  const buildVsSetup = (c: Code) => {
+    const lines = [
+      `Code: ${c.code}`,
+      `Description: ${c.description ?? "—"}`,
+      `Type: ${c.type === "percent" ? `${c.value}% off` : c.type === "fixed" ? `$${c.value} off` : "Free shipping"}`,
+      `Applies to: All wine products`,
+      `Min subtotal: ${c.min_subtotal_cents ? `$${(c.min_subtotal_cents / 100).toFixed(2)}` : "None"}`,
+      `Starts: ${c.starts_at ? new Date(c.starts_at).toLocaleString() : "Immediately"}`,
+      `Ends: ${c.ends_at ? new Date(c.ends_at).toLocaleString() : "No expiry"}`,
+      `Max total uses: ${c.usage_limit_total ?? "Unlimited"}`,
+      `Max per customer: ${c.usage_limit_per_customer ?? 1}`,
+      `Stackable: No (do NOT stack with member group discount)`,
+      `Customer eligibility: ${c.tier === "public" ? "All customers" : c.tier === "club_member" ? "Wine Club members only (or use member group)" : c.tier}`,
+    ];
+    return lines.join("\n");
+  };
+
+  const needsVs = (c: Code) =>
+    (c.scope === "wine" || c.scope === "sitewide") &&
+    c.vs_mirror_status !== "synced" &&
+    c.active;
+
   if (loading) return <div className="p-10">Loading…</div>;
 
   return (
@@ -170,6 +200,47 @@ export default function CmsDiscountsPage() {
             </tbody>
           </table>
         </div>
+
+        {codes.some(needsVs) && (
+          <div className="mt-8 border border-border p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-lg font-bold">Pending in Vinoshipper</h2>
+                <p className="text-xs text-muted-foreground">
+                  Vinoshipper has no public promo API. Copy each block below into
+                  VS Admin → Marketing → Discount Codes, then click "Mark mirrored".
+                </p>
+              </div>
+              <a
+                href="https://vinoshipper.com/admin/marketing/discount-codes"
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs underline"
+              >
+                Open VS Admin ↗
+              </a>
+            </div>
+            <div className="grid gap-3">
+              {codes.filter(needsVs).map((c) => {
+                const block = buildVsSetup(c);
+                return (
+                  <div key={c.id} className="border border-border p-3 bg-muted/30">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-mono font-bold">{c.code}</div>
+                      <div className="flex gap-2">
+                        <CopyLinkButton value={block} label="Copy VS setup" />
+                        <Button size="sm" variant="outline" onClick={() => markVsMirrored(c)}>
+                          Mark mirrored
+                        </Button>
+                      </div>
+                    </div>
+                    <pre className="text-xs whitespace-pre-wrap font-mono text-muted-foreground">{block}</pre>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-lg">

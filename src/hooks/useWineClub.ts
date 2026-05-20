@@ -71,10 +71,33 @@ export function useMyMembership() {
         .from("wine_club_memberships")
         .select("*, tier:wine_club_tiers!tier_id(*)")
         .eq("user_id", user!.id)
+        .eq("is_gift", false)
         .neq("status", "cancelled")
         .maybeSingle();
       if (error) throw error;
       return data as (WineClubMembership & { tier: WineClubTier }) | null;
+    },
+  });
+}
+
+/**
+ * Gift memberships the current user has purchased for others.
+ * Returned in newest-first order.
+ */
+export function useMyGiftMemberships() {
+  const { user } = useCustomerAuth();
+  return useQuery({
+    queryKey: ["wine-club-gifts", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("wine_club_memberships")
+        .select("*, tier:wine_club_tiers!tier_id(*)")
+        .eq("user_id", user!.id)
+        .eq("is_gift", true)
+        .order("joined_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as (WineClubMembership & { tier: WineClubTier })[];
     },
   });
 }
@@ -89,6 +112,8 @@ export interface JoinClubData {
   wine_preferences?: string[];
   is_gift?: boolean;
   gift_message?: string;
+  gift_recipient_name?: string;
+  gift_recipient_email?: string;
 }
 
 export function useJoinClub() {
@@ -98,13 +123,18 @@ export function useJoinClub() {
   return useMutation({
     mutationFn: async (data: JoinClubData) => {
       if (!user) throw new Error("Must be logged in");
-      const { data: inserted, error } = await supabase.from("wine_club_memberships").insert({
-        user_id: user.id,
-        ...data,
-        payment_status: "simulated",
-        status: "active",
-        next_shipment_date: getNextShipmentDate(),
-      }).select("id").maybeSingle();
+      const { data: inserted, error } = await supabase
+        .from("wine_club_memberships")
+        .insert({
+          user_id: user.id,
+          ...data,
+          payment_status: "simulated",
+          status: "active",
+          next_shipment_date: getNextShipmentDate(),
+          origin: data.is_gift ? "app_curated_gift" : "app_join",
+        })
+        .select("id")
+        .maybeSingle();
       if (error) throw error;
 
       // Fire Meta CAPI Lead + CompleteRegistration with the computed signup value
@@ -165,9 +195,16 @@ export function useJoinClub() {
         console.warn("[wine-club] CAPI Lead fire failed (non-fatal)", e);
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["wine-club-membership"] });
-      toast.success("Welcome to the Wine Club! 🍷");
+      qc.invalidateQueries({ queryKey: ["wine-club-gifts"] });
+      if (variables.is_gift) {
+        toast.success(
+          `Gift sent! ${variables.gift_recipient_name || "Your recipient"} will hear from us soon. 🎁`,
+        );
+      } else {
+        toast.success("Welcome to the Wine Club! 🍷");
+      }
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to join");

@@ -1,116 +1,93 @@
-# Ad Platform Command Center — build plan
 
-## Reality check on Instacart first (important)
+# Autonomous Growth + Ops Buildout
 
-The public **Carrot Ads API** (`docs.instacart.com/ads`) is a **publisher** API — it lets *retailers* render sponsored products / display / brand pages on their sites. It is **not** a brand-side campaign-management API.
+## Recommendation for Phase 1 starting point: **Meta CAPI Lifecycle Events (#17)**
 
-Brand-side campaign management on Instacart is done either:
-1. In **Instacart Ads Manager** (UI), or
-2. Via the **Instacart API Partner Program** — gated, requires application + approval; partners like Pacvue, Skai, Perpetua, CommerceIQ get full CRUD on campaigns/ad groups/keywords/bids/budgets/reports.
+**Why this first:**
+1. **Immediate ad ROI** — your Meta campaigns are currently optimizing on browser-side Pixel only. Server-side events (CAPI) recover ~15-30% of conversions lost to iOS tracking limits, ad blockers, and cookie loss. This pays for itself the day it ships.
+2. **Foundation for #18, #19, #20, #21** — once we have a clean lifecycle event stream (Lead → ClubJoin → Shipment → Cancel → LTV milestone), the same payload powers Google Ads offline conversions, Mailchimp segmentation, audience builder, and lookalike triggers. Build the pipe once, fan it out.
+3. **Already partially wired** — `meta-capi-lead` exists and fires from `useJoinClub`. We just need to add the other lifecycle events.
+4. **Low risk** — pure server-to-server, no UI changes, easy to A/B and kill-switch.
 
-**What this means for us:** until we are accepted as an API Partner (we should apply via our Instacart rep), we cannot programmatically create/edit Instacart campaigns. We **can**:
-- Ingest **performance reports** (via partner API once approved, or scheduled CSV export from Ads Manager in the meantime)
-- Surface **keyword/bid recommendations** in our dashboard
-- One-click **deep-link** into Ads Manager to apply changes
-- Once approved, flip the same UI to push edits live
+## Autonomy model: Auto-execute with kill switch
 
-The plan below builds it that way — UI + recommendation engine first, write-paths gated behind a "partner_api_enabled" flag.
+Every autonomous action will follow this pattern:
+- **Feature flag** in `app_settings` (e.g. `autonomy.ad_pause_enabled`) — flip to `false` = instant pause
+- **Action log** in a new `autonomy_actions` table — every AI-initiated change recorded with rollback metadata
+- **Rollback button** in CRM → Autonomy tab for any logged action
+- **Daily digest** (#15) summarizes what ran overnight + lets staff one-click revert
+- **Spend ceiling** — hard cap (e.g. $X/day) per channel; AI cannot exceed without human approval
 
----
+## Phase order
 
-## What we're building
+```text
+Phase 1 — Revenue infra (1-2 weeks)
+  ├─ #17 Meta CAPI lifecycle events   ← START HERE
+  ├─ #18 Google Ads offline conversions
+  ├─ #19 Mailchimp auto-sync (segments)
+  └─ #26 Abandoned cart recovery
 
-### 1. Instacart Ads Command Center — `/kennel/instacart-ads`
-A dedicated dashboard, plus a summary tile on the Kennel dashboard.
+Phase 2 — Team intelligence (1-2 weeks)
+  ├─ #15 Daily AI ops digest (depends on Phase 1 data)
+  ├─ #10 Churn dashboard + at-risk scoring
+  ├─ #11 LTV / cohort revenue
+  ├─ #12 Unified customer map (filterable: club / lapsed / VIP)
+  ├─ #14 Ambassador performance (impact.com API)
+  └─ #16 Webhook activity viewer
 
-Sections:
-- **Account health** — spend pace, ROAS, CTR, CVR, share of voice (last 7/30/90)
-- **Campaigns table** — campaign, ad group, status, daily budget, spend, sales, ROAS, ACOS, impressions, clicks, CVR. Sort/filter/search. Inline status toggle (write-gated).
-- **Keyword manager** — bid, match type, impressions, clicks, spend, attributed sales, ACOS, conversion rate, suggested bid. Bulk select → "raise / lower / pause / move to negatives".
-- **Search-term harvest** — actual search queries that triggered ads, with one-click "promote to keyword" or "add as negative".
-- **Product diagnostics** — per-SKU sales velocity, eligibility, OOS flags (so we don't spend on items we can't ship).
-- **Dayparting & geo** — heatmap of conversion by hour/state; recommendations to shift budget.
-- **Recommendations feed** — AI-generated actions (raise bid on X, pause Y, add negative Z) with one-click apply (or deep-link to Ads Manager when partner write API isn't live).
+Phase 3 — Member experience (1-2 weeks)
+  ├─ #1  VS member-portal deep-links for shipment customization
+  ├─ #2  Shipment tracking page
+  ├─ #3  "Your Pack" portal upgrades
+  ├─ #4  Loyalty points via webhook on club shipments
+  ├─ #5  Smart re-engagement automations
+  ├─ #6  Club anniversary + birthday (deeper for members)
+  ├─ #7  Referral program
+  └─ #8  Tasting event RSVPs
 
-### 2. Cross-platform Keyword Optimizer — `/kennel/keywords`
-One unified keyword table across **Instacart, Google Ads, Microsoft Ads, Amazon Ads** (and any future platform). Each keyword row shows:
-- Platform • match type • bid • impressions • clicks • spend • conversions • ACOS • quality/relevance score • suggested bid
-- "Cross-pollinate" action: a high-performing keyword on Google → suggest adding to Instacart/Microsoft with appropriate bid translation
-- Negative-keyword sync across platforms (a search term wasting budget on Google probably wastes it on Microsoft too)
+Phase 4 — Autonomous marketing (2-3 weeks)
+  ├─ #20 Audience builder → Custom Audiences
+  ├─ #21 Lookalike triggers
+  ├─ #22 Dynamic product ads feed
+  ├─ #23 Auto-pause underperforming campaigns
+  ├─ #24 AI creative variants
+  └─ #25 SEO autopilot
 
-### 3. Microsoft Ads (Bing) integration
-Yes — we should run it. Typical wine/CPG advertisers see Microsoft Ads CPCs **30–50% lower than Google** with often-higher conversion rates on the older / higher-income Bing audience. Microsoft also exposes **Retail Media** for sponsored placements across their retail partner network.
+Phase 5 — Close the loop
+  ├─ Activate welcome series (currently gated to July 2026)
+  ├─ Cancellation analytics dashboard
+  └─ A/B framework dashboard
+```
 
-- Microsoft Advertising **REST API** (the SOAP API is being deprecated Jan 2027) for campaign / ad group / keyword CRUD + reporting
-- OAuth2 (developer token + customer ID + refresh token, same pattern as Google Ads)
-- Add tile in Kennel Integrations and a new **MicrosoftAdsConnector** edge function
+## Phase 1, feature #17 — what I'll build now
 
-### 4. Platform Discovery Engine — `/kennel/platform-radar`
-A background job + dashboard tile that constantly evaluates new and emerging ad platforms for fit. It:
-- Maintains a **canonical list** of ad platforms (Google, Meta, Microsoft, TikTok, Pinterest, Reddit, Snapchat, Amazon DSP, Yahoo DSP, The Trade Desk, Criteo, StackAdapt, AdRoll, Quora, LinkedIn, Nextdoor, Spotify Ads, Roku Ads, Vizio Ads, Samsung Ads, plus retail media: Walmart Connect, Kroger Precision, Target Roundel, Albertsons, Sam's MAP, Instacart, Swiftly, Rosie, etc.)
-- Scores each on: **expected CPC, audience fit for wine/rescue mission, age-gating support, alcohol policy, minimum spend, API maturity, our compliance footprint**
-- Pulls fresh intelligence weekly via Firecrawl + Lovable AI to detect new platforms, policy changes, beta programs
-- Surfaces a **"Try this next"** alert tile on the Kennel dashboard when a new candidate scores above threshold (e.g. "Spotify Ads now supports state-level geo for alcohol — projected CAC $18 vs current $34. Apply?")
+**Events to fire to Meta CAPI (server-side):**
 
-### 5. Kennel Dashboard tiles (additions)
-- **Instacart Ads** tile — spend MTD, ROAS, top mover, "3 recommendations pending"
-- **Keyword Optimizer** tile — "12 cross-platform opportunities, est. +$X/wk if applied"
-- **Platform Radar** tile — "1 new platform recommended" badge
+| Event              | Trigger                                         | Value             |
+|--------------------|-------------------------------------------------|-------------------|
+| `Lead`             | Email captured (popup, footer, donation form)   | $0                |
+| `CompleteRegistration` | Customer account created                    | $0                |
+| `Subscribe`        | Wine club join (already partial — confirm)      | tier annual value |
+| `Purchase`         | Vinoshipper webhook `ORDER APPROVED`            | order subtotal    |
+| `StartTrial`       | First shipment dispatched                       | shipment value    |
+| `CustomEvent: ClubCancelled` | `cancel-wine-club-membership` success | -LTV              |
+| `CustomEvent: ShipmentSkipped` | `wine-club-shipment-save` w/ status=skipped | 0       |
+| `CustomEvent: PaymentDeclined` | VS webhook `CARD_DECLINED`            | 0                 |
+| `CustomEvent: LTVMilestone` | Customer LTV crosses $500 / $1k / $2.5k  | 0                 |
 
----
+**Technical:**
+- One reusable edge function `meta-capi-event` that takes `{event_name, event_id, user_data, custom_data}`
+- All existing handlers (vinoshipper-webhook, cancel-wine-club-membership, etc.) call it best-effort, never throw
+- Hash PII (email/phone/name/zip) with SHA-256 per Meta spec
+- Include `fbc`/`fbp`/`client_ip_address`/`client_user_agent` for matching
+- New table `meta_capi_events` (event_id, status, response, retry_count) for dedup + replay
+- Kill switch: `app_settings.meta_capi_enabled` (default true)
+- CRM admin page: `/crm/autonomy/meta-capi` shows last 100 events + retry button
 
-## Technical sections
+## Technical notes (for the dev side)
 
-### Database (new tables)
-- `ad_platforms` — canonical list, status (active/candidate/rejected), category, fit_score, last_evaluated_at, metadata jsonb
-- `ad_campaigns` — platform, external_id, name, status, budget_cents, last_synced_at
-- `ad_groups` — campaign_id, external_id, name, status, default_bid_cents
-- `ad_keywords` — ad_group_id, platform, keyword, match_type, bid_cents, status, last_30d metrics (impressions, clicks, spend, conversions, sales_cents)
-- `ad_search_terms` — keyword_id, query, impressions, clicks, conversions, suggested_action (promote/negative/ignore)
-- `ad_recommendations` (already exists per `kennel_review_recommendation` fn) — extend `metadata` to handle keyword-bid changes
-- `platform_radar_alerts` — platform_id, alert_type (new/policy_change/opportunity), summary, recommended_action, dismissed_at
-- All tables RLS-restricted to `is_ad_ops()` (already defined)
-
-### Edge functions
-- `instacart-ads-sync` — pulls reports (partner API when secrets present, else parses uploaded CSV). Already have `INSTACART_ADS_*` secrets in place.
-- `instacart-ads-write` — write-path: pause/enable, bid changes, negative keywords. Gated by `partner_api_enabled` flag.
-- `microsoft-ads-sync` + `microsoft-ads-write` — same pattern, new connector secrets needed
-- `google-ads-sync` / `google-ads-write` — already partial; extend
-- `keyword-recommender` — runs nightly cron, uses Lovable AI (`google/gemini-2.5-pro`) over the unified keyword/search-term dataset to produce ranked recommendations
-- `platform-radar` — weekly cron; uses Firecrawl to scrape platform docs + AI Gateway to score & write `platform_radar_alerts`
-
-### Secrets needed
-- **Instacart API Partner credentials** (apply through rep; placeholder added to Integrations page now)
-- **Microsoft Ads**: `MS_ADS_DEVELOPER_TOKEN`, `MS_ADS_CLIENT_ID`, `MS_ADS_CLIENT_SECRET`, `MS_ADS_REFRESH_TOKEN`, `MS_ADS_CUSTOMER_ID`, `MS_ADS_ACCOUNT_ID`
-- Firecrawl is already connected (for platform-radar scraping)
-
-### Cron
-- `instacart-ads-sync` hourly
-- `microsoft-ads-sync` + `google-ads-sync` hourly
-- `keyword-recommender` nightly 3am
-- `platform-radar` weekly Sunday 4am
-
----
-
-## Suggested rollout
-
-**Phase 1 (this build):**
-1. Schemas + RLS
-2. `/kennel/instacart-ads` dashboard skeleton + report ingestion (CSV upload while we wait for partner API)
-3. Kennel tile
-4. Apply for Instacart API Partner status (you do this with your rep; I add a status badge that flips when secrets land)
-
-**Phase 2:**
-5. Cross-platform keyword optimizer UI + recommender cron
-6. Microsoft Ads connector (request secrets when you confirm)
-
-**Phase 3:**
-7. Platform Radar engine + alerts
-
----
-
-## Decisions I need from you
-1. **Start with Phase 1 only**, or build all three phases now (will be a much longer single push)?
-2. **Microsoft Ads** — confirm you want me to wire it (I'll request the 6 secrets when we get to Phase 2)
-3. **Recommender autonomy** — should keyword recommendations require manual approval (same pattern as `ad_recommendations` today), or auto-apply within guardrails (e.g. bid changes ≤ ±15%, no daily budget over $X)?
-4. **Platform Radar alert threshold** — alert me when a new platform scores ≥ what? (default: 75/100)
+- Reuse existing `src/lib/metaAttribution.ts` for fbc/fbp on client
+- New helper `supabase/functions/_shared/metaCapi.ts` with `sendCapiEvent()`
+- All lifecycle event_ids will be the row PK of the originating object (membership.id, order.id, etc.) so dedup is automatic
+- Add `meta_capi_status` column to relevant tables for observability
+- Webhook handlers stay synchronous to VS but fire CAPI async (no blocking)

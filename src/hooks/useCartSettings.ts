@@ -25,7 +25,7 @@ export interface CartSettings {
 }
 
 const DEFAULTS: CartSettings = {
-  freeShippingBottleCount: 6,
+  freeShippingBottleCount: 12,
   merchFreeShippingThreshold: 150,
   halfCaseCount: 6,
   fullCaseCount: 12,

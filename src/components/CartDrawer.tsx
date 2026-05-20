@@ -525,7 +525,7 @@ export const CartDrawer = () => {
             <ArrowLeft className="h-4 w-4 mr-1.5" />
             Continue shopping
           </Button>
-          {!isMerchRoute && isMember && totalItems > 0 && (
+          {!isMerchRoute && isMember && totalItems > 0 && memberSavings > 0 && (
             <div className="mt-2 inline-flex items-center gap-1.5 bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-brand px-2 py-1 rounded-sm w-fit">
               <Percent className="h-3 w-3" /> Member price applied at checkout — save ${memberSavings.toFixed(2)}
             </div>
@@ -705,7 +705,7 @@ export const CartDrawer = () => {
                       </div>
                     </div>
                   )}
-                  {isMember && wineTotal > 0 && (
+                  {isMember && wineTotal > 0 && memberSavings > 0 && (
                     <p className="text-[11px] text-primary font-bold uppercase tracking-brand text-right">
                       Member savings: -${memberSavings.toFixed(2)}
                     </p>

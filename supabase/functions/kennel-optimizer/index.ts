@@ -127,9 +127,44 @@ async function fetchInstacartCampaignsAllFormats(token: string, advertiserId: st
     let raw: any = null;
     for (const k of src.listKeys) { if (Array.isArray(b?.[k])) { raw = b[k]; break; } }
     if (!Array.isArray(raw)) raw = Array.isArray(b?.data) ? b.data : (Array.isArray(b) ? b : []);
-    for (const c of raw) out.push({ format: src.format, entity_id: String(c.id), raw: c });
+    for (const c of raw) {
+      // #4: Skip archived campaigns. Some platforms expose `status: "ARCHIVED"`,
+      // others use `archived: true` or `state: "archived"`.
+      const status = String(c.status ?? c.state ?? "").toUpperCase();
+      const archived = c.archived === true || status === "ARCHIVED" || status === "DELETED" || status === "REMOVED";
+      if (archived) continue;
+      out.push({ format: src.format, entity_id: String(c.id), raw: c });
+    }
   }
   return out;
+}
+
+// #1: Seasonal/event window detection.
+// Naming-convention sniff — campaign names that include a calendar-event tag
+// (MD26 = Mother's Day 2026, etc.) and a year are treated as window-bound.
+const EVENT_WINDOW_TAGS: Array<{ re: RegExp; event: string; mmdd: [number, number] }> = [
+  { re: /\bMD(\d{2})\b/i,    event: "mothers_day",   mmdd: [5, 11]  }, // 2nd Sun in May (approx)
+  { re: /\bFD(\d{2})\b/i,    event: "fathers_day",   mmdd: [6, 21]  },
+  { re: /\bVDAY(\d{2})\b/i,  event: "valentines",    mmdd: [2, 14]  },
+  { re: /\bXMAS(\d{2})\b/i,  event: "christmas",     mmdd: [12, 25] },
+  { re: /\bNYE(\d{2})\b/i,   event: "new_years_eve", mmdd: [12, 31] },
+  { re: /\bTHX(\d{2})\b/i,   event: "thanksgiving",  mmdd: [11, 27] },
+  { re: /\bBF(\d{2})\b/i,    event: "black_friday",  mmdd: [11, 29] },
+  { re: /\bCM(\d{2})\b/i,    event: "cyber_monday",  mmdd: [12, 2]  },
+];
+function sniffEventWindow(name: string): { event: string; end_date: string } | null {
+  if (!name) return null;
+  for (const t of EVENT_WINDOW_TAGS) {
+    const m = name.match(t.re);
+    if (m) {
+      const yy = parseInt(m[1], 10);
+      const year = 2000 + yy;
+      const [mm, dd] = t.mmdd;
+      const end = new Date(Date.UTC(year, mm - 1, dd));
+      return { event: t.event, end_date: end.toISOString().slice(0, 10) };
+    }
+  }
+  return null;
 }
 
 /** Normalize a report row into a uniform shape. */

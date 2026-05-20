@@ -142,6 +142,8 @@ async function processOne(supabase: any, sub: Sub, live: boolean, dryRun: boolea
       last_charged_at: new Date().toISOString(),
       failure_count: 0,
       last_error: null,
+      dunning_stage: 0,
+      last_dunning_sent_at: null,
       next_ship_date: nextShipDate(sub.cadence),
       updated_at: new Date().toISOString(),
     }).eq("id", sub.id);

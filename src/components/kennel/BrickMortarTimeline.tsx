@@ -22,6 +22,41 @@ type DayPoint = {
 
 const GROWTH_MAP: Record<string, number> = { flat: 0, g10: 0.10, g25: 0.25 };
 
+/**
+ * Build a normalized seasonal index (mean = 1.0) by calendar month from a
+ * map of YYYY-MM-DD → QB revenue. Uses every full month present in the input.
+ * Falls back to flat 1.0 if a month has no history.
+ */
+function buildSeasonalIndex(byDay: Map<string, { qb_revenue: number }>): number[] {
+  const monthSums: number[] = new Array(12).fill(0);
+  const monthDays: number[] = new Array(12).fill(0);
+  for (const [day, row] of byDay.entries()) {
+    const m = Number(day.slice(5, 7)) - 1;
+    if (m < 0 || m > 11) continue;
+    monthSums[m] += row.qb_revenue;
+    monthDays[m] += 1;
+  }
+  const dailyByMonth = monthSums.map((s, i) => (monthDays[i] ? s / monthDays[i] : 0));
+  const observed = dailyByMonth.filter((v) => v > 0);
+  const mean = observed.length ? observed.reduce((a, b) => a + b, 0) / observed.length : 0;
+  if (!mean) return new Array(12).fill(1);
+  return dailyByMonth.map((v) => (v > 0 ? v / mean : 1));
+}
+
+/** Historical CAGR from trailing 12 months vs the prior 12 months of QB revenue. */
+function computeHistoricalCagr(byDay: Map<string, { qb_revenue: number }>, today: Date): number {
+  const y1Start = new Date(today); y1Start.setUTCDate(y1Start.getUTCDate() - 365);
+  const y2Start = new Date(today); y2Start.setUTCDate(y2Start.getUTCDate() - 730);
+  let last12 = 0, prev12 = 0;
+  for (const [day, row] of byDay.entries()) {
+    const d = new Date(day + "T00:00:00Z");
+    if (d >= y1Start && d < today) last12 += row.qb_revenue;
+    else if (d >= y2Start && d < y1Start) prev12 += row.qb_revenue;
+  }
+  if (prev12 <= 0 || last12 <= 0) return 0;
+  return last12 / prev12 - 1;
+}
+
 function rangeLabel(start: Date, end: Date) {
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
   return `${fmt(start)} → ${fmt(end)}`;
@@ -59,6 +94,42 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
   const bucket = pickBucket(totalSpanDays);
   const since = isoDay(start);
   const until = isoDay(observedEnd);
+
+  // Trailing 24 months of QB data for CAGR + seasonal index — independent of selected range.
+  const histStart = useMemo(() => {
+    const d = new Date(today); d.setUTCDate(d.getUTCDate() - 730); return d;
+  }, [today]);
+  const histSince = isoDay(histStart);
+  const histUntil = isoDay(today);
+
+  const { data: history } = useQuery({
+    queryKey: ["bm-history-qb", histSince, histUntil],
+    queryFn: async () => {
+      const out: Array<{ date: string; amount_cents: number; channel: string | null }> = [];
+      const pageSize = 1000; let from = 0;
+      while (true) {
+        const { data: rows } = await (supabase
+          .from("bm_finance_entries" as any)
+          .select("date, amount_cents, channel, entry_type")
+          .gte("date", histSince).lte("date", histUntil)
+          .in("entry_type", ["revenue", "income", "sales"])
+          .order("date", { ascending: true })
+          .range(from, from + pageSize - 1) as any);
+        if (!rows || rows.length === 0) break;
+        out.push(...rows);
+        if (rows.length < pageSize) break;
+        from += pageSize;
+      }
+      const byDay = new Map<string, { qb_revenue: number }>();
+      for (const r of out) {
+        const ch = (r.channel ?? "").toLowerCase();
+        if (ch === "dtc" || ch === "ecommerce") continue;
+        const prev = byDay.get(r.date)?.qb_revenue ?? 0;
+        byDay.set(r.date, { qb_revenue: prev + Number(r.amount_cents ?? 0) / 100 });
+      }
+      return { byDay };
+    },
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["bm-timeline-range", since, until],
@@ -133,7 +204,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
   });
 
   const chart = useMemo(() => {
-    if (!data) return { points: [] as any[], observedTotal: 0, projectedTotal: 0, dailyAvg: 0 };
+    if (!data) return { points: [] as any[], observedTotal: 0, projectedTotal: 0, dailyAvg: 0, cagr: 0, seasonal: new Array(12).fill(1) as number[] };
 
     // Build observed buckets (start..min(end, today))
     const observedKeys = bucketIterator(start, observedEnd, bucket);
@@ -155,20 +226,25 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       return point;
     });
 
-    // Trailing 90-day daily average from the actual byDay data, used as projection base.
-    const trailingStart = new Date(today); trailingStart.setUTCDate(trailingStart.getUTCDate() - 90);
-    let trailingSum = 0; let trailingDays = 0;
-    for (let i = 0; i < 90; i++) {
-      const d = new Date(trailingStart); d.setUTCDate(d.getUTCDate() + i);
-      const k = isoDay(d);
-      const row = data.byDay.get(k);
-      trailingDays++;
-      // QB is the only source of truth for B&M dollars. Depletions and Instacart are signals, not sales.
-      if (row) trailingSum += row.qb_revenue;
+    // Use independent 24-month QB history (or fall back to selected-range data) to derive
+    // baseline daily run-rate, historical CAGR, and seasonal index by calendar month.
+    const histByDay = history?.byDay ?? data.byDay;
+    const seasonal = buildSeasonalIndex(histByDay);
+    const histCagr = computeHistoricalCagr(histByDay, today);
+    // Baseline = trailing 365-day QB daily average (deseasonalized denominator: just mean daily).
+    const baseStart = new Date(today); baseStart.setUTCDate(baseStart.getUTCDate() - 365);
+    let baseSum = 0; let baseDays = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(baseStart); d.setUTCDate(d.getUTCDate() + i);
+      const row = histByDay.get(isoDay(d));
+      baseDays++;
+      if (row) baseSum += row.qb_revenue;
     }
-    const dailyAvg = trailingDays ? trailingSum / trailingDays : 0;
+    const dailyAvg = baseDays ? baseSum / baseDays : 0;
+    // "flat" mode = use historical CAGR; explicit g10/g25 = override the historical rate.
+    const effectiveGrowth = growthKey === "flat" ? histCagr : growth;
 
-    // Project from today → end
+    // Project from today → end using seasonal index × growth compounding.
     const projection: { date: string; projected: number }[] = [];
     if (end > today) {
       if (bucket === "day") {
@@ -176,16 +252,25 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         for (let i = 1; i <= days; i++) {
           const d = new Date(today); d.setUTCDate(d.getUTCDate() + i);
           const yrs = i / 365;
-          projection.push({ date: isoDay(d), projected: dailyAvg * Math.pow(1 + growth, yrs) });
+          const m = d.getUTCMonth();
+          projection.push({
+            date: isoDay(d),
+            projected: dailyAvg * seasonal[m] * Math.pow(1 + effectiveGrowth, yrs),
+          });
         }
       } else {
-        // monthly forward from current month +1
         const cur = new Date(today);
         cur.setUTCDate(1); cur.setUTCMonth(cur.getUTCMonth() + 1);
         let m = 1;
         while (cur <= end) {
           const yrs = m / 12;
-          projection.push({ date: monthKey(cur), projected: dailyAvg * 30 * Math.pow(1 + growth, yrs) });
+          // Days in this calendar month
+          const daysInMonth = new Date(Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth() + 1, 0)).getUTCDate();
+          const monthIdx = cur.getUTCMonth();
+          projection.push({
+            date: monthKey(cur),
+            projected: dailyAvg * seasonal[monthIdx] * daysInMonth * Math.pow(1 + effectiveGrowth, yrs),
+          });
           cur.setUTCMonth(cur.getUTCMonth() + 1);
           m++;
         }
@@ -198,8 +283,8 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
     ];
     const observedTotal = observed.reduce((s, p) => s + (p.qb_revenue ?? 0), 0);
     const projectedTotal = projection.reduce((s, p) => s + p.projected, 0);
-    return { points, observedTotal, projectedTotal, dailyAvg };
-  }, [data, start, end, observedEnd, bucket, growth, today]);
+    return { points, observedTotal, projectedTotal, dailyAvg, cagr: histCagr, seasonal };
+  }, [data, history, start, end, observedEnd, bucket, growth, growthKey, today]);
 
   const todayKey = bucket === "day" ? isoDay(today) : monthKey(today);
 
@@ -239,7 +324,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
           "Depletion reports are SIGNALS — market-level distributor totals shown as a directional cross-check against QB. They are NOT added to revenue totals or the projection base (would double-count QB dollars).",
           "Because depletions are market-level, account-level velocity metrics (CPPW, TDP, sell-through by store) are not computable today and won't be until scan data (Nielsen/Circana) or distributor account-level feeds land.",
           "Instacart: ad-attributed revenue from Instacart Ads — shown as a SIGNAL only. Not added to B&M totals.",
-          "Projection past today uses the trailing 90-day QB daily average compounded by the selected growth rate — QB-only, pure naive forecast, not MMM.",
+          "Projection past today uses a trailing 365-day QB baseline, scaled by a calendar-month seasonal index (24mo of QB history, mean = 1.0) and compounded by historical CAGR (last 12mo vs prior 12mo). Selecting +10%/+25% overrides the CAGR. Not MMM.",
         ]}
       />
 
@@ -249,8 +334,8 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <Stat label="Observed (QB only)" value={`$${Math.round(chart.observedTotal).toLocaleString()}`} hint={`${isoDay(start)} → ${isoDay(observedEnd)}`} />
-            <Stat label="Trailing 90d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint="QB projection base" />
-            <Stat label="Projected" value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={end > today ? `${isoDay(today)} → ${isoDay(end)} · ${growthKey}` : "no future range"} />
+            <Stat label="Trailing 365d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint={`QB base · CAGR ${(chart.cagr * 100).toFixed(1)}%`} />
+            <Stat label="Projected" value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={end > today ? `${isoDay(today)} → ${isoDay(end)} · ${growthKey === "flat" ? "historical CAGR" : growthKey} · seasonal` : "no future range"} />
             <Stat label="Observed + Projected" value={`$${Math.round(chart.observedTotal + chart.projectedTotal).toLocaleString()}`} hint={`${data.qbRows.toLocaleString()} QB · ${data.depRows.toLocaleString()} dep lines`} />
           </div>
           <div style={{ width: "100%", height: 260 }}>
@@ -282,8 +367,10 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
             tileId="brick-mortar"
             rangeLabel={rangeLabel(start, end)}
             tileData={{
-              model: "trailing 90-day average with selected growth rate, not MMM",
+              model: "trailing 365-day QB baseline × calendar-month seasonal index × historical CAGR (or growth override), not MMM",
               growth_mode: growthKey,
+              historical_cagr: chart.cagr,
+              seasonal_index_by_month: chart.seasonal,
               observed_revenue: chart.observedTotal,
               projected_revenue: chart.projectedTotal,
               daily_average: chart.dailyAvg,

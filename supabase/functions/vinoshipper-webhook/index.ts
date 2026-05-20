@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { sendCapiEventSafe } from '../_shared/metaCapiEvent.ts';
 
 // Vinoshipper webhook payload shape:
 // { identifier: string, subject: 'ORDER'|'CUSTOMER'|'CLUB_MEMBERSHIP',
@@ -74,6 +75,38 @@ async function applyOrderEvent(identifier: string, event: string, payload: Recor
     .eq('vinoshipper_order_id', identifier);
 
   if (error) throw error;
+
+  // Fire Meta CAPI PaymentDeclined lifecycle event on card decline.
+  if (event === 'CARD_DECLINED') {
+    try {
+      const { data: ship } = await supabase
+        .from('wine_club_shipments')
+        .select('id, total_cents, membership:wine_club_memberships!membership_id(user_id, shipping_city, shipping_state, shipping_zip)')
+        .eq('vinoshipper_order_id', identifier).maybeSingle();
+      const m: any = (ship as any)?.membership;
+      if (m?.user_id) {
+        const { data: prof } = await supabase
+          .from('profiles').select('email, full_name').eq('id', m.user_id).maybeSingle();
+        const [first, ...rest] = (prof?.full_name ?? '').split(' ');
+        void sendCapiEventSafe({
+          eventName: 'PaymentDeclined',
+          eventId: `decline_${identifier}`,
+          valueCents: ship?.total_cents ?? 0,
+          email: prof?.email ?? null,
+          firstName: first || null,
+          lastName: rest.join(' ') || null,
+          city: m.shipping_city ?? null,
+          state: m.shipping_state ?? null,
+          zip: m.shipping_zip ?? null,
+          country: 'us',
+          customData: { vinoshipper_order_id: identifier, shipment_id: ship?.id ?? null },
+        });
+      }
+    } catch (e) {
+      console.error('CAPI PaymentDeclined fire failed (non-fatal)', e);
+    }
+  }
+
   return { matched: count ?? 0 };
 }
 

@@ -4329,6 +4329,60 @@ export type Database = {
         }
         Relationships: []
       }
+      kennel_rule_suggestions: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          evidence: Json | null
+          id: string
+          idempotency_key: string | null
+          proposed_at: string
+          proposed_rule: Json
+          rationale: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_window_days: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          evidence?: Json | null
+          id?: string
+          idempotency_key?: string | null
+          proposed_at?: string
+          proposed_rule: Json
+          rationale: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_window_days?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          evidence?: Json | null
+          id?: string
+          idempotency_key?: string | null
+          proposed_at?: string
+          proposed_rule?: Json
+          rationale?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_window_days?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kennel_seasonality_curve: {
         Row: {
           avg_aov_cents: number | null
@@ -4365,6 +4419,42 @@ export type Database = {
           revenue_cents?: number | null
           updated_at?: string
           years_observed?: number | null
+        }
+        Relationships: []
+      }
+      kennel_self_health: {
+        Row: {
+          alert_fired: boolean
+          checked_at: string
+          consecutive_failures: number
+          error: string | null
+          function_name: string
+          id: string
+          latency_ms: number | null
+          ok: boolean
+          status_code: number | null
+        }
+        Insert: {
+          alert_fired?: boolean
+          checked_at?: string
+          consecutive_failures?: number
+          error?: string | null
+          function_name: string
+          id?: string
+          latency_ms?: number | null
+          ok: boolean
+          status_code?: number | null
+        }
+        Update: {
+          alert_fired?: boolean
+          checked_at?: string
+          consecutive_failures?: number
+          error?: string | null
+          function_name?: string
+          id?: string
+          latency_ms?: number | null
+          ok?: boolean
+          status_code?: number | null
         }
         Relationships: []
       }

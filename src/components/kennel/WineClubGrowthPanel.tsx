@@ -241,6 +241,36 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
 
           <div className="border-2 border-foreground p-4 mt-3" style={{ borderRadius: 0 }}>
             <h3 className="text-xs uppercase tracking-brand font-bold text-foreground mb-3">
+              Recurring revenue ({rangeLabel})
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div>
+                <div className="text-muted-foreground uppercase tracking-brand">Active MRR</div>
+                <div className="text-lg font-bold tabular-nums">${(stats.activeMrrCents / 100).toLocaleString()}</div>
+                <div className="text-muted-foreground">avg tier ${(stats.avgTierCents / 100).toFixed(0)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground uppercase tracking-brand">New MRR</div>
+                <div className="text-lg font-bold tabular-nums text-primary">+${(stats.newMrrCents / 100).toLocaleString()}</div>
+                <div className="text-muted-foreground">from {stats.newInPeriod} signup{stats.newInPeriod === 1 ? "" : "s"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground uppercase tracking-brand">Churned MRR</div>
+                <div className="text-lg font-bold tabular-nums">−${(stats.churnedMrrCents / 100).toLocaleString()}</div>
+                <div className="text-muted-foreground">{stats.cancelledInPeriod} cancelled</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground uppercase tracking-brand">Net MRR Δ</div>
+                <div className={`text-lg font-bold tabular-nums ${stats.netMrrCents < 0 ? "text-destructive" : "text-foreground"}`}>
+                  {stats.netMrrCents >= 0 ? "+" : "−"}${Math.abs(stats.netMrrCents / 100).toLocaleString()}
+                </div>
+                <div className="text-muted-foreground">target LTV ${stats.ltvTarget.toFixed(0)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-2 border-foreground p-4 mt-3" style={{ borderRadius: 0 }}>
+            <h3 className="text-xs uppercase tracking-brand font-bold text-foreground mb-3">
               Signup funnel ({rangeLabel})
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">

@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Wine, Users, Package, Sparkles, UserPlus, LogOut, Shield } from "lucide-react";
+import { Wine, Users, Package, Sparkles, UserPlus, LogOut, Shield, Settings } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ClubTiersAdmin } from "@/components/wine-club/ClubTiersAdmin";
 
 interface MemberRow {
   id: string;
@@ -272,6 +273,9 @@ const WineClubAdminPage = () => {
             <TabsList>
               <TabsTrigger value="members">Members</TabsTrigger>
               <TabsTrigger value="shipments">Shipments</TabsTrigger>
+              <TabsTrigger value="tiers">
+                <Settings className="h-4 w-4 mr-1" /> Tiers
+              </TabsTrigger>
               {access.canManageManagers && (
                 <TabsTrigger value="managers">
                   <Shield className="h-4 w-4 mr-1" /> Managers
@@ -390,6 +394,10 @@ const WineClubAdminPage = () => {
                   </Table>
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="tiers" className="mt-6">
+              <ClubTiersAdmin />
             </TabsContent>
 
             {access.canManageManagers && (

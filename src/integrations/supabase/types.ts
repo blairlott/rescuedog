@@ -8403,6 +8403,8 @@ export type Database = {
           sort_order: number | null
           updated_at: string | null
           vinoshipper_club_id: string | null
+          vinoshipper_join_url: string | null
+          vinoshipper_last_synced_at: string | null
           wine_type: string
         }
         Insert: {
@@ -8421,6 +8423,8 @@ export type Database = {
           sort_order?: number | null
           updated_at?: string | null
           vinoshipper_club_id?: string | null
+          vinoshipper_join_url?: string | null
+          vinoshipper_last_synced_at?: string | null
           wine_type: string
         }
         Update: {
@@ -8439,6 +8443,8 @@ export type Database = {
           sort_order?: number | null
           updated_at?: string | null
           vinoshipper_club_id?: string | null
+          vinoshipper_join_url?: string | null
+          vinoshipper_last_synced_at?: string | null
           wine_type?: string
         }
         Relationships: []

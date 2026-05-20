@@ -102,6 +102,36 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
 
     // Optimization plays
     const plays: { headline: string; detail: string; intent: "high" | "med" | "low" }[] = [];
+
+    // Recurring revenue math (assumes monthly cadence; tweak if cadence differs)
+    const tierMapAll = new Map(data.tiers.map(t => [t.id, t]));
+    const activeRows = m.filter(r => r.status === "active");
+    const activeMrrCents = activeRows.reduce((sum, r) => sum + (tierMapAll.get(r.tier_id)?.price_cents ?? 0), 0);
+    const newMrrCents = m
+      .filter(r => inRange(r.joined_at ?? r.created_at) && r.origin !== "vinoshipper_legacy")
+      .reduce((sum, r) => sum + (tierMapAll.get(r.tier_id)?.price_cents ?? 0), 0);
+    const churnedMrrCents = m
+      .filter(r => inRange(r.cancelled_at))
+      .reduce((sum, r) => sum + (tierMapAll.get(r.tier_id)?.price_cents ?? 0), 0);
+    const netMrrCents = newMrrCents - churnedMrrCents;
+    const avgTierCents = activeRows.length > 0 ? activeMrrCents / activeRows.length : (data.tiers[0]?.price_cents ?? 0);
+    // 18mo retention assumption for LTV target on Meta OUTCOME_LEADS value optimization
+    const ltvTarget = (avgTierCents / 100) * 18;
+
+    // Meta OUTCOME_LEADS opportunity (Lindy is wiring this campaign)
+    plays.push({
+      intent: "high",
+      headline: `Meta OUTCOME_LEADS → feed Pack signups (target LTV $${ltvTarget.toFixed(0)})`,
+      detail: `Lindy is spinning up an OUTCOME_LEADS ad set in Meta. Send 'club_signup_start' + 'club_signup_complete' as Lead/CompleteRegistration events with value=$${(avgTierCents / 100).toFixed(0)} (avg tier MRR) and predicted_ltv=$${ltvTarget.toFixed(0)}. Seed the audience with a 1% lookalike of current active members${tierRows[0]?.tier ? ` weighted toward ${tierRows[0].tier.name}` : ""}, exclude existing members + cancellations, and route creative to /wine-club with mission-first hook. Optimize for Lead with a 7-day click window so the algo learns on the full join flow, not just CTA click.`,
+    });
+    if (netMrrCents !== 0 || activeMrrCents > 0) {
+      plays.push({
+        intent: netMrrCents < 0 ? "high" : "med",
+        headline: `Recurring revenue: $${(activeMrrCents / 100).toLocaleString()} MRR · net ${netMrrCents >= 0 ? "+" : ""}$${(netMrrCents / 100).toLocaleString()}`,
+        detail: `New ${(newMrrCents / 100).toLocaleString()} vs churned ${(churnedMrrCents / 100).toLocaleString()} this period. Use this MRR delta as the headline KPI for the Meta lead campaign — target CPL ≤ $${Math.max(8, Math.round(ltvTarget * 0.15)).toFixed(0)} (≈15% of LTV) and reallocate budget weekly from channels that aren't producing recurring sign-ups.`,
+      });
+    }
+
     if (newInPeriod === 0) {
       plays.push({
         intent: "high",
@@ -167,6 +197,12 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
       visitorToMember,
       tierRows,
       plays,
+      activeMrrCents,
+      newMrrCents,
+      churnedMrrCents,
+      netMrrCents,
+      avgTierCents,
+      ltvTarget,
     };
   }, [data, start, end]);
 

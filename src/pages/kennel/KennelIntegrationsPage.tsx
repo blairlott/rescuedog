@@ -186,17 +186,6 @@ const PROVIDERS: ProviderDef[] = [
     ],
   },
   {
-    id: "carrot_ads",
-    label: "Carrot Ads",
-    description: "Instacart's off-platform retail-media offering (Carrot Ads) — see docs.instacart.com/ads. Our Instacart rep can help enable this channel.",
-    envFallbackPrefix: "CARROT_ADS",
-    category: "Retail Media",
-    keys: [
-      { key: "api_key",       label: "API Key", secret: true },
-      { key: "advertiser_id", label: "Advertiser ID" },
-    ],
-  },
-  {
     id: "amazon_ads",
     label: "Amazon Ads",
     description: "Sponsored Products/Brands/Display via the Amazon Advertising API.",

@@ -16,6 +16,8 @@ import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useCheckoutIntentStore } from "@/stores/checkoutIntentStore";
 import { supabase } from "@/integrations/supabase/client";
 import { getFbc, getFbp, getGclaw, getGclid } from "@/lib/metaAttribution";
+import { addLinesAndGoToHostedCart } from "@/lib/vinoshipperInjector";
+import { recordCheckoutIntent } from "@/lib/abCheckoutIntent";
 import {
   VS_FLAT_SHIPPING_USD,
   VS_MEMBER_DISCOUNT_PERCENT,
@@ -62,6 +64,10 @@ interface AccessPoint {
  * vinoshipper_webhook_logs row and clears the cart.
  */
 export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHandoff, onWineOrderPlaced }: Props) {
+  // Live mode: card + shipping captured on Vinoshipper's hosted cart for PCI
+  // compliance. The modal becomes a branded review screen + age confirmation.
+  // Simulation mode keeps the full in-modal form for demo / iPhone walkthroughs.
+  const liveMode = !VS_SIMULATION;
   const { user } = useCustomerAuth();
   const { data: membership } = useMyMembership();
   const { items, clearCart, removeItem } = useCartStore();
@@ -254,6 +260,72 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
       void markAbandonment("abandoned");
     }
     onOpenChange(next);
+  };
+
+  /**
+   * LIVE handoff to Vinoshipper's hosted cart.
+   * Card data and final shipping/tax are captured on vinoshipper.com — the
+   * modal above is purely a branded review + age-gate. Opening the popup
+   * synchronously inside the click preserves the user gesture so Safari /
+   * Chrome don't silently block it.
+   */
+  const goToVinoshipperHostedCart = async () => {
+    if (!ageOk) {
+      toast.error("Please confirm you are 21 or older");
+      return;
+    }
+    const wineLines = items.filter((i) => i.product.node.productKind === "wine");
+    const vsLines = wineLines
+      .map((i) => {
+        const raw = (i.product.node as any).vinoshipperProductId;
+        const pid = raw ? Number(raw) : NaN;
+        return { productId: pid, quantity: i.quantity };
+      })
+      .filter((l) => Number.isFinite(l.productId) && l.quantity > 0);
+
+    if (vsLines.length === 0) {
+      toast.error("Wine checkout unavailable", {
+        description: "This wine is missing its checkout mapping. Please refresh and try again.",
+      });
+      return;
+    }
+
+    const popup =
+      typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+
+    setSubmitting(true);
+    try {
+      // Stash A/B + GA attribution before VS takes over so the webhook can
+      // stitch the resulting purchase back to the right arm.
+      recordCheckoutIntent({ email: form.email || user?.email || null, cartId: null });
+      await addLinesAndGoToHostedCart(vsLines, popup);
+      try { localStorage.setItem("rdw_returning_customer", "true"); } catch {}
+      await markAbandonment("converted");
+
+      // If merch is also in the cart, swap to the merch handoff screen so
+      // the customer has a one-tap path back to finish merch after wine.
+      if (pendingMerchHandoff) {
+        setMerchHandoffReady({
+          orderId: `VS-PENDING-${Date.now()}`,
+          total,
+          bottles: totalBottles,
+          handoff: pendingMerchHandoff,
+        });
+      } else {
+        onOpenChange(false);
+        toast.success("Secure payment opened", {
+          description: "Finish your wine order on the Vinoshipper tab.",
+        });
+      }
+    } catch (err: any) {
+      try { popup?.close(); } catch {}
+      console.error("[vs-handoff] failed", err);
+      toast.error("Wine checkout unavailable", {
+        description: "We couldn't load the secure cart. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const placeOrder = async () => {
@@ -496,34 +568,39 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
             )}
           </DialogTitle>
           <DialogDescription>
-            Wine orders are processed by Vinoshipper for compliance &
-            payment. In simulation mode no card is charged.
+            {liveMode
+              ? "Review your bottles. Payment & shipping details are captured on Vinoshipper's secure cart for compliance."
+              : "Wine orders are processed by Vinoshipper for compliance & payment. In simulation mode no card is charged."}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Express wallet buttons (simulated) */}
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="bg-foreground text-background hover:bg-foreground/90"
-            onClick={placeOrder}
-            disabled={submitting || items.length === 0 || !ageOk}
-          >
-            <Apple className="h-4 w-4 mr-2" /> Apple Pay
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={placeOrder}
-            disabled={submitting || items.length === 0 || !ageOk}
-          >
-            <Smartphone className="h-4 w-4 mr-2" /> Google Pay
-          </Button>
-        </div>
-        <div className="text-center text-[10px] uppercase tracking-brand text-muted-foreground -my-1">
-          or pay with card
-        </div>
+        {!liveMode && (
+          <>
+            {/* Express wallet buttons (simulated) */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="bg-foreground text-background hover:bg-foreground/90"
+                onClick={placeOrder}
+                disabled={submitting || items.length === 0 || !ageOk}
+              >
+                <Apple className="h-4 w-4 mr-2" /> Apple Pay
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={placeOrder}
+                disabled={submitting || items.length === 0 || !ageOk}
+              >
+                <Smartphone className="h-4 w-4 mr-2" /> Google Pay
+              </Button>
+            </div>
+            <div className="text-center text-[10px] uppercase tracking-brand text-muted-foreground -my-1">
+              or pay with card
+            </div>
+          </>
+        )}
 
         {/* Summary */}
         <div className="border border-border p-3 text-sm space-y-1 bg-muted/30">
@@ -571,7 +648,8 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
           </div>
         </div>
 
-        {/* Ship to */}
+        {/* Ship to — simulation only. Live mode collects on Vinoshipper. */}
+        {!liveMode && (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Email" value={form.email} onChange={(v) => update("email", v)} />
@@ -584,8 +662,10 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
             <Field label="ZIP" value={form.zip} onChange={(v) => update("zip", v)} />
           </div>
         </div>
+        )}
 
-        {/* Shipping method */}
+        {/* Shipping method — simulation only. */}
+        {!liveMode && (
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-brand text-muted-foreground">
             Delivery method
@@ -710,18 +790,31 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
             </div>
           )}
         </div>
+        )}
 
-        {/* Payment (fake) */}
-        <div className="border border-border p-3 space-y-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Lock className="h-3 w-3" /> Card vaulted by Vinoshipper / Stripe
+        {liveMode ? (
+          <div className="border border-border bg-muted/20 p-3 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-semibold">
+              <Lock className="h-3.5 w-3.5" /> Secure payment on Vinoshipper
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              Card, shipping address, and final tax are captured on
+              vinoshipper.com — our licensed compliance & payment partner.
+              You'll be handed off when you continue.
+            </p>
           </div>
-          <Field label="Card number" value={form.card} onChange={(v) => update("card", v)} />
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Exp" value={form.exp} onChange={(v) => update("exp", v)} />
-            <Field label="CVC" value={form.cvc} onChange={(v) => update("cvc", v)} />
+        ) : (
+          <div className="border border-border p-3 space-y-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Lock className="h-3 w-3" /> Card vaulted by Vinoshipper / Stripe
+            </div>
+            <Field label="Card number" value={form.card} onChange={(v) => update("card", v)} />
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Exp" value={form.exp} onChange={(v) => update("exp", v)} />
+              <Field label="CVC" value={form.cvc} onChange={(v) => update("cvc", v)} />
+            </div>
           </div>
-        </div>
+        )}
 
         <label className="flex items-start gap-2 text-xs text-muted-foreground">
           <Checkbox
@@ -738,13 +831,18 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
         {/* Sticky bottom CTA — thumb reach on mobile */}
         <div className="absolute bottom-0 inset-x-0 bg-background border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button
-            onClick={placeOrder}
+            onClick={liveMode ? goToVinoshipperHostedCart : placeOrder}
             disabled={submitting || items.length === 0 || !ageOk}
             size="lg"
             className="w-full"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
+            ) : liveMode ? (
+              <>
+                <Lock className="h-4 w-4 mr-2" />
+                Continue to secure payment — ${subtotal.toFixed(2)}
+              </>
             ) : (
               `Place order — $${total.toFixed(2)}`
             )}

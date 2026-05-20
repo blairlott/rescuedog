@@ -22,6 +22,41 @@ type DayPoint = {
 
 const GROWTH_MAP: Record<string, number> = { flat: 0, g10: 0.10, g25: 0.25 };
 
+/**
+ * Build a normalized seasonal index (mean = 1.0) by calendar month from a
+ * map of YYYY-MM-DD → QB revenue. Uses every full month present in the input.
+ * Falls back to flat 1.0 if a month has no history.
+ */
+function buildSeasonalIndex(byDay: Map<string, { qb_revenue: number }>): number[] {
+  const monthSums: number[] = new Array(12).fill(0);
+  const monthDays: number[] = new Array(12).fill(0);
+  for (const [day, row] of byDay.entries()) {
+    const m = Number(day.slice(5, 7)) - 1;
+    if (m < 0 || m > 11) continue;
+    monthSums[m] += row.qb_revenue;
+    monthDays[m] += 1;
+  }
+  const dailyByMonth = monthSums.map((s, i) => (monthDays[i] ? s / monthDays[i] : 0));
+  const observed = dailyByMonth.filter((v) => v > 0);
+  const mean = observed.length ? observed.reduce((a, b) => a + b, 0) / observed.length : 0;
+  if (!mean) return new Array(12).fill(1);
+  return dailyByMonth.map((v) => (v > 0 ? v / mean : 1));
+}
+
+/** Historical CAGR from trailing 12 months vs the prior 12 months of QB revenue. */
+function computeHistoricalCagr(byDay: Map<string, { qb_revenue: number }>, today: Date): number {
+  const y1Start = new Date(today); y1Start.setUTCDate(y1Start.getUTCDate() - 365);
+  const y2Start = new Date(today); y2Start.setUTCDate(y2Start.getUTCDate() - 730);
+  let last12 = 0, prev12 = 0;
+  for (const [day, row] of byDay.entries()) {
+    const d = new Date(day + "T00:00:00Z");
+    if (d >= y1Start && d < today) last12 += row.qb_revenue;
+    else if (d >= y2Start && d < y1Start) prev12 += row.qb_revenue;
+  }
+  if (prev12 <= 0 || last12 <= 0) return 0;
+  return last12 / prev12 - 1;
+}
+
 function rangeLabel(start: Date, end: Date) {
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
   return `${fmt(start)} → ${fmt(end)}`;

@@ -102,6 +102,36 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
 
     // Optimization plays
     const plays: { headline: string; detail: string; intent: "high" | "med" | "low" }[] = [];
+
+    // Recurring revenue math (assumes monthly cadence; tweak if cadence differs)
+    const tierMapAll = new Map(data.tiers.map(t => [t.id, t]));
+    const activeRows = m.filter(r => r.status === "active");
+    const activeMrrCents = activeRows.reduce((sum, r) => sum + (tierMapAll.get(r.tier_id)?.price_cents ?? 0), 0);
+    const newMrrCents = m
+      .filter(r => inRange(r.joined_at ?? r.created_at) && r.origin !== "vinoshipper_legacy")
+      .reduce((sum, r) => sum + (tierMapAll.get(r.tier_id)?.price_cents ?? 0), 0);
+    const churnedMrrCents = m
+      .filter(r => inRange(r.cancelled_at))
+      .reduce((sum, r) => sum + (tierMapAll.get(r.tier_id)?.price_cents ?? 0), 0);
+    const netMrrCents = newMrrCents - churnedMrrCents;
+    const avgTierCents = activeRows.length > 0 ? activeMrrCents / activeRows.length : (data.tiers[0]?.price_cents ?? 0);
+    // 18mo retention assumption for LTV target on Meta OUTCOME_LEADS value optimization
+    const ltvTarget = (avgTierCents / 100) * 18;
+
+    // Meta OUTCOME_LEADS opportunity (Lindy is wiring this campaign)
+    plays.push({
+      intent: "high",
+      headline: `Meta OUTCOME_LEADS → feed Pack signups (target LTV $${ltvTarget.toFixed(0)})`,
+      detail: `Lindy is spinning up an OUTCOME_LEADS ad set in Meta. Send 'club_signup_start' + 'club_signup_complete' as Lead/CompleteRegistration events with value=$${(avgTierCents / 100).toFixed(0)} (avg tier MRR) and predicted_ltv=$${ltvTarget.toFixed(0)}. Seed the audience with a 1% lookalike of current active members${tierRows[0]?.tier ? ` weighted toward ${tierRows[0].tier.name}` : ""}, exclude existing members + cancellations, and route creative to /wine-club with mission-first hook. Optimize for Lead with a 7-day click window so the algo learns on the full join flow, not just CTA click.`,
+    });
+    if (netMrrCents !== 0 || activeMrrCents > 0) {
+      plays.push({
+        intent: netMrrCents < 0 ? "high" : "med",
+        headline: `Recurring revenue: $${(activeMrrCents / 100).toLocaleString()} MRR · net ${netMrrCents >= 0 ? "+" : ""}$${(netMrrCents / 100).toLocaleString()}`,
+        detail: `New ${(newMrrCents / 100).toLocaleString()} vs churned ${(churnedMrrCents / 100).toLocaleString()} this period. Use this MRR delta as the headline KPI for the Meta lead campaign — target CPL ≤ $${Math.max(8, Math.round(ltvTarget * 0.15)).toFixed(0)} (≈15% of LTV) and reallocate budget weekly from channels that aren't producing recurring sign-ups.`,
+      });
+    }
+
     if (newInPeriod === 0) {
       plays.push({
         intent: "high",
@@ -167,6 +197,12 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
       visitorToMember,
       tierRows,
       plays,
+      activeMrrCents,
+      newMrrCents,
+      churnedMrrCents,
+      netMrrCents,
+      avgTierCents,
+      ltvTarget,
     };
   }, [data, start, end]);
 
@@ -201,6 +237,36 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
               value={`${stats.net >= 0 ? "+" : ""}${stats.net.toLocaleString()}`}
               hint={stats.net > 0 ? "Growing" : stats.net < 0 ? "Shrinking" : "Flat"}
             />
+          </div>
+
+          <div className="border-2 border-foreground p-4 mt-3" style={{ borderRadius: 0 }}>
+            <h3 className="text-xs uppercase tracking-brand font-bold text-foreground mb-3">
+              Recurring revenue ({rangeLabel})
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div>
+                <div className="text-muted-foreground uppercase tracking-brand">Active MRR</div>
+                <div className="text-lg font-bold tabular-nums">${(stats.activeMrrCents / 100).toLocaleString()}</div>
+                <div className="text-muted-foreground">avg tier ${(stats.avgTierCents / 100).toFixed(0)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground uppercase tracking-brand">New MRR</div>
+                <div className="text-lg font-bold tabular-nums text-primary">+${(stats.newMrrCents / 100).toLocaleString()}</div>
+                <div className="text-muted-foreground">from {stats.newInPeriod} signup{stats.newInPeriod === 1 ? "" : "s"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground uppercase tracking-brand">Churned MRR</div>
+                <div className="text-lg font-bold tabular-nums">−${(stats.churnedMrrCents / 100).toLocaleString()}</div>
+                <div className="text-muted-foreground">{stats.cancelledInPeriod} cancelled</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground uppercase tracking-brand">Net MRR Δ</div>
+                <div className={`text-lg font-bold tabular-nums ${stats.netMrrCents < 0 ? "text-destructive" : "text-foreground"}`}>
+                  {stats.netMrrCents >= 0 ? "+" : "−"}${Math.abs(stats.netMrrCents / 100).toLocaleString()}
+                </div>
+                <div className="text-muted-foreground">target LTV ${stats.ltvTarget.toFixed(0)}</div>
+              </div>
+            </div>
           </div>
 
           <div className="border-2 border-foreground p-4 mt-3" style={{ borderRadius: 0 }}>
@@ -331,6 +397,12 @@ export async function fetchWineClubAiSlice(start: Date, end: Date) {
     .map(([tid, count]) => ({ name: tierMap.get(tid)?.name ?? "Unknown", price: (tierMap.get(tid)?.price_cents ?? 0) / 100, signups: count }))
     .sort((a, b) => b.signups - a.signups)
     .slice(0, 5);
+  const activeRows = m.filter(r => r.status === "active");
+  const active_mrr = activeRows.reduce((s, r) => s + (tierMap.get(r.tier_id)?.price_cents ?? 0), 0) / 100;
+  const new_mrr = m.filter(r => inRange(r.joined_at ?? r.created_at) && r.origin !== "vinoshipper_legacy").reduce((s, r) => s + (tierMap.get(r.tier_id)?.price_cents ?? 0), 0) / 100;
+  const churned_mrr = m.filter(r => inRange(r.cancelled_at)).reduce((s, r) => s + (tierMap.get(r.tier_id)?.price_cents ?? 0), 0) / 100;
+  const avg_tier_price = activeRows.length > 0 ? active_mrr / activeRows.length : (tiers[0]?.price_cents ?? 0) / 100;
+  const target_ltv = avg_tier_price * 18; // 18mo retention assumption
   const sessions = new Set<string>();
   let pageviews = 0, starts = 0;
   for (const e of pv) {
@@ -353,5 +425,22 @@ export async function fetchWineClubAiSlice(start: Date, end: Date) {
       start_to_complete_rate: starts > 0 ? newInPeriod / starts : 0,
     },
     top_tiers,
+    recurring_revenue: {
+      active_mrr,
+      new_mrr,
+      churned_mrr,
+      net_mrr_delta: new_mrr - churned_mrr,
+      avg_tier_price,
+      target_ltv_18mo: target_ltv,
+    },
+    meta_outcome_leads_opportunity: {
+      status: "Lindy is provisioning an OUTCOME_LEADS ad set in Meta",
+      recommended_lead_value: avg_tier_price,
+      recommended_predicted_ltv: target_ltv,
+      target_cpl_max: Math.max(8, Math.round(target_ltv * 0.15)),
+      lookalike_seed: "active wine_club_memberships (status=active), exclude existing members and recent cancellations",
+      events_to_send: ["club_signup_start (Lead)", "club_signup_complete (CompleteRegistration, value=avg_tier_price)"],
+      landing_page: "/wine-club",
+    },
   };
 }

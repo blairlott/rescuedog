@@ -27,7 +27,10 @@ export function readGiftMode(): GiftModeState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...EMPTY_STATE };
-    return { ...EMPTY_STATE, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    // Never auto-restore `enabled` from storage — gift mode must be
+    // explicitly turned on each session so the cart never defaults to it.
+    return { ...EMPTY_STATE, ...parsed, enabled: false };
   } catch {
     return { ...EMPTY_STATE };
   }

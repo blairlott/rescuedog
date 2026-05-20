@@ -155,7 +155,7 @@ const PROVIDERS: ProviderDef[] = [
   {
     id: "instacart_ads",
     label: "Instacart Ads",
-    description: "Sponsored Product + display on Instacart marketplace (docs.instacart.com/ads). Our Instacart rep can help wire this up.",
+    description: "Sponsored Product + display on Instacart marketplace AND off-platform/Carrot partner network (Kroger, Wegmans, Publix, etc.). Toggle 'Off-platform' placements inside the campaign — same creative, same API, extends reach to Carrot-powered banners. Docs: docs.instacart.com/ads. Our Instacart rep can help enable off-platform.",
     envFallbackPrefix: "INSTACART_ADS",
     category: "Retail Media",
     keys: [

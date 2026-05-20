@@ -429,7 +429,12 @@ export const CartDrawer = () => {
       return;
     }
     if (hasWine && !hasMerch) {
-      handleCheckoutWines();
+      // Use the same in-app Vinoshipper checkout modal as dual checkout —
+      // consistent UX, no external popup, and the modal already handles
+      // wine-only when pendingMerchHandoff is null.
+      logCheckoutEvent("wine_checkout_started", { flow: "inline_modal" });
+      setIsOpen(false);
+      setVsCheckoutOpen(true);
       return;
     }
     // Both: surface the compliance explainer first so the customer isn't

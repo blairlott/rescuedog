@@ -648,7 +648,8 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
           </div>
         </div>
 
-        {/* Ship to */}
+        {/* Ship to — simulation only. Live mode collects on Vinoshipper. */}
+        {!liveMode && (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Email" value={form.email} onChange={(v) => update("email", v)} />
@@ -661,8 +662,10 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
             <Field label="ZIP" value={form.zip} onChange={(v) => update("zip", v)} />
           </div>
         </div>
+        )}
 
-        {/* Shipping method */}
+        {/* Shipping method — simulation only. */}
+        {!liveMode && (
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-brand text-muted-foreground">
             Delivery method

@@ -282,7 +282,7 @@ Deno.serve(async (req) => {
       lower_bound: Math.round(series.reduce((s, p) => s + p.revenue_lower, 0) * 100) / 100,
       upper_bound: Math.round(series.reduce((s, p) => s + p.revenue_upper, 0) * 100) / 100,
       confidence: 0.80,
-      model: "linreg_dow_seasonality_v1",
+      model: "cagr_dow_month_seasonality_v2",
       series: { points: series, summary, strategy_mode: { goal, pace }, baseline: { roas: Math.round(baselineRoas * 1000) / 1000, daily_spend: Math.round(baselineSpend * 100) / 100, daily_revenue: Math.round(baselineRev * 100) / 100, days: recent28Spend.length, revenue_cagr: Math.round(revCagr * 1000) / 1000, spend_cagr: Math.round(spendCagr * 1000) / 1000 }, seasonality: { dow_revenue: revSeason.map((v) => Math.round(v * 1000) / 1000), month_revenue: revMonthSeason.map((v) => Math.round(v * 1000) / 1000), month_spend: spendMonthSeason.map((v) => Math.round(v * 1000) / 1000), history_days: seasonDates.length } },
       narrative: `${horizon}-day projection: baseline ROAS ${baselineRoas.toFixed(2)}x, revenue CAGR ${(revCagr*100).toFixed(1)}%, spend CAGR ${(spendCagr*100).toFixed(1)}% (90d vs prior 90d, annualized). Seasonality: day-of-week + calendar-month (24mo, ${seasonDates.length} days observed). Goal ${goal}/100, Pace ${pace}/100.`,
       generated_at: new Date().toISOString(),

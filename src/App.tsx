@@ -227,6 +227,7 @@ function AppContent() {
       <Route path="/cms/login" element={<CmsLoginPage />} />
       <Route path="/cms" element={<CmsDashboard />} />
       <Route path="/cms/experiments" element={<CmsExperimentsPage />} />
+      <Route path="/cms/discounts" element={<CmsDiscountsPage />} />
       <Route path="/cms/emails" element={<CmsEmailsPage />} />
       <Route path="/cms/media" element={<CmsMediaPage />} />
       <Route path="/crm" element={<CrmLayout />}>

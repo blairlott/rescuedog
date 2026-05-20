@@ -13,6 +13,15 @@ import { Key, Save, Trash2, Eye, EyeOff, Lock, Plug, CheckCircle2, XCircle, Load
 const SHARP = { borderRadius: 0 } as const;
 const BRAND = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
 
+// Providers whose credentials live in the Lovable secret store (Deno env)
+// rather than the integration_credentials table. We can't read env from the
+// client, so we list them here so the UI can show a "Connected" badge.
+const ENV_CONNECTED: Record<string, string> = {
+  mailchimp: "Lovable secret",
+  delivery_webhooks: "Lovable secret",
+  vinoshipper: "Lovable secret · locked",
+};
+
 type CredRow = {
   id: string;
   provider: string;
@@ -179,6 +188,15 @@ const PROVIDERS: ProviderDef[] = [
       { key: "account_id",    label: "Account ID" },
     ],
   },
+  // ─── Commerce (read-only, secrets locked in Lovable) ─────
+  {
+    id: "vinoshipper",
+    label: "Vinoshipper",
+    description: "Wine checkout, compliance, and order pipeline. Secrets are locked in the Lovable secret store and rotated only by an owner.",
+    envFallbackPrefix: "VINOSHIPPER",
+    category: "Commerce",
+    keys: [],
+  },
 ];
 
 export default function KennelIntegrationsPage() {
@@ -207,6 +225,19 @@ export default function KennelIntegrationsPage() {
 
   const rowFor = (provider: string, key: string) =>
     rows.find((r) => r.provider === provider && r.credential_key === key && r.scope === "live");
+
+  const providerConnectionState = (p: ProviderDef): { state: "connected" | "partial" | "none"; source: string } => {
+    if (p.keys.length === 0) {
+      return ENV_CONNECTED[p.id]
+        ? { state: "connected", source: ENV_CONNECTED[p.id] }
+        : { state: "none", source: "" };
+    }
+    const have = p.keys.filter((k) => rowFor(p.id, k.key)).length;
+    if (have === p.keys.length && p.keys.length > 0) return { state: "connected", source: "database" };
+    if (have > 0) return { state: "partial", source: `${have}/${p.keys.length} keys saved` };
+    if (ENV_CONNECTED[p.id]) return { state: "connected", source: ENV_CONNECTED[p.id] };
+    return { state: "none", source: "" };
+  };
 
   const draftKey = (p: string, k: string) => `${p}::${k}`;
 
@@ -311,6 +342,29 @@ export default function KennelIntegrationsPage() {
                 <div className="flex items-center gap-2">
                   <h2 className="font-bold uppercase tracking-brand text-foreground">{p.label}</h2>
                   <Badge variant="outline" style={SHARP} className="text-[10px]">{p.id}</Badge>
+                  {(() => {
+                    const s = providerConnectionState(p);
+                    if (s.state === "connected") {
+                      return (
+                        <Badge style={SHARP} className="text-[10px] bg-green-600 text-white border-green-600 gap-1">
+                          <CheckCircle2 className="h-3 w-3" /> Connected
+                          <span className="opacity-80 font-normal normal-case">· {s.source}</span>
+                        </Badge>
+                      );
+                    }
+                    if (s.state === "partial") {
+                      return (
+                        <Badge style={SHARP} className="text-[10px] bg-amber-500 text-white border-amber-500 gap-1">
+                          Partial · {s.source}
+                        </Badge>
+                      );
+                    }
+                    return (
+                      <Badge variant="outline" style={SHARP} className="text-[10px] text-muted-foreground">
+                        Not connected
+                      </Badge>
+                    );
+                  })()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">{p.description}</p>
               </div>

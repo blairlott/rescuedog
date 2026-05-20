@@ -455,10 +455,11 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
 export async function fetchWineClubAiSlice(start: Date, end: Date) {
   const fromIso = start.toISOString();
   const toIso = end.toISOString();
-  const [tiersRes, mRes, pvRes] = await Promise.all([
+  const [tiersRes, mRes, pvRes, vsActiveEmails] = await Promise.all([
     supabase.from("wine_club_tiers" as any).select("id, name, slug, price_cents").eq("is_active", true),
     supabase.from("wine_club_memberships" as any).select("id, tier_id, status, origin, is_gift, joined_at, cancelled_at, created_at"),
     supabase.from("ab_events" as any).select("event_type, path, session_id").gte("created_at", fromIso).lte("created_at", toIso).or("path.ilike.%wine-club%,path.ilike.%/club%"),
+    fetchActiveVsMemberEmails(),
   ]);
   const tiers = ((tiersRes.data as any) || []) as { id: string; name: string; price_cents: number }[];
   const m = ((mRes.data as any) || []) as Membership[];
@@ -470,7 +471,7 @@ export async function fetchWineClubAiSlice(start: Date, end: Date) {
     const t = new Date(iso).getTime();
     return t >= startMs && t <= endMs;
   };
-  const activeNow = m.filter(r => r.status === "active").length;
+  const activeNow = vsActiveEmails.size + m.filter(r => r.status === "active").length;
   const newInPeriod = m.filter(r => inRange(r.joined_at ?? r.created_at) && r.origin !== "vinoshipper_legacy").length;
   const cancelledInPeriod = m.filter(r => inRange(r.cancelled_at)).length;
   const giftsInPeriod = m.filter(r => r.is_gift && inRange(r.joined_at ?? r.created_at)).length;
@@ -525,7 +526,7 @@ export async function fetchWineClubAiSlice(start: Date, end: Date) {
       recommended_lead_value: avg_tier_price,
       recommended_predicted_ltv: target_ltv,
       target_cpl_max: Math.max(8, Math.round(target_ltv * 0.15)),
-      lookalike_seed: "active wine_club_memberships (status=active), exclude existing members and recent cancellations",
+      lookalike_seed: "active Vinoshipper club-member emails + active app memberships, exclude existing members and recent cancellations",
       events_to_send: ["club_signup_start (Lead)", "club_signup_complete (CompleteRegistration, value=avg_tier_price)"],
       landing_page: "/wine-club",
     },

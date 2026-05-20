@@ -5,8 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SHOPIFY_DOMAIN = Deno.env.get('SHOPIFY_STORE_DOMAIN') ?? '';
-const SHOPIFY_TOKEN = Deno.env.get('SHOPIFY_ACCESS_TOKEN') ?? '';
+const SHOPIFY_DOMAIN = Deno.env.get('SHOPIFY_SHOP_DOMAIN') ?? 'home-45-new-fashion.myshopify.com';
+const SHOPIFY_TOKEN = Deno.env.get('SHOPIFY_ADMIN_TOKEN') ?? Deno.env.get('SHOPIFY_ACCESS_TOKEN') ?? '';
 const SHOPIFY_API_VERSION = '2025-07';
 
 async function shopifyMirror(code: any) {

@@ -44,7 +44,7 @@ export function MetaLeadsHealthPanel() {
         .order("sent_at", { ascending: false })
         .limit(500);
       if (error) throw error;
-      return (data ?? []) as Row[];
+      return ((data ?? []) as unknown) as Row[];
     },
     refetchInterval: 60_000,
   });

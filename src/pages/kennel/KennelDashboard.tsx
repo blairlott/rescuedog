@@ -22,6 +22,7 @@ import { RefreshButton } from "@/components/kennel/RefreshButton";
 import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
 import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
 import { BrickMortarTimeline, BrandLiftTimeline } from "@/components/kennel/BrickMortarTimeline";
+import { WineClubGrowthPanel, fetchWineClubAiSlice } from "@/components/kennel/WineClubGrowthPanel";
 import { DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween } from "@/components/kennel/DateRangeControls";
 import { SortableDashboard, type SortableItem } from "@/components/kennel/SortableDashboard";
 import { Button } from "@/components/ui/button";
@@ -165,6 +166,12 @@ export default function KennelDashboard() {
         finLifetime: ((finLifetimeRes.data as any) || []) as { category: string; amount_cents: number }[],
       };
     },
+  });
+
+  // Wine club signal — drives the panel + enriches AI snapshot.
+  const { data: clubSlice } = useQuery({
+    queryKey: ["kennel-wine-club-ai", isoDay(start), isoDay(end)],
+    queryFn: () => fetchWineClubAiSlice(start, end),
   });
 
   const periodMeta = useMemo(() => {
@@ -337,7 +344,8 @@ export default function KennelDashboard() {
       name: c.name, platform: c.platform, spend: c.spend, revenue: c.revenue,
       roas: c.roas, conversions: c.conversions, cpa: c.cpa,
     })),
-  }), [periodMeta.label, aggregates, dtc, bm, fin, channelRows]);
+    wine_club: clubSlice ?? null,
+  }), [periodMeta.label, aggregates, dtc, bm, fin, channelRows, clubSlice]);
 
   const runBackfill = async () => {
     setSyncing(true);

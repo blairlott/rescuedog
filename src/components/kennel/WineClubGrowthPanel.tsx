@@ -211,7 +211,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
       avgTierCents,
       ltvTarget,
     };
-  }, [data, start, end]);
+  }, [data, start, end, signupValue]);
 
   return (
     <section className="space-y-2">

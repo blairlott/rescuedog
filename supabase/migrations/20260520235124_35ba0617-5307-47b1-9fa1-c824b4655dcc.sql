@@ -1,0 +1,1 @@
+ALTER VIEW public.v_instacart_recommendations SET (security_invoker = on);

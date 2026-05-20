@@ -831,13 +831,18 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
         {/* Sticky bottom CTA — thumb reach on mobile */}
         <div className="absolute bottom-0 inset-x-0 bg-background border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button
-            onClick={placeOrder}
+            onClick={liveMode ? goToVinoshipperHostedCart : placeOrder}
             disabled={submitting || items.length === 0 || !ageOk}
             size="lg"
             className="w-full"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
+            ) : liveMode ? (
+              <>
+                <Lock className="h-4 w-4 mr-2" />
+                Continue to secure payment — ${subtotal.toFixed(2)}
+              </>
             ) : (
               `Place order — $${total.toFixed(2)}`
             )}

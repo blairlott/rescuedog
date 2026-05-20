@@ -227,6 +227,11 @@ export default function KennelIntegrationsPage() {
     rows.find((r) => r.provider === provider && r.credential_key === key && r.scope === "live");
 
   const providerConnectionState = (p: ProviderDef): { state: "connected" | "partial" | "none"; source: string } => {
+    if (p.keys.length === 0) {
+      return ENV_CONNECTED[p.id]
+        ? { state: "connected", source: ENV_CONNECTED[p.id] }
+        : { state: "none", source: "" };
+    }
     const have = p.keys.filter((k) => rowFor(p.id, k.key)).length;
     if (have === p.keys.length && p.keys.length > 0) return { state: "connected", source: "database" };
     if (have > 0) return { state: "partial", source: `${have}/${p.keys.length} keys saved` };

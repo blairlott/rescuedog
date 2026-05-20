@@ -219,6 +219,33 @@ Deno.serve(async (req) => {
       sendMetaEvent("CompleteRegistration", body, value.lead_value_usd, value.predicted_ltv_usd, eventId),
     ]);
 
+    // Mirror to meta_capi_events so the Kennel learning-health panel can read
+    // Leads/week, success rate, and test-mode fires without scraping Meta.
+    const emailHash = body.email ? await sha256Lower(body.email) : null;
+    const valueCents = Math.round(value.lead_value_usd * 100);
+    const rows = [
+      { event_name: "Lead", res: lead },
+      { event_name: "CompleteRegistration", res: reg },
+    ].map(({ event_name, res }) => ({
+      order_id: eventId,
+      event_name,
+      event_id: `${eventId}:${event_name}`,
+      value_cents: valueCents,
+      currency: "USD",
+      test_mode: !!body.test_mode,
+      test_event_code: body.test_mode ? (body.test_event_code ?? "TEST12345") : null,
+      fbc: body.fbc ?? null,
+      fbp: body.fbp ?? null,
+      email_hash: emailHash,
+      request_payload: { tier_id: body.tier_id ?? null, value },
+      response_status: res.ok ? 200 : null,
+      response_body: (res as any).debug ?? null,
+      success: res.ok && !res.skipped,
+      error: res.skipped ? "META_PIXEL_ID or META_CAPI_TOKEN not configured" : ((res as any).error ?? null),
+    }));
+    const { error: logErr } = await supabase.from("meta_capi_events").insert(rows);
+    if (logErr) console.error("meta_capi_events insert failed", logErr);
+
     return new Response(JSON.stringify({
       ok: true,
       event_id: eventId,

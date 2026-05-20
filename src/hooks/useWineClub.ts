@@ -145,6 +145,23 @@ export function useJoinClub() {
             custom_data: { membership_id: inserted?.id, tier_id: data.tier_id },
           },
         });
+        // Mailchimp lifecycle: tag as active wine club member.
+        if (user.email) {
+          await supabase.functions.invoke("mailchimp-tag", {
+            body: {
+              email: user.email,
+              event_type: "wine_club_joined",
+              tags_added: ["wine_club_active", `wc_tier_${data.tier_id}`, `wc_freq_${data.frequency}`],
+              tags_removed: ["wine_club_cancelled", "exclude_active_30d"],
+              merge_fields: {
+                WCSTATUS: "active",
+                WCTIER: data.tier_id,
+                WCFREQ: data.frequency,
+                WCJOIN: new Date().toISOString().slice(0, 10),
+              },
+            },
+          });
+        }
       } catch (e) {
         console.warn("[wine-club] CAPI Lead fire failed (non-fatal)", e);
       }

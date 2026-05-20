@@ -271,7 +271,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
         gclaw: getGclaw(),
         landing_url: typeof window !== "undefined" ? window.location.href : null,
       };
-      const { error } = await supabase.from("vinoshipper_webhook_logs").insert({
+      const { error: logError } = await supabase.from("vinoshipper_webhook_logs").insert({
         event: "order.created",
         subject: "order",
         identifier: fakeOrderId,
@@ -317,7 +317,11 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
         } as any,
         notes: "Simulated checkout — Vinoshipper Injector not yet live",
       });
-      if (error) throw error;
+      if (logError) {
+        // Logging is best-effort in simulation mode (RLS may block anonymous inserts).
+        // Do NOT block the order flow — continue so the merch handoff can be tested.
+        console.warn("[sim-order] could not write webhook log (continuing):", logError);
+      }
       await markAbandonment("converted");
       if (isSignupPromoActive) markSignupPromoUsed();
       try { localStorage.setItem("rdw_returning_customer", "true"); } catch {}

@@ -103,6 +103,7 @@ const KennelTrueRoasPage = lazy(() => import("./pages/kennel/KennelTrueRoasPage"
 const KennelCapiPage = lazy(() => import("./pages/kennel/KennelCapiPage"));
 const KennelMethodologyPage = lazy(() => import("./pages/kennel/KennelMethodologyPage"));
 const KennelIntegrationsPage = lazy(() => import("./pages/kennel/KennelIntegrationsPage"));
+const KennelMediaBuyingPage = lazy(() => import("./pages/kennel/KennelMediaBuyingPage"));
 const KennelOciLogPage = lazy(() => import("./pages/kennel/KennelOciLogPage"));
 const KennelBackfillsPage = lazy(() => import("./pages/kennel/KennelBackfillsPage"));
 const KennelSelfHealthPage = lazy(() => import("./pages/kennel/KennelSelfHealthPage"));
@@ -251,6 +252,7 @@ function AppContent() {
         <Route path="settings" element={<KennelSettingsPage />} />
         <Route path="methodology" element={<KennelMethodologyPage />} />
         <Route path="integrations" element={<KennelIntegrationsPage />} />
+        <Route path="media-buying" element={<KennelMediaBuyingPage />} />
       </Route>
       <Route path="/intelligence" element={<KennelGuard><ExecutiveCommandCenter /></KennelGuard>} />
       {v2Routes()}

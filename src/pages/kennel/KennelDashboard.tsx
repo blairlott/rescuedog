@@ -172,7 +172,7 @@ export default function KennelDashboard() {
 
   // Wine club signal — drives the panel + enriches AI snapshot.
   const { data: clubSlice } = useQuery({
-    queryKey: ["kennel-wine-club-ai", isoDay(start), isoDay(end)],
+    queryKey: ["kennel-wine-club-ai", "vs-paged-v2", isoDay(start), isoDay(end)],
     queryFn: () => fetchWineClubAiSlice(start, end),
   });
 

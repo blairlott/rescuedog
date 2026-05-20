@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { Wine, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { fetchActiveVsMemberEmails } from "@/lib/wineClubMembers";
 import {
   DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay,
   monthKey, pickBucket, daysBetween, formatAxisDate,
@@ -80,16 +81,18 @@ export function WineClubTimeline({
   const observedEnd = end < today ? end : today;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["wine-club-timeline"],
+    queryKey: ["wine-club-timeline", "vs-paged-v2"],
     queryFn: async () => {
-      const [tiersRes, mRes] = await Promise.all([
+      const [tiersRes, mRes, vsActiveEmails] = await Promise.all([
         supabase.from("wine_club_tiers" as any).select("id, name, price_cents"),
         supabase.from("wine_club_memberships" as any)
           .select("id, tier_id, status, origin, is_gift, joined_at, cancelled_at, created_at"),
+        fetchActiveVsMemberEmails(),
       ]);
       return {
         tiers: ((tiersRes.data as any) || []) as Tier[],
         memberships: ((mRes.data as any) || []) as Membership[],
+        vsActiveEmails,
       };
     },
   });
@@ -123,7 +126,9 @@ export function WineClubTimeline({
 
     // Snapshot of currently active for headline metrics
     const activeRows = data.memberships.filter(r => r.status === "active");
-    const activeNow = activeRows.length;
+    const activeAppNow = activeRows.length;
+    const activeVsNow = data.vsActiveEmails.size;
+    const activeNow = activeVsNow + activeAppNow;
     const activeMrr = activeRows.reduce((s, r) => s + priceOf(r.tier_id), 0) / 100;
     const avgTier = activeNow > 0 ? activeMrr / activeNow : (data.tiers[0]?.price_cents ?? 0) / 100;
 

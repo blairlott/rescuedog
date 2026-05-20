@@ -130,6 +130,28 @@ Deno.serve(async (req) => {
     console.error('CAPI ClubCancelled fire failed (non-fatal)', e);
   }
 
+  // Mailchimp: remove active-member tag, add cancelled tag (best-effort).
+  try {
+    const { data: prof2 } = await admin
+      .from('profiles').select('email, full_name').eq('id', userId).maybeSingle();
+    const emailMc = prof2?.email ?? userData.user.email ?? null;
+    if (emailMc) {
+      const [first2, ...rest2] = (prof2?.full_name ?? '').split(' ');
+      void syncMailchimpMember({
+        email: emailMc,
+        userId,
+        eventType: 'wine_club_cancelled',
+        tagsAdded: ['wine_club_cancelled', `cancel_reason_${(reason || 'unspecified').toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 32)}`],
+        tagsRemoved: ['wine_club_active'],
+        mergeFields: { WCSTATUS: 'cancelled', WCCANCEL: new Date().toISOString().slice(0, 10) },
+        firstName: first2 || null,
+        lastName: rest2.join(' ') || null,
+      });
+    }
+  } catch (e) {
+    console.error('Mailchimp cancel sync failed (non-fatal)', e);
+  }
+
   return json({
     ok: true,
     vinoshipper_called: vsResult !== null,

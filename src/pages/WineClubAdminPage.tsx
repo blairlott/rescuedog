@@ -28,6 +28,10 @@ interface MemberRow {
   next_shipment_date: string | null;
   wine_preferences: string[];
   tier: { name: string; frequency: string; bottle_count: number } | null;
+  source?: "new" | "legacy";
+  legacy_email?: string | null;
+  legacy_name?: string | null;
+  legacy_club_name?: string | null;
 }
 
 function useWineClubAccess() {
@@ -57,12 +61,52 @@ function useAllMemberships() {
   return useQuery({
     queryKey: ["admin-wine-club-memberships"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const [newRes, legacyRes] = await Promise.all([
+        supabase
         .from("wine_club_memberships")
         .select("*, tier:wine_club_tiers!tier_id(name, frequency, bottle_count)")
-        .order("joined_at", { ascending: false });
-      if (error) throw error;
-      return data as MemberRow[];
+          .order("joined_at", { ascending: false }),
+        supabase
+          .from("wine_club_legacy_members")
+          .select("id, email, first_name, last_name, club_name, status, shipping_city, shipping_state, joined_at, next_shipment_date, claimed_at, tier:wine_club_tiers!tier_id(name, frequency, bottle_count)")
+          .order("last_name", { nullsFirst: false })
+          .limit(2000),
+      ]);
+      if (newRes.error) throw newRes.error;
+      if (legacyRes.error) throw legacyRes.error;
+
+      const newRows: MemberRow[] = (newRes.data || []).map((m: any) => ({
+        ...m,
+        source: "new",
+      }));
+
+      const legacyRows: MemberRow[] = (legacyRes.data || []).map((l: any) => {
+        // Map legacy statuses to membership-style status labels.
+        const statusMap: Record<string, string> = {
+          current: "active",
+          inactive: "cancelled",
+          on_hold: "paused",
+          archived: "cancelled",
+        };
+        return {
+          id: `legacy:${l.id}`,
+          user_id: "",
+          status: statusMap[l.status] || l.status,
+          payment_status: l.claimed_at ? "claimed" : "legacy",
+          shipping_city: l.shipping_city,
+          shipping_state: l.shipping_state,
+          joined_at: l.joined_at || new Date(0).toISOString(),
+          next_shipment_date: l.next_shipment_date,
+          wine_preferences: [],
+          tier: l.tier || (l.club_name ? { name: l.club_name, frequency: "", bottle_count: 0 } : null),
+          source: "legacy",
+          legacy_email: l.email,
+          legacy_name: [l.first_name, l.last_name].filter(Boolean).join(" ") || null,
+          legacy_club_name: l.club_name,
+        };
+      });
+
+      return [...newRows, ...legacyRows];
     },
   });
 }
@@ -304,6 +348,7 @@ const WineClubAdminPage = () => {
                         <TableHead>Club Tier</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Payment</TableHead>
+                        <TableHead>Member</TableHead>
                         <TableHead>Location</TableHead>
                         <TableHead>Joined</TableHead>
                         <TableHead>Next Shipment</TableHead>
@@ -322,11 +367,23 @@ const WineClubAdminPage = () => {
                           <TableCell>
                             <Badge variant="outline" className="text-xs">{m.payment_status}</Badge>
                           </TableCell>
+                          <TableCell className="text-xs">
+                            {m.source === "legacy" ? (
+                              <div>
+                                <div className="font-medium text-foreground">{m.legacy_name || "—"}</div>
+                                <div className="text-muted-foreground">{m.legacy_email || ""}</div>
+                              </div>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">New signup</Badge>
+                            )}
+                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {m.shipping_city && m.shipping_state ? `${m.shipping_city}, ${m.shipping_state}` : "—"}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {new Date(m.joined_at).toLocaleDateString()}
+                            {m.joined_at && new Date(m.joined_at).getFullYear() > 1970
+                              ? new Date(m.joined_at).toLocaleDateString()
+                              : "—"}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {m.next_shipment_date ? new Date(m.next_shipment_date).toLocaleDateString() : "—"}

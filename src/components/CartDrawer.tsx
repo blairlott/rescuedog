@@ -773,10 +773,10 @@ export const CartDrawer = () => {
                   <ArrowLeft className="h-4 w-4 mr-1.5" />
                   {t("common.continue_shopping")}
                 </Button>
-                <p className="text-[10px] text-muted-foreground text-center leading-tight">
-                  {isDual
-                    ? "Opens two tabs — one for wine (Vinoshipper), one for merch. Two charges, two confirmations."
-                    : hasWine
+                 <p className="text-[10px] text-muted-foreground text-center leading-tight">
+                   {isDual
+                     ? "Wine checks out right here. After it's placed, you'll get a one-click handoff to merch — no extra tabs to juggle."
+                     : hasWine
                       ? "Wine ships via our compliance partner, Vinoshipper."
                       : "Merch ships from our US fulfillment partners."}
                 </p>

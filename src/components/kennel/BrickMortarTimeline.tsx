@@ -22,6 +22,31 @@ type DayPoint = {
 };
 
 const GROWTH_MAP: Record<string, number> = { flat: 0, g10: 0.10, g25: 0.25 };
+const GROWTH_LABELS: Record<string, string> = { flat: "Flat 0%/yr", g10: "+10%/yr", g25: "+25%/yr" };
+const BM_FACT_CHANNELS = ["brick_mortar_off", "brick_mortar_on", "distributor_depletion"];
+
+function buildActualRevenueMap(
+  qbRows: Array<{ date: string; amount_cents: number; channel: string | null }>,
+  factRows: Array<{ date: string; net_revenue_cents: number; channel: string | null }>,
+) {
+  const qbByDay = new Map<string, number>();
+  const factByDay = new Map<string, number>();
+  for (const r of qbRows) {
+    const ch = (r.channel ?? "").toLowerCase();
+    if (ch === "dtc" || ch === "ecommerce") continue;
+    qbByDay.set(r.date, (qbByDay.get(r.date) ?? 0) + Number(r.amount_cents ?? 0) / 100);
+  }
+  for (const r of factRows) {
+    if (!BM_FACT_CHANNELS.includes((r.channel ?? "").toLowerCase())) continue;
+    factByDay.set(r.date, (factByDay.get(r.date) ?? 0) + Number(r.net_revenue_cents ?? 0) / 100);
+  }
+  const byDay = new Map<string, { qb_revenue: number }>();
+  for (const day of new Set([...qbByDay.keys(), ...factByDay.keys()])) {
+    // Curated B&M facts match dashboard totals; QB entries remain the legacy fallback.
+    byDay.set(day, { qb_revenue: factByDay.get(day) ?? qbByDay.get(day) ?? 0 });
+  }
+  return { byDay, factDays: factByDay.size, qbDays: qbByDay.size };
+}
 
 /**
  * Build a normalized seasonal index (mean = 1.0) by calendar month from a
@@ -135,29 +160,36 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
   const { data: history } = useQuery({
     queryKey: ["bm-history-qb", histSince, histUntil],
     queryFn: async () => {
-      const out: Array<{ date: string; amount_cents: number; channel: string | null }> = [];
-      const pageSize = 1000; let from = 0;
-      while (true) {
-        const { data: rows } = await (supabase
+      const pageAll = async <T,>(builder: (from: number, to: number) => PromiseLike<{ data: T[] | null }>): Promise<T[]> => {
+        const out: T[] = [];
+        const pageSize = 1000;
+        let from = 0;
+        while (true) {
+          const { data: rows } = await Promise.resolve(builder(from, from + pageSize - 1));
+          if (!rows || rows.length === 0) break;
+          out.push(...rows);
+          if (rows.length < pageSize) break;
+          from += pageSize;
+        }
+        return out;
+      };
+      const [qbRows, factRows] = await Promise.all([
+        pageAll<any>((f, t) => (supabase
           .from("bm_finance_entries" as any)
           .select("date, amount_cents, channel, entry_type")
           .gte("date", histSince).lte("date", histUntil)
           .in("entry_type", ["revenue", "income", "sales"])
           .order("date", { ascending: true })
-          .range(from, from + pageSize - 1) as any);
-        if (!rows || rows.length === 0) break;
-        out.push(...rows);
-        if (rows.length < pageSize) break;
-        from += pageSize;
-      }
-      const byDay = new Map<string, { qb_revenue: number }>();
-      for (const r of out) {
-        const ch = (r.channel ?? "").toLowerCase();
-        if (ch === "dtc" || ch === "ecommerce") continue;
-        const prev = byDay.get(r.date)?.qb_revenue ?? 0;
-        byDay.set(r.date, { qb_revenue: prev + Number(r.amount_cents ?? 0) / 100 });
-      }
-      return { byDay };
+          .range(f, t) as any)),
+        pageAll<any>((f, t) => (supabase
+          .from("business_revenue_facts" as any)
+          .select("date, channel, net_revenue_cents")
+          .in("channel", BM_FACT_CHANNELS)
+          .gte("date", histSince).lte("date", histUntil)
+          .order("date", { ascending: true })
+          .range(f, t) as any)),
+      ]);
+      return { byDay: buildActualRevenueMap(qbRows, factRows).byDay };
     },
   });
 
@@ -185,12 +217,19 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         }
         return out;
       };
-      const [qbRows, depRows, icRows] = await Promise.all([
+      const [qbRows, factRows, depRows, icRows] = await Promise.all([
         pageAll<any>((f, t) => (supabase
           .from("bm_finance_entries" as any)
           .select("date, amount_cents, channel, entry_type")
           .gte("date", since).lte("date", until)
           .in("entry_type", ["revenue", "income", "sales"])
+          .order("date", { ascending: true })
+          .range(f, t) as any)),
+        pageAll<any>((f, t) => (supabase
+          .from("business_revenue_facts" as any)
+          .select("date, channel, net_revenue_cents")
+          .in("channel", BM_FACT_CHANNELS)
+          .gte("date", since).lte("date", until)
           .order("date", { ascending: true })
           .range(f, t) as any)),
         pageAll<any>((f, t) => (supabase
@@ -215,10 +254,9 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         if (!byDay.has(d)) byDay.set(d, { date: d, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: 0 });
         return byDay.get(d)!;
       };
-      for (const r of qbRows) {
-        const ch = (r.channel ?? "").toLowerCase();
-        if (ch === "dtc" || ch === "ecommerce") continue;
-        ensure(r.date).qb_revenue += Number(r.amount_cents ?? 0) / 100;
+      const actualMap = buildActualRevenueMap(qbRows, factRows);
+      for (const [day, row] of actualMap.byDay.entries()) {
+        ensure(day).qb_revenue += row.qb_revenue;
       }
       for (const r of depRows) {
         if (!r.period_end) continue;
@@ -229,7 +267,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       for (const r of icRows) {
         ensure(r.date).instacart_revenue += Number(r.revenue ?? 0);
       }
-      return { byDay, qbRows: qbRows.length, depRows: depRows.length, icRows: icRows.length };
+      return { byDay, qbRows: qbRows.length, factRows: factRows.length, depRows: depRows.length, icRows: icRows.length };
     },
   });
 

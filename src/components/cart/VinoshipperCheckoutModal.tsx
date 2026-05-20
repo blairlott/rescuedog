@@ -790,18 +790,31 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
             </div>
           )}
         </div>
+        )}
 
-        {/* Payment (fake) */}
-        <div className="border border-border p-3 space-y-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Lock className="h-3 w-3" /> Card vaulted by Vinoshipper / Stripe
+        {liveMode ? (
+          <div className="border border-border bg-muted/20 p-3 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-semibold">
+              <Lock className="h-3.5 w-3.5" /> Secure payment on Vinoshipper
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              Card, shipping address, and final tax are captured on
+              vinoshipper.com — our licensed compliance & payment partner.
+              You'll be handed off when you continue.
+            </p>
           </div>
-          <Field label="Card number" value={form.card} onChange={(v) => update("card", v)} />
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Exp" value={form.exp} onChange={(v) => update("exp", v)} />
-            <Field label="CVC" value={form.cvc} onChange={(v) => update("cvc", v)} />
+        ) : (
+          <div className="border border-border p-3 space-y-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Lock className="h-3 w-3" /> Card vaulted by Vinoshipper / Stripe
+            </div>
+            <Field label="Card number" value={form.card} onChange={(v) => update("card", v)} />
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Exp" value={form.exp} onChange={(v) => update("exp", v)} />
+              <Field label="CVC" value={form.cvc} onChange={(v) => update("cvc", v)} />
+            </div>
           </div>
-        </div>
+        )}
 
         <label className="flex items-start gap-2 text-xs text-muted-foreground">
           <Checkbox

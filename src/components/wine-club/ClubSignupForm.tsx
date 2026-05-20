@@ -16,9 +16,13 @@ interface ClubSignupFormProps {
   onBack: () => void;
   onSubmit: (data: JoinClubData) => void;
   isSubmitting: boolean;
+  /** When true, the gift toggle is hidden and is_gift is always true (used by existing members adding a gift). */
+  lockGift?: boolean;
+  /** Optional override for the back button label. */
+  backLabel?: string;
 }
 
-export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSignupFormProps) {
+export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift = false, backLabel }: ClubSignupFormProps) {
   const { user } = useCustomerAuth();
   const [handoffOpen, setHandoffOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -29,7 +33,7 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
     shipping_city: "",
     shipping_state: "",
     shipping_zip: "",
-    is_gift: false,
+    is_gift: lockGift,
     gift_message: "",
     gift_recipient_name: "",
     gift_recipient_email: "",
@@ -52,6 +56,8 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting }: ClubSig
       shipping_zip: form.shipping_zip,
       is_gift: form.is_gift,
       gift_message: form.is_gift ? form.gift_message : undefined,
+      gift_recipient_name: form.is_gift ? form.gift_recipient_name : undefined,
+      gift_recipient_email: form.is_gift ? form.gift_recipient_email : undefined,
     });
 
     // If this tier is linked to a Vinoshipper Club, immediately open the

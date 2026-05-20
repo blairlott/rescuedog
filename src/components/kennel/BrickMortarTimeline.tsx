@@ -163,7 +163,8 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       const k = isoDay(d);
       const row = data.byDay.get(k);
       trailingDays++;
-      if (row) trailingSum += row.qb_revenue + row.depletion_revenue + row.instacart_revenue;
+      // QB is the only source of truth for B&M dollars. Depletions and Instacart are signals, not sales.
+      if (row) trailingSum += row.qb_revenue;
     }
     const dailyAvg = trailingDays ? trailingSum / trailingDays : 0;
 
@@ -195,7 +196,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       ...observed,
       ...projection.map((p) => ({ date: p.date, qb_revenue: null, depletion_revenue: null, instacart_revenue: null, projected: p.projected })),
     ];
-    const observedTotal = observed.reduce((s, p) => s + p.qb_revenue + p.depletion_revenue + p.instacart_revenue, 0);
+    const observedTotal = observed.reduce((s, p) => s + (p.qb_revenue ?? 0), 0);
     const projectedTotal = projection.reduce((s, p) => s + p.projected, 0);
     return { points, observedTotal, projectedTotal, dailyAvg };
   }, [data, start, end, observedEnd, bucket, growth, today]);
@@ -232,13 +233,13 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       </header>
 
       <CaveatBanner
-        title="QuickBooks = source of truth · Depletions = market-level only"
+        title="QuickBooks = source of truth · Depletions & Instacart = signals only"
         items={[
           "QuickBooks is the source of truth for actual wholesale/B&M dollars — ledger-based, refreshed nightly, only entries tagged wholesale/B&M are counted here.",
-          "Depletion reports are market-level only (state/distributor totals — no account or SKU-by-store breakdown). They arrive 30–60 days late via distributor PDFs parsed through Lindy/AI, and are shown as a directional cross-check against QB — not a per-account velocity.",
+          "Depletion reports are SIGNALS — market-level distributor totals shown as a directional cross-check against QB. They are NOT added to revenue totals or the projection base (would double-count QB dollars).",
           "Because depletions are market-level, account-level velocity metrics (CPPW, TDP, sell-through by store) are not computable today and won't be until scan data (Nielsen/Circana) or distributor account-level feeds land.",
-          "Instacart: ad-attributed revenue from Instacart Ads (hybrid digital + retail) — included as the closest brick-and-mortar signal we currently have.",
-          "Projection past today uses the trailing 90-day daily average (real data) compounded by the selected growth rate — pure naive forecast, not MMM.",
+          "Instacart: ad-attributed revenue from Instacart Ads — shown as a SIGNAL only. Not added to B&M totals.",
+          "Projection past today uses the trailing 90-day QB daily average compounded by the selected growth rate — QB-only, pure naive forecast, not MMM.",
         ]}
       />
 
@@ -247,8 +248,8 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <Stat label="Observed (QB+dep+IC)" value={`$${Math.round(chart.observedTotal).toLocaleString()}`} hint={`${isoDay(start)} → ${isoDay(observedEnd)}`} />
-            <Stat label="Trailing 90d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint="projection base" />
+            <Stat label="Observed (QB only)" value={`$${Math.round(chart.observedTotal).toLocaleString()}`} hint={`${isoDay(start)} → ${isoDay(observedEnd)}`} />
+            <Stat label="Trailing 90d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint="QB projection base" />
             <Stat label="Projected" value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={end > today ? `${isoDay(today)} → ${isoDay(end)} · ${growthKey}` : "no future range"} />
             <Stat label="Observed + Projected" value={`$${Math.round(chart.observedTotal + chart.projectedTotal).toLocaleString()}`} hint={`${data.qbRows.toLocaleString()} QB · ${data.depRows.toLocaleString()} dep lines`} />
           </div>
@@ -271,8 +272,8 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <ReferenceLine x={todayKey} stroke="hsl(var(--foreground))" strokeDasharray="2 2" label={{ value: "today", position: "top", fontSize: 10, fill: "hsl(var(--foreground))" }} />
                 <Area type="monotone" dataKey="qb_revenue" stackId="actual" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.35)" name="QuickBooks (wholesale)" />
-                <Area type="monotone" dataKey="depletion_revenue" stackId="actual" stroke="hsl(220 70% 45%)" fill="url(#depletionStripe)" name="Depletions (modeled @ $9/btl)" />
-                <Area type="monotone" dataKey="instacart_revenue" stackId="actual" stroke="hsl(30 90% 50%)" fill="hsl(30 90% 50% / 0.3)" name="Instacart" />
+                <Line type="monotone" dataKey="depletion_revenue" stroke="hsl(220 70% 45%)" strokeWidth={1.5} strokeDasharray="3 3" dot={false} name="Depletions (signal · modeled @ $9/btl)" />
+                <Line type="monotone" dataKey="instacart_revenue" stroke="hsl(30 90% 50%)" strokeWidth={1.5} strokeDasharray="3 3" dot={false} name="Instacart (signal · ad-attributed)" />
                 <Line type="monotone" dataKey="projected" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={false} name={`Projection (${growthKey})`} />
               </ComposedChart>
             </ResponsiveContainer>

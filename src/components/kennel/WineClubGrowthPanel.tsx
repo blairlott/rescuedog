@@ -36,7 +36,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ["kennel-wine-club-growth", fromIso, toIso],
     queryFn: async () => {
-      const [tiersRes, mRes, pvRes] = await Promise.all([
+      const [tiersRes, mRes, pvRes, vsRes] = await Promise.all([
         supabase.from("wine_club_tiers" as any).select("id, name, slug, price_cents").eq("is_active", true),
         supabase
           .from("wine_club_memberships" as any)
@@ -47,11 +47,21 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
           .gte("created_at", fromIso)
           .lte("created_at", toIso)
           .or("path.ilike.%wine-club%,path.ilike.%/club%"),
+        // Vinoshipper is the source of truth for active club members today —
+        // the native wine_club_memberships table only holds new app signups.
+        // Count distinct emails with active_club_member=true in vs_transactions.
+        supabase
+          .from("vs_transactions" as any)
+          .select("customer_email")
+          .eq("active_club_member", true)
+          .not("customer_email", "is", null)
+          .limit(50000),
       ]);
       return {
         tiers: ((tiersRes.data as any) || []) as Tier[],
         memberships: ((mRes.data as any) || []) as Membership[],
         pv: ((pvRes.data as any) || []) as { event_type: string; path: string; session_id: string | null; created_at: string }[],
+        vsActiveEmails: ((vsRes.data as any) || []) as { customer_email: string | null }[],
       };
     },
   });
@@ -71,7 +81,15 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
       return t >= startMs && t <= endMs;
     };
     const m = data.memberships;
-    const activeNow = m.filter(r => r.status === "active").length;
+    const activeAppNow = m.filter(r => r.status === "active").length;
+    // Distinct Vinoshipper active members (lowercased email dedup).
+    const vsEmails = new Set<string>();
+    for (const r of data.vsActiveEmails) {
+      const e = r.customer_email?.trim().toLowerCase();
+      if (e) vsEmails.add(e);
+    }
+    const activeVsNow = vsEmails.size;
+    const activeNow = activeAppNow + activeVsNow;
     const newInPeriod = m.filter(r => inRange(r.joined_at ?? r.created_at) && r.origin !== "vinoshipper_legacy").length;
     const cancelledInPeriod = m.filter(r => inRange(r.cancelled_at)).length;
     const giftsInPeriod = m.filter(r => r.is_gift && inRange(r.joined_at ?? r.created_at)).length;
@@ -191,6 +209,8 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
 
     return {
       activeNow,
+      activeAppNow,
+      activeVsNow,
       newInPeriod,
       cancelledInPeriod,
       giftsInPeriod,
@@ -261,7 +281,7 @@ export function WineClubGrowthPanel({ start, end, rangeLabel }: Props) {
             <MetricCard
               label="Active members"
               value={stats.activeNow.toLocaleString()}
-              hint="The Pack — current"
+              hint={`Vinoshipper ${stats.activeVsNow.toLocaleString()} + app ${stats.activeAppNow.toLocaleString()}`}
             />
             <MetricCard
               label={`New signups (${rangeLabel})`}

@@ -6,6 +6,7 @@ import {
   CartesianGrid, Tooltip, Legend, ReferenceLine,
 } from "recharts";
 import { Store, Info, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import {
   DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay,
   monthKey, pickBucket, daysBetween, formatAxisDate,
@@ -99,6 +100,23 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
   const today = todayUTC();
   const growth = GROWTH_MAP[growthKey] ?? 0;
   const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["bm-timeline-range"], type: "active" }),
+        queryClient.refetchQueries({ queryKey: ["bm-history-qb"], type: "active" }),
+      ]);
+      toast.success("Brick & mortar timeline refreshed");
+    } catch (e: any) {
+      toast.error("Refresh failed", { description: e?.message ?? String(e) });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const observedEnd = end < today ? end : today;
   const projectStart = today;
@@ -306,13 +324,14 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
   return (
     <section className="border-2 border-foreground p-4" style={{ borderRadius: 0 }}>
       <header className="flex items-center justify-between mb-3 flex-wrap gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <Store className="h-4 w-4 text-primary" />
           <h2 className="text-xs uppercase tracking-brand font-bold text-foreground">Brick & Mortar Sales Timeline</h2>
           <span className="text-[10px] uppercase tracking-brand text-muted-foreground">· {rangeLabel(start, end)} · {bucket}ly</span>
         </div>
+        <div className="flex items-center gap-1 flex-wrap max-w-full">
         {hidePicker ? (
-          <div className="flex items-center gap-1">
+          <>
             <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">growth</span>
             {[
               { key: "flat", label: "Flat" },
@@ -325,35 +344,23 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
                 {g.label}
               </button>
             ))}
-            <button
-              onClick={() => {
-                queryClient.invalidateQueries({ queryKey: ["bm-timeline-range"] });
-                queryClient.invalidateQueries({ queryKey: ["bm-history-qb"] });
-              }}
-              className="uppercase tracking-brand text-[10px] h-7 px-2 border-2 border-border text-foreground hover:bg-foreground hover:text-background flex items-center gap-1"
-              style={{ borderRadius: 0 }}
-              title="Refresh data"
-            >
-              <RefreshCw className="h-3 w-3" /> Refresh
-            </button>
-          </div>
+          </>
         ) : (
           <DateRangeControls start={start} end={end} setStart={setStart} setEnd={setEnd}
-            growthKey={growthKey} setGrowthKey={setGrowthKey}
-            extraSlot={
-              <button
-                onClick={() => {
-                  queryClient.invalidateQueries({ queryKey: ["bm-timeline-range"] });
-                  queryClient.invalidateQueries({ queryKey: ["bm-history-qb"] });
-                }}
-                className="uppercase tracking-brand text-[10px] h-7 px-2 border-2 border-border text-foreground hover:bg-foreground hover:text-background flex items-center gap-1 ml-1"
-                style={{ borderRadius: 0 }}
-                title="Refresh data"
-              >
-                <RefreshCw className="h-3 w-3" /> Refresh
-              </button>
-            } />
+            growthKey={growthKey} setGrowthKey={setGrowthKey} />
         )}
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="uppercase tracking-brand text-[10px] h-7 px-2 border-2 border-border text-foreground hover:bg-foreground hover:text-background flex items-center gap-1 disabled:opacity-60"
+            style={{ borderRadius: 0 }}
+            title="Refresh data"
+          >
+            <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </button>
+        </div>
       </header>
 
       <CaveatBanner

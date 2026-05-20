@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History } from "lucide-react";
+import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History, Activity, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -14,6 +14,8 @@ const NAV = [
   { to: "/kennel/log", label: "Execution log", icon: ScrollText, end: false, viewerOk: true },
   { to: "/kennel/oci-log", label: "OCI uploads", icon: Target, end: false, viewerOk: false },
   { to: "/kennel/backfills", label: "Backfills", icon: History, end: false, viewerOk: false },
+  { to: "/kennel/self-health", label: "Self-health", icon: Activity, end: false, viewerOk: true },
+  { to: "/kennel/proposals", label: "Proposals", icon: Sparkles, end: false, viewerOk: false },
   { to: "/kennel/settings", label: "Settings", icon: Settings, end: false, viewerOk: false },
   { to: "/kennel/integrations", label: "Integrations", icon: Key, end: false, viewerOk: false },
 ];

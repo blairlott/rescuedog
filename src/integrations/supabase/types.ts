@@ -8483,57 +8483,140 @@ export type Database = {
         }
         Relationships: []
       }
+      wine_subscription_charges: {
+        Row: {
+          amount_cents: number | null
+          created_at: string
+          error: string | null
+          id: string
+          quantity: number
+          request_payload: Json | null
+          response_payload: Json | null
+          subscription_id: string
+          success: boolean
+          triggered_by: string
+          user_id: string
+          vs_customer_id: string | null
+          vs_order_id: string | null
+          vs_product_id: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          quantity: number
+          request_payload?: Json | null
+          response_payload?: Json | null
+          subscription_id: string
+          success: boolean
+          triggered_by?: string
+          user_id: string
+          vs_customer_id?: string | null
+          vs_order_id?: string | null
+          vs_product_id?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          quantity?: number
+          request_payload?: Json | null
+          response_payload?: Json | null
+          subscription_id?: string
+          success?: boolean
+          triggered_by?: string
+          user_id?: string
+          vs_customer_id?: string | null
+          vs_order_id?: string | null
+          vs_product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wine_subscription_charges_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "wine_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wine_subscriptions: {
         Row: {
           cadence: string
           created_at: string
           discount_percent: number
+          failure_count: number
           id: string
+          last_charged_at: string | null
+          last_error: string | null
+          last_order_id: string | null
           next_ship_date: string | null
+          paused_at: string | null
           product_handle: string | null
           product_image_url: string | null
           product_title: string
           quantity: number
           sku: string
+          started_at: string
           status: string
           unit_price_cents: number
           updated_at: string
           user_id: string
           vinoshipper_subscription_id: string | null
+          vs_customer_id: string | null
+          vs_product_id: string | null
         }
         Insert: {
           cadence?: string
           created_at?: string
           discount_percent?: number
+          failure_count?: number
           id?: string
+          last_charged_at?: string | null
+          last_error?: string | null
+          last_order_id?: string | null
           next_ship_date?: string | null
+          paused_at?: string | null
           product_handle?: string | null
           product_image_url?: string | null
           product_title: string
           quantity?: number
           sku: string
+          started_at?: string
           status?: string
           unit_price_cents?: number
           updated_at?: string
           user_id: string
           vinoshipper_subscription_id?: string | null
+          vs_customer_id?: string | null
+          vs_product_id?: string | null
         }
         Update: {
           cadence?: string
           created_at?: string
           discount_percent?: number
+          failure_count?: number
           id?: string
+          last_charged_at?: string | null
+          last_error?: string | null
+          last_order_id?: string | null
           next_ship_date?: string | null
+          paused_at?: string | null
           product_handle?: string | null
           product_image_url?: string | null
           product_title?: string
           quantity?: number
           sku?: string
+          started_at?: string
           status?: string
           unit_price_cents?: number
           updated_at?: string
           user_id?: string
           vinoshipper_subscription_id?: string | null
+          vs_customer_id?: string | null
+          vs_product_id?: string | null
         }
         Relationships: []
       }

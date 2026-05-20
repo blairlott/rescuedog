@@ -1010,7 +1010,7 @@ export function MixingBoardPanel() {
 
   return (
     <div
-      className="border-2 border-foreground p-4 text-white"
+      className="border-2 border-foreground p-2 sm:p-4 text-white"
       style={{
         borderRadius: 0,
         background:
@@ -1019,11 +1019,11 @@ export function MixingBoardPanel() {
       }}
     >
       {/* Console header */}
-      <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-white/10 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
           <Sliders className="h-4 w-4 text-[hsl(45,95%,55%)]" />
-          <h3 className="text-sm uppercase tracking-brand font-bold">Optimization Console</h3>
-          <span className="text-[10px] text-white/40 uppercase tracking-brand">Drag faders · what-if mode</span>
+          <h3 className="text-xs sm:text-sm uppercase tracking-brand font-bold">Optimization Console</h3>
+          <span className="hidden sm:inline text-[10px] text-white/40 uppercase tracking-brand">Drag faders · what-if mode</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="h-1.5 w-1.5 rounded-full bg-[hsl(142,76%,55%)] animate-pulse" />

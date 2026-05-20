@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Wine, BadgePercent } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCartStore, CartItem } from "@/stores/cartStore";
 import { Button } from "@/components/ui/button";
@@ -202,6 +204,14 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
           );
         })}
       </div>
+      {isPairItBundle && (
+        <Link
+          to="/merch"
+          className="flex items-center justify-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-primary hover:underline pt-1"
+        >
+          Shop for more merch <ArrowRight className="w-3 h-3" />
+        </Link>
+      )}
     </div>
   );
 }

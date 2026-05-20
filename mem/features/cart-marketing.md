@@ -8,7 +8,7 @@ type: feature
 NEVER say "free shipping". ALWAYS use "shipping included".
 
 ## Shipping-included thresholds
-- **Wine routes:** 6+ bottles (unit-based — wine SKUs are price-uniform, $25–34).
+- **Wine routes:** 12+ bottles (full case). Orders of 6–11 bottles pay a flat **$9.99** shipping fee. Under 6 bottles = standard variable shipping.
 - **Merch routes (`/merch`):** $150+ cart subtotal (dollar-based — merch SKUs vary widely from ~$15 stickers to $65 hoodies; dollar threshold protects margin and drives mixed-cart upsell).
 
 Both thresholds are CMS-editable via `cart_settings` → `thresholds` (`free_shipping_bottles`, `merch_free_shipping_dollars`).

@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type Action = "create" | "update" | "skip" | "cancel";
+type Action = "create" | "update" | "skip" | "cancel" | "pause" | "resume" | "reschedule" | "ship_now" | "swap";
 
 interface Body {
   action: Action;
@@ -20,6 +20,7 @@ interface Body {
   cadence?: "monthly" | "quarterly" | "biannual";
   unit_price_cents?: number;
   discount_percent?: number;
+  next_ship_date?: string; // YYYY-MM-DD
 }
 
 Deno.serve(async (req) => {
@@ -126,6 +127,66 @@ Deno.serve(async (req) => {
           .eq("user_id", user.id);
         if (error) return json({ error: error.message }, 500);
         return json({ ok: true, vinoshipper_error: vinoshipperError });
+      }
+      case "pause": {
+        if (!body.subscription_id) return json({ error: "subscription_id required" }, 400);
+        const { error } = await serviceClient
+          .from("wine_subscriptions")
+          .update({ status: "paused", paused_at: new Date().toISOString() })
+          .eq("id", body.subscription_id)
+          .eq("user_id", user.id);
+        if (error) return json({ error: error.message }, 500);
+        return json({ ok: true });
+      }
+      case "resume": {
+        if (!body.subscription_id) return json({ error: "subscription_id required" }, 400);
+        const { error } = await serviceClient
+          .from("wine_subscriptions")
+          .update({ status: "active", paused_at: null, failure_count: 0, last_error: null })
+          .eq("id", body.subscription_id)
+          .eq("user_id", user.id);
+        if (error) return json({ error: error.message }, 500);
+        return json({ ok: true });
+      }
+      case "reschedule": {
+        if (!body.subscription_id || !body.next_ship_date) return json({ error: "subscription_id and next_ship_date required" }, 400);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(body.next_ship_date)) return json({ error: "next_ship_date must be YYYY-MM-DD" }, 400);
+        const today = new Date().toISOString().slice(0, 10);
+        if (body.next_ship_date < today) return json({ error: "Date must be in the future" }, 400);
+        const { error } = await serviceClient
+          .from("wine_subscriptions")
+          .update({ next_ship_date: body.next_ship_date })
+          .eq("id", body.subscription_id)
+          .eq("user_id", user.id);
+        if (error) return json({ error: error.message }, 500);
+        return json({ ok: true });
+      }
+      case "ship_now": {
+        if (!body.subscription_id) return json({ error: "subscription_id required" }, 400);
+        const { error } = await serviceClient
+          .from("wine_subscriptions")
+          .update({ next_ship_date: new Date().toISOString().slice(0, 10), status: "active", paused_at: null })
+          .eq("id", body.subscription_id)
+          .eq("user_id", user.id);
+        if (error) return json({ error: error.message }, 500);
+        return json({ ok: true });
+      }
+      case "swap": {
+        if (!body.subscription_id || !body.sku || !body.product_title) return json({ error: "subscription_id, sku, product_title required" }, 400);
+        const { error } = await serviceClient
+          .from("wine_subscriptions")
+          .update({
+            sku: body.sku,
+            vs_product_id: body.vs_product_id ?? body.sku,
+            product_handle: body.product_handle,
+            product_title: body.product_title,
+            product_image_url: body.product_image_url,
+            unit_price_cents: body.unit_price_cents ?? 0,
+          })
+          .eq("id", body.subscription_id)
+          .eq("user_id", user.id);
+        if (error) return json({ error: error.message }, 500);
+        return json({ ok: true });
       }
       default:
         return json({ error: "Unknown action" }, 400);

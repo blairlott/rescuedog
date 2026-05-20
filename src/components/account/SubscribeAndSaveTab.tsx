@@ -5,9 +5,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Package, SkipForward, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { isInternalEmail } from "@/lib/internalUsers";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
+import { Zap } from "lucide-react";
 
 export const SubscribeAndSaveTab = ({ userId, vinoshipperLinked: _vinoshipperLinked }: { userId: string; vinoshipperLinked?: boolean }) => {
   const queryClient = useQueryClient();
+  const { user } = useCustomerAuth();
+  const internal = isInternalEmail(user?.email ?? null);
 
   const { data: subs = [], isLoading } = useQuery({
     queryKey: ["wine-subscriptions", userId],
@@ -34,6 +39,21 @@ export const SubscribeAndSaveTab = ({ userId, vinoshipperLinked: _vinoshipperLin
       queryClient.invalidateQueries({ queryKey: ["wine-subscriptions"] });
     },
     onError: (e: any) => toast.error(e.message || "Could not complete request"),
+  });
+
+  const chargeNow = useMutation({
+    mutationFn: async (subscription_id: string) => {
+      const { data, error } = await supabase.functions.invoke("wine-subscription-process", { body: { subscription_id } });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      const r = data?.results?.[0];
+      if (r?.ok) toast.success(r.simulated ? "Charge simulated (live mode off)" : `Charged. Order ${r.order_id || "queued"}`);
+      else toast.error(`Charge failed: ${r?.error ?? "unknown"}`);
+      queryClient.invalidateQueries({ queryKey: ["wine-subscriptions"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Could not run charge"),
   });
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
@@ -87,7 +107,15 @@ export const SubscribeAndSaveTab = ({ userId, vinoshipperLinked: _vinoshipperLin
                 <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={() => { if (confirm("Cancel this subscription?")) action.mutate({ action: "cancel", subscription_id: s.id }); }}>
                   <X className="w-3 h-3" />Cancel
                 </Button>
+                {internal && (
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1 ml-auto" disabled={chargeNow.isPending} onClick={() => { if (confirm("Trigger a real recurring charge against the saved Vinoshipper card?")) chargeNow.mutate(s.id); }}>
+                    <Zap className="w-3 h-3" />{chargeNow.isPending ? "Charging…" : "Charge now (internal)"}
+                  </Button>
+                )}
               </div>
+            )}
+            {s.last_error && (
+              <p className="text-xs text-destructive mt-2">Last attempt: {s.last_error}</p>
             )}
           </div>
         </div>

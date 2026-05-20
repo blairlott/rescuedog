@@ -392,6 +392,23 @@ export default function KennelCreativeStudioPage() {
           {outputTypes.copy && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">Copy brief & tones</Label>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">
+                  Brand name in headline / copy (always included)
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {(["Rescue Dog Wines", "Rescue Dog"] as const).map((b) => (
+                    <Button
+                      key={b}
+                      variant={copyBrand === b ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCopyBrand(b)}
+                    >
+                      {b}
+                    </Button>
+                  ))}
+                </div>
+              </div>
               <Textarea
                 rows={3}
                 placeholder="What's this creative selling / saying? e.g. 'Spring Sampler 6-pack launch, ships in 2 days, mission-led story'."

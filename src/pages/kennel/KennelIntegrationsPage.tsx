@@ -28,6 +28,7 @@ type ProviderDef = {
   label: string;
   description: string;
   envFallbackPrefix: string;
+  category?: string;
   keys: { key: string; label: string; placeholder?: string; secret?: boolean }[];
 };
 
@@ -39,6 +40,7 @@ const PROVIDERS: ProviderDef[] = [
     label: "Yahoo DSP",
     description: "OAuth2 client-credentials for the Yahoo Ad Manager Plus API.",
     envFallbackPrefix: "YAHOO_DSP",
+    category: "Ad Platforms",
     keys: [
       { key: "client_id",     label: "Client ID" },
       { key: "client_secret", label: "Client Secret", secret: true },
@@ -50,6 +52,7 @@ const PROVIDERS: ProviderDef[] = [
     label: "OpenWeather",
     description: "Used by the weather-signals job to bias bids on storms/heat waves.",
     envFallbackPrefix: "OPENWEATHER",
+    category: "Signals",
     keys: [{ key: "api_key", label: "API Key", secret: true }],
   },
   {
@@ -57,6 +60,7 @@ const PROVIDERS: ProviderDef[] = [
     label: "Mailchimp",
     description: "Audience sync for win-back and lapsed-customer flows.",
     envFallbackPrefix: "MAILCHIMP",
+    category: "Audiences",
     keys: [
       { key: "api_key",   label: "API Key", secret: true },
       { key: "server",    label: "Server prefix", placeholder: "us21" },
@@ -68,11 +72,111 @@ const PROVIDERS: ProviderDef[] = [
     label: "Delivery Webhooks",
     description: "HMAC secrets for inbound delivery-partner webhooks (DoorDash, Uber, etc.).",
     envFallbackPrefix: "DELIVERY",
+    category: "Webhooks",
     keys: [
       { key: "doordash_secret", label: "DoorDash signing secret", secret: true },
       { key: "uber_secret",     label: "Uber signing secret",     secret: true },
       { key: "grubhub_secret",  label: "Grubhub signing secret",  secret: true },
       { key: "instacart_secret",label: "Instacart signing secret",secret: true },
+    ],
+  },
+  // ─── Retail Media Networks ─────────────────────────────────
+  // Most RMNs are invite-only API programs. Credentials here are stored for
+  // when access is granted; until then they act as a tracked placeholder so
+  // ops knows what's pending. Schema mirrors each network's auth pattern.
+  {
+    id: "kroger_precision",
+    label: "Kroger Precision Marketing (84.51°)",
+    description: "Onsite + offsite ads on Kroger banners. OAuth2 via 84.51° API.",
+    envFallbackPrefix: "KPM",
+    category: "Retail Media",
+    keys: [
+      { key: "client_id",     label: "Client ID" },
+      { key: "client_secret", label: "Client Secret", secret: true },
+      { key: "advertiser_id", label: "Advertiser ID" },
+    ],
+  },
+  {
+    id: "albertsons_media",
+    label: "Albertsons Media Collective",
+    description: "Onsite ads across Albertsons, Safeway, Vons, Jewel-Osco, etc.",
+    envFallbackPrefix: "AMC",
+    category: "Retail Media",
+    keys: [
+      { key: "api_key",        label: "API Key", secret: true },
+      { key: "advertiser_id",  label: "Advertiser ID" },
+    ],
+  },
+  {
+    id: "roundel_target",
+    label: "Roundel (Target)",
+    description: "Target's in-house media network. API access via Roundel partner portal.",
+    envFallbackPrefix: "ROUNDEL",
+    category: "Retail Media",
+    keys: [
+      { key: "client_id",     label: "Client ID" },
+      { key: "client_secret", label: "Client Secret", secret: true },
+      { key: "advertiser_id", label: "Advertiser ID" },
+    ],
+  },
+  {
+    id: "walmart_connect",
+    label: "Walmart Connect",
+    description: "Sponsored Search + display across Walmart.com and stores.",
+    envFallbackPrefix: "WALMART_CONNECT",
+    category: "Retail Media",
+    keys: [
+      { key: "client_id",     label: "Client ID" },
+      { key: "client_secret", label: "Client Secret", secret: true },
+      { key: "advertiser_id", label: "Advertiser ID" },
+    ],
+  },
+  {
+    id: "sams_map",
+    label: "Sam's Club MAP",
+    description: "Member Access Platform — Sam's Club retail media API.",
+    envFallbackPrefix: "SAMS_MAP",
+    category: "Retail Media",
+    keys: [
+      { key: "client_id",     label: "Client ID" },
+      { key: "client_secret", label: "Client Secret", secret: true },
+      { key: "advertiser_id", label: "Advertiser ID" },
+    ],
+  },
+  {
+    id: "instacart_ads",
+    label: "Instacart Ads",
+    description: "Sponsored Product + display on Instacart marketplace.",
+    envFallbackPrefix: "INSTACART_ADS",
+    category: "Retail Media",
+    keys: [
+      { key: "api_key",       label: "API Key", secret: true },
+      { key: "advertiser_id", label: "Advertiser ID" },
+    ],
+  },
+  {
+    id: "amazon_ads",
+    label: "Amazon Ads",
+    description: "Sponsored Products/Brands/Display via the Amazon Advertising API.",
+    envFallbackPrefix: "AMAZON_ADS",
+    category: "Retail Media",
+    keys: [
+      { key: "client_id",     label: "Client ID" },
+      { key: "client_secret", label: "Client Secret", secret: true },
+      { key: "refresh_token", label: "Refresh Token", secret: true },
+      { key: "profile_id",    label: "Profile ID" },
+    ],
+  },
+  {
+    id: "criteo_retail",
+    label: "Criteo Retail Media",
+    description: "Network access to Costco, Best Buy, Macy's, Ulta, and more.",
+    envFallbackPrefix: "CRITEO_RM",
+    category: "Retail Media",
+    keys: [
+      { key: "client_id",     label: "Client ID" },
+      { key: "client_secret", label: "Client Secret", secret: true },
+      { key: "account_id",    label: "Account ID" },
     ],
   },
 ];
@@ -184,9 +288,24 @@ export default function KennelIntegrationsPage() {
 
       {loading && <div className="text-sm text-muted-foreground">Loading…</div>}
 
-      <div className="grid gap-4">
-        {PROVIDERS.map((p) => (
-          <Card key={p.id} className="p-4 md:p-5 border-2" style={SHARP}>
+      {Object.entries(
+        PROVIDERS.reduce<Record<string, ProviderDef[]>>((acc, p) => {
+          const cat = p.category ?? "Other";
+          (acc[cat] ||= []).push(p);
+          return acc;
+        }, {}),
+      ).map(([category, providers]) => (
+        <section key={category} className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h2 className="text-sm font-bold uppercase tracking-brand text-foreground">{category}</h2>
+            <div className="h-px bg-border flex-1" />
+            <Badge variant="outline" style={SHARP} className="text-[10px]">
+              {providers.length}
+            </Badge>
+          </div>
+          <div className="grid gap-4">
+            {providers.map((p) => (
+              <Card key={p.id} className="p-4 md:p-5 border-2" style={SHARP}>
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
                 <div className="flex items-center gap-2">
@@ -296,9 +415,11 @@ export default function KennelIntegrationsPage() {
                 );
               })}
             </div>
-          </Card>
-        ))}
-      </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      ))}
 
       <Card className="p-4 border-2 border-dashed" style={SHARP}>
         <div className="text-xs text-muted-foreground space-y-1">

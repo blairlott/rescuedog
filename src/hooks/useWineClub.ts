@@ -111,6 +111,8 @@ export function useJoinClub() {
       // so OUTCOME_LEADS bidding optimizes on real $ value. Best-effort — never throw.
       try {
         const { getFbc, getFbp } = await import("@/lib/metaAttribution");
+        const fbc = getFbc();
+        const fbp = getFbp();
         await supabase.functions.invoke("meta-capi-lead", {
           body: {
             event_id: inserted?.id,
@@ -120,9 +122,27 @@ export function useJoinClub() {
             zip: data.shipping_zip,
             country: "us",
             tier_id: data.tier_id,
-            fbc: getFbc(),
-            fbp: getFbp(),
+            fbc,
+            fbp,
             user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+          },
+        });
+        // Also fire a Meta CAPI `Subscribe` event with annual tier value.
+        // Different event_id suffix so it doesn't collide with the Lead row.
+        await supabase.functions.invoke("meta-capi-event", {
+          body: {
+            event_name: "Subscribe",
+            event_id: `sub_${inserted?.id ?? crypto.randomUUID()}`,
+            tier_id: data.tier_id,
+            email: user.email ?? null,
+            city: data.shipping_city,
+            state: data.shipping_state,
+            zip: data.shipping_zip,
+            country: "us",
+            fbc,
+            fbp,
+            user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+            custom_data: { membership_id: inserted?.id, tier_id: data.tier_id },
           },
         });
       } catch (e) {

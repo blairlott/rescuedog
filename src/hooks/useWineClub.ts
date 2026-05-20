@@ -151,12 +151,11 @@ export function useJoinClub() {
             body: {
               email: user.email,
               event_type: "wine_club_joined",
-              tags_added: ["wine_club_active", `wc_tier_${data.tier_id}`, `wc_freq_${data.frequency}`],
+              tags_added: ["wine_club_active", `wc_tier_${data.tier_id}`],
               tags_removed: ["wine_club_cancelled", "exclude_active_30d"],
               merge_fields: {
                 WCSTATUS: "active",
                 WCTIER: data.tier_id,
-                WCFREQ: data.frequency,
                 WCJOIN: new Date().toISOString().slice(0, 10),
               },
             },

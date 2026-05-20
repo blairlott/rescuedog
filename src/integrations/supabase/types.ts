@@ -8103,6 +8103,150 @@ export type Database = {
         }
         Relationships: []
       }
+      wine_club_legacy_import_runs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          errors: Json | null
+          id: string
+          rows_inserted: number
+          rows_received: number
+          rows_skipped: number
+          rows_updated: number
+          source_file: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          errors?: Json | null
+          id?: string
+          rows_inserted?: number
+          rows_received?: number
+          rows_skipped?: number
+          rows_updated?: number
+          source_file?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          errors?: Json | null
+          id?: string
+          rows_inserted?: number
+          rows_received?: number
+          rows_skipped?: number
+          rows_updated?: number
+          source_file?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      wine_club_legacy_members: {
+        Row: {
+          claimed_at: string | null
+          claimed_membership_id: string | null
+          club_name: string | null
+          created_at: string
+          email: string | null
+          first_name: string | null
+          id: string
+          imported_at: string
+          joined_at: string | null
+          last_name: string | null
+          last_shipment_date: string | null
+          next_shipment_date: string | null
+          notes: string | null
+          phone: string | null
+          raw: Json | null
+          shipping_address_line1: string | null
+          shipping_address_line2: string | null
+          shipping_city: string | null
+          shipping_country: string | null
+          shipping_state: string | null
+          shipping_zip: string | null
+          source_file: string | null
+          status: string
+          tier_id: string | null
+          updated_at: string
+          vinoshipper_customer_id: string | null
+          vinoshipper_membership_id: string | null
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_membership_id?: string | null
+          club_name?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          imported_at?: string
+          joined_at?: string | null
+          last_name?: string | null
+          last_shipment_date?: string | null
+          next_shipment_date?: string | null
+          notes?: string | null
+          phone?: string | null
+          raw?: Json | null
+          shipping_address_line1?: string | null
+          shipping_address_line2?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_state?: string | null
+          shipping_zip?: string | null
+          source_file?: string | null
+          status: string
+          tier_id?: string | null
+          updated_at?: string
+          vinoshipper_customer_id?: string | null
+          vinoshipper_membership_id?: string | null
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_membership_id?: string | null
+          club_name?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          imported_at?: string
+          joined_at?: string | null
+          last_name?: string | null
+          last_shipment_date?: string | null
+          next_shipment_date?: string | null
+          notes?: string | null
+          phone?: string | null
+          raw?: Json | null
+          shipping_address_line1?: string | null
+          shipping_address_line2?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_state?: string | null
+          shipping_zip?: string | null
+          source_file?: string | null
+          status?: string
+          tier_id?: string | null
+          updated_at?: string
+          vinoshipper_customer_id?: string | null
+          vinoshipper_membership_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wine_club_legacy_members_claimed_membership_id_fkey"
+            columns: ["claimed_membership_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wine_club_legacy_members_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wine_club_memberships: {
         Row: {
           app_tier_config_id: string | null

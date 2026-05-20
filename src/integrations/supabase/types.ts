@@ -2804,6 +2804,143 @@ export type Database = {
         }
         Relationships: []
       }
+      discount_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          customer_eligibility: string
+          description: string | null
+          ends_at: string | null
+          id: string
+          max_discount_cents: number | null
+          min_subtotal_cents: number | null
+          required_role: string | null
+          scope: Database["public"]["Enums"]["discount_scope"]
+          scope_ids: string[] | null
+          shopify_discount_code_id: number | null
+          shopify_mirror_error: string | null
+          shopify_mirror_status:
+            | Database["public"]["Enums"]["mirror_status"]
+            | null
+          shopify_price_rule_id: number | null
+          starts_at: string | null
+          tier: Database["public"]["Enums"]["discount_tier"]
+          type: Database["public"]["Enums"]["discount_type"]
+          updated_at: string
+          usage_count: number
+          usage_limit_per_customer: number | null
+          usage_limit_total: number | null
+          value: number
+          vs_mirror_error: string | null
+          vs_mirror_status: Database["public"]["Enums"]["mirror_status"] | null
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          customer_eligibility?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          max_discount_cents?: number | null
+          min_subtotal_cents?: number | null
+          required_role?: string | null
+          scope?: Database["public"]["Enums"]["discount_scope"]
+          scope_ids?: string[] | null
+          shopify_discount_code_id?: number | null
+          shopify_mirror_error?: string | null
+          shopify_mirror_status?:
+            | Database["public"]["Enums"]["mirror_status"]
+            | null
+          shopify_price_rule_id?: number | null
+          starts_at?: string | null
+          tier?: Database["public"]["Enums"]["discount_tier"]
+          type: Database["public"]["Enums"]["discount_type"]
+          updated_at?: string
+          usage_count?: number
+          usage_limit_per_customer?: number | null
+          usage_limit_total?: number | null
+          value: number
+          vs_mirror_error?: string | null
+          vs_mirror_status?: Database["public"]["Enums"]["mirror_status"] | null
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          customer_eligibility?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          max_discount_cents?: number | null
+          min_subtotal_cents?: number | null
+          required_role?: string | null
+          scope?: Database["public"]["Enums"]["discount_scope"]
+          scope_ids?: string[] | null
+          shopify_discount_code_id?: number | null
+          shopify_mirror_error?: string | null
+          shopify_mirror_status?:
+            | Database["public"]["Enums"]["mirror_status"]
+            | null
+          shopify_price_rule_id?: number | null
+          starts_at?: string | null
+          tier?: Database["public"]["Enums"]["discount_tier"]
+          type?: Database["public"]["Enums"]["discount_type"]
+          updated_at?: string
+          usage_count?: number
+          usage_limit_per_customer?: number | null
+          usage_limit_total?: number | null
+          value?: number
+          vs_mirror_error?: string | null
+          vs_mirror_status?: Database["public"]["Enums"]["mirror_status"] | null
+        }
+        Relationships: []
+      }
+      discount_redemptions: {
+        Row: {
+          amount_applied_cents: number
+          discount_code_id: string
+          email: string | null
+          id: string
+          order_reference: string | null
+          rail: string
+          redeemed_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount_applied_cents: number
+          discount_code_id: string
+          email?: string | null
+          id?: string
+          order_reference?: string | null
+          rail: string
+          redeemed_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount_applied_cents?: number
+          discount_code_id?: string
+          email?: string | null
+          id?: string
+          order_reference?: string | null
+          rail?: string
+          redeemed_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_redemptions_discount_code_id_fkey"
+            columns: ["discount_code_id"]
+            isOneToOne: false
+            referencedRelation: "discount_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       donation_requests: {
         Row: {
           affiliate_interest: string | null
@@ -8981,6 +9118,22 @@ export type Database = {
           points_awarded: number
         }[]
       }
+      validate_discount_code: {
+        Args: {
+          _code: string
+          _rail: string
+          _subtotal_cents: number
+          _user_id?: string
+        }
+        Returns: {
+          discount_cents: number
+          discount_code_id: string
+          reason: string
+          scope: Database["public"]["Enums"]["discount_scope"]
+          type: Database["public"]["Enums"]["discount_type"]
+          valid: boolean
+        }[]
+      }
     }
     Enums: {
       app_role:
@@ -8999,6 +9152,9 @@ export type Database = {
         | "ad_ops_manager"
         | "executive"
         | "kennel_viewer"
+      discount_scope: "sitewide" | "wine" | "merch" | "sku_list" | "collection"
+      discount_tier: "public" | "club_member" | "ambassador" | "vip" | "staff"
+      discount_type: "percent" | "fixed" | "shipping"
       experiment_metric:
         | "revenue_per_visitor"
         | "conversion_rate"
@@ -9006,6 +9162,7 @@ export type Database = {
         | "ambassador_apply"
         | "custom"
       experiment_status: "draft" | "running" | "paused" | "ended"
+      mirror_status: "pending" | "synced" | "failed" | "disabled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -9150,6 +9307,9 @@ export const Constants = {
         "executive",
         "kennel_viewer",
       ],
+      discount_scope: ["sitewide", "wine", "merch", "sku_list", "collection"],
+      discount_tier: ["public", "club_member", "ambassador", "vip", "staff"],
+      discount_type: ["percent", "fixed", "shipping"],
       experiment_metric: [
         "revenue_per_visitor",
         "conversion_rate",
@@ -9158,6 +9318,7 @@ export const Constants = {
         "custom",
       ],
       experiment_status: ["draft", "running", "paused", "ended"],
+      mirror_status: ["pending", "synced", "failed", "disabled"],
     },
   },
 } as const

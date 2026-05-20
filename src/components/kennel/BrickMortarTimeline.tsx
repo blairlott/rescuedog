@@ -95,6 +95,42 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
   const since = isoDay(start);
   const until = isoDay(observedEnd);
 
+  // Trailing 24 months of QB data for CAGR + seasonal index — independent of selected range.
+  const histStart = useMemo(() => {
+    const d = new Date(today); d.setUTCDate(d.getUTCDate() - 730); return d;
+  }, [today]);
+  const histSince = isoDay(histStart);
+  const histUntil = isoDay(today);
+
+  const { data: history } = useQuery({
+    queryKey: ["bm-history-qb", histSince, histUntil],
+    queryFn: async () => {
+      const out: Array<{ date: string; amount_cents: number; channel: string | null }> = [];
+      const pageSize = 1000; let from = 0;
+      while (true) {
+        const { data: rows } = await (supabase
+          .from("bm_finance_entries" as any)
+          .select("date, amount_cents, channel, entry_type")
+          .gte("date", histSince).lte("date", histUntil)
+          .in("entry_type", ["revenue", "income", "sales"])
+          .order("date", { ascending: true })
+          .range(from, from + pageSize - 1) as any);
+        if (!rows || rows.length === 0) break;
+        out.push(...rows);
+        if (rows.length < pageSize) break;
+        from += pageSize;
+      }
+      const byDay = new Map<string, { qb_revenue: number }>();
+      for (const r of out) {
+        const ch = (r.channel ?? "").toLowerCase();
+        if (ch === "dtc" || ch === "ecommerce") continue;
+        const prev = byDay.get(r.date)?.qb_revenue ?? 0;
+        byDay.set(r.date, { qb_revenue: prev + Number(r.amount_cents ?? 0) / 100 });
+      }
+      return { byDay };
+    },
+  });
+
   const { data, isLoading } = useQuery({
     queryKey: ["bm-timeline-range", since, until],
     queryFn: async () => {

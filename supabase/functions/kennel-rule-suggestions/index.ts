@@ -183,6 +183,31 @@ Deno.serve(async (req) => {
     }
   }
 
+  // If any high-confidence proposal landed, fire an alert so Blair sees it
+  // without opening the dashboard.
+  const highConf = suggestions.filter((s: any) => Number(s.confidence ?? 0) >= 0.85);
+  if (inserted.length > 0 && highConf.length > 0) {
+    try {
+      await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/kennel-alert-dispatch`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          event_type: "recommendation",
+          channel: "kennel-rules",
+          action: `${highConf.length} high-confidence rule proposal(s) ready for review`,
+          confidence: Math.max(...highConf.map((s: any) => Number(s.confidence ?? 0))),
+          message: highConf.map((s: any) => `• ${s.title}`).join("\n"),
+          deep_link: "https://rescuedog.lovable.app/kennel/proposals",
+        }),
+      });
+    } catch (e) {
+      console.error("rule-suggestions alert dispatch failed:", e);
+    }
+  }
+
   return json({
     ok: true,
     evidence_counts: {
@@ -193,5 +218,6 @@ Deno.serve(async (req) => {
     proposed: suggestions.length,
     inserted: inserted.length,
     skipped: skipped.length,
+    alerted: highConf.length,
   });
 });

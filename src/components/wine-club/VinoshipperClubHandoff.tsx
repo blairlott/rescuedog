@@ -1,0 +1,129 @@
+import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Loader2, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useCustomerAuth } from "@/hooks/useCustomerAuth";
+
+interface VinoshipperClubHandoffProps {
+  open: boolean;
+  onClose: () => void;
+  joinUrl: string;
+  tierName: string;
+  prefill?: {
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    address1?: string;
+    address2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+  };
+}
+
+/**
+ * Renders Vinoshipper's hosted club enrollment page inside an iframe so the
+ * entire experience stays on /club. VS captures the card on their own
+ * PCI-compliant page; their webhook backfills our membership row when
+ * enrollment completes. We poll the membership row every 4s as a
+ * belt-and-suspenders confirmation in case the user closes the dialog before
+ * we see the webhook.
+ */
+export function VinoshipperClubHandoff({
+  open,
+  onClose,
+  joinUrl,
+  tierName,
+  prefill,
+}: VinoshipperClubHandoffProps) {
+  const { user } = useCustomerAuth();
+  const [confirmed, setConfirmed] = useState(false);
+
+  // Append prefill query params if the joinUrl is a Vinoshipper URL.
+  const url = (() => {
+    try {
+      const u = new URL(joinUrl);
+      if (prefill?.email) u.searchParams.set("email", prefill.email);
+      if (prefill?.firstName) u.searchParams.set("firstName", prefill.firstName);
+      if (prefill?.lastName) u.searchParams.set("lastName", prefill.lastName);
+      if (prefill?.address1) u.searchParams.set("address1", prefill.address1);
+      if (prefill?.address2) u.searchParams.set("address2", prefill.address2);
+      if (prefill?.city) u.searchParams.set("city", prefill.city);
+      if (prefill?.state) u.searchParams.set("state", prefill.state);
+      if (prefill?.zip) u.searchParams.set("zip", prefill.zip);
+      // Hint Vinoshipper to render its embedded/iframe-safe layout.
+      u.searchParams.set("embed", "1");
+      return u.toString();
+    } catch {
+      return joinUrl;
+    }
+  })();
+
+  // Poll for membership confirmation while open.
+  useEffect(() => {
+    if (!open || !user) return;
+    let cancelled = false;
+    const t = setInterval(async () => {
+      const { data } = await supabase
+        .from("wine_club_memberships")
+        .select("vinoshipper_customer_id, vinoshipper_membership_id, status")
+        .eq("user_id", user.id)
+        .neq("status", "cancelled")
+        .maybeSingle();
+      if (cancelled) return;
+      if (data?.vinoshipper_membership_id || data?.status === "active") {
+        setConfirmed(true);
+      }
+    }, 4000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [open, user]);
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-2">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            Secure Payment — {tierName}
+          </DialogTitle>
+          <p className="text-xs text-muted-foreground">
+            Card capture is handled by Vinoshipper, our compliance & shipping
+            partner. Your card is securely vaulted so future club shipments
+            ship automatically. You stay on rescuedogwines.com.
+          </p>
+        </DialogHeader>
+
+        {confirmed ? (
+          <div className="px-6 py-12 text-center">
+            <CheckCircle2 className="h-12 w-12 text-primary mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-foreground mb-2">
+              Welcome to The Pack
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Your {tierName} membership is active. We'll email you before your first shipment.
+            </p>
+            <Button onClick={onClose} className="uppercase tracking-brand text-sm font-bold">
+              Done
+            </Button>
+          </div>
+        ) : (
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+            <iframe
+              src={url}
+              title="Vinoshipper Club Signup"
+              className="relative w-full h-[640px] border-0 bg-background"
+              allow="payment *"
+            />
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

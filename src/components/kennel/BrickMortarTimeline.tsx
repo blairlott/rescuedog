@@ -22,6 +22,31 @@ type DayPoint = {
 };
 
 const GROWTH_MAP: Record<string, number> = { flat: 0, g10: 0.10, g25: 0.25 };
+const GROWTH_LABELS: Record<string, string> = { flat: "Flat 0%/yr", g10: "+10%/yr", g25: "+25%/yr" };
+const BM_FACT_CHANNELS = ["brick_mortar_off", "brick_mortar_on", "distributor_depletion"];
+
+function buildActualRevenueMap(
+  qbRows: Array<{ date: string; amount_cents: number; channel: string | null }>,
+  factRows: Array<{ date: string; net_revenue_cents: number; channel: string | null }>,
+) {
+  const qbByDay = new Map<string, number>();
+  const factByDay = new Map<string, number>();
+  for (const r of qbRows) {
+    const ch = (r.channel ?? "").toLowerCase();
+    if (ch === "dtc" || ch === "ecommerce") continue;
+    qbByDay.set(r.date, (qbByDay.get(r.date) ?? 0) + Number(r.amount_cents ?? 0) / 100);
+  }
+  for (const r of factRows) {
+    if (!BM_FACT_CHANNELS.includes((r.channel ?? "").toLowerCase())) continue;
+    factByDay.set(r.date, (factByDay.get(r.date) ?? 0) + Number(r.net_revenue_cents ?? 0) / 100);
+  }
+  const byDay = new Map<string, { qb_revenue: number }>();
+  for (const day of new Set([...qbByDay.keys(), ...factByDay.keys()])) {
+    // Curated B&M facts match dashboard totals; QB entries remain the legacy fallback.
+    byDay.set(day, { qb_revenue: factByDay.get(day) ?? qbByDay.get(day) ?? 0 });
+  }
+  return { byDay, factDays: factByDay.size, qbDays: qbByDay.size };
+}
 
 /**
  * Build a normalized seasonal index (mean = 1.0) by calendar month from a
@@ -135,29 +160,36 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
   const { data: history } = useQuery({
     queryKey: ["bm-history-qb", histSince, histUntil],
     queryFn: async () => {
-      const out: Array<{ date: string; amount_cents: number; channel: string | null }> = [];
-      const pageSize = 1000; let from = 0;
-      while (true) {
-        const { data: rows } = await (supabase
+      const pageAll = async <T,>(builder: (from: number, to: number) => PromiseLike<{ data: T[] | null }>): Promise<T[]> => {
+        const out: T[] = [];
+        const pageSize = 1000;
+        let from = 0;
+        while (true) {
+          const { data: rows } = await Promise.resolve(builder(from, from + pageSize - 1));
+          if (!rows || rows.length === 0) break;
+          out.push(...rows);
+          if (rows.length < pageSize) break;
+          from += pageSize;
+        }
+        return out;
+      };
+      const [qbRows, factRows] = await Promise.all([
+        pageAll<any>((f, t) => (supabase
           .from("bm_finance_entries" as any)
           .select("date, amount_cents, channel, entry_type")
           .gte("date", histSince).lte("date", histUntil)
           .in("entry_type", ["revenue", "income", "sales"])
           .order("date", { ascending: true })
-          .range(from, from + pageSize - 1) as any);
-        if (!rows || rows.length === 0) break;
-        out.push(...rows);
-        if (rows.length < pageSize) break;
-        from += pageSize;
-      }
-      const byDay = new Map<string, { qb_revenue: number }>();
-      for (const r of out) {
-        const ch = (r.channel ?? "").toLowerCase();
-        if (ch === "dtc" || ch === "ecommerce") continue;
-        const prev = byDay.get(r.date)?.qb_revenue ?? 0;
-        byDay.set(r.date, { qb_revenue: prev + Number(r.amount_cents ?? 0) / 100 });
-      }
-      return { byDay };
+          .range(f, t) as any)),
+        pageAll<any>((f, t) => (supabase
+          .from("business_revenue_facts" as any)
+          .select("date, channel, net_revenue_cents")
+          .in("channel", BM_FACT_CHANNELS)
+          .gte("date", histSince).lte("date", histUntil)
+          .order("date", { ascending: true })
+          .range(f, t) as any)),
+      ]);
+      return { byDay: buildActualRevenueMap(qbRows, factRows).byDay };
     },
   });
 
@@ -185,12 +217,19 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         }
         return out;
       };
-      const [qbRows, depRows, icRows] = await Promise.all([
+      const [qbRows, factRows, depRows, icRows] = await Promise.all([
         pageAll<any>((f, t) => (supabase
           .from("bm_finance_entries" as any)
           .select("date, amount_cents, channel, entry_type")
           .gte("date", since).lte("date", until)
           .in("entry_type", ["revenue", "income", "sales"])
+          .order("date", { ascending: true })
+          .range(f, t) as any)),
+        pageAll<any>((f, t) => (supabase
+          .from("business_revenue_facts" as any)
+          .select("date, channel, net_revenue_cents")
+          .in("channel", BM_FACT_CHANNELS)
+          .gte("date", since).lte("date", until)
           .order("date", { ascending: true })
           .range(f, t) as any)),
         pageAll<any>((f, t) => (supabase
@@ -215,10 +254,9 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         if (!byDay.has(d)) byDay.set(d, { date: d, qb_revenue: 0, depletion_revenue: 0, instacart_revenue: 0, projected: 0 });
         return byDay.get(d)!;
       };
-      for (const r of qbRows) {
-        const ch = (r.channel ?? "").toLowerCase();
-        if (ch === "dtc" || ch === "ecommerce") continue;
-        ensure(r.date).qb_revenue += Number(r.amount_cents ?? 0) / 100;
+      const actualMap = buildActualRevenueMap(qbRows, factRows);
+      for (const [day, row] of actualMap.byDay.entries()) {
+        ensure(day).qb_revenue += row.qb_revenue;
       }
       for (const r of depRows) {
         if (!r.period_end) continue;
@@ -229,7 +267,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       for (const r of icRows) {
         ensure(r.date).instacart_revenue += Number(r.revenue ?? 0);
       }
-      return { byDay, qbRows: qbRows.length, depRows: depRows.length, icRows: icRows.length };
+      return { byDay, qbRows: qbRows.length, factRows: factRows.length, depRows: depRows.length, icRows: icRows.length };
     },
   });
 
@@ -256,7 +294,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       return point;
     });
 
-    // Use independent 24-month QB history (or fall back to selected-range data) to derive
+    // Use independent 24-month B&M history (or fall back to selected-range data) to derive
     // baseline daily run-rate, historical CAGR, and seasonal index by calendar month.
     const histByDay = history?.byDay ?? data.byDay;
     const seasonal = buildSeasonalIndex(histByDay);
@@ -274,8 +312,8 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       if (row) baseSum += row.qb_revenue;
     }
     const dailyAvg = baseDays ? baseSum / baseDays : 0;
-    // "flat" mode = use historical CAGR; explicit g10/g25 = override the historical rate.
-    const effectiveGrowth = growthKey === "flat" ? histCagr : growth;
+    // Growth controls are literal planning rates; Flat means no CAGR uplift.
+    const effectiveGrowth = growth;
 
     // Project from today → end using seasonal index × growth compounding.
     const projection: { date: string; projected: number }[] = [];
@@ -364,13 +402,13 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       </header>
 
       <CaveatBanner
-        title="QuickBooks = source of truth · Depletions & Instacart = signals only"
+        title="B&M actuals drive the model · Depletions & Instacart = signals only"
         items={[
-          "QuickBooks is the source of truth for actual wholesale/B&M dollars — ledger-based, refreshed nightly, only entries tagged wholesale/B&M are counted here.",
-          "Depletion reports are SIGNALS — market-level distributor totals shown as a directional cross-check against QB. They are NOT added to revenue totals or the projection base (would double-count QB dollars).",
+          "Observed dollars use the same curated brick-and-mortar revenue facts as the dashboard, with legacy QuickBooks wholesale entries as fallback history.",
+          "Depletion reports are SIGNALS — market-level distributor totals shown as a directional cross-check. They are NOT added to revenue totals or the projection base (would double-count actual dollars).",
           "Because depletions are market-level, account-level velocity metrics (CPPW, TDP, sell-through by store) are not computable today and won't be until scan data (Nielsen/Circana) or distributor account-level feeds land.",
           "Instacart: ad-attributed revenue from Instacart Ads — shown as a SIGNAL only. Not added to B&M totals.",
-          "Projection past today uses a trailing 365-day QB baseline, scaled by a calendar-month seasonal index (24mo of QB history, mean = 1.0) and compounded by historical CAGR (last 12mo vs prior 12mo). Selecting +10%/+25% overrides the CAGR. Not MMM.",
+          "Projection past today uses a trailing 365-day B&M baseline, scaled by a calendar-month seasonal index (24mo history, mean = 1.0) and the selected growth rate. Not MMM.",
         ]}
       />
 
@@ -379,10 +417,10 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <Stat label="Observed (QB only)" value={`$${Math.round(chart.observedTotal).toLocaleString()}`} hint={`${isoDay(start)} → ${isoDay(observedEnd)}`} />
-            <Stat label="Trailing 365d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint={`QB base · anchor ${isoDay(chart.anchor)} · CAGR ${(chart.cagr * 100).toFixed(1)}%`} />
-            <Stat label="Projected" value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={end > today ? `${isoDay(today)} → ${isoDay(end)} · ${growthKey === "flat" ? "historical CAGR" : growthKey} · seasonal` : "no future range"} />
-            <Stat label="Observed + Projected" value={`$${Math.round(chart.observedTotal + chart.projectedTotal).toLocaleString()}`} hint={`${data.qbRows.toLocaleString()} QB · ${data.depRows.toLocaleString()} dep lines`} />
+            <Stat label="Observed actuals" value={`$${Math.round(chart.observedTotal).toLocaleString()}`} hint={`${isoDay(start)} → ${isoDay(observedEnd)}`} />
+            <Stat label="Trailing 365d / day" value={`$${Math.round(chart.dailyAvg).toLocaleString()}`} hint={`B&M base · anchor ${isoDay(chart.anchor)} · CAGR ${(chart.cagr * 100).toFixed(1)}%`} />
+            <Stat label="Projected" value={`$${Math.round(chart.projectedTotal).toLocaleString()}`} hint={end > today ? `${isoDay(today)} → ${isoDay(end)} · ${GROWTH_LABELS[growthKey] ?? growthKey} · seasonal` : "no future range"} />
+            <Stat label="Observed + Projected" value={`$${Math.round(chart.observedTotal + chart.projectedTotal).toLocaleString()}`} hint={`${data.factRows.toLocaleString()} B&M facts · ${data.qbRows.toLocaleString()} QB fallback · ${data.depRows.toLocaleString()} dep lines`} />
           </div>
           <div style={{ width: "100%", height: 260 }}>
             <ResponsiveContainer>
@@ -402,7 +440,7 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <ReferenceLine x={todayKey} stroke="hsl(var(--foreground))" strokeDasharray="2 2" label={{ value: "today", position: "top", fontSize: 10, fill: "hsl(var(--foreground))" }} />
-                <Area type="monotone" dataKey="qb_revenue" stackId="actual" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.35)" name="QuickBooks (wholesale)" />
+                <Area type="monotone" dataKey="qb_revenue" stackId="actual" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.35)" name="B&M actual revenue" />
                 <Line type="monotone" dataKey="depletion_revenue" stroke="hsl(220 70% 45%)" strokeWidth={1.5} strokeDasharray="3 3" dot={false} name="Depletions (signal · modeled @ $9/btl)" />
                 <Line type="monotone" dataKey="instacart_revenue" stroke="hsl(30 90% 50%)" strokeWidth={1.5} strokeDasharray="3 3" dot={false} name="Instacart (signal · ad-attributed)" />
                 <Line type="monotone" dataKey="projected" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={false} name={`Projection (${growthKey})`} />
@@ -413,14 +451,14 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
             tileId="brick-mortar"
             rangeLabel={rangeLabel(start, end)}
             tileData={{
-              model: "trailing 365-day QB baseline × calendar-month seasonal index × historical CAGR (or growth override), not MMM",
+              model: "trailing 365-day B&M baseline × calendar-month seasonal index × selected growth rate, not MMM",
               growth_mode: growthKey,
               historical_cagr: chart.cagr,
               seasonal_index_by_month: chart.seasonal,
               observed_revenue: chart.observedTotal,
               projected_revenue: chart.projectedTotal,
               daily_average: chart.dailyAvg,
-              source_rows: { quickbooks: data.qbRows, depletions: data.depRows, instacart: data.icRows },
+              source_rows: { business_revenue_facts: data.factRows, quickbooks_fallback: data.qbRows, depletions: data.depRows, instacart: data.icRows },
             }}
           />
         </>

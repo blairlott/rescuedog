@@ -7,7 +7,7 @@ import {
 } from "recharts";
 import { Wine, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { fetchActiveVsMemberEmails } from "./WineClubGrowthPanel";
+import { fetchActiveVsMemberEmails } from "@/lib/wineClubMembers";
 import {
   DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay,
   monthKey, pickBucket, daysBetween, formatAxisDate,

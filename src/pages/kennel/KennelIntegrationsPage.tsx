@@ -188,6 +188,15 @@ const PROVIDERS: ProviderDef[] = [
       { key: "account_id",    label: "Account ID" },
     ],
   },
+  // ─── Commerce (read-only, secrets locked in Lovable) ─────
+  {
+    id: "vinoshipper",
+    label: "Vinoshipper",
+    description: "Wine checkout, compliance, and order pipeline. Secrets are locked in the Lovable secret store and rotated only by an owner.",
+    envFallbackPrefix: "VINOSHIPPER",
+    category: "Commerce",
+    keys: [],
+  },
 ];
 
 export default function KennelIntegrationsPage() {

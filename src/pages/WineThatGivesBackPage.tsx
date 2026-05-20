@@ -34,7 +34,7 @@ const FAQS = [
   {
     question: "Can I buy sustainable wine that ships to my state?",
     answer:
-      "Yes. Rescue Dog Wines ships to most U.S. states through licensed compliance partners. Shipping is included on orders of 6+ bottles, and our Wine Club ('The Pack') unlocks 20% off every shipment.",
+      "Yes. Rescue Dog Wines ships to most U.S. states through licensed compliance partners. Shipping is included on orders of 6+ bottles, and our Wine Club ('The Pack') unlocks 20% off every shipment — 25% on full-case orders (12+ bottles).",
   },
 ];
 

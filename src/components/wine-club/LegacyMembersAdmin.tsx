@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, Download, Search, CheckCircle2 } from "lucide-react";
+import { Upload, Download, Search, CheckCircle2, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 type LegacyStatus = "current" | "inactive" | "on_hold" | "archived";
 
@@ -17,6 +18,46 @@ const STATUS_TABS: { value: LegacyStatus; label: string }[] = [
   { value: "on_hold", label: "On Hold" },
   { value: "archived", label: "Archived" },
 ];
+
+// Match Vinoshipper Excel tab names to our statuses.
+const SHEET_NAME_TO_STATUS: { match: RegExp; status: LegacyStatus }[] = [
+  { match: /current/i, status: "current" },
+  { match: /inactive/i, status: "inactive" },
+  { match: /on.?hold|hold/i, status: "on_hold" },
+  { match: /archive/i, status: "archived" },
+];
+
+const HEADER_HINTS = ["email", "first name", "firstname", "last name", "lastname", "membership"];
+
+// Vinoshipper exports often have a title row + merged headers. Scan the first 10
+// rows for the one that looks like real column headers, then build row objects.
+function sheetToRows(ws: XLSX.WorkSheet): Record<string, string>[] {
+  const aoa: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: "" });
+  if (!aoa.length) return [];
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(aoa.length, 10); i++) {
+    const row = (aoa[i] || []).map((c) => String(c ?? "").toLowerCase());
+    if (HEADER_HINTS.some((h) => row.some((c) => c.includes(h)))) {
+      headerIdx = i;
+      break;
+    }
+  }
+  const headers = (aoa[headerIdx] || []).map((c, i) =>
+    String(c ?? "").trim() || `col_${i}`
+  );
+  const out: Record<string, string>[] = [];
+  for (let i = headerIdx + 1; i < aoa.length; i++) {
+    const row = aoa[i] || [];
+    if (!row.some((c) => String(c ?? "").trim() !== "")) continue;
+    const obj: Record<string, string> = {};
+    headers.forEach((h, j) => {
+      const v = row[j];
+      obj[h] = v == null ? "" : String(v).trim();
+    });
+    out.push(obj);
+  }
+  return out;
+}
 
 interface LegacyMember {
   id: string;
@@ -79,8 +120,10 @@ export function LegacyMembersAdmin() {
   const qc = useQueryClient();
   const [activeStatus, setActiveStatus] = useState<LegacyStatus>("current");
   const [uploadingFor, setUploadingFor] = useState<LegacyStatus | null>(null);
+  const [uploadingWorkbook, setUploadingWorkbook] = useState(false);
   const [search, setSearch] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const workbookRef = useRef<HTMLInputElement>(null);
 
   const { data: members, isLoading } = useQuery({
     queryKey: ["wine-club-legacy-members", activeStatus],
@@ -114,10 +157,22 @@ export function LegacyMembersAdmin() {
   const handleFile = async (file: File, status: LegacyStatus) => {
     setUploadingFor(status);
     try {
-      const text = await file.text();
-      const rows = parseCSV(text);
+      let rows: Record<string, string>[] = [];
+      const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+      if (isExcel) {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array" });
+        // Prefer a sheet whose name matches this status; else first sheet.
+        const target = SHEET_NAME_TO_STATUS.find((m) => m.status === status);
+        const sheetName =
+          wb.SheetNames.find((n) => target && target.match.test(n)) || wb.SheetNames[0];
+        rows = sheetToRows(wb.Sheets[sheetName]);
+      } else {
+        const text = await file.text();
+        rows = parseCSV(text);
+      }
       if (!rows.length) {
-        toast.error("CSV is empty or unreadable");
+        toast.error("File is empty or unreadable");
         return;
       }
       const { data, error } = await supabase.functions.invoke("vinoshipper-import-csv", {
@@ -133,6 +188,39 @@ export function LegacyMembersAdmin() {
     } finally {
       setUploadingFor(null);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  // One-shot: upload the full Vinoshipper workbook and import every matching tab.
+  const handleWorkbook = async (file: File) => {
+    setUploadingWorkbook(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const summary: string[] = [];
+      for (const sheetName of wb.SheetNames) {
+        const matched = SHEET_NAME_TO_STATUS.find((m) => m.match.test(sheetName));
+        if (!matched) continue;
+        const rows = sheetToRows(wb.Sheets[sheetName]);
+        if (!rows.length) {
+          summary.push(`${sheetName}: empty`);
+          continue;
+        }
+        const { data, error } = await supabase.functions.invoke("vinoshipper-import-csv", {
+          body: { rows, status: matched.status, source_file: `${file.name} :: ${sheetName}` },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(`${sheetName}: ${data.error}`);
+        summary.push(`${sheetName}: +${data.inserted} new, ~${data.updated} updated`);
+      }
+      toast.success(summary.length ? summary.join(" • ") : "No matching tabs found");
+      qc.invalidateQueries({ queryKey: ["wine-club-legacy-members"] });
+      qc.invalidateQueries({ queryKey: ["wine-club-legacy-counts"] });
+    } catch (e: any) {
+      toast.error(e.message || "Workbook import failed");
+    } finally {
+      setUploadingWorkbook(false);
+      if (workbookRef.current) workbookRef.current.value = "";
     }
   };
 
@@ -161,9 +249,35 @@ export function LegacyMembersAdmin() {
         <div>
           <h3 className="text-lg font-bold text-foreground">Vinoshipper Legacy Members</h3>
           <p className="text-sm text-muted-foreground">
-            Upload the CSV exports from your Vinoshipper Members area (Current / Inactive / On Hold / Archived).
-            Re-uploads are safe — rows with a matching Membership ID are updated, not duplicated.
+            Upload the full Vinoshipper Members workbook (.xlsx with 4 tabs) and we'll import every tab in one shot.
+            You can also upload one CSV or sheet per status below. Re-uploads are safe — rows with a matching
+            Membership ID are updated, not duplicated.
           </p>
+        </div>
+        <div>
+          <input
+            ref={workbookRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            id="vs-workbook-upload"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleWorkbook(f);
+            }}
+          />
+          <label htmlFor="vs-workbook-upload">
+            <Button
+              asChild
+              disabled={uploadingWorkbook}
+              className="uppercase tracking-brand text-sm font-bold cursor-pointer"
+            >
+              <span>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                {uploadingWorkbook ? "Importing workbook…" : "Upload full VS workbook (.xlsx)"}
+              </span>
+            </Button>
+          </label>
         </div>
       </div>
 
@@ -185,7 +299,7 @@ export function LegacyMembersAdmin() {
               <input
                 ref={t.value === activeStatus ? fileRef : undefined}
                 type="file"
-                accept=".csv,text/csv"
+                accept=".csv,.xlsx,.xls,text/csv"
                 className="hidden"
                 id={`csv-upload-${t.value}`}
                 onChange={(e) => {
@@ -201,7 +315,7 @@ export function LegacyMembersAdmin() {
                 >
                   <span>
                     <Upload className="h-4 w-4 mr-2" />
-                    {uploadingFor === t.value ? "Uploading…" : `Upload ${t.label} CSV`}
+                    {uploadingFor === t.value ? "Uploading…" : `Upload ${t.label} (CSV or Excel)`}
                   </span>
                 </Button>
               </label>

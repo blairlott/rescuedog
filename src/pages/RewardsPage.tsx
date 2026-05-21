@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { RescueRewardsDashboard } from "@/components/account/RescueRewardsDashboard";
+import { useLaunchFeatures } from "@/hooks/useLaunchFeatures";
+import { Navigate } from "react-router-dom";
 
 export default function RewardsPage() {
   return (

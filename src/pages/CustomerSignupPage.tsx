@@ -18,6 +18,7 @@ import { useEffect } from "react";
 const CustomerSignupPage = () => {
   const { user } = useCustomerAuth();
   const navigate = useNavigate();
+  const { referralsEnabled } = useLaunchFeatures();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -32,10 +33,11 @@ const CustomerSignupPage = () => {
 
   // Pre-fill referral code from URL param (e.g. /signup?ref=abc123)
   useEffect(() => {
+    if (!referralsEnabled) return;
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
     if (ref) setFormData(d => ({ ...d, referralCode: ref }));
-  }, []);
+  }, [referralsEnabled]);
 
   useEffect(() => {
     if (user) navigate("/account");
@@ -63,7 +65,7 @@ const CustomerSignupPage = () => {
       if (error) throw error;
 
       // If a referral code was provided, create the referral tracking record
-      if (formData.referralCode && signUpData.user) {
+      if (referralsEnabled && formData.referralCode && signUpData.user) {
         // Look up the referrer by their referral_code
         const { data: referrer } = await supabase
           .from("customer_profiles")
@@ -198,10 +200,12 @@ const CustomerSignupPage = () => {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" required minLength={6} value={formData.password} onChange={e => setFormData(d => ({ ...d, password: e.target.value }))} placeholder="Min. 6 characters" />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="referralCode">Referral Code <span className="text-muted-foreground font-normal">(optional)</span></Label>
-              <Input id="referralCode" value={formData.referralCode} onChange={e => setFormData(d => ({ ...d, referralCode: e.target.value.trim() }))} placeholder="e.g. a1b2c3d4" />
-            </div>
+            {referralsEnabled && (
+              <div className="space-y-1.5">
+                <Label htmlFor="referralCode">Referral Code <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Input id="referralCode" value={formData.referralCode} onChange={e => setFormData(d => ({ ...d, referralCode: e.target.value.trim() }))} placeholder="e.g. a1b2c3d4" />
+              </div>
+            )}
             <Button type="submit" className="w-full h-12" disabled={isLoading || !ageConfirm}>
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-4 h-4 mr-2" />Create Account</>}
             </Button>

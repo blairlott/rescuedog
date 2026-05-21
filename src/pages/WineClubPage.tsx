@@ -10,7 +10,6 @@ import { useWineClubTiers, useMyMembership } from "@/hooks/useWineClub";
 import type { WineClubTier } from "@/hooks/useWineClub";
 import { VinoshipperInlineSignup } from "@/components/wine-club/VinoshipperInlineSignup";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
-import { GiftMembershipDialog } from "@/components/wine-club/GiftMembershipDialog";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { Link, useNavigate } from "react-router-dom";
 import { Seo } from "@/components/Seo";
@@ -41,7 +40,6 @@ const WineClubPage = () => {
   const { content, upsert } = useCmsContent("wine_club");
   const [editSection, setEditSection] = useState<EditSection>(null);
   const [editFaqIdx, setEditFaqIdx] = useState<number | null>(null);
-  const [giftDialogOpen, setGiftDialogOpen] = useState(false);
 
   const { user } = useCustomerAuth();
   const navigate = useNavigate();
@@ -208,19 +206,6 @@ const WineClubPage = () => {
                       </p>
                     )}
 
-                    <div className="mt-10 pt-8 border-t border-border text-center">
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Looking to gift a membership instead?
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setGiftDialogOpen(true)}
-                        className="gap-2 uppercase tracking-brand text-xs font-bold"
-                      >
-                        <Gift className="h-4 w-4" /> Gift a Membership
-                      </Button>
-                    </div>
                 </>
               </div>
             </section>
@@ -256,7 +241,6 @@ const WineClubPage = () => {
       </main>
       <Footer />
 
-      <GiftMembershipDialog open={giftDialogOpen} onOpenChange={setGiftDialogOpen} />
 
       {/* CMS Edit Dialogs */}
       {editSection && sectionFields[editSection] && (

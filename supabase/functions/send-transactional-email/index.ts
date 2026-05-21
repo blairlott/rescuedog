@@ -35,6 +35,7 @@ const INTERNAL_TEMPLATES = new Set<string>([
   'wine-club-staff-action',
   'kennel-access-invite',
   'reviewer-invite',
+  'access-request-admin-notification',
 ])
 
 function buildSupportFooterHtml(): string {

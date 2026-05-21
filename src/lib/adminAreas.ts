@@ -70,3 +70,35 @@ export const hasAreaAccess = (area: AdminArea, roles: string[]) =>
 
 export const findArea = (key: string) =>
   ADMIN_AREAS.find((a) => a.key === key);
+
+// Human-friendly labels for the roles a user can request, grouped by area.
+// The viewer/executive read-only roles are intentionally excluded — those
+// are granted directly by an admin, not requested by end users.
+export const REQUESTABLE_ROLES_BY_AREA: Record<string, { value: string; label: string }[]> = {
+  cms: [
+    { value: "cms_editor", label: "CMS Editor (edit content)" },
+    { value: "admin", label: "Admin (full CMS control)" },
+  ],
+  crm: [
+    { value: "crm_user", label: "CRM User (general sales access)" },
+    { value: "brand_ambassador", label: "Brand Ambassador / Sales Rep" },
+    { value: "state_manager", label: "State Manager" },
+    { value: "regional_manager", label: "Regional Manager" },
+    { value: "national_manager", label: "National Manager" },
+    { value: "ambassador_manager", label: "Ambassador Manager" },
+    { value: "admin", label: "Admin (full CRM control)" },
+  ],
+  club: [
+    { value: "wine_club_manager", label: "Wine Club Manager" },
+    { value: "admin", label: "Admin (full Wine Club control)" },
+  ],
+  dropship: [
+    { value: "dropship_manager", label: "Dropship Manager" },
+    { value: "admin", label: "Admin (full Dropship control)" },
+  ],
+  kennel: [
+    { value: "kennel_viewer", label: "Kennel Viewer (read-only)" },
+    { value: "ad_ops_manager", label: "Ad Ops Manager" },
+    { value: "admin", label: "Admin (full Kennel control)" },
+  ],
+};

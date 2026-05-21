@@ -229,20 +229,31 @@ Deno.serve(async (req) => {
 
     const series: any[] = [];
     let cumSpend = 0, cumRev = 0;
+    // Planning uplift: restored budgets + improved ROAS in OND 2026 (Q4 push).
+    // Spend and ROAS multipliers applied on top of seasonality, peaking in Nov.
+    const ondUplift = (d: Date): { spend: number; roas: number } => {
+      const y = d.getUTCFullYear();
+      const m = d.getUTCMonth(); // 0-indexed
+      if (y === 2026 && m === 9)  return { spend: 1.35, roas: 1.18 }; // Oct
+      if (y === 2026 && m === 10) return { spend: 1.55, roas: 1.28 }; // Nov (BFCM + Giving Tuesday)
+      if (y === 2026 && m === 11) return { spend: 1.40, roas: 1.22 }; // Dec
+      return { spend: 1, roas: 1 };
+    };
     for (let h = 1; h <= horizon; h++) {
       const futureDate = new Date(lastDate.getTime() + h * 86400000);
       const dow = futureDate.getUTCDay();
       const moy = futureDate.getUTCMonth();
+      const uplift = ondUplift(futureDate);
       // CAGR-based projection: baseline daily × compounded growth × DoW seasonality.
       const growthSpend = Math.pow(spendDaily, h);
       const growthRev   = Math.pow(revDaily,   h);
-      const rawSpend = Math.max(spendFloor, baselineSpend * growthSpend) * spendSeason[dow] * spendMonthSeason[moy] * spendTilt;
+      const rawSpend = Math.max(spendFloor, baselineSpend * growthSpend) * spendSeason[dow] * spendMonthSeason[moy] * spendTilt * uplift.spend;
       const trendSpend = rawSpend;
       const rawRev   = baselineRev * growthRev * revSeason[dow] * revMonthSeason[moy] * revenueTilt;
       let trendRev   = rawRev;
       if (trendSpend > 0 && baselineRoas > 0) {
         const implied = trendRev / trendSpend;
-        const targetRoas = Math.min(roasCeiling, Math.max(roasFloor, implied)) * roasTilt;
+        const targetRoas = Math.min(roasCeiling, Math.max(roasFloor, implied)) * roasTilt * uplift.roas;
         trendRev = trendSpend * targetRoas;
       }
       const roas = trendSpend > 0 ? trendRev / trendSpend : 0;

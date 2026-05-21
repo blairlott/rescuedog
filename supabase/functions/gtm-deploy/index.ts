@@ -166,6 +166,7 @@ Deno.serve(async (req) => {
     return json({ ok: false, step: "list_workspaces", error: "no workspaces" }, 500);
   }
   const wsPath = `accounts/${accountId}/containers/${containerId}/workspaces/${workspace.workspaceId}`;
+  await log(admin, "discovery", "success", { response: { accountId, containerId, workspaceId: workspace.workspaceId, workspaceName: workspace.name } });
 
   // Step 2: create or reuse GCLID URL variable
   const varsRes = await gtm(`${wsPath}/variables`, token);

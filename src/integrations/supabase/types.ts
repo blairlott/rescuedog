@@ -8430,6 +8430,13 @@ export type Database = {
             foreignKeyName: "wine_club_anniversary_log_membership_id_fkey"
             columns: ["membership_id"]
             isOneToOne: false
+            referencedRelation: "wine_club_cancellation_analytics"
+            referencedColumns: ["membership_id"]
+          },
+          {
+            foreignKeyName: "wine_club_anniversary_log_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
             referencedRelation: "wine_club_memberships"
             referencedColumns: ["id"]
           },
@@ -8708,6 +8715,13 @@ export type Database = {
           vinoshipper_membership_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "wine_club_legacy_members_claimed_membership_id_fkey"
+            columns: ["claimed_membership_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_cancellation_analytics"
+            referencedColumns: ["membership_id"]
+          },
           {
             foreignKeyName: "wine_club_legacy_members_claimed_membership_id_fkey"
             columns: ["claimed_membership_id"]
@@ -9048,6 +9062,13 @@ export type Database = {
           weather_hold_until?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "wine_club_shipments_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_cancellation_analytics"
+            referencedColumns: ["membership_id"]
+          },
           {
             foreignKeyName: "wine_club_shipments_membership_id_fkey"
             columns: ["membership_id"]
@@ -9627,6 +9648,31 @@ export type Database = {
           },
         ]
       }
+      wine_club_cancellation_analytics: {
+        Row: {
+          cancellation_reason: string | null
+          cancellation_source: string | null
+          cancelled_at: string | null
+          cancelled_month: string | null
+          is_legacy_member: boolean | null
+          joined_at: string | null
+          membership_id: string | null
+          origin: string | null
+          tenure_days: number | null
+          tier_id: string | null
+          tier_name: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wine_club_memberships_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       ab_results_summary: {
@@ -9716,16 +9762,14 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
-      enqueue_welcome_series:
-        | { Args: { _email?: string; _user_id: string }; Returns: undefined }
-        | {
-            Args: {
-              _email: string
-              _user_id: string
-              _vinoshipper_created_at?: string
-            }
-            Returns: undefined
-          }
+      enqueue_welcome_series: {
+        Args: {
+          _email: string
+          _user_id: string
+          _vinoshipper_created_at?: string
+        }
+        Returns: undefined
+      }
       experiment_assign: {
         Args: {
           _experiment_key: string

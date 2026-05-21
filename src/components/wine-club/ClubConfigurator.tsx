@@ -233,7 +233,7 @@ export function ClubConfigurator({ tiers, onSelect, isGift = false, onGiftChange
               onClick={() => onSelect(matchedTier)}
               className="flex-1 uppercase tracking-brand text-sm font-bold gap-2"
             >
-              Join This Club <ArrowRight className="h-4 w-4" />
+              {isGift ? "Gift This Club" : "Join This Club"} <ArrowRight className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"

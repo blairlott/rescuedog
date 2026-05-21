@@ -29,14 +29,16 @@ export default defineConfig(({ mode }) => ({
         // initial route doesn't ship every page's dependency graph.
         manualChunks: (id) => {
           if (!id.includes("node_modules")) return undefined;
+          // Keep React in its own base chunk first. Radix/shadcn packages import
+          // React during module initialization, and splitting React-adjacent UI
+          // packages too aggressively can produce a blank production page.
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "vendor-react";
           if (id.includes("react-router")) return "vendor-router";
           if (id.includes("@supabase")) return "vendor-supabase";
           if (id.includes("lucide-react")) return "vendor-icons";
-          if (id.includes("@radix-ui")) return "vendor-radix";
           if (id.includes("@tanstack")) return "vendor-query";
           if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
           if (id.includes("framer-motion") || id.includes("motion")) return "vendor-motion";
-          if (id.includes("/react/") || id.includes("/react-dom/") || id.includes("/scheduler/")) return "vendor-react";
           return "vendor";
         },
       },

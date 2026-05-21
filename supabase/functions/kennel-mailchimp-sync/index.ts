@@ -54,6 +54,13 @@ Deno.serve(async (req) => {
   const isService = auth === `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
   if (!isService && (!secret || headerSecret !== secret)) return J(401, { error: "unauthorized" });
 
+  // Fast short-circuit for self-health probes — avoids the 50-page Vinoshipper
+  // pull and Mailchimp batch and blowing the probe's 20s timeout.
+  const probeBody = req.method === "POST" ? await req.clone().json().catch(() => ({})) : {};
+  if (probeBody?.dry_run === true || probeBody?.probe === true) {
+    return J(200, { ok: true, dry_run: true, function: "kennel-mailchimp-sync" });
+  }
+
   if (!API || !SERVER || !LIST) {
     return J(400, { error: "MAILCHIMP_API_KEY / MAILCHIMP_SERVER_PREFIX / MAILCHIMP_AUDIENCE_ID missing" });
   }

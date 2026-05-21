@@ -22,7 +22,7 @@ import ig6 from "@/assets/migrated/ig-6.webp";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
-import { ImpactCounter } from "@/components/ImpactCounter";
+import { MissionStrip } from "@/components/MissionStrip";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { PairingFinder } from "@/components/PairingFinder";
 import { LazyYouTube } from "@/components/LazyYouTube";
@@ -600,7 +600,7 @@ const Index = () => {
         </section>
       )}
 
-      {showImpact && <ImpactCounter />}
+      {showImpact && <MissionStrip />}
 
       {/* Wholesale CTA */}
       <section className="py-12 border-t border-border">

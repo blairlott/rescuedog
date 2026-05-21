@@ -19,6 +19,7 @@ const CustomerLoginPage = () => {
   const [searchParams] = useSearchParams();
   const nextParam = searchParams.get("next");
   const nextPath = nextParam && nextParam.startsWith("/") ? nextParam : "/account";
+  const nextQs = nextParam ? `?next=${encodeURIComponent(nextParam)}` : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +49,7 @@ const CustomerLoginPage = () => {
     setIsGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}${nextPath}`,
       });
       if (result.error) throw result.error;
     } catch (err: any) {
@@ -61,7 +62,7 @@ const CustomerLoginPage = () => {
     setIsAppleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}${nextPath}`,
       });
       if (result.error) throw result.error;
     } catch (err: any) {
@@ -161,7 +162,7 @@ const CustomerLoginPage = () => {
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link to="/signup" className="text-primary font-semibold hover:underline">
+            <Link to={`/signup${nextQs}`} className="text-primary font-semibold hover:underline">
               Create one
             </Link>
           </p>

@@ -483,7 +483,7 @@ export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: se
   const end = endProp ?? endLocal;
   const setStart = setStartProp ?? setStartLocal;
   const setEnd = setEndProp ?? setEndLocal;
-  const [growthKey, setGrowthKey] = useState<string>("flat");
+  const [growthKey, setGrowthKey] = useState<string>("g25");
   const today = todayUTC();
   const growth = GROWTH_MAP[growthKey] ?? 0;
 
@@ -628,8 +628,8 @@ export function BrandLiftTimeline({ start: startProp, end: endProp, setStart: se
             <span className="text-[10px] uppercase tracking-brand text-muted-foreground mr-1">growth</span>
             {[
               { key: "flat", label: "Flat" },
-              { key: "g10", label: "+10%/yr" },
-              { key: "g25", label: "+25%/yr" },
+              { key: "g25", label: "+25%/yr (medium)" },
+              { key: "g50", label: "+50%/yr (high)" },
             ].map((g) => (
               <button key={g.key} onClick={() => setGrowthKey(g.key)}
                 className={`uppercase tracking-brand text-[10px] h-7 px-2 border-2 ${growthKey === g.key ? "bg-foreground text-background border-foreground" : "border-border text-foreground"}`}

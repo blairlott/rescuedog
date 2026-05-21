@@ -72,20 +72,42 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
           },
         });
         if (error) {
-          toast.error(error.message);
-          setCreatingAccount(false);
-          return;
+          // Former members already have an account. Try signing them in
+          // with the provided password so they can rejoin without leaving
+          // the page.
+          const looksLikeExisting =
+            /registered|exists|already/i.test(error.message);
+          if (looksLikeExisting) {
+            const { error: signInErr } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+            if (signInErr) {
+              toast.error(
+                "You already have an account with this email. Sign in to rejoin, or use the password you set previously.",
+              );
+              setCreatingAccount(false);
+              return;
+            }
+            // Signed in — fall through and submit the membership.
+            await new Promise((r) => setTimeout(r, 400));
+          } else {
+            toast.error(error.message);
+            setCreatingAccount(false);
+            return;
+          }
+        } else {
+          if (!sd.session) {
+            toast.info(
+              "Check your email to confirm your account, then come back to finish joining.",
+            );
+            setCreatingAccount(false);
+            return;
+          }
+          // Let the auth context propagate before submitting so useJoinClub
+          // sees the new user.
+          await new Promise((r) => setTimeout(r, 400));
         }
-        if (!sd.session) {
-          toast.info(
-            "Check your email to confirm your account, then come back to finish joining.",
-          );
-          setCreatingAccount(false);
-          return;
-        }
-        // Let the auth context propagate before submitting so useJoinClub
-        // sees the new user.
-        await new Promise((r) => setTimeout(r, 400));
       } catch (err: any) {
         toast.error(err?.message || "Could not create account");
         setCreatingAccount(false);

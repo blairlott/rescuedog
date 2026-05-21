@@ -3,6 +3,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RefreshCw, Truck, Lock } from "lucide-react";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
+import { useIsMember } from "@/hooks/useIsMember";
 import { WineClubDisclaimer } from "@/components/WineClubDisclaimer";
 import { useCheckoutIntentStore } from "@/stores/checkoutIntentStore";
 import { useState } from "react";
@@ -40,12 +41,16 @@ interface CartSubscribeToggleProps {
 export function CartSubscribeToggle({ price, quantity, cartSubtotal }: CartSubscribeToggleProps) {
   const [frequency, setFrequency] = useState("monthly");
   const { user } = useCustomerAuth();
+  const { isMember } = useIsMember();
   const intent = useCheckoutIntentStore((s) => s.intent);
   const setIntent = useCheckoutIntentStore((s) => s.setIntent);
 
-  const enabled = intent === "subscribe";
+  const enabled = intent === "subscribe" && !isMember;
   const blockedByClub = intent === "club";
-  const handleToggle = (next: boolean) => setIntent(next ? "subscribe" : "none");
+  const handleToggle = (next: boolean) => {
+    if (isMember) return;
+    setIntent(next ? "subscribe" : "none");
+  };
 
   const tier = getTier(cartSubtotal);
   const nextTier = getNextTier(cartSubtotal);
@@ -59,11 +64,13 @@ export function CartSubscribeToggle({ price, quantity, cartSubtotal }: CartSubsc
         <div className="flex items-center gap-1.5">
           <RefreshCw className={`w-3.5 h-3.5 ${enabled ? "text-primary" : "text-muted-foreground"}`} />
           <span className="font-medium">Subscribe & Save</span>
-          {!enabled && (
+          {!enabled && !isMember && (
             <span className="text-muted-foreground">up to {MAX_SUBSAVE_PERCENT}%</span>
           )}
         </div>
-        {user ? (
+        {isMember ? (
+          <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+        ) : user ? (
           <Switch
             checked={enabled}
             onCheckedChange={handleToggle}
@@ -80,6 +87,18 @@ export function CartSubscribeToggle({ price, quantity, cartSubtotal }: CartSubsc
           </Link>
         )}
       </div>
+
+      {isMember && (
+        <div className="px-2.5 pb-2 text-[11px] text-muted-foreground border-t border-border/50 pt-2">
+          You're a Wine Club member — Subscribe & Save is a separate auto-ship program and can't be stacked with your membership discount.
+        </div>
+      )}
+
+      {!isMember && !enabled && (
+        <div className="px-2.5 pb-2 text-[10px] text-muted-foreground/80 italic border-t border-border/50 pt-1.5">
+          Auto-ship only — not a Wine Club membership.
+        </div>
+      )}
 
       {blockedByClub && user && !enabled && (
         <div className="px-2.5 pb-2 text-[11px] text-muted-foreground border-t border-border/50 pt-2">

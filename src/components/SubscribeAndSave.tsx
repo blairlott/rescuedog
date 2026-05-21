@@ -57,6 +57,9 @@ export function SubscribeAndSave({ price, onSubscriptionChange }: SubscribeAndSa
             <p className="text-xs text-muted-foreground mt-0.5">
               {user ? "Auto-deliver at your pace, cancel anytime" : "Account required to manage recurring shipments"}
             </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 italic">
+              Auto-ship only — not a Wine Club membership and can't stack with member discounts.
+            </p>
           </div>
         </div>
         {user ? (

@@ -12,6 +12,7 @@ interface WineClubDisclaimerProps {
  */
 export function WineClubDisclaimer({ variant = "club", className = "" }: WineClubDisclaimerProps) {
   const subscriptionLines = [
+    "Subscribe & Save is a recurring single-product auto-ship — not a Wine Club membership. It does not include club perks (curated shipments, member-only releases, event access) and cannot be combined or stacked with a Wine Club membership discount.",
     "By enrolling, you authorize Rescue Dog Wines (via Vinoshipper) to charge your saved payment method for each shipment at the cadence you choose, plus applicable taxes and shipping, until you cancel.",
     "You may modify, skip, pause, or cancel any future shipment from your account at least 3 days before the next billing date. Charges already processed are non-refundable once a shipment is in transit.",
     "Wine purchases require an adult signature (21+) at delivery. Government-issued ID is required. We cannot ship to PO boxes or to states where direct-to-consumer wine shipments are restricted.",

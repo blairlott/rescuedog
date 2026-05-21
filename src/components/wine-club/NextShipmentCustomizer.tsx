@@ -206,7 +206,7 @@ export function NextShipmentCustomizer({ membership }: Props) {
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
           {cadenceLabel}. Your next shipment is targeted for{" "}
           <span className="text-foreground font-semibold">{niceDate}</span>.
-          You'll be able to customize it closer to the ship date — we'll email you when it opens.
+          About a week before we process your shipment, we'll email you a link to customize it — swap wines, adjust quantities, update delivery, or skip.
         </p>
       </div>
     );

@@ -7,7 +7,7 @@ import {
   ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ReferenceArea, Bar,
 } from "recharts";
-import { TrendingUp, RefreshCw, Info, Truck } from "lucide-react";
+import { TrendingUp, RefreshCw, Info, Truck, Download } from "lucide-react";
 import {
   DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay, daysBetween, formatAxisDate, pickBucket,
 } from "./DateRangeControls";

@@ -99,7 +99,6 @@ Deno.serve(async (req) => {
     status: "ACTIVE",
     special_ad_categories: [],
     is_adset_budget_sharing_enabled: false,
-    bid_strategy: "LOWEST_COST_WITHOUT_CAP",
   });
   if (!campaignRes.ok) return json({ ok: false, step: "campaign", ...campaignRes }, 502);
   const campaign_id: string = campaignRes.body.id;
@@ -128,6 +127,7 @@ Deno.serve(async (req) => {
       optimization_goal: "OFFSITE_CONVERSIONS",
       billing_event: "IMPRESSIONS",
       daily_budget: newBudgetCents,
+      bid_strategy: "LOWEST_COST_WITHOUT_CAP",
       promoted_object: { pixel_id: META_PIXEL_ID, custom_event_type: v.event },
       targeting,
       advantage_audience: 1,

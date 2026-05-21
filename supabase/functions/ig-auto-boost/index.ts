@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
   const targeting = {
     age_min: 25,
     age_max: 65,
-    geo_locations: { country_codes: ["US"] },
+    geo_locations: { countries: ["US"] },
     excluded_geo_locations: {
       regions: (cfg.excluded_region_keys as string[]).map((k) => ({ key: k })),
     },

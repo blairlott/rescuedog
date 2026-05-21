@@ -33,6 +33,7 @@ import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInte
 import { CartLineSizePicker } from "@/components/cart/CartLineSizePicker";
 import { addLinesAndGoToHostedCart } from "@/lib/vinoshipperInjector";
 import { recordCheckoutIntent } from "@/lib/abCheckoutIntent";
+import { VS_FLAT_SHIPPING_MIN_BOTTLES, VS_FLAT_SHIPPING_USD } from "@/lib/vinoshipperConfig";
 import { supabase } from "@/integrations/supabase/client";
 
 const LAST_ORDER_KEY = "rdw_last_order";

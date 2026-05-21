@@ -7586,6 +7586,7 @@ export type Database = {
           priority: number
           segment: Json
           slot_key: string
+          source: string
           updated_at: string
           variant_config: Json
         }
@@ -7598,6 +7599,7 @@ export type Database = {
           priority?: number
           segment?: Json
           slot_key: string
+          source?: string
           updated_at?: string
           variant_config?: Json
         }
@@ -7610,8 +7612,36 @@ export type Database = {
           priority?: number
           segment?: Json
           slot_key?: string
+          source?: string
           updated_at?: string
           variant_config?: Json
+        }
+        Relationships: []
+      }
+      personalization_segments: {
+        Row: {
+          first_seen: string
+          last_seen: string
+          segment: Json
+          user_id: string | null
+          visit_count: number
+          visitor_id: string
+        }
+        Insert: {
+          first_seen?: string
+          last_seen?: string
+          segment?: Json
+          user_id?: string | null
+          visit_count?: number
+          visitor_id: string
+        }
+        Update: {
+          first_seen?: string
+          last_seen?: string
+          segment?: Json
+          user_id?: string | null
+          visit_count?: number
+          visitor_id?: string
         }
         Relationships: []
       }
@@ -8206,6 +8236,123 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      site_intel_decisions: {
+        Row: {
+          after_state: Json | null
+          applied_by: string
+          before_state: Json | null
+          created_at: string
+          decision_type: string
+          evidence: Json
+          id: string
+          rationale: string
+          reverted_at: string | null
+          run_at: string
+          status: string
+          surface: string
+        }
+        Insert: {
+          after_state?: Json | null
+          applied_by?: string
+          before_state?: Json | null
+          created_at?: string
+          decision_type: string
+          evidence?: Json
+          id?: string
+          rationale: string
+          reverted_at?: string | null
+          run_at?: string
+          status?: string
+          surface: string
+        }
+        Update: {
+          after_state?: Json | null
+          applied_by?: string
+          before_state?: Json | null
+          created_at?: string
+          decision_type?: string
+          evidence?: Json
+          id?: string
+          rationale?: string
+          reverted_at?: string | null
+          run_at?: string
+          status?: string
+          surface?: string
+        }
+        Relationships: []
+      }
+      site_intel_events: {
+        Row: {
+          created_at: string
+          device: string | null
+          dwell_ms: number | null
+          event_type: string
+          id: number
+          metadata: Json
+          path: string
+          referrer: string | null
+          scroll_pct: number | null
+          section_key: string | null
+          selector: string | null
+          session_id: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          vh: number | null
+          visitor_id: string
+          vw: number | null
+          x_pct: number | null
+          y_pct: number | null
+        }
+        Insert: {
+          created_at?: string
+          device?: string | null
+          dwell_ms?: number | null
+          event_type: string
+          id?: number
+          metadata?: Json
+          path: string
+          referrer?: string | null
+          scroll_pct?: number | null
+          section_key?: string | null
+          selector?: string | null
+          session_id?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          vh?: number | null
+          visitor_id: string
+          vw?: number | null
+          x_pct?: number | null
+          y_pct?: number | null
+        }
+        Update: {
+          created_at?: string
+          device?: string | null
+          dwell_ms?: number | null
+          event_type?: string
+          id?: number
+          metadata?: Json
+          path?: string
+          referrer?: string | null
+          scroll_pct?: number | null
+          section_key?: string | null
+          selector?: string | null
+          session_id?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          vh?: number | null
+          visitor_id?: string
+          vw?: number | null
+          x_pct?: number | null
+          y_pct?: number | null
+        }
+        Relationships: []
       }
       sku_catalog: {
         Row: {
@@ -10904,6 +11051,29 @@ export type Database = {
           ledger_id: string
           new_balance: number
           points_awarded: number
+        }[]
+      }
+      site_intel_heatmap: {
+        Args: {
+          _event_type?: string
+          _grid?: number
+          _path: string
+          _since?: string
+        }
+        Returns: {
+          hits: number
+          x_bucket: number
+          y_bucket: number
+        }[]
+      }
+      site_intel_section_summary: {
+        Args: { _path?: string; _since?: string }
+        Returns: {
+          avg_dwell_ms: number
+          path: string
+          rage_clicks: number
+          section_key: string
+          views: number
         }[]
       }
       validate_discount_code: {

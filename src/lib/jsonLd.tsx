@@ -92,7 +92,7 @@ export function winerySchema() {
     url: "https://rescuedogwines.com",
     logo: "https://rescuedogwines.com/rdw-logo.png",
     description:
-      "Family-owned, sustainably-farmed Lodi, California winery. A portion of every bottle helps rescue dogs find their forever home.",
+      "Family-owned, sustainably-farmed Lodi, California winery. 50% of profits support 501(c)(3) dog-rescue partners helping dogs find their forever home.",
     address: {
       "@type": "PostalAddress",
       addressRegion: "CA",

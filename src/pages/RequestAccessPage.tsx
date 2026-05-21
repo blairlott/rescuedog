@@ -13,6 +13,7 @@ export default function RequestAccessPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const areaKey = params.get("area") || "";
+  const requestedLevel = (params.get("level") === "edit" ? "edit" : "access") as "access" | "edit";
   const area = findArea(areaKey);
 
   const [roles, setRoles] = useState<string[]>([]);
@@ -51,6 +52,10 @@ export default function RequestAccessPage() {
   const submit = async () => {
     if (!user || !area) return;
     setSubmitting(true);
+    const composedMessage = [
+      requestedLevel === "edit" ? "[Elevated edit/admin access requested]" : null,
+      message.trim() || null,
+    ].filter(Boolean).join("\n\n");
     const { data, error } = await supabase
       .from("access_requests")
       .insert({
@@ -58,7 +63,7 @@ export default function RequestAccessPage() {
         user_email: user.email ?? null,
         user_name: user.full_name ?? null,
         requested_area: area.key,
-        message: message.trim() || null,
+        message: composedMessage || null,
       })
       .select("id")
       .single();
@@ -69,6 +74,32 @@ export default function RequestAccessPage() {
     }
     setExistingRequestId(data.id);
     toast.success("Access request submitted");
+
+    // Fire-and-forget admin email + in-app notification. Test-mode email
+    // routing (see mem/features/email-test-mode) sends this only to Blair + Lindy.
+    try {
+      await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          template_name: "access-request-admin-notification",
+          to: "blair.lott@rescuedogwines.com",
+          purpose: "transactional",
+          idempotency_key: `access-req-${data.id}`,
+          template_data: {
+            userName: user.full_name || user.email,
+            userEmail: user.email,
+            currentRoles: roles.length ? roles.join(", ") : "(none)",
+            requestedArea: area.title,
+            requestedRole: requestedLevel === "edit" ? "full edit / admin for this area" : "access to this area",
+            message: message.trim() || undefined,
+            reviewUrl: `${window.location.origin}/admin`,
+          },
+        },
+      });
+    } catch (err) {
+      // Non-blocking — the row is already in access_requests so the admin
+      // banner will still surface the request on next login.
+      console.warn("access-request email notify failed", err);
+    }
   };
 
   return (
@@ -109,7 +140,9 @@ export default function RequestAccessPage() {
           ) : (
             <>
               <p className="text-sm text-muted-foreground mb-6">
-                You don't currently have access to <strong>{area.title}</strong>. Submit a request and an admin will review it.
+                {requestedLevel === "edit"
+                  ? <>You have read-only access to <strong>{area.title}</strong>. Request full edit / admin access and Blair will review it.</>
+                  : <>You don't currently have access to <strong>{area.title}</strong>. Submit a request and an admin will review it.</>}
               </p>
               <div className="space-y-4">
                 <div>
@@ -123,7 +156,11 @@ export default function RequestAccessPage() {
                   />
                 </div>
                 <Button onClick={submit} disabled={submitting} className="w-full">
-                  {submitting ? "Submitting…" : `Request access to ${area.title}`}
+                  {submitting
+                    ? "Submitting…"
+                    : requestedLevel === "edit"
+                      ? `Request full access to ${area.title}`
+                      : `Request access to ${area.title}`}
                 </Button>
               </div>
             </>

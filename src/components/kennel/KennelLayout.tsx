@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History, Activity, Sparkles, ShoppingBag, ShoppingCart, Search, Radar } from "lucide-react";
+import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History, Activity, Sparkles, ShoppingBag, ShoppingCart, Search, Radar, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -24,6 +24,7 @@ const NAV = [
   { to: "/kennel/instacart-ads", label: "Instacart Ads", icon: ShoppingCart, end: false, viewerOk: false },
   { to: "/kennel/keywords", label: "Keyword Optimizer", icon: Search, end: false, viewerOk: false },
   { to: "/kennel/platform-radar", label: "Platform Radar", icon: Radar, end: false, viewerOk: false },
+  { to: "/kennel/autonomy", label: "Autonomy", icon: Bot, end: false, viewerOk: false },
 ];
 
 export function KennelLayout() {

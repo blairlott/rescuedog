@@ -27,9 +27,10 @@ Deno.serve(async (req) => {
   if (cfgErr || !cfg) return json({ ok: false, error: "config missing", cfgErr }, 500);
 
   // Pull recent IG posts + insights
-  const igUrl = `https://graph.facebook.com/v19.0/${cfg.ig_user_id}/media` +
+  const igUrl = `https://graph.facebook.com/v21.0/${cfg.ig_user_id}/media` +
     `?fields=id,media_type,permalink,caption,timestamp,` +
-    `insights.metric(impressions,reach,likes,comments,shares,saved)` +
+    `like_count,comments_count,` +
+    `insights.metric(reach,saved,shares,views,total_interactions)` +
     `&limit=25&access_token=${encodeURIComponent(META_TOKEN)}`;
   const igRes = await fetch(igUrl);
   const igJson = await igRes.json().catch(() => ({}));

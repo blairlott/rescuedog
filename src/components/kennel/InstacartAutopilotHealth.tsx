@@ -858,7 +858,7 @@ function B2BAutoStopSettings({
                 </thead>
                 <tbody>
                    {rows.map((r, idx) => (
-                    <React.Fragment key={r.accountId}>
+                    <Fragment key={r.accountId}>
                     <tr className="border-t border-border">
                       <td className="p-2 font-mono">{r.accountId}</td>
                       <td className="p-2">
@@ -969,7 +969,7 @@ function B2BAutoStopSettings({
                         </td>
                       </tr>
                     )}
-                    </React.Fragment>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

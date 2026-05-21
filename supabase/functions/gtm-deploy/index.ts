@@ -126,11 +126,7 @@ Deno.serve(async (req) => {
   // GET = probe scopes only
   if (req.method === "GET") {
     const ti = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(token)}`);
-    const tokeninfo = await ti.json().catch(() => ({}));
-    // Also probe workspace 45 list workspaces + variables to see what this token actually sees.
-    const wsList = await gtm(`accounts/6001966416/containers/181437300/workspaces`, token);
-    const varsList = await gtm(`accounts/6001966416/containers/181437300/workspaces/45/variables`, token);
-    return json({ tokeninfo_status: ti.status, tokeninfo, wsList, varsList });
+    return json({ tokeninfo_status: ti.status, tokeninfo: await ti.json().catch(() => ({})) });
   }
 
   // Step 1a: find account + container

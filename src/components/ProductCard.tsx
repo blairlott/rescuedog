@@ -189,7 +189,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <h3 className="text-sm font-medium text-foreground tracking-brand leading-snug line-clamp-2 min-h-[2.5rem] group-hover:text-primary transition-colors duration-200">
           <T>{node.title}</T>
         </h3>
-        {isMember && !isSampler && isWine ? (
+        {!isSampler && isWine ? (
           <div className="min-h-[2.75rem]">
             <p className="text-foreground">
               <span className="text-[10px] align-top leading-none">$</span>
@@ -197,7 +197,9 @@ export function ProductCard({ product }: ProductCardProps) {
               <span className="text-[10px] align-top leading-none">.{Math.round((memberPrice - Math.floor(memberPrice)) * 100).toString().padStart(2, '0')}</span>
               <span className="text-[10px] text-muted-foreground line-through ml-2">${priceNum.toFixed(2)}</span>
             </p>
-            <p className="text-[10px] uppercase tracking-brand text-primary font-bold">Your Member Price</p>
+            <p className="text-[10px] uppercase tracking-brand text-primary font-bold">
+              {isMember ? "Your Member Price" : "Pack Member Price (20% off)"}
+            </p>
           </div>
         ) : (
           <p className="text-foreground min-h-[1.5rem]">
@@ -216,7 +218,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/club"); }}
                 className="hover:text-primary transition-colors underline-offset-2 hover:underline"
               >
-                Club Price: ${(priceNum * 0.8).toFixed(2)}
+                Join The Pack — free
               </button>
             </p>
           ) : null}

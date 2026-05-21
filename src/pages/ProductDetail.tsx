@@ -127,6 +127,12 @@ const ProductDetail = () => {
     titleLower.includes("6 bottle") ||
     titleLower.includes("6-bottle");
   const memberDiscountApplies = isMember && !isSamplerBundle;
+  // Passive teaser: show member pricing to ALL visitors on wine, since the
+  // real discount is applied at Vinoshipper checkout (members log in on VS,
+  // not on our site). Sampler bundles are excluded from member pricing.
+  const showMemberTeaser = !isMerch && !isSamplerBundle;
+  const teaserDiscountPct = isMember ? (discountPercent || 20) : 20;
+  const teaserUnitPrice = variantPrice * (1 - teaserDiscountPct / 100);
   const variantPrice = parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount);
   const memberUnitPrice = variantPrice * (1 - (discountPercent || 20) / 100);
   const lineTotal = variantPrice * quantity;
@@ -303,16 +309,18 @@ const ProductDetail = () => {
                   {product.title}
                 </h1>
 
-                  {memberDiscountApplies ? (
+                  {showMemberTeaser ? (
                     <div>
                       <p className="text-2xl font-bold text-primary">
-                        ${memberUnitPrice.toFixed(2)}
+                        ${teaserUnitPrice.toFixed(2)}
                         <span className="text-sm text-muted-foreground line-through ml-2 font-normal">
                           ${variantPrice.toFixed(2)}
                         </span>
                       </p>
                       <p className="text-[11px] uppercase tracking-brand text-primary font-bold mt-1">
-                        Your Member Price ({discountPercent}% off)
+                        {isMember
+                          ? `Your Member Price (${teaserDiscountPct}% off)`
+                          : `Pack Member Price (${teaserDiscountPct}% off) — applied at checkout`}
                       </p>
                     </div>
                   ) : (

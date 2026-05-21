@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Upload, Sparkles, Image as ImageIcon, Film, Type, KeyRound, ExternalLink, Download } from "lucide-react";
+import { Loader2, Upload, Sparkles, Image as ImageIcon, Film, Type, KeyRound, ExternalLink, Download, Instagram } from "lucide-react";
 
 const RATIOS: { id: string; label: string; group: string }[] = [
   { id: "1:1", label: "Meta Feed / Carrot / Instacart (1:1)", group: "Social" },
@@ -260,6 +260,27 @@ export default function KennelCreativeStudioPage() {
             Upload one image → AI recompose for every platform, generate copy variants, and render a branded Ken Burns video.
           </p>
         </div>
+        <Button
+          variant="outline"
+          onClick={async () => {
+            const handle = window.prompt("Instagram handle to pull seeds from:", "rescuedogwines");
+            if (!handle) return;
+            toast.message("Pulling latest Instagram posts…");
+            try {
+              const { data, error } = await supabase.functions.invoke("capi-instagram-import", {
+                body: { handle: handle.trim(), limit: 12, brand_lockup: brand === "merch" ? "merch" : "wine" },
+              });
+              if (error) throw error;
+              toast.success(
+                `Imported ${data?.imported ?? 0} seeds from @${handle}. Open the CMS → Creative tab → Seed Library to refine or push into a job.`,
+              );
+            } catch (e: any) {
+              toast.error("Instagram import failed: " + e.message);
+            }
+          }}
+        >
+          <Instagram className="h-4 w-4 mr-2" /> Pull from Instagram
+        </Button>
       </div>
 
       {setupChecked && !creatomateReady && (

@@ -53,6 +53,7 @@ Deno.serve(async (req) => {
         "instacart_autopilot_max_bid_change_pct",
         "instacart_autopilot_daily_action_cap",
         "instacart_autopilot_allowed_actions",
+        "instacart_autopilot_negative_category_allowlist",
       ]);
     const cfg: Record<string, any> = {};
     (settings ?? []).forEach((r: any) => { cfg[r.key] = r.value; });
@@ -64,6 +65,9 @@ Deno.serve(async (req) => {
     const allowed: string[] = Array.isArray(cfg.instacart_autopilot_allowed_actions)
       ? cfg.instacart_autopilot_allowed_actions
       : ["raise_bid", "lower_bid", "pause", "add_negative"];
+    const negativeAllowlist: string[] = (Array.isArray(cfg.instacart_autopilot_negative_category_allowlist)
+      ? cfg.instacart_autopilot_negative_category_allowlist
+      : []).map((s: any) => String(s).toLowerCase().trim()).filter(Boolean);
 
     if (!enabled) {
       return J(200, { ok: true, skipped: "autopilot_disabled" });
@@ -113,22 +117,55 @@ Deno.serve(async (req) => {
         }
         // Resolve the local keyword id by (platform, keyword, match_type).
         const { data: kw } = await admin.from("ad_keywords")
-          .select("id").eq("platform_slug", "instacart").eq("keyword", p.keyword)
+          .select("id, campaign_id").eq("platform_slug", "instacart").eq("keyword", p.keyword)
           .eq("match_type", String(p.match_type ?? "broad").toLowerCase()).maybeSingle();
         if (!kw) { results.push({ id: rec.id, skipped: "keyword_not_found" }); continue; }
+        // Guardrail: never change bids on paused campaigns.
+        if (kw.campaign_id) {
+          const { data: camp } = await admin.from("ad_campaigns")
+            .select("status").eq("id", kw.campaign_id).maybeSingle();
+          const st = String(camp?.status ?? "").toLowerCase();
+          if (st === "paused" || st === "disabled" || st === "archived") {
+            results.push({ id: rec.id, skipped: `campaign_${st}_bid_change_blocked` });
+            continue;
+          }
+        }
         body = { action: "set_keyword_bid", keyword_id: kw.id, bid_cents: sug, recommendation_id: rec.id };
       } else if (p.action === "pause") {
         const { data: kw } = await admin.from("ad_keywords")
-          .select("id").eq("platform_slug", "instacart").eq("keyword", p.keyword)
+          .select("id, campaign_id").eq("platform_slug", "instacart").eq("keyword", p.keyword)
           .eq("match_type", String(p.match_type ?? "broad").toLowerCase()).maybeSingle();
         if (!kw) { results.push({ id: rec.id, skipped: "keyword_not_found" }); continue; }
+        if (kw.campaign_id) {
+          const { data: camp } = await admin.from("ad_campaigns")
+            .select("status").eq("id", kw.campaign_id).maybeSingle();
+          const st = String(camp?.status ?? "").toLowerCase();
+          if (st === "paused" || st === "disabled" || st === "archived") {
+            results.push({ id: rec.id, skipped: `campaign_${st}_pause_blocked` });
+            continue;
+          }
+        }
         body = { action: "pause_keyword", keyword_id: kw.id, recommendation_id: rec.id };
       } else if (p.action === "add_negative") {
         // Need a campaign_id on the payload; otherwise skip.
         if (!p.campaign_external_id) { results.push({ id: rec.id, skipped: "no_campaign" }); continue; }
         const { data: c } = await admin.from("ad_campaigns")
-          .select("id").eq("platform_slug", "instacart").eq("external_id", p.campaign_external_id).maybeSingle();
+          .select("id, status, objective, metadata").eq("platform_slug", "instacart").eq("external_id", p.campaign_external_id).maybeSingle();
         if (!c) { results.push({ id: rec.id, skipped: "campaign_not_found" }); continue; }
+        // Guardrail: category allowlist for negative keywords.
+        const category = String(
+          (c as any).metadata?.category ??
+          (c as any).metadata?.product_category ??
+          (c as any).objective ?? "",
+        ).toLowerCase().trim();
+        if (negativeAllowlist.length === 0) {
+          results.push({ id: rec.id, skipped: "negative_allowlist_empty" });
+          continue;
+        }
+        if (!category || !negativeAllowlist.includes(category)) {
+          results.push({ id: rec.id, skipped: `category_${category || "unknown"}_not_in_negative_allowlist` });
+          continue;
+        }
         body = {
           action: "add_negative_keyword", campaign_id: c.id,
           keyword: p.keyword, match_type: p.match_type ?? "phrase",

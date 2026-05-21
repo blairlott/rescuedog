@@ -66,10 +66,6 @@ const WineClubPage = () => {
   };
 
   const handleSelectTier = (tier: WineClubTier) => {
-    if (!user) {
-      navigate("/login?redirect=/club");
-      return;
-    }
     setSelectedTier(tier);
   };
 
@@ -192,29 +188,17 @@ const WineClubPage = () => {
                     ) : null}
 
                     {!user && (
-                      <div className="mt-8 max-w-md mx-auto border border-border bg-background p-6 text-center">
-                        <p className="text-sm text-muted-foreground mb-4">
-                          You'll need an account to join a wine club.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                          <Button
-                            onClick={() => navigate("/login?redirect=/club")}
-                            className="flex-1 uppercase tracking-brand text-sm font-bold"
-                          >
-                            Sign In
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => navigate("/signup?redirect=/club")}
-                            className="flex-1 uppercase tracking-brand text-sm font-bold"
-                          >
-                            Create Account
-                          </Button>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">
-                          Your Rescue Dog Wines account is automatically linked to Vinoshipper for shipping, age verification, and secure payment.
-                        </p>
-                      </div>
+                      <p className="mt-8 text-center text-xs text-muted-foreground max-w-md mx-auto">
+                        Already a member?{" "}
+                        <button
+                          type="button"
+                          onClick={() => navigate("/login?redirect=/club")}
+                          className="underline hover:text-foreground"
+                        >
+                          Sign in
+                        </button>{" "}
+                        — otherwise pick a club and we'll set up your account as you join.
+                      </p>
                     )}
                   </>
                 )}

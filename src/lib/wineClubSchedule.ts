@@ -59,14 +59,33 @@ export function getNextShipmentDateForFrequency(frequency: string | null | undef
   return iso(monthly);
 }
 
-/** Human label for the cadence (e.g. "Ships quarterly · next ~Feb 4"). */
+/**
+ * Returns the human window the next shipment is targeted for — never a
+ * specific date. Ship timing flexes with weather and we don't want to
+ * lock members into a date we may need to move.
+ */
+export function describeNextShipmentWindow(frequency: string | null | undefined): string {
+  const f = (frequency ?? "").toLowerCase();
+
+  if (f.includes("year")) return "around Thanksgiving";
+  if (f.includes("month")) return "later this month";
+
+  // Quarterly / bi-annual share the same holiday targets; pick whichever is next.
+  const targets = f.includes("bi") || f.includes("semi") ? BIANNUAL_SHIP_DAYS : QUARTERLY_SHIP_DAYS;
+  const next = nextFromTargets(targets);
+  const m = next.getMonth();
+  if (m === 0 || m === 1) return "before Valentine's Day";
+  if (m === 2 || m === 3 || m === 4) return "before Mother's Day";
+  if (m === 5 || m === 6 || m === 7) return "around the end of summer";
+  return "before Thanksgiving";
+}
+
+/** Cadence label without committing to a specific date. */
 export function describeShipmentCadence(frequency: string | null | undefined): string {
   const f = (frequency ?? "").toLowerCase();
-  const next = getNextShipmentDateForFrequency(frequency);
-  const nice = new Date(next + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
-  if (f.includes("year")) return `Yearly shipment · arrives around Thanksgiving (next ships ~${nice})`;
-  if (f.includes("bi") || f.includes("semi")) return `Bi-Annual shipments · next ships ~${nice}`;
-  if (f.includes("quarter")) return `Quarterly shipments · next ships ~${nice}`;
-  return `Monthly shipments · next ships ~${nice}`;
+  const window = describeNextShipmentWindow(frequency);
+  if (f.includes("year")) return `Yearly shipment · arrives ${window}`;
+  if (f.includes("bi") || f.includes("semi")) return `Bi-Annual shipments · next arrives ${window}`;
+  if (f.includes("quarter")) return `Quarterly shipments · next arrives ${window}`;
+  return `Monthly shipments · next arrives ${window}`;
 }

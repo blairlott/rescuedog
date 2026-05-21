@@ -21,8 +21,9 @@ type DayPoint = {
   projected: number;
 };
 
-const GROWTH_MAP: Record<string, number> = { flat: 0, g10: 0.10, g25: 0.25 };
-const GROWTH_LABELS: Record<string, string> = { flat: "Flat 0%/yr", g10: "+10%/yr", g25: "+25%/yr" };
+// National launch baseline: medium trajectory anchored at +25%/yr.
+const GROWTH_MAP: Record<string, number> = { flat: 0, g25: 0.25, g50: 0.50 };
+const GROWTH_LABELS: Record<string, string> = { flat: "Flat 0%/yr", g25: "+25%/yr (medium)", g50: "+50%/yr (high)" };
 const BM_FACT_CHANNELS = ["brick_mortar_off", "brick_mortar_on", "distributor_depletion"];
 
 function buildActualRevenueMap(

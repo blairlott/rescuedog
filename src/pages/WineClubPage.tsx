@@ -10,7 +10,6 @@ import { useWineClubTiers, useMyMembership } from "@/hooks/useWineClub";
 import type { WineClubTier } from "@/hooks/useWineClub";
 import { VinoshipperInlineSignup } from "@/components/wine-club/VinoshipperInlineSignup";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
-import { GiftMembershipDialog } from "@/components/wine-club/GiftMembershipDialog";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { Link, useNavigate } from "react-router-dom";
 import { Seo } from "@/components/Seo";
@@ -41,7 +40,6 @@ const WineClubPage = () => {
   const { content, upsert } = useCmsContent("wine_club");
   const [editSection, setEditSection] = useState<EditSection>(null);
   const [editFaqIdx, setEditFaqIdx] = useState<number | null>(null);
-  const [giftDialogOpen, setGiftDialogOpen] = useState(false);
 
   const { user } = useCustomerAuth();
   const navigate = useNavigate();
@@ -243,7 +241,6 @@ const WineClubPage = () => {
       </main>
       <Footer />
 
-      <GiftMembershipDialog open={giftDialogOpen} onOpenChange={setGiftDialogOpen} />
 
       {/* CMS Edit Dialogs */}
       {editSection && sectionFields[editSection] && (

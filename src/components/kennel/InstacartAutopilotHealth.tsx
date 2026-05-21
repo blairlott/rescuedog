@@ -51,6 +51,11 @@ export function InstacartAutopilotHealth() {
           "instacart_autopilot_b2b_mode",
           "instacart_autopilot_b2b_max_bid_change_pct",
           "instacart_autopilot_b2b_daily_cap",
+          "instacart_autopilot_max_error_rate_pct",
+          "instacart_autopilot_min_roas",
+          "instacart_autopilot_roas_window_days",
+          "instacart_autopilot_error_rate_window",
+          "instacart_autopilot_min_actions_for_eval",
         ]);
       return (data as any[]) ?? [];
     },
@@ -65,6 +70,11 @@ export function InstacartAutopilotHealth() {
       b2bMode: (m.instacart_autopilot_b2b_mode ?? "include") as "include" | "exclude" | "only",
       b2bMaxBidPct: Number(m.instacart_autopilot_b2b_max_bid_change_pct ?? 10),
       b2bDailyCap: Number(m.instacart_autopilot_b2b_daily_cap ?? 5),
+      maxErrorPct: Number(m.instacart_autopilot_max_error_rate_pct ?? 25),
+      minRoas: Number(m.instacart_autopilot_min_roas ?? 1.5),
+      roasWindowDays: Number(m.instacart_autopilot_roas_window_days ?? 7),
+      errorWindow: Number(m.instacart_autopilot_error_rate_window ?? 50),
+      minActions: Number(m.instacart_autopilot_min_actions_for_eval ?? 10),
     };
   }, [settings]);
 
@@ -93,6 +103,42 @@ export function InstacartAutopilotHealth() {
     const stopped = !!cfg.stoppedAt && !cfg.enabled;
     return { executed24, b2b24, errPct, roas, stopped };
   }, [last24, latest, cfg]);
+
+  // Kill-switch risk assessment: classify each switch as tripped / at_risk / ok / unknown.
+  const risk = useMemo(() => {
+    const errPct = latest?.error_pct;
+    const errSample = latest?.error_sample ?? 0;
+    const roas = latest?.trailing_roas == null ? null : Number(latest.trailing_roas);
+    const spend = (latest?.trailing_spend_cents ?? 0) / 100;
+
+    // Error-rate switch
+    let errStatus: "ok" | "at_risk" | "tripped" | "unknown" = "unknown";
+    if (errPct != null && errSample >= cfg.minActions) {
+      if (errPct >= cfg.maxErrorPct) errStatus = "tripped";
+      else if (errPct >= cfg.maxErrorPct * 0.75) errStatus = "at_risk";
+      else errStatus = "ok";
+    } else if (errPct != null) {
+      errStatus = "ok"; // sample too small to trip
+    }
+
+    // ROAS switch (needs $100 trailing spend)
+    let roasStatus: "ok" | "at_risk" | "tripped" | "unknown" = "unknown";
+    if (roas != null && spend >= 100) {
+      if (roas < cfg.minRoas) roasStatus = "tripped";
+      else if (roas < cfg.minRoas * 1.15) roasStatus = "at_risk";
+      else roasStatus = "ok";
+    } else if (roas != null) {
+      roasStatus = "ok";
+    }
+    return { errStatus, roasStatus, errPct, roas, spend, errSample };
+  }, [latest, cfg]);
+
+  const riskBadge = (s: "ok" | "at_risk" | "tripped" | "unknown") => {
+    if (s === "tripped") return <Badge variant="destructive" className="text-[10px]">TRIPPED</Badge>;
+    if (s === "at_risk") return <Badge className="text-[10px] bg-amber-500 hover:bg-amber-500/90 text-white">AT RISK</Badge>;
+    if (s === "ok") return <Badge variant="default" className="text-[10px]">OK</Badge>;
+    return <Badge variant="secondary" className="text-[10px]">NO DATA</Badge>;
+  };
 
   async function setSetting(key: string, value: any) {
     const { error } = await supabase.from("app_settings" as any)
@@ -183,6 +229,79 @@ export function InstacartAutopilotHealth() {
           value={tiles.roas == null ? "—" : `${Number(tiles.roas).toFixed(2)}x`}
         />
       </div>
+
+      {/* Kill switch risk tiles */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm uppercase tracking-brand flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" /> Kill Switch Risk
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Live comparison of the latest evaluation against configured auto-stop thresholds.
+            "At risk" = within 15–25% of tripping.
+          </p>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="border border-border p-4 bg-card" style={{ borderRadius: 0 }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs uppercase tracking-brand text-muted-foreground font-semibold">
+                Error-rate switch
+              </div>
+              {riskBadge(risk.errStatus)}
+            </div>
+            <div className="text-2xl font-bold tabular-nums">
+              {risk.errPct == null ? "—" : `${risk.errPct.toFixed(1)}%`}
+              <span className="text-xs text-muted-foreground font-normal ml-2">
+                / {cfg.maxErrorPct}% max
+              </span>
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              Window: last {cfg.errorWindow} runs · sample {risk.errSample}/{cfg.minActions} min
+            </div>
+          </div>
+
+          <div className="border border-border p-4 bg-card" style={{ borderRadius: 0 }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs uppercase tracking-brand text-muted-foreground font-semibold">
+                ROAS switch
+              </div>
+              {riskBadge(risk.roasStatus)}
+            </div>
+            <div className="text-2xl font-bold tabular-nums">
+              {risk.roas == null ? "—" : `${risk.roas.toFixed(2)}x`}
+              <span className="text-xs text-muted-foreground font-normal ml-2">
+                / {cfg.minRoas.toFixed(2)}x min
+              </span>
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              Window: trailing {cfg.roasWindowDays}d · spend ${risk.spend.toFixed(0)} (need $100+)
+            </div>
+          </div>
+
+          <div className="border border-border p-4 bg-card" style={{ borderRadius: 0 }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs uppercase tracking-brand text-muted-foreground font-semibold">
+                Overall posture
+              </div>
+              {tiles.stopped
+                ? <Badge variant="destructive" className="text-[10px]">AUTO-STOPPED</Badge>
+                : risk.errStatus === "tripped" || risk.roasStatus === "tripped"
+                  ? <Badge variant="destructive" className="text-[10px]">WILL STOP</Badge>
+                  : risk.errStatus === "at_risk" || risk.roasStatus === "at_risk"
+                    ? <Badge className="text-[10px] bg-amber-500 hover:bg-amber-500/90 text-white">AT RISK</Badge>
+                    : <Badge variant="default" className="text-[10px]">HEALTHY</Badge>}
+            </div>
+            <div className="text-2xl font-bold">
+              {tiles.stopped ? "Stopped" :
+                risk.errStatus === "tripped" || risk.roasStatus === "tripped" ? "Will trip" :
+                risk.errStatus === "at_risk" || risk.roasStatus === "at_risk" ? "Watch" : "Clear"}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              {latest ? `Last eval ${new Date(latest.ran_at).toLocaleTimeString()}` : "No evaluations yet"}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* B2B controls */}
       <Card>

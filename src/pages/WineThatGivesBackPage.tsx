@@ -9,7 +9,7 @@ const FAQS = [
   {
     question: "What is charity wine?",
     answer:
-      "Charity wine is wine produced by a winery that donates a portion of every bottle sold to a nonprofit cause. Rescue Dog Wines directs 50% of profits to animal-rescue partners helping dogs find their forever home.",
+      "Charity wine is wine produced by a winery that routes profits from every bottle sold to a nonprofit cause. Rescue Dog Wines directs 50% of profits to 501(c)(3) animal-rescue partners helping dogs find their forever home.",
   },
   {
     question: "Which wines give back the most to charity?",

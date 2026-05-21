@@ -90,7 +90,7 @@ export default function PoliciesPage() {
                   name: "How does buying wine help dog rescue?",
                   acceptedAnswer: {
                     "@type": "Answer",
-                    text: "A portion of every bottle sold is contributed to companion-animal welfare organizations and rescue partners we work with directly, supporting our mission of helping dogs find their forever home.",
+                    text: "50% of profits are directed to 501(c)(3) companion-animal welfare organizations and rescue partners we work with directly, supporting our mission of helping dogs find their forever home.",
                   },
                 },
                 {

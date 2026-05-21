@@ -47,7 +47,7 @@ export const MOCK_PAGES: WpPage[] = [
   {
     id: 3, slug: "mission", modified: now,
     title: { rendered: "Mission" },
-    content: { rendered: "<p>A portion of every bottle funds rescue partners nationwide.</p>" },
+    content: { rendered: "<p>50% of profits fund 501(c)(3) rescue partners nationwide.</p>" },
   },
   {
     id: 4, slug: "vineyard", modified: now,

@@ -3,10 +3,12 @@
 ## Core
 - Stack: Vinoshipper = wine checkout + payments (compliance + card-on-file). Shopify (rescuedoggear / gear.rescuedog.com) = LIVE merch catalog + merch checkout. Lovable Cloud (Supabase) = auth/CRM/wine-club/CMS. WordPress on Cloudways = legacy content + wine copy joined by SKU.
 - Forked unified cart: wine items → Vinoshipper deep-link checkout, merch items → Shopify hosted checkout. Customer is told they complete two transactions. ALL wine orders (à la carte + club) still flow through Vinoshipper. No Stripe.
-- Wine club: 14 tiers, FREE to join, FLAT 20% off all orders (not tiered), cancel anytime.
+- Wine club ("The Pack"): 14 tiers, FREE to join, cancel anytime. Member pricing: 20% off à la carte wine for logged-in members; 20% off monthly/quarterly shipments; 25% off the yearly case shipment.
 - NEVER say "free shipping" — ALWAYS use "shipping included".
-- Wine club: Vinoshipper identifies members and auto-applies 20% off everything. Shipping included on cadence shipments only — NOT à la carte.
-- Wine club: 14 tiers, free to join. Members auto-get 20% off ALL orders. Shipping included on scheduled club shipments only — NOT on à la carte.
+- Wine club discounts are applied at **Vinoshipper checkout** — members authenticate on Vinoshipper, NOT on our site. Our PDPs show member pricing as a passive teaser to all wine viewers.
+- Shipping included on cadence shipments only — NOT on à la carte.
+- PRE-LAUNCH: Rewards Program + Referral Program are disabled via `dev_toggles` (`account_features.rewards_program`, `account_features.referral_program`). Re-enable post-launch via CMS → Dev Controls.
+- Mission framing: "helping dogs find their forever home." Qualitative only — NEVER show counters, totals, or quantified impact.
 - Dual brand: high-def Rescue Dog logo/merch-only on /merch; Black RDW logo on wine site.
 - Colors: Red #c30017, Black, Grey. Fonts: Nunito Sans, Avenir Next. Flat/sharp edges (border-radius: 0).
 - Age gate required for wine routes; bypassed for /merch, /crm, /cms.

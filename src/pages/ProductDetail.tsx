@@ -127,16 +127,16 @@ const ProductDetail = () => {
     titleLower.includes("6 bottle") ||
     titleLower.includes("6-bottle");
   const memberDiscountApplies = isMember && !isSamplerBundle;
-  // Passive teaser: show member pricing to ALL visitors on wine, since the
-  // real discount is applied at Vinoshipper checkout (members log in on VS,
-  // not on our site). Sampler bundles are excluded from member pricing.
-  const showMemberTeaser = !isMerch && !isSamplerBundle;
-  const teaserDiscountPct = isMember ? (discountPercent || 20) : 20;
-  const teaserUnitPrice = variantPrice * (1 - teaserDiscountPct / 100);
   const variantPrice = parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount);
   const memberUnitPrice = variantPrice * (1 - (discountPercent || 20) / 100);
   const lineTotal = variantPrice * quantity;
   const memberLineTotal = memberUnitPrice * quantity;
+  // Passive teaser: show member pricing to ALL wine viewers since the real
+  // discount is applied at Vinoshipper checkout (members log in on VS, not
+  // on our site). Sampler bundles are excluded from member pricing.
+  const showMemberTeaser = !isMerch && !isSamplerBundle;
+  const teaserDiscountPct = isMember ? (discountPercent || 20) : 20;
+  const teaserUnitPrice = variantPrice * (1 - teaserDiscountPct / 100);
 
   const handleAddToCart = async (opts?: { buyNow?: boolean }) => {
     if (!selectedVariant) return;

@@ -221,6 +221,16 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    if (e instanceof UnsupportedSiteError) {
+      return new Response(JSON.stringify({
+        ok: false,
+        imported: 0,
+        skipped: 0,
+        error: "UNSUPPORTED_SITE",
+        message: "Firecrawl does not support scraping Instagram directly. Use the Instagram Graph API, an oEmbed feed, or upload assets manually to the seed library.",
+        fallback: true,
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

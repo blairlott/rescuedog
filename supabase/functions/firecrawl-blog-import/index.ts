@@ -161,7 +161,13 @@ Deno.serve(async (req) => {
           .replace(/^## (.+)$/gm, "<h2>$1</h2>")
           .replace(/^# (.+)$/gm, "<h1>$1</h1>")
           .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2" />')
-          .replace(/\[([^\]]+)\]\((https?:\/\/(?:www\.)?rescuedogwines\.com\/(?:news|blog)\/([^)\s/]+)\/?)\)/g, '<a href="/blog/$3">$1</a>')
+          // Internal link rewrites: blog/news → /blog/<slug>
+          .replace(/\[([^\]]+)\]\(https?:\/\/(?:www\.)?rescuedogwines\.com\/(?:news|blog|post|stories)\/([^)\s/]+)\/?\)/g, '<a href="/blog/$2">$1</a>')
+          // mission/about/shop/wines/contact → relative
+          .replace(/\[([^\]]+)\]\(https?:\/\/(?:www\.)?rescuedogwines\.com\/(mission|about|shop|wines|contact|store-locator|wine-club|the-pack)\/?([^)\s]*)\)/g, '<a href="/$2$3">$1</a>')
+          // wine product → /shop/<sku|slug>
+          .replace(/\[([^\]]+)\]\(https?:\/\/(?:www\.)?rescuedogwines\.com\/product\/([^)\s/]+)\/?\)/g, '<a href="/shop/$2">$1</a>')
+          // any remaining link stays absolute
           .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
           .replace(/\n{2,}/g, "</p><p>")
           .replace(/^/, "<p>") + "</p>"
@@ -192,6 +198,19 @@ Deno.serve(async (req) => {
 
       const { error } = await supabase.from("content_index").upsert(row, { onConflict: "source,slug" });
       if (error) { failed++; results.push({ url, ok: false, error: error.message }); continue; }
+
+      // Write 301 redirect from legacy /news/<slug> path → /blog/<slug>
+      try {
+        const fromPath = new URL(url).pathname.replace(/\/$/, "");
+        const toPath = `/blog/${slug}`;
+        if (fromPath && fromPath !== toPath) {
+          await supabase.from("content_redirects").upsert(
+            { from_path: fromPath, to_path: toPath, status_code: 301, source: "firecrawl_blog_import" },
+            { onConflict: "from_path" },
+          );
+        }
+      } catch { /* non-fatal */ }
+
       if (existing) updated++; else inserted++;
       results.push({ url, slug, ok: true });
     } catch (e: any) {

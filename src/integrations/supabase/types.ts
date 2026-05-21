@@ -143,6 +143,7 @@ export type Database = {
           id: string
           message: string | null
           requested_area: string
+          requested_role: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -156,6 +157,7 @@ export type Database = {
           id?: string
           message?: string | null
           requested_area: string
+          requested_role?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -169,6 +171,7 @@ export type Database = {
           id?: string
           message?: string | null
           requested_area?: string
+          requested_role?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string

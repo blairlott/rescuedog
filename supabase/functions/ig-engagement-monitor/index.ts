@@ -51,10 +51,10 @@ Deno.serve(async (req) => {
     const insights: any[] = p.insights?.data ?? [];
     const getMetric = (name: string) =>
       Number(insights.find((i) => i.name === name)?.values?.[0]?.value ?? 0);
-    const impressions = getMetric("impressions");
+    const impressions = getMetric("views"); // views replaces impressions in v21+
     const reach = getMetric("reach");
-    const likes = getMetric("likes");
-    const comments = getMetric("comments");
+    const likes = Number(p.like_count ?? 0);
+    const comments = Number(p.comments_count ?? 0);
     const shares = getMetric("shares");
     const saves = getMetric("saved");
     const save_rate = reach > 0 ? saves / reach : 0;

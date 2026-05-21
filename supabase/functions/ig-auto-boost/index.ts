@@ -115,6 +115,7 @@ Deno.serve(async (req) => {
       { id: cfg.lal_1pct_audience_id },
       { id: cfg.lal_high_ltv_audience_id },
     ],
+    targeting_automation: { advantage_audience: 1 },
   };
 
   const results: any[] = [];
@@ -130,7 +131,6 @@ Deno.serve(async (req) => {
       bid_strategy: "LOWEST_COST_WITHOUT_CAP",
       promoted_object: { pixel_id: META_PIXEL_ID, custom_event_type: v.event },
       targeting,
-      advantage_audience: 1,
       status: "ACTIVE",
     });
     if (!adsetRes.ok) {

@@ -93,9 +93,10 @@ Deno.serve(async (req) => {
 
   // Lookback window
   const since = new Date(Date.now() - lookback * 86400000).toISOString().slice(0, 10);
-  // Always pull a deeper window (up to 24 months) for seasonal-index estimation,
-  // independent of the user-selected lookback used for trend/CAGR.
-  const seasonalSince = new Date(Date.now() - 730 * 86400000).toISOString().slice(0, 10);
+  // Always pull a deep window (up to 4 years) for seasonal-index + Q4 YoY
+  // estimation, independent of the user-selected lookback used for trend/CAGR.
+  // We need ≥3 prior Q4s to compute a reliable apples-to-apples YoY growth.
+  const seasonalSince = new Date(Date.now() - 1460 * 86400000).toISOString().slice(0, 10);
   const { data: channels } = await admin.from("ad_channels").select("id, platform");
   const chById = new Map<string, string>((channels ?? []).map((c: any) => [c.id, c.platform]));
   // Page through to get full history (Supabase caps at 1000/page).

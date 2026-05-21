@@ -1215,6 +1215,78 @@ export type Database = {
           },
         ]
       }
+      ai_creative_variants: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          cta: string | null
+          generated_by: string
+          headline: string | null
+          id: string
+          image_prompt: string | null
+          image_url: string | null
+          metadata: Json | null
+          model_used: string | null
+          platform: string | null
+          primary_text: string | null
+          product_handle: string | null
+          prompt_seed: string | null
+          pushed_ad_id: string | null
+          pushed_at: string | null
+          sku: string | null
+          status: string
+          updated_at: string
+          variant_kind: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          cta?: string | null
+          generated_by?: string
+          headline?: string | null
+          id?: string
+          image_prompt?: string | null
+          image_url?: string | null
+          metadata?: Json | null
+          model_used?: string | null
+          platform?: string | null
+          primary_text?: string | null
+          product_handle?: string | null
+          prompt_seed?: string | null
+          pushed_ad_id?: string | null
+          pushed_at?: string | null
+          sku?: string | null
+          status?: string
+          updated_at?: string
+          variant_kind?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          cta?: string | null
+          generated_by?: string
+          headline?: string | null
+          id?: string
+          image_prompt?: string | null
+          image_url?: string | null
+          metadata?: Json | null
+          model_used?: string | null
+          platform?: string | null
+          primary_text?: string | null
+          product_handle?: string | null
+          prompt_seed?: string | null
+          pushed_ad_id?: string | null
+          pushed_at?: string | null
+          sku?: string | null
+          status?: string
+          updated_at?: string
+          variant_kind?: string
+        }
+        Relationships: []
+      }
       alert_dispatch_log: {
         Row: {
           channel: string | null
@@ -1615,6 +1687,116 @@ export type Database = {
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+        }
+        Relationships: []
+      }
+      auto_pause_events: {
+        Row: {
+          action: string
+          created_at: string
+          dry_run: boolean
+          entity_id: string
+          entity_name: string | null
+          entity_type: string
+          id: string
+          metric_observed: number | null
+          platform: string
+          reason: string | null
+          response: Json | null
+          rule_id: string | null
+          spend_cents: number | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          dry_run?: boolean
+          entity_id: string
+          entity_name?: string | null
+          entity_type: string
+          id?: string
+          metric_observed?: number | null
+          platform: string
+          reason?: string | null
+          response?: Json | null
+          rule_id?: string | null
+          spend_cents?: number | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          dry_run?: boolean
+          entity_id?: string
+          entity_name?: string | null
+          entity_type?: string
+          id?: string
+          metric_observed?: number | null
+          platform?: string
+          reason?: string | null
+          response?: Json | null
+          rule_id?: string | null
+          spend_cents?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_pause_events_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "auto_pause_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auto_pause_rules: {
+        Row: {
+          comparator: string
+          created_at: string
+          dry_run: boolean
+          enabled: boolean
+          entity_scope: string
+          id: string
+          metric: string
+          min_spend_cents: number
+          name: string
+          notes: string | null
+          platform: string
+          rule_key: string
+          threshold: number
+          updated_at: string
+          window_days: number
+        }
+        Insert: {
+          comparator?: string
+          created_at?: string
+          dry_run?: boolean
+          enabled?: boolean
+          entity_scope?: string
+          id?: string
+          metric: string
+          min_spend_cents?: number
+          name: string
+          notes?: string | null
+          platform: string
+          rule_key: string
+          threshold: number
+          updated_at?: string
+          window_days?: number
+        }
+        Update: {
+          comparator?: string
+          created_at?: string
+          dry_run?: boolean
+          enabled?: boolean
+          entity_scope?: string
+          id?: string
+          metric?: string
+          min_spend_cents?: number
+          name?: string
+          notes?: string | null
+          platform?: string
+          rule_key?: string
+          threshold?: number
+          updated_at?: string
+          window_days?: number
         }
         Relationships: []
       }
@@ -7126,6 +7308,101 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "sales_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seo_audit_runs: {
+        Row: {
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          page_count: number | null
+          recommendations_created: number | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          page_count?: number | null
+          recommendations_created?: number | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          page_count?: number | null
+          recommendations_created?: number | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      seo_page_recommendations: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          current_meta_desc: string | null
+          current_title: string | null
+          id: string
+          reason: string | null
+          run_id: string | null
+          status: string
+          suggested_h1: string | null
+          suggested_meta_desc: string | null
+          suggested_schema: Json | null
+          suggested_title: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          current_meta_desc?: string | null
+          current_title?: string | null
+          id?: string
+          reason?: string | null
+          run_id?: string | null
+          status?: string
+          suggested_h1?: string | null
+          suggested_meta_desc?: string | null
+          suggested_schema?: Json | null
+          suggested_title?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          current_meta_desc?: string | null
+          current_title?: string | null
+          id?: string
+          reason?: string | null
+          run_id?: string | null
+          status?: string
+          suggested_h1?: string | null
+          suggested_meta_desc?: string | null
+          suggested_schema?: Json | null
+          suggested_title?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_page_recommendations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "seo_audit_runs"
             referencedColumns: ["id"]
           },
         ]

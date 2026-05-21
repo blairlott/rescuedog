@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { Wine, ArrowRight, Check, Percent } from "lucide-react";
+import { Wine, ArrowRight, Check, Percent, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { WineClubDisclaimer } from "@/components/WineClubDisclaimer";
 import type { WineClubTier } from "@/hooks/useWineClub";
 
@@ -20,9 +21,11 @@ const wineTypeOptions = [
 interface ClubConfiguratorProps {
   tiers: WineClubTier[];
   onSelect: (tier: WineClubTier) => void;
+  isGift?: boolean;
+  onGiftChange?: (isGift: boolean) => void;
 }
 
-export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
+export function ClubConfigurator({ tiers, onSelect, isGift = false, onGiftChange }: ClubConfiguratorProps) {
   const [frequency, setFrequency] = useState<string | null>(null);
   const [bottleCount, setBottleCount] = useState<number | null>(null);
   const [wineType, setWineType] = useState<string | null>(null);
@@ -101,6 +104,22 @@ export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
       <p className="text-center text-sm text-muted-foreground mb-8">
         We've pre-picked our most popular combo. Tweak any option below — your tier updates instantly.
       </p>
+
+      {/* Gift toggle — surfaced up front so gifters know they're in the right flow */}
+      {onGiftChange && (
+        <div className="border border-border p-4 mb-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Gift className={`h-5 w-5 ${isGift ? "text-primary" : "text-muted-foreground"}`} />
+            <div>
+              <p className="text-sm font-bold text-foreground">Gifting this membership?</p>
+              <p className="text-xs text-muted-foreground">
+                We'll collect the recipient's name, email, and shipping address on the next step.
+              </p>
+            </div>
+          </div>
+          <Switch checked={isGift} onCheckedChange={onGiftChange} />
+        </div>
+      )}
 
       {/* Frequency */}
       <div className="mb-6">

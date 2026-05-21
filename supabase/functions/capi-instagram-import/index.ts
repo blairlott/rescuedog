@@ -21,6 +21,10 @@ type ExtractedPost = {
   permalink?: string;
 };
 
+class UnsupportedSiteError extends Error {
+  constructor(message: string) { super(message); this.name = "UnsupportedSiteError"; }
+}
+
 async function firecrawlExtract(targetUrl: string, limit: number): Promise<ExtractedPost[]> {
   const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
     method: "POST",
@@ -43,6 +47,9 @@ async function firecrawlExtract(targetUrl: string, limit: number): Promise<Extra
   });
   if (!r.ok) {
     const text = await r.text();
+    if (r.status === 403) {
+      throw new UnsupportedSiteError(`Firecrawl cannot access Instagram directly: ${text.slice(0, 200)}`);
+    }
     throw new Error(`firecrawl ${r.status}: ${text.slice(0, 400)}`);
   }
   const data = await r.json();

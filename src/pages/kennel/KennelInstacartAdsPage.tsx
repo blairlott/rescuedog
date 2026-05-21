@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { InstacartPartnershipPlanner } from "@/components/kennel/InstacartPartnershipPlanner";
 import { InstacartCapabilitiesOutline } from "@/components/kennel/InstacartCapabilitiesOutline";
+import { InstacartAutopilotHealth } from "@/components/kennel/InstacartAutopilotHealth";
 
 const PLATFORM = "instacart";
 
@@ -322,6 +323,8 @@ export default function KennelInstacartAdsPage() {
           </p>
         </CardContent>
       </Card>
+
+      <InstacartAutopilotHealth />
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <MetricCard label="Spend MTD" value={dollars(totals.spend)} />

@@ -202,6 +202,78 @@ export type Database = {
           },
         ]
       }
+      ad_autopilot_evaluations: {
+        Row: {
+          auto_stop_reason: string | null
+          auto_stopped: boolean
+          b2b_eligible: number | null
+          b2b_mode: string | null
+          budget_remaining: number | null
+          candidates_considered: number | null
+          created_at: string
+          detail: Json
+          eligible: number | null
+          enabled_after: boolean
+          enabled_before: boolean
+          error_pct: number | null
+          error_sample: number | null
+          executed: number | null
+          id: string
+          notification_sent: boolean
+          platform: string
+          ran_at: string
+          trailing_roas: number | null
+          trailing_sales_cents: number | null
+          trailing_spend_cents: number | null
+        }
+        Insert: {
+          auto_stop_reason?: string | null
+          auto_stopped?: boolean
+          b2b_eligible?: number | null
+          b2b_mode?: string | null
+          budget_remaining?: number | null
+          candidates_considered?: number | null
+          created_at?: string
+          detail?: Json
+          eligible?: number | null
+          enabled_after: boolean
+          enabled_before: boolean
+          error_pct?: number | null
+          error_sample?: number | null
+          executed?: number | null
+          id?: string
+          notification_sent?: boolean
+          platform?: string
+          ran_at?: string
+          trailing_roas?: number | null
+          trailing_sales_cents?: number | null
+          trailing_spend_cents?: number | null
+        }
+        Update: {
+          auto_stop_reason?: string | null
+          auto_stopped?: boolean
+          b2b_eligible?: number | null
+          b2b_mode?: string | null
+          budget_remaining?: number | null
+          candidates_considered?: number | null
+          created_at?: string
+          detail?: Json
+          eligible?: number | null
+          enabled_after?: boolean
+          enabled_before?: boolean
+          error_pct?: number | null
+          error_sample?: number | null
+          executed?: number | null
+          id?: string
+          notification_sent?: boolean
+          platform?: string
+          ran_at?: string
+          trailing_roas?: number | null
+          trailing_sales_cents?: number | null
+          trailing_spend_cents?: number | null
+        }
+        Relationships: []
+      }
       ad_campaigns: {
         Row: {
           clicks_mtd: number

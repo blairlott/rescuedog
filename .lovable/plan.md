@@ -126,4 +126,10 @@ Phase 5 — Close the loop
 - Cron: `customer-cohorts-rebuild-nightly` (04:15 UTC daily) + `ops-daily-digest` (13:00 UTC daily ≈ 8am EST).
 - Kill switch: `ops_digest_enabled`.
 
-**Next up:** Phase 2 batch 2 — unified customer map filters (#12), ambassador performance dashboard (#14), webhook activity viewer (#16).
+**Phase 2 batch 2 — shipped (#12 + #14 + #16)**
+- New CRM page `/crm/customer-map` (admin-only): leaflet US map with state-level bubble overlays from `customer_cohorts`. Segment chips (champion / loyal / club_member / regular / at_risk / lost / one_time), min-LTV input, "club members only" toggle. Bubbles sized by customer count, colored by dominant segment per state. Centroid lookup in new `src/lib/usStateCentroids.ts`.
+- New `AmbassadorPerformanceTable` mounted inside `CrmAmbassadorsPage`: 30 / 90 / 365-day rollup of `impact_events` per ambassador (attributed orders, bottles, rescue donation $). Sorted by donation desc with a totals row.
+- New CRM page `/crm/webhooks` (admin-only): last 200 `vinoshipper_webhook_events` with filters (all / unprocessed / errors), payload expand, and a "Re-queue" button that flips `processed=false` so the next sweep retries it. RLS already covers admins via `is_wine_club_manager`.
+- CRM sidebar got two new admin links: "Customer Map" (Globe2) and "Webhooks" (Webhook).
+
+**Next up:** Phase 3 batch 1 — VS member-portal deep-links for shipment customization (#1), shipment tracking page (#2), and Your Pack portal upgrades (#3).

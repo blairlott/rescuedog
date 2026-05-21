@@ -45,6 +45,11 @@ Deno.serve(async (req) => {
   }
   if (!isService && !hasSecret && !isAdOps) return J(401, { error: "unauthorized" });
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+  // Fast short-circuit for self-health probes — avoids fanning out to every
+  // ingest target and blowing the probe's 20s timeout.
+  if (body?.dry_run === true || body?.probe === true) {
+    return J(200, { ok: true, dry_run: true, function: "kennel-nightly-ingest" });
+  }
   const days = Math.min(Math.max(Number(body?.days ?? 7), 1), 30);
   // Optional: limit to specific targets. Defaults to all.
   const requestedTargets: string[] = Array.isArray(body?.targets)

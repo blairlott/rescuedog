@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MetricCard } from "@/components/kennel/MetricCard";
-import { AlertTriangle, Briefcase, Play, Bell, CheckCircle2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { AlertTriangle, Briefcase, Play, Bell, CheckCircle2, Plus, Trash2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 type Evaluation = {
@@ -51,6 +52,10 @@ export function InstacartAutopilotHealth() {
           "instacart_autopilot_b2b_mode",
           "instacart_autopilot_b2b_max_bid_change_pct",
           "instacart_autopilot_b2b_daily_cap",
+          "instacart_autopilot_b2b_auto_stop_enabled",
+          "instacart_autopilot_b2b_max_error_rate_pct",
+          "instacart_autopilot_b2b_min_roas",
+          "instacart_autopilot_b2b_account_overrides",
           "instacart_autopilot_max_error_rate_pct",
           "instacart_autopilot_min_roas",
           "instacart_autopilot_roas_window_days",
@@ -70,6 +75,12 @@ export function InstacartAutopilotHealth() {
       b2bMode: (m.instacart_autopilot_b2b_mode ?? "include") as "include" | "exclude" | "only",
       b2bMaxBidPct: Number(m.instacart_autopilot_b2b_max_bid_change_pct ?? 10),
       b2bDailyCap: Number(m.instacart_autopilot_b2b_daily_cap ?? 5),
+      b2bAutoStop: m.instacart_autopilot_b2b_auto_stop_enabled !== false,
+      b2bMaxErrorPct: Number(m.instacart_autopilot_b2b_max_error_rate_pct ?? 15),
+      b2bMinRoas: Number(m.instacart_autopilot_b2b_min_roas ?? 2.0),
+      b2bAccountOverrides: (m.instacart_autopilot_b2b_account_overrides ?? {}) as Record<string, {
+        label?: string; autoStop?: boolean; maxErrorPct?: number; minRoas?: number;
+      }>,
       maxErrorPct: Number(m.instacart_autopilot_max_error_rate_pct ?? 25),
       minRoas: Number(m.instacart_autopilot_min_roas ?? 1.5),
       roasWindowDays: Number(m.instacart_autopilot_roas_window_days ?? 7),

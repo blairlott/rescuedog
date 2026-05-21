@@ -280,7 +280,7 @@ Deno.serve(async (req) => {
       .eq("platform", "instacart")
       .eq("executor", "autopilot")
       .eq("success", true)
-      .eq("segment", "b2b")
+      .eq("request_payload->>segment", "b2b")
       .gte("created_at", since.toISOString());
     let b2bBudget = Math.max(0, b2bDailyCap - (b2bExecutedToday ?? 0));
 

@@ -53,9 +53,48 @@ Deno.serve(async (req) => {
   const dateStr = new Date().toISOString().slice(0, 10);
   const acct = cfg.meta_ad_account_id;
 
+  // ---- A/B objective assignment: alternate across posts ----
+  // Default rotates evenly; if a winner has been declared and saved to
+  // ig_boost_config.default_objective, use it for every new post.
+  let assigned_variant: "conversion" | "wine_club";
+  if (cfg.default_objective === "conversion" || cfg.default_objective === "wine_club") {
+    assigned_variant = cfg.default_objective;
+  } else {
+    const { count: priorCount } = await admin
+      .from("ig_boost_log")
+      .select("post_id", { count: "exact", head: true });
+    assigned_variant = ((priorCount ?? 0) % 2 === 0) ? "conversion" : "wine_club";
+  }
+  const variant = assigned_variant === "conversion"
+    ? { variant: "conversion" as const, suffix: "Purchase", event: "PURCHASE" }
+    : { variant: "wine_club"  as const, suffix: "WineClub", event: "SUBSCRIBE" };
+
+  // ---- Daily total spend cap across all active boosts ----
+  const { data: activeBudgets } = await admin
+    .from("ig_boost_log")
+    .select("daily_budget_cents")
+    .eq("status", "active");
+  const activeTotalCents = (activeBudgets ?? [])
+    .reduce((s, r: any) => s + Number(r.daily_budget_cents ?? 0), 0);
+  const newBudgetCents = Number(cfg.daily_budget_per_variant_cents);
+  const capCents = Number(cfg.daily_total_cap_cents ?? 2500);
+  if (activeTotalCents + newBudgetCents > capCents) {
+    await admin.from("ig_boost_log").insert({
+      post_id, triggered_by, trigger_value, test_variant: variant.variant,
+      status: "killed",
+      kill_reason: `daily_cap_reached: active=${activeTotalCents}c + new=${newBudgetCents}c > cap=${capCents}c`,
+      daily_budget_cents: newBudgetCents,
+    });
+    return json({
+      ok: false, skipped: "daily_cap_reached",
+      post_id, variant: variant.variant,
+      active_total_cents: activeTotalCents, cap_cents: capCents,
+    }, 200);
+  }
+
   // 1. Campaign
   const campaignRes = await metaPost(`${acct}/campaigns`, {
-    name: `IGBoost_${post_id}_${dateStr}`,
+    name: `IGBoost_${post_id}_${variant.suffix}_${dateStr}`,
     objective: "OUTCOME_SALES",
     status: "ACTIVE",
     special_ad_categories: [],
@@ -78,20 +117,16 @@ Deno.serve(async (req) => {
     ],
   };
 
-  const variants = [
-    { variant: "conversion", suffix: "Purchase", event: "PURCHASE" },
-    { variant: "wine_club", suffix: "WineClub", event: "SUBSCRIBE" },
-  ];
-
   const results: any[] = [];
 
-  for (const v of variants) {
+  {
+    const v = variant;
     const adsetRes = await metaPost(`${acct}/adsets`, {
       name: `IGBoost_${post_id}_${v.suffix}`,
       campaign_id,
       optimization_goal: "OFFSITE_CONVERSIONS",
       billing_event: "IMPRESSIONS",
-      daily_budget: cfg.daily_budget_per_variant_cents,
+      daily_budget: newBudgetCents,
       promoted_object: { pixel_id: META_PIXEL_ID, custom_event_type: v.event },
       targeting,
       advantage_audience: 1,
@@ -102,10 +137,10 @@ Deno.serve(async (req) => {
         post_id, triggered_by, trigger_value, test_variant: v.variant,
         campaign_id, status: "killed",
         kill_reason: `adset_create_failed: ${JSON.stringify(adsetRes.body).slice(0, 400)}`,
-        daily_budget_cents: cfg.daily_budget_per_variant_cents,
+        daily_budget_cents: newBudgetCents,
       });
       results.push({ variant: v.variant, ok: false, step: "adset", ...adsetRes });
-      continue;
+      return json({ ok: false, post_id, campaign_id, variants: results }, 502);
     }
     const adset_id: string = adsetRes.body.id;
 
@@ -120,21 +155,21 @@ Deno.serve(async (req) => {
         post_id, triggered_by, trigger_value, test_variant: v.variant,
         campaign_id, adset_id, status: "killed",
         kill_reason: `ad_create_failed: ${JSON.stringify(adRes.body).slice(0, 400)}`,
-        daily_budget_cents: cfg.daily_budget_per_variant_cents,
+        daily_budget_cents: newBudgetCents,
       });
       results.push({ variant: v.variant, ok: false, step: "ad", ...adRes });
-      continue;
+      return json({ ok: false, post_id, campaign_id, variants: results }, 502);
     }
     const ad_id: string = adRes.body.id;
 
     await admin.from("ig_boost_log").insert({
       post_id, triggered_by, trigger_value, test_variant: v.variant,
       campaign_id, adset_id, ad_id,
-      daily_budget_cents: cfg.daily_budget_per_variant_cents,
+      daily_budget_cents: newBudgetCents,
       status: "active",
     });
     results.push({ variant: v.variant, ok: true, campaign_id, adset_id, ad_id });
   }
 
-  return json({ ok: true, post_id, campaign_id, variants: results });
+  return json({ ok: true, post_id, campaign_id, assigned_variant, variants: results });
 });

@@ -306,29 +306,29 @@ Deno.serve(async (req) => {
       const futureDate = new Date(lastDate.getTime() + h * 86400000);
       const dow = futureDate.getUTCDay();
       const moy = futureDate.getUTCMonth();
-      const uplift = ondUplift(futureDate);
       // CAGR-based projection: baseline daily × compounded growth × DoW seasonality.
       const growthSpend = Math.pow(spendDaily, h);
       const growthRev   = Math.pow(revDaily,   h);
-      const rawSpend = Math.max(spendFloor, baselineSpend * growthSpend) * spendSeason[dow] * spendMonthSeason[moy] * spendTilt * uplift.spend;
+      const rawSpend = Math.max(spendFloor, baselineSpend * growthSpend) * spendSeason[dow] * spendMonthSeason[moy] * spendTilt;
       let trendSpend = rawSpend;
       const rawRev   = baselineRev * growthRev * revSeason[dow] * revMonthSeason[moy] * revenueTilt;
       let trendRev   = rawRev;
-      // Apply Q4 historical floor (with YoY growth) so OND projections never
-      // fall below the prior peak compounded at +100%/yr.
+      // Apply Q4 historical floor (avg of last 2 prior Q4s × measured YoY) so
+      // OND projections never fall below what the brand has demonstrably done.
       const floor = q4FloorMonthly(futureDate.getUTCFullYear(), moy);
       if (floor) {
         const dowSpendIdx = spendSeason[dow];
         const dowRevIdx   = revSeason[dow];
-        trendSpend = Math.max(trendSpend, floor.spendDay * dowSpendIdx * uplift.spend);
+        trendSpend = Math.max(trendSpend, floor.spendDay * dowSpendIdx);
         trendRev   = Math.max(trendRev,   floor.revDay   * dowRevIdx);
       }
       if (trendSpend > 0 && baselineRoas > 0) {
         const implied = trendRev / trendSpend;
-        // During Q4 (uplift active) widen the ROAS ceiling so historical Q4
-        // efficiency isn't clamped down to a depressed off-season baseline.
-        const ceilingActive = uplift.roas > 1 ? roasCeiling * 2.5 : roasCeiling;
-        const targetRoas = Math.min(ceilingActive, Math.max(roasFloor, implied)) * roasTilt * uplift.roas;
+        // Widen ROAS ceiling in Q4 where seasonal index > 1.15 so historical
+        // Q4 efficiency isn't clamped to a depressed off-season baseline.
+        const seasonalLift = Math.max(spendMonthSeason[moy], revMonthSeason[moy]);
+        const ceilingActive = seasonalLift > 1.15 ? roasCeiling * 2.0 : roasCeiling;
+        const targetRoas = Math.min(ceilingActive, Math.max(roasFloor, implied)) * roasTilt;
         trendRev = trendSpend * targetRoas;
       }
       const roas = trendSpend > 0 ? trendRev / trendSpend : 0;
@@ -368,8 +368,8 @@ Deno.serve(async (req) => {
       upper_bound: Math.round(series.reduce((s, p) => s + p.revenue_upper, 0) * 100) / 100,
       confidence: 0.80,
       model: "cagr_dow_month_seasonality_v2",
-      series: { points: series, summary, strategy_mode: { goal, pace }, baseline: { roas: Math.round(baselineRoas * 1000) / 1000, daily_spend: Math.round(baselineSpend * 100) / 100, daily_revenue: Math.round(baselineRev * 100) / 100, days: recent28Spend.length, revenue_cagr: Math.round(revCagr * 1000) / 1000, spend_cagr: Math.round(spendCagr * 1000) / 1000 }, seasonality: { dow_revenue: revSeason.map((v) => Math.round(v * 1000) / 1000), month_revenue: revMonthSeason.map((v) => Math.round(v * 1000) / 1000), month_spend: spendMonthSeason.map((v) => Math.round(v * 1000) / 1000), history_days: seasonDates.length } },
-      narrative: `${horizon}-day projection: baseline ROAS ${baselineRoas.toFixed(2)}x, revenue CAGR ${(revCagr*100).toFixed(1)}%, spend CAGR ${(spendCagr*100).toFixed(1)}% (90d vs prior 90d, annualized). Seasonality: day-of-week + calendar-month (24mo, ${seasonDates.length} days observed). Goal ${goal}/100, Pace ${pace}/100.`,
+      series: { points: series, summary, strategy_mode: { goal, pace }, baseline: { roas: Math.round(baselineRoas * 1000) / 1000, daily_spend: Math.round(baselineSpend * 100) / 100, daily_revenue: Math.round(baselineRev * 100) / 100, days: recent28Spend.length, revenue_cagr: Math.round(revCagr * 1000) / 1000, spend_cagr: Math.round(spendCagr * 1000) / 1000 }, seasonality: { dow_revenue: revSeason.map((v) => Math.round(v * 1000) / 1000), month_revenue: revMonthSeason.map((v) => Math.round(v * 1000) / 1000), month_spend: spendMonthSeason.map((v) => Math.round(v * 1000) / 1000), history_days: seasonDates.length }, q4: { yoy_growth_measured: Math.round(measuredYoy * 1000) / 1000, yoy_growth_applied: Math.round(q4YoyGrowth * 1000) / 1000, prior_q4_years: sortedYears, ref_years: refYears, yoy_deltas: yoyDeltas.map((v) => Math.round(v * 1000) / 1000) } },
+      narrative: `${horizon}-day projection: baseline ROAS ${baselineRoas.toFixed(2)}x, revenue CAGR ${(revCagr*100).toFixed(1)}%, spend CAGR ${(spendCagr*100).toFixed(1)}% (90d vs prior 90d, annualized). Q4 floor: avg of last ${refYears.length} prior Q4s × ${(q4YoyGrowth*100).toFixed(1)}% measured YoY (from ${yoyDeltas.length} prior Q4-over-Q4 comparisons, clamped -25%..+75%). Seasonality: day-of-week + calendar-month (${seasonDates.length} days history, ${sortedYears.length} prior Q4s).`,
       generated_at: new Date().toISOString(),
       valid_until: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
     };

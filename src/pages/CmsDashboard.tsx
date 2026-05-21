@@ -52,6 +52,8 @@ import { IntegrationsPanel } from "@/components/cms/IntegrationsPanel";
 import { Plug } from "lucide-react";
 import { CreativeQueuePanel } from "@/components/cms/CreativeQueuePanel";
 import { Sparkles } from "lucide-react";
+import { DevControlsPanel } from "@/components/cms/DevControlsPanel";
+import { SlidersHorizontal } from "lucide-react";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
 import { useUserRole } from "@/hooks/useUserRole";

@@ -415,13 +415,13 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
         <div className="border border-border bg-muted/30 p-4 mb-8 text-sm flex gap-3">
           <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
           <div>
-            <p className="font-bold text-foreground mb-1">Secure card on file</p>
+            <p className="font-bold text-foreground mb-1">Card on file — no charge today</p>
             <p className="text-muted-foreground text-xs">
               After you continue, our compliance & shipping partner (Vinoshipper)
-              will open a secure payment step right here on this page to save
-              your card. <strong>A card on file is required</strong> — your
-              membership is not active until card capture is complete. Future
-              club shipments ship and bill automatically.
+              will open a secure window right here on this page so you can{" "}
+              <strong>save a card on file</strong>. You are not being charged
+              today — your card is only billed when a club shipment actually
+              goes out. A card on file is required to activate your membership.
             </p>
           </div>
         </div>
@@ -463,7 +463,7 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
           : !tier.vinoshipper_join_url
           ? "Choose another tier"
           : tier.vinoshipper_join_url
-          ? `Continue to Secure Payment`
+          ? `Continue to Add Card On File`
           : form.is_gift
           ? `Gift ${tier.name}`
           : `Join ${tier.name}`}

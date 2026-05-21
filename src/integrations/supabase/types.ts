@@ -4582,6 +4582,60 @@ export type Database = {
         }
         Relationships: []
       }
+      instacart_partnership_items: {
+        Row: {
+          answer: string | null
+          ask: string | null
+          category: string
+          created_at: string
+          description: string | null
+          external_url: string | null
+          follow_up_date: string | null
+          id: string
+          label: string
+          owner: string | null
+          sort_order: number
+          status: string
+          updated_at: string
+          updated_by: string | null
+          value_estimate_cents: number | null
+        }
+        Insert: {
+          answer?: string | null
+          ask?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          external_url?: string | null
+          follow_up_date?: string | null
+          id?: string
+          label: string
+          owner?: string | null
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          value_estimate_cents?: number | null
+        }
+        Update: {
+          answer?: string | null
+          ask?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          external_url?: string | null
+          follow_up_date?: string | null
+          id?: string
+          label?: string
+          owner?: string | null
+          sort_order?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          value_estimate_cents?: number | null
+        }
+        Relationships: []
+      }
       integration_credential_events: {
         Row: {
           actor_email: string | null

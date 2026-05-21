@@ -11,6 +11,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const META_TOKEN = Deno.env.get("META_SYSTEM_USER_TOKEN") ?? Deno.env.get("META_ADS_ACCESS_TOKEN")!;
 const META_PIXEL_ID = Deno.env.get("META_PIXEL_ID")!;
+const META_PAGE_TOKEN = Deno.env.get("META_PAGE_ACCESS_TOKEN") ?? "";
 
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), {
@@ -27,6 +28,30 @@ async function metaPost(path: string, body: Record<string, unknown>) {
   });
   const j = await res.json().catch(() => ({}));
   return { ok: res.ok, status: res.status, body: j };
+}
+
+// Resolve an IG media id to its mirrored Facebook page post id
+// (format: {page_id}_{post_id}) for use as object_story_id in AdCreative.
+async function getFacebookPostId(
+  igMediaId: string,
+  pageId: string,
+  pageToken: string,
+): Promise<string> {
+  const mediaRes = await fetch(
+    `https://graph.facebook.com/v19.0/${igMediaId}?fields=shortcode&access_token=${encodeURIComponent(pageToken)}`,
+  );
+  const media = await mediaRes.json().catch(() => ({}));
+  const shortcode: string | undefined = media?.shortcode;
+  if (!shortcode) {
+    throw new Error(`no_shortcode_for_${igMediaId}: ${JSON.stringify(media).slice(0, 200)}`);
+  }
+  const feedRes = await fetch(
+    `https://graph.facebook.com/v19.0/${pageId}/feed?fields=id,permalink_url&limit=50&access_token=${encodeURIComponent(pageToken)}`,
+  );
+  const feed = await feedRes.json().catch(() => ({}));
+  const match = (feed?.data ?? []).find((p: any) => p?.permalink_url?.includes(shortcode));
+  if (match?.id) return match.id;
+  throw new Error(`no_fb_post_match_for_ig_${igMediaId}_shortcode_${shortcode}`);
 }
 
 Deno.serve(async (req) => {
@@ -145,16 +170,27 @@ Deno.serve(async (req) => {
     }
     const adset_id: string = adsetRes.body.id;
 
-    // Create AdCreative referencing the IG-native post.
+    // Resolve IG post -> mirrored FB page post id, then create AdCreative
+    // using object_story_id (the only payload Meta accepts for IG-native boosts).
+    let fbPostId: string;
+    try {
+      if (!META_PAGE_TOKEN) throw new Error("META_PAGE_ACCESS_TOKEN not set");
+      fbPostId = await getFacebookPostId(post_id, String(cfg.fb_page_id), META_PAGE_TOKEN);
+    } catch (e) {
+      const msg = (e as Error).message;
+      await admin.from("ig_boost_log").insert({
+        post_id, triggered_by, trigger_value, test_variant: v.variant,
+        campaign_id, adset_id, status: "killed",
+        kill_reason: `creative_failed: ${msg.slice(0, 400)}`,
+        daily_budget_cents: newBudgetCents,
+      });
+      results.push({ variant: v.variant, ok: false, step: "fb_post_lookup", error: msg });
+      return json({ ok: false, post_id, campaign_id, variants: results }, 200);
+    }
+
     const creativeRes = await metaPost(`${acct}/adcreatives`, {
       name: `IGBoost_${post_id}_${v.suffix}_creative`,
-      object_story_spec: {
-        page_id: cfg.fb_page_id,
-        link_data: { link: "https://rescuedogwines.com/shop" },
-      },
-      source_instagram_media_id: post_id,
-      instagram_user_id: cfg.ig_user_id,
-      degrees_of_freedom_spec: { creative_features_spec: { standard_enhancements: { enroll_status: "OPT_OUT" } } },
+      object_story_id: fbPostId,
     });
     if (!creativeRes.ok) {
       await admin.from("ig_boost_log").insert({

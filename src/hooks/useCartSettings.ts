@@ -29,7 +29,10 @@ const DEFAULTS: CartSettings = {
   merchFreeShippingThreshold: 150,
   halfCaseCount: 6,
   fullCaseCount: 12,
-  fullCaseDiscount: 20,
+  // Guests get the public case discount on full cases. Wine Club members
+  // get the higher `clubDiscount` rate, applied automatically at
+  // Vinoshipper checkout when they're logged into their VS account.
+  fullCaseDiscount: 10,
   clubDiscount: 25,
   caseDiscountCode: "",
   memberGroupId: "",

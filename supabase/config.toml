@@ -71,3 +71,5 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.gtm-deploy]
     verify_jwt = false
+  [functions.site-autopilot-nightly]
+    verify_jwt = false

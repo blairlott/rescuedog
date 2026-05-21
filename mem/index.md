@@ -86,3 +86,4 @@
 - [Dev Toggles](mem://features/dev-toggles) — CMS Settings → Dev Controls: master + sub toggles gating account features and customer notifications; Subscribe & Save locked ON
 - [Backend Viewer Role](mem://features/backend-viewer-role) — Read-only `viewer` app_role + pending_role_grants pre-signup mechanism; SELECT-only sweep, no write paths
 - [Access Request Flow](mem://features/access-request-flow) — Read-only users request elevated edit access; admin email + in-portal banner
+- [Site Intelligence + Autopilot](mem://features/site-intel) — In-house heatmap/scroll/rage/attention tracker + nightly autopilot that promotes bandit winners and flags hotspots; UI at /kennel/site-intel

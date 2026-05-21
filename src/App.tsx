@@ -24,6 +24,7 @@ import { EmailCapturePrompt } from "./components/cart/EmailCapturePrompt";
 import { KennelGuard } from "./components/kennel/KennelGuard";
 import { KennelLayout } from "./components/kennel/KennelLayout";
 import CrmLayout from "./components/crm/CrmLayout";
+import { SiteIntelTracker } from "./components/SiteIntelTracker";
 
 const Index = lazy(() => import("./pages/Index"));
 const MerchHomePage = lazy(() => import("./pages/MerchHomePage"));
@@ -124,6 +125,7 @@ const KennelKeywordsPage = lazy(() => import("./pages/kennel/KennelKeywordsPage"
 const KennelPlatformRadarPage = lazy(() => import("./pages/kennel/KennelPlatformRadarPage"));
 const KennelAutonomyPage = lazy(() => import("./pages/kennel/KennelAutonomyPage"));
 const KennelZ8Page = lazy(() => import("./pages/kennel/KennelZ8Page"));
+const KennelSiteIntelPage = lazy(() => import("./pages/kennel/KennelSiteIntelPage"));
 const ExecutiveCommandCenter = lazy(() => import("./pages/intelligence/ExecutiveCommandCenter"));
 const ForcePasswordChangePage = lazy(() => import("./pages/ForcePasswordChangePage"));
 import { v2Routes } from "./v2/routes";
@@ -306,6 +308,7 @@ function AppContent() {
         <Route path="platform-radar" element={<KennelPlatformRadarPage />} />
         <Route path="autonomy" element={<KennelAutonomyPage />} />
         <Route path="z8" element={<KennelZ8Page />} />
+        <Route path="site-intel" element={<KennelSiteIntelPage />} />
       </Route>
       <Route path="/intelligence" element={<KennelGuard><ExecutiveCommandCenter /></KennelGuard>} />
       {v2Routes()}
@@ -332,6 +335,7 @@ const App = () => (
                 <AgeGate>
                   <GeoNotice />
                   <AutoTranslator />
+                  <SiteIntelTracker />
                   <AppContent />
                   <ExitIntentOffer />
                   <PackSignupPopup />

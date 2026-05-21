@@ -27,7 +27,7 @@ import { CartGiftMode, readGiftMode, isGiftModeReady } from "@/components/cart/C
 import { useGiftWrapSettings } from "@/hooks/useGiftWrapSettings";
 import { useIsMember } from "@/hooks/useIsMember";
 import { Percent } from "lucide-react";
-import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
+import { effectiveBottleCount, caseEligibleBottleCount, discountEligibleSubtotal, isBundleHandle } from "@/lib/wineBundles";
 import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
 import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInterstitial";
 import { CartLineSizePicker } from "@/components/cart/CartLineSizePicker";
@@ -106,6 +106,11 @@ export const CartDrawer = () => {
   // the shipping-included threshold and are excluded from member discounts —
   // matches Vinoshipper's "Excluded from Discounts" rule.
   const totalBottlesEffective = isMerchRoute ? totalItems : effectiveBottleCount(items as any);
+  // Case-discount qualification EXCLUDES sampler / bundle SKUs entirely.
+  // Samplers still count toward the shipping-included threshold above, but
+  // they neither push a cart over the 12-bottle case threshold nor receive
+  // the case discount themselves.
+  const caseBottles = isMerchRoute ? 0 : caseEligibleBottleCount(items as any);
   const { freeShippingBottleCount, merchFreeShippingThreshold, fullCaseCount, fullCaseDiscount } = useCartSettings();
   const shippingIncluded = isMerchRoute
     ? totalPrice >= merchFreeShippingThreshold
@@ -117,17 +122,21 @@ export const CartDrawer = () => {
   const dollarsNeeded = Math.max(0, merchFreeShippingThreshold - totalPrice);
   const showNudge = !isMerchRoute && !shippingIncluded && bottlesNeeded > 0 && bottlesNeeded <= 2 && totalItems > 0;
   const showMerchNudge = isMerchRoute && !shippingIncluded && dollarsNeeded > 0 && dollarsNeeded <= 25 && totalItems > 0;
-  const bottlesToCase = !isMerchRoute && totalBottlesEffective > 0 && totalBottlesEffective < fullCaseCount
-    ? fullCaseCount - totalBottlesEffective
+  const bottlesToCase = !isMerchRoute && caseBottles > 0 && caseBottles < fullCaseCount
+    ? fullCaseCount - caseBottles
     : 0;
   // Project the dollar savings the user unlocks by topping up to a full
   // case. Uses the heavier of public case discount vs. member rate.
+  // Sampler bundles are excluded from both the basis and the average
+  // bottle price so the projection matches what Vinoshipper will actually
+  // discount at checkout.
   const effectiveCaseDiscountPct = isMember ? discountPercent : fullCaseDiscount;
-  const avgWineBottlePrice = wineItems.length
-    ? wineTotal / Math.max(1, wineItems.reduce((s, i) => s + i.quantity, 0))
-    : 0;
+  const caseEligibleItems = wineItems.filter(i => !isBundleHandle(i.product.node.handle));
+  const caseEligibleSubtotal = caseEligibleItems.reduce((s, i) => s + parseFloat(i.price.amount) * i.quantity, 0);
+  const caseEligibleQty = caseEligibleItems.reduce((s, i) => s + i.quantity, 0);
+  const avgWineBottlePrice = caseEligibleQty > 0 ? caseEligibleSubtotal / caseEligibleQty : 0;
   const caseTopUpSavings = bottlesToCase > 0 && avgWineBottlePrice > 0
-    ? (wineTotal + avgWineBottlePrice * bottlesToCase) * (effectiveCaseDiscountPct / 100)
+    ? (caseEligibleSubtotal + avgWineBottlePrice * bottlesToCase) * (effectiveCaseDiscountPct / 100)
     : 0;
 
   const lastOrder: { items: any[] } | null = (() => {

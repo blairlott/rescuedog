@@ -18,6 +18,7 @@
 
 ## Memories
 - [Order Routing](mem://features/order-routing) — All orders flow through Vinoshipper including wine club
+- [Launch Compliance Guardrail (DRAFT)](mem://features/launch-compliance-guardrail) — 7 hard content rules every draft/ad/copy must pass before publish; awaiting Blair confirmation
 - [Shopify Integration](mem://tech/shopify) — Storefront API connection for products, cart, and checkout
 - [Shopify Merch Backend](mem://tech/shopify-merch) — Live Storefront API for /merch catalog + forked checkout (rescuedoggear)
 - [CMS Strategy](mem://tech/cms-strategy) — Hybrid content management using Shopify and Supabase

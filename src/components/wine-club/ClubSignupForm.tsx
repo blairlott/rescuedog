@@ -54,8 +54,8 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
 
     // No account yet? Create one inline before saving the membership.
     if (!user) {
-      if (!email || !password || !firstName || !lastName) {
-        toast.error("Please fill in your name, email, and password");
+      if (!email || !password) {
+        toast.error("Please enter your email and password");
         return;
       }
       if (password.length < 6) {
@@ -69,7 +69,9 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/club`,
-            data: { full_name: `${firstName} ${lastName}`.trim() },
+            data: firstName || lastName
+              ? { full_name: `${firstName} ${lastName}`.trim() }
+              : undefined,
           },
         });
         if (error) {

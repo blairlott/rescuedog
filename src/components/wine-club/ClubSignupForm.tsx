@@ -125,11 +125,14 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
     // and no recurring billing in Vinoshipper.
     const payload: JoinClubData = {
       tier_id: tier.id,
-      shipping_address_line1: form.shipping_address_line1,
+      // For self-signup these stay blank — Vinoshipper captures the real
+      // address during card-on-file. For gifts we collect the recipient
+      // address above and pass it through here.
+      shipping_address_line1: form.shipping_address_line1 || undefined,
       shipping_address_line2: form.shipping_address_line2 || undefined,
-      shipping_city: form.shipping_city,
-      shipping_state: form.shipping_state,
-      shipping_zip: form.shipping_zip,
+      shipping_city: form.shipping_city || undefined,
+      shipping_state: form.shipping_state || undefined,
+      shipping_zip: form.shipping_zip || undefined,
       is_gift: form.is_gift,
       gift_message: form.is_gift ? form.gift_message : undefined,
       gift_recipient_name: form.is_gift ? form.gift_recipient_name : undefined,

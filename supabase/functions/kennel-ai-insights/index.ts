@@ -178,13 +178,16 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "tile-guidance") {
+      const ownerRule = tileId === "brick-mortar"
+        ? `\n\nOWNER ASSIGNMENT RULE (brick & mortar):\n- For every action whose region/market is NOT California, set "owner_hint" to "National Commercial Director".\n- For California-specific actions, split ownership: use "Operations Director" for ops/inventory/logistics/compliance/distributor-fulfillment items, and "West Coast Sales Manager" for sales, chain placement, ambassador, retail-execution, and merchandising items.\n- If a California action clearly spans both, set "owner_hint" to "Operations Director + West Coast Sales Manager".\n- Do not invent other owners for brick & mortar actions.`
+        : "";
       const prompt = [
         rangeLabel ? `Period: ${rangeLabel}` : null,
         `Tile: ${tileId ?? "unknown"}`,
         `Tile data:\n${JSON.stringify(tileData ?? {}, null, 2)}`,
         `Soft signals:\n${JSON.stringify(softSignals, null, 2)}`,
       ].filter(Boolean).join("\n\n");
-      const parsed = await aiJson(prompt, TILE_GUIDANCE_INSTRUCTIONS, { actions: [] }) as any;
+      const parsed = await aiJson(prompt, TILE_GUIDANCE_INSTRUCTIONS + ownerRule, { actions: [] }) as any;
       return J(200, { actions: Array.isArray(parsed) ? parsed : parsed?.actions ?? [] });
     }
 

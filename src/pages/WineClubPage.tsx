@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Wine, Gift, Truck, Star, Heart, Users, XCircle } from "lucide-react";
+import { Wine, Gift, Star, Heart, Users, XCircle } from "lucide-react";
 import { useState } from "react";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "@/components/cms/CmsEditButton";

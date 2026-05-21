@@ -125,7 +125,6 @@ export function CartWineClubUpsell() {
           )}
           {selectedTier && (() => {
             const shipmentPct = selectedTier.shipment_discount_percent ?? selectedTier.discount_percent;
-            const alacartePct = selectedTier.discount_percent;
             return (
               <div className="border border-primary/30 bg-background/60 p-2 text-[11px] space-y-1">
                 <div className="font-semibold uppercase tracking-brand text-foreground text-[10px]">
@@ -135,12 +134,10 @@ export function CartWineClubUpsell() {
                   <span className="text-muted-foreground">Scheduled club shipments</span>
                   <span className="font-bold text-primary">{shipmentPct}% off</span>
                 </div>
-                {shipmentPct !== alacartePct && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">À la carte re-orders</span>
-                    <span className="font-bold text-primary">{alacartePct}% off</span>
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">À la carte re-orders</span>
+                  <span className="font-bold text-primary">20% off</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Full case (12+ bottles)</span>
                   <span className="font-bold text-primary">25% off</span>

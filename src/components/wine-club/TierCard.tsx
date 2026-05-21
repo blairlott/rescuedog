@@ -23,8 +23,9 @@ interface TierCardProps {
 
 export function TierCard({ tier, onSelect, isSelected }: TierCardProps) {
   const shipmentPct = tier.shipment_discount_percent ?? tier.discount_percent;
-  const alacartePct = tier.discount_percent;
-  const splitRate = shipmentPct !== alacartePct;
+  // Universal member rule (not per-tier): 20% off à la carte, 25% off full cases (12+).
+  const ALACARTE_PCT = 20;
+  const CASE_PCT = 25;
   return (
     <div
       className={`border p-6 flex flex-col transition-all ${
@@ -42,7 +43,7 @@ export function TierCard({ tier, onSelect, isSelected }: TierCardProps) {
         </div>
         <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-sm uppercase tracking-brand">
           <Percent className="h-3 w-3" />
-          {splitRate ? `${shipmentPct}% / ${alacartePct}%` : `${shipmentPct}% Off`}
+          {shipmentPct}% Off Shipments
         </span>
       </div>
 
@@ -64,9 +65,11 @@ export function TierCard({ tier, onSelect, isSelected }: TierCardProps) {
         </li>
         <li className="flex items-center gap-2">
           <Check className="h-4 w-4 text-primary" />
-          {splitRate
-            ? `${shipmentPct}% off your scheduled shipments, ${alacartePct}% off à la carte`
-            : `${alacartePct}% off all à la carte wine purchases`}
+          {shipmentPct}% off your scheduled shipments
+        </li>
+        <li className="flex items-center gap-2">
+          <Check className="h-4 w-4 text-primary" />
+          {ALACARTE_PCT}% off à la carte purchases ({CASE_PCT}% on full cases of 12+)
         </li>
         <li className="flex items-center gap-2">
           <Check className="h-4 w-4 text-primary" />

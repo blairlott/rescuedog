@@ -132,4 +132,9 @@ Phase 5 — Close the loop
 - New CRM page `/crm/webhooks` (admin-only): last 200 `vinoshipper_webhook_events` with filters (all / unprocessed / errors), payload expand, and a "Re-queue" button that flips `processed=false` so the next sweep retries it. RLS already covers admins via `is_wine_club_manager`.
 - CRM sidebar got two new admin links: "Customer Map" (Globe2) and "Webhooks" (Webhook).
 
-**Next up:** Phase 3 batch 1 — VS member-portal deep-links for shipment customization (#1), shipment tracking page (#2), and Your Pack portal upgrades (#3).
+**Phase 3 batch 1 — shipped (#1 + #2 + #3)**
+- **VS member-portal deep-links (#1)** — `src/lib/vinoshipperPortal.ts` exposes canonical Vinoshipper portal URLs (overview, payment methods, addresses, orders, subscriptions, preferences). New `VinoshipperPortalPanel` component mounted on the member dashboard with one-tap deep-links into the compliance-grade VS account portal for card-on-file updates, address changes, and subscription edits — opens in a new tab.
+- **Shipment tracking (#2)** — new `/account/shipments` list + `/account/shipments/:id` detail page (`MyShipmentsPage.tsx`). Pulls `wine_club_shipments` + items for the signed-in user, shows status badges, total, and item list. `src/lib/carrierTracking.ts` auto-detects UPS / FedEx / USPS / DHL from the tracking number and surfaces the carrier-specific "Track Package" CTA. Falls back to a Google search for unknown patterns.
+- **Your Pack portal (#3)** — new `YourPackStats` card on the member dashboard showing lifetime shipments received, bottles enjoyed, and Pack points + tier from `loyalty_accounts`. Added "View Shipment History & Tracking" CTA linking into the new shipments page.
+
+**Next up:** Phase 3 batch 2 — loyalty points via webhook on club shipments (#4), smart re-engagement automations (#5), and club anniversary + birthday emails (#6).

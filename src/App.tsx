@@ -50,6 +50,7 @@ const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const CustomerResetPasswordPage = lazy(() => import("./pages/CustomerResetPasswordPage"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
 const GiftCertificatePrintPage = lazy(() => import("./pages/GiftCertificatePrintPage"));
+const MyShipmentsPage = lazy(() => import("./pages/MyShipmentsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ThankYouPage = lazy(() => import("./pages/ThankYouPage"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
@@ -217,6 +218,8 @@ function AppContent() {
       <Route path="/reset-password" element={<CustomerResetPasswordPage />} />
       <Route path="/account" element={<AccountPage />} />
       <Route path="/account/gifts/:id/print" element={<GiftCertificatePrintPage />} />
+      <Route path="/account/shipments" element={<MyShipmentsPage />} />
+      <Route path="/account/shipments/:id" element={<MyShipmentsPage />} />
       <Route path="/rewards" element={<RewardsPage />} />
       <Route path="/rewards/terms" element={<RewardsTermsPage />} />
       <Route path="/policies" element={<PoliciesPage />} />

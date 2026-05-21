@@ -50,6 +50,8 @@ import { Image as ImageIcon, Heart } from "lucide-react";
 import { RescueSpotlightPanel } from "@/components/cms/RescueSpotlightPanel";
 import { IntegrationsPanel } from "@/components/cms/IntegrationsPanel";
 import { Plug } from "lucide-react";
+import { CreativeQueuePanel } from "@/components/cms/CreativeQueuePanel";
+import { Sparkles } from "lucide-react";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -441,6 +443,9 @@ const CmsDashboard = () => {
             <TabsTrigger value="merch-images" className="gap-1.5">
               <ImageIcon className="h-3.5 w-3.5" /> Merch Images
             </TabsTrigger>
+            <TabsTrigger value="creative-queue" className="gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" /> Creative Queue
+            </TabsTrigger>
             <TabsTrigger value="rescues" className="gap-1.5">
               <Heart className="h-3.5 w-3.5" /> Rescues
             </TabsTrigger>
@@ -656,6 +661,10 @@ const CmsDashboard = () => {
 
           <TabsContent value="merch-images">
             <MerchImagesPanel />
+          </TabsContent>
+
+          <TabsContent value="creative-queue">
+            <CreativeQueuePanel />
           </TabsContent>
 
           <TabsContent value="rescues">

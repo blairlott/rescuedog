@@ -4635,6 +4635,39 @@ export type Database = {
         }
         Relationships: []
       }
+      gtm_deploy_log: {
+        Row: {
+          action: string
+          created_at: string
+          error: string | null
+          id: string
+          response: Json | null
+          status: string
+          tag_id: string | null
+          version_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          response?: Json | null
+          status: string
+          tag_id?: string | null
+          version_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          response?: Json | null
+          status?: string
+          tag_id?: string | null
+          version_id?: string | null
+        }
+        Relationships: []
+      }
       guardrail_baseline: {
         Row: {
           baseline_daily_budget_cents: number | null

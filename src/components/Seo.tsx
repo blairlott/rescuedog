@@ -36,7 +36,7 @@ export function Seo({ title, description = DEFAULT_DESC, image = DEFAULT_IMG, pa
       <link rel="canonical" href={url} />
       {noindex && <meta name="robots" content="noindex,nofollow" />}
       {preloadImage && (
-        <link rel="preload" as="image" href={preloadImage} {...(preloadImageType ? { type: preloadImageType } : {})} fetchpriority="high" />
+        <link rel="preload" as="image" href={preloadImage} {...(preloadImageType ? { type: preloadImageType } : {})} fetchPriority="high" />
       )}
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />

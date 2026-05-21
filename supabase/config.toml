@@ -57,3 +57,13 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.google-ads-oci-upload]
     verify_jwt = false
+  [functions.meta-lookalike-trigger]
+    verify_jwt = false
+  [functions.product-feed-meta]
+    verify_jwt = false
+  [functions.auto-pause-sweep]
+    verify_jwt = false
+  [functions.ai-creative-variants]
+    verify_jwt = false
+  [functions.seo-autopilot-sweep]
+    verify_jwt = false

@@ -29,6 +29,70 @@ const corsHeaders = {
 
 const VS_BASE = "https://vinoshipper.com/api/v3/p";
 const STATIC_CLUB_LTV_CENTS = 40000; // $400 — replace with real LTV once fresh data accumulates
+const DEFAULT_MULTIPLIER = 1.0;
+
+/** Look up multiplier table once per poll run; key by 2-letter upper state. */
+async function loadStateMultipliers(admin: any): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  try {
+    const { data } = await admin.from("state_margin_tiers").select("state_code, multiplier");
+    for (const r of data ?? []) {
+      const code = String(r.state_code || "").toUpperCase();
+      const m = Number(r.multiplier);
+      if (code && Number.isFinite(m) && m > 0) map.set(code, m);
+    }
+  } catch (e) {
+    console.error("[vs-poll] state_margin_tiers lookup failed", e);
+  }
+  return map;
+}
+
+function resolveMultiplier(map: Map<string, number>, state: string | null | undefined): number {
+  if (!state) return DEFAULT_MULTIPLIER;
+  return map.get(String(state).trim().toUpperCase().slice(0, 2)) ?? DEFAULT_MULTIPLIER;
+}
+
+async function sha256Hex(s: string | null | undefined): Promise<string | null> {
+  if (!s) return null;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s).trim().toLowerCase()));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Best-effort insert into meta_capi_events with weighting metadata. */
+async function logCapiEvent(admin: any, row: {
+  orderId: string;
+  eventName: string;
+  eventId: string;
+  weightedValueCents: number;
+  rawValueCents: number;
+  multiplier: number;
+  state: string | null;
+  email: string | null;
+  ok: boolean;
+  error?: string | null;
+  testMode: boolean;
+}) {
+  try {
+    const emailHash = await sha256Hex(row.email);
+    await admin.from("meta_capi_events").insert({
+      order_id: row.orderId,
+      event_name: row.eventName,
+      event_id: row.eventId,
+      value_cents: row.weightedValueCents,
+      raw_value_cents: row.rawValueCents,
+      multiplier: row.multiplier,
+      state: row.state ? String(row.state).toUpperCase().slice(0, 2) : null,
+      currency: "USD",
+      test_mode: row.testMode,
+      email_hash: emailHash,
+      success: row.ok,
+      error: row.error ?? null,
+    });
+  } catch (e) {
+    // unique-on-(order_id) where test_mode=false AND success=true is expected for replays
+    console.warn("[vs-poll] capi log insert", String(e).slice(0, 200));
+  }
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

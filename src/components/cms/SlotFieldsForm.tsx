@@ -75,9 +75,9 @@ function FieldRow({ field, value, onChange }: { field: SlotField; value: unknown
               <div key={v} className="flex items-center justify-between border border-border px-3 py-2 text-sm">
                 <span>{i + 1}. {opt?.label ?? v}</span>
                 <div className="flex items-center gap-1">
-                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => move(i, -1)} disabled={i === 0}><ArrowUp className="h-3 w-3" /></Button>
-                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => move(i, 1)} disabled={i === arr.length - 1}><ArrowDown className="h-3 w-3" /></Button>
-                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => onChange(arr.filter((x) => x !== v))}><X className="h-3 w-3" /></Button>
+                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up"><ArrowUp className="h-3 w-3" /></Button>
+                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => move(i, 1)} disabled={i === arr.length - 1} aria-label="Move down"><ArrowDown className="h-3 w-3" /></Button>
+                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => onChange(arr.filter((x) => x !== v))} aria-label="Remove"><X className="h-3 w-3" /></Button>
                 </div>
               </div>
             );

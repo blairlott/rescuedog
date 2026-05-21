@@ -339,10 +339,31 @@ Deno.serve(async (req) => {
   )
 
   // Resolve subject — supports static string or dynamic function
-  const resolvedSubject =
+  let resolvedSubject =
     typeof template.subject === 'function'
       ? template.subject(templateData)
       : template.subject
+
+  // Override hook: admins can customize subject/html via the email editor
+  // in the Customer Service dashboard. Stored in email_template_overrides.
+  try {
+    const { data: override } = await supabase
+      .from('email_template_overrides')
+      .select('subject, body_html, enabled')
+      .eq('template_name', templateName)
+      .maybeSingle()
+    if (override && override.enabled) {
+      if (override.subject && override.subject.trim().length > 0) {
+        resolvedSubject = override.subject
+      }
+      if (override.body_html && override.body_html.trim().length > 0) {
+        html = override.body_html
+        plainText = override.body_html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      }
+    }
+  } catch (e) {
+    console.warn('email override lookup failed', e)
+  }
 
   // Customer-facing emails get a shared support footer (reply-to info@,
   // shipping questions routed to Vinoshipper) and a BCC to info@.

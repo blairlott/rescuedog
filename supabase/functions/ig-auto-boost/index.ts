@@ -51,6 +51,15 @@ async function getFacebookPostId(
   const feed = await feedRes.json().catch(() => ({}));
   const match = (feed?.data ?? []).find((p: any) => p?.permalink_url?.includes(shortcode));
   if (match?.id) return match.id;
+
+  // Fallback: Reels don't appear in /feed — check /video_reels
+  const reelsRes = await fetch(
+    `https://graph.facebook.com/v19.0/${pageId}/video_reels?fields=id,permalink_url&limit=50&access_token=${encodeURIComponent(pageToken)}`,
+  );
+  const reels = await reelsRes.json().catch(() => ({}));
+  const reelMatch = (reels?.data ?? []).find((p: any) => p?.permalink_url?.includes(shortcode));
+  if (reelMatch?.id) return reelMatch.id;
+
   throw new Error(`no_fb_post_match_for_ig_${igMediaId}_shortcode_${shortcode}`);
 }
 

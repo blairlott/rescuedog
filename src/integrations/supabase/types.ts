@@ -4775,6 +4775,213 @@ export type Database = {
         }
         Relationships: []
       }
+      ig_boost_config: {
+        Row: {
+          ab_winner_cpl_cents: number
+          ab_winner_roas_threshold: number
+          daily_budget_per_variant_cents: number
+          default_objective: string
+          engagement_rate_threshold: number
+          excluded_region_keys: string[]
+          id: string
+          ig_user_id: string
+          kill_frequency: number
+          kill_spend_threshold_cents: number
+          lal_1pct_audience_id: string
+          lal_high_ltv_audience_id: string
+          max_active_boosts: number
+          meta_ad_account_id: string
+          min_post_age_hours: number
+          min_reach: number
+          purchase_audience_id: string
+          save_rate_threshold: number
+          static_ltv_cents: number
+          updated_at: string
+          winner_min_age_days: number
+          winner_min_spend_cents: number
+        }
+        Insert: {
+          ab_winner_cpl_cents?: number
+          ab_winner_roas_threshold?: number
+          daily_budget_per_variant_cents?: number
+          default_objective?: string
+          engagement_rate_threshold?: number
+          excluded_region_keys?: string[]
+          id?: string
+          ig_user_id?: string
+          kill_frequency?: number
+          kill_spend_threshold_cents?: number
+          lal_1pct_audience_id?: string
+          lal_high_ltv_audience_id?: string
+          max_active_boosts?: number
+          meta_ad_account_id?: string
+          min_post_age_hours?: number
+          min_reach?: number
+          purchase_audience_id?: string
+          save_rate_threshold?: number
+          static_ltv_cents?: number
+          updated_at?: string
+          winner_min_age_days?: number
+          winner_min_spend_cents?: number
+        }
+        Update: {
+          ab_winner_cpl_cents?: number
+          ab_winner_roas_threshold?: number
+          daily_budget_per_variant_cents?: number
+          default_objective?: string
+          engagement_rate_threshold?: number
+          excluded_region_keys?: string[]
+          id?: string
+          ig_user_id?: string
+          kill_frequency?: number
+          kill_spend_threshold_cents?: number
+          lal_1pct_audience_id?: string
+          lal_high_ltv_audience_id?: string
+          max_active_boosts?: number
+          meta_ad_account_id?: string
+          min_post_age_hours?: number
+          min_reach?: number
+          purchase_audience_id?: string
+          save_rate_threshold?: number
+          static_ltv_cents?: number
+          updated_at?: string
+          winner_min_age_days?: number
+          winner_min_spend_cents?: number
+        }
+        Relationships: []
+      }
+      ig_boost_log: {
+        Row: {
+          ad_id: string | null
+          adset_id: string | null
+          campaign_id: string | null
+          cost_per_result: number | null
+          created_at: string
+          daily_budget_cents: number | null
+          frequency: number | null
+          id: string
+          kill_reason: string | null
+          last_polled_at: string | null
+          post_id: string
+          purchases: number | null
+          purchases_at_kill: number | null
+          roas: number | null
+          spend: number | null
+          spend_at_kill: number | null
+          status: string
+          subscribes: number | null
+          subscribes_at_kill: number | null
+          test_variant: string | null
+          trigger_value: number | null
+          triggered_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          ad_id?: string | null
+          adset_id?: string | null
+          campaign_id?: string | null
+          cost_per_result?: number | null
+          created_at?: string
+          daily_budget_cents?: number | null
+          frequency?: number | null
+          id?: string
+          kill_reason?: string | null
+          last_polled_at?: string | null
+          post_id: string
+          purchases?: number | null
+          purchases_at_kill?: number | null
+          roas?: number | null
+          spend?: number | null
+          spend_at_kill?: number | null
+          status?: string
+          subscribes?: number | null
+          subscribes_at_kill?: number | null
+          test_variant?: string | null
+          trigger_value?: number | null
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ad_id?: string | null
+          adset_id?: string | null
+          campaign_id?: string | null
+          cost_per_result?: number | null
+          created_at?: string
+          daily_budget_cents?: number | null
+          frequency?: number | null
+          id?: string
+          kill_reason?: string | null
+          last_polled_at?: string | null
+          post_id?: string
+          purchases?: number | null
+          purchases_at_kill?: number | null
+          roas?: number | null
+          spend?: number | null
+          spend_at_kill?: number | null
+          status?: string
+          subscribes?: number | null
+          subscribes_at_kill?: number | null
+          test_variant?: string | null
+          trigger_value?: number | null
+          triggered_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ig_post_metrics: {
+        Row: {
+          caption: string | null
+          comments: number | null
+          engagement_rate: number | null
+          id: string
+          impressions: number | null
+          likes: number | null
+          media_type: string | null
+          permalink: string | null
+          polled_at: string
+          post_id: string
+          post_timestamp: string | null
+          reach: number | null
+          save_rate: number | null
+          saves: number | null
+          shares: number | null
+        }
+        Insert: {
+          caption?: string | null
+          comments?: number | null
+          engagement_rate?: number | null
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          media_type?: string | null
+          permalink?: string | null
+          polled_at?: string
+          post_id: string
+          post_timestamp?: string | null
+          reach?: number | null
+          save_rate?: number | null
+          saves?: number | null
+          shares?: number | null
+        }
+        Update: {
+          caption?: string | null
+          comments?: number | null
+          engagement_rate?: number | null
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          media_type?: string | null
+          permalink?: string | null
+          polled_at?: string
+          post_id?: string
+          post_timestamp?: string | null
+          reach?: number | null
+          save_rate?: number | null
+          saves?: number | null
+          shares?: number | null
+        }
+        Relationships: []
+      }
       impact_events: {
         Row: {
           bottles: number

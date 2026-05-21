@@ -298,10 +298,10 @@ export function NextShipmentCustomizer({ membership }: Props) {
               <div className="text-xs text-muted-foreground">${(it.price_cents / 100).toFixed(2)} each</div>
             </div>
             <div className="flex items-center gap-1">
-              <Button size="icon" variant="outline" className="h-8 w-8" disabled={locked} onClick={() => updateQty(idx, -1)}><Minus className="h-3 w-3" /></Button>
+              <Button size="icon" variant="outline" className="h-8 w-8" disabled={locked} onClick={() => updateQty(idx, -1)} aria-label="Decrease quantity"><Minus className="h-3 w-3" /></Button>
               <span className="w-6 text-center text-sm font-bold">{it.quantity}</span>
-              <Button size="icon" variant="outline" className="h-8 w-8" disabled={locked} onClick={() => updateQty(idx, 1)}><Plus className="h-3 w-3" /></Button>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" disabled={locked} onClick={() => remove(idx)}><Trash2 className="h-3 w-3" /></Button>
+              <Button size="icon" variant="outline" className="h-8 w-8" disabled={locked} onClick={() => updateQty(idx, 1)} aria-label="Increase quantity"><Plus className="h-3 w-3" /></Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" disabled={locked} onClick={() => remove(idx)} aria-label="Remove item"><Trash2 className="h-3 w-3" /></Button>
             </div>
           </div>
         ))}

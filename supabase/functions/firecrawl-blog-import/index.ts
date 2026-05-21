@@ -105,10 +105,15 @@ Deno.serve(async (req) => {
   );
 
   // Admin gate
-  // Allow service-role bearer (server-to-server / scheduled run) OR admin/owner JWT.
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const isServiceRole = authHeader === `Bearer ${serviceKey}`;
-  if (!isServiceRole) {
+  // Allow service-role bearer, shared ingest-secret bearer (server-to-server
+  // / scheduled runs), or admin/owner JWT.
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const sharedSecret = Deno.env.get("KENNEL_INGEST_SECRET") ?? "";
+  const presented = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const isServerToServer =
+    (serviceKey && presented === serviceKey) ||
+    (sharedSecret && presented === sharedSecret);
+  if (!isServerToServer) {
     const userClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,

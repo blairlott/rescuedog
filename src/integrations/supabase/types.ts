@@ -7507,6 +7507,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_role_grants: {
+        Row: {
+          applied_at: string | null
+          applied_user_id: string | null
+          email: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          notes: string | null
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_user_id?: string | null
+          email: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          applied_at?: string | null
+          applied_user_id?: string | null
+          email?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
       personalization_rules: {
         Row: {
           created_at: string
@@ -10727,6 +10760,7 @@ export type Database = {
         | "ad_ops_manager"
         | "executive"
         | "kennel_viewer"
+        | "viewer"
       discount_scope: "sitewide" | "wine" | "merch" | "sku_list" | "collection"
       discount_tier: "public" | "club_member" | "ambassador" | "vip" | "staff"
       discount_type: "percent" | "fixed" | "shipping"
@@ -10881,6 +10915,7 @@ export const Constants = {
         "ad_ops_manager",
         "executive",
         "kennel_viewer",
+        "viewer",
       ],
       discount_scope: ["sitewide", "wine", "merch", "sku_list", "collection"],
       discount_tier: ["public", "club_member", "ambassador", "vip", "staff"],

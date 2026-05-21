@@ -443,11 +443,11 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
           isSubmitting ||
           creatingAccount ||
           !tier.vinoshipper_join_url ||
-          !form.shipping_address_line1 ||
-          !form.shipping_city ||
-          !form.shipping_state ||
-          !form.shipping_zip ||
-          ((!!tier.vinoshipper_join_url || !user) && (!firstName || !lastName)) ||
+          (form.is_gift &&
+            (!form.shipping_address_line1 ||
+              !form.shipping_city ||
+              !form.shipping_state ||
+              !form.shipping_zip)) ||
           (!user && (!email || !password)) ||
           (form.is_gift && (!form.gift_recipient_name || !form.gift_recipient_email))
         }

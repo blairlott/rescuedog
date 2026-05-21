@@ -6,8 +6,8 @@ import { useState } from "react";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
-import { useWineClubTiers, useMyMembership, useJoinClub } from "@/hooks/useWineClub";
-import type { WineClubTier, JoinClubData } from "@/hooks/useWineClub";
+import { useWineClubTiers, useMyMembership } from "@/hooks/useWineClub";
+import type { WineClubTier } from "@/hooks/useWineClub";
 import { ClubConfigurator } from "@/components/wine-club/ClubConfigurator";
 import { VinoshipperInlineSignup } from "@/components/wine-club/VinoshipperInlineSignup";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
@@ -48,8 +48,7 @@ const WineClubPage = () => {
   const { user } = useCustomerAuth();
   const navigate = useNavigate();
   const { data: tiers, isLoading: tiersLoading } = useWineClubTiers();
-  const { data: membership, isLoading: memberLoading } = useMyMembership();
-  const joinClub = useJoinClub();
+  const { data: membership } = useMyMembership();
 
   const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
   const faqs = content.faqs?.items || defaultFaqs;

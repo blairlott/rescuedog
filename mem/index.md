@@ -41,6 +41,7 @@
 - [Wine Club Automation](mem://features/wine-club-automation) — Monday cadence, AI curation, weather holds, UPS Access Points, auto-dispatch
 - [B2B Wholesale](mem://features/b2b-wholesale) — Region-based routing for wholesale inquiries
 - [Donation Form](mem://features/donation-form) — 501(c) strict form with Resend email logic
+- [Email Test Mode](mem://features/email-test-mode) — Pre-launch routing of all form emails to Blair+Lindy; S&S exempt; editable at /cms/forms
 - [CRM Core](mem://features/crm) — Sales CRM dashboard structure and features
 - [CRM Access Management](mem://features/crm-auth) — Mandatory admin approval for CRM access
 - [CRM Maps](mem://features/crm-maps) — Leaflet and Google Maps integration for CRM

@@ -79,6 +79,13 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: "GTM_ACCESS_TOKEN missing" }, 500);
   }
 
+  // GET = scope probe; POST = run deploy.
+  if (req.method === "GET") {
+    const ti = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(token)}`);
+    const tiJson = await ti.json().catch(() => ({}));
+    return json({ tokeninfo_status: ti.status, tokeninfo: tiJson });
+  }
+
   const authHeaders = {
     "Authorization": `Bearer ${token}`,
     "Content-Type": "application/json",

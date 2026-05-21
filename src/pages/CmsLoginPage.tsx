@@ -18,6 +18,16 @@ const CmsLoginPage = () => {
     e.preventDefault();
     setLoading(true);
 
+    if (!email.toLowerCase().endsWith("@rescuedogwines.com")) {
+      toast({
+        title: "Backend access restricted",
+        description: "Only @rescuedogwines.com email addresses can sign in here.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user) {
       toast({

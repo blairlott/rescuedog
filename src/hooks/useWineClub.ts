@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { toast } from "sonner";
+import { getNextShipmentDateForFrequency } from "@/lib/wineClubSchedule";
 
 export interface WineClubTier {
   id: string;
@@ -123,6 +124,14 @@ export function useJoinClub() {
   return useMutation({
     mutationFn: async (data: JoinClubData) => {
       if (!user) throw new Error("Must be logged in");
+      // Compute the next ship date based on the tier's cadence so the
+      // member's dashboard reflects when they'll actually receive wine.
+      const { data: tierRow } = await supabase
+        .from("wine_club_tiers")
+        .select("frequency")
+        .eq("id", data.tier_id)
+        .maybeSingle();
+      const nextShipDate = getNextShipmentDateForFrequency(tierRow?.frequency);
       const { data: inserted, error } = await supabase
         .from("wine_club_memberships")
         .insert({
@@ -130,7 +139,7 @@ export function useJoinClub() {
           ...data,
           payment_status: "simulated",
           status: "active",
-          next_shipment_date: getNextShipmentDate(),
+          next_shipment_date: nextShipDate,
           origin: data.is_gift ? "app_curated_gift" : "app_join",
         })
         .select("id")

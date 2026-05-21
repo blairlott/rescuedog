@@ -71,8 +71,9 @@ export function VinoshipperInlineSignup({
         <iframe
           src={url}
           title={`Vinoshipper Signup — ${tierName}`}
-          className="w-full h-[820px] border-0"
+          className="w-full h-[1600px] sm:h-[820px] border-0"
           allow="payment *"
+          scrolling="no"
         />
       </div>
     </div>

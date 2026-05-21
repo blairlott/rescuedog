@@ -274,6 +274,66 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_autopilot_kill_switch_evaluations: {
+        Row: {
+          computed_roas: number | null
+          created_at: string
+          detail: Json
+          evaluation_id: string | null
+          failures: number | null
+          id: string
+          measured_value: number | null
+          platform: string
+          sales_cents: number | null
+          sample_size: number | null
+          spend_cents: number | null
+          status: string
+          switch_name: string
+          threshold: number | null
+          tripped: boolean
+          window_seconds: number | null
+          would_trip: boolean
+        }
+        Insert: {
+          computed_roas?: number | null
+          created_at?: string
+          detail?: Json
+          evaluation_id?: string | null
+          failures?: number | null
+          id?: string
+          measured_value?: number | null
+          platform: string
+          sales_cents?: number | null
+          sample_size?: number | null
+          spend_cents?: number | null
+          status: string
+          switch_name: string
+          threshold?: number | null
+          tripped?: boolean
+          window_seconds?: number | null
+          would_trip?: boolean
+        }
+        Update: {
+          computed_roas?: number | null
+          created_at?: string
+          detail?: Json
+          evaluation_id?: string | null
+          failures?: number | null
+          id?: string
+          measured_value?: number | null
+          platform?: string
+          sales_cents?: number | null
+          sample_size?: number | null
+          spend_cents?: number | null
+          status?: string
+          switch_name?: string
+          threshold?: number | null
+          tripped?: boolean
+          window_seconds?: number | null
+          would_trip?: boolean
+        }
+        Relationships: []
+      }
       ad_campaigns: {
         Row: {
           clicks_mtd: number

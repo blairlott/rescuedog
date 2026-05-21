@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
     objective: "OUTCOME_SALES",
     status: "ACTIVE",
     special_ad_categories: [],
+    is_adset_budget_sharing_enabled: false,
   });
   if (!campaignRes.ok) return json({ ok: false, step: "campaign", ...campaignRes }, 502);
   const campaign_id: string = campaignRes.body.id;

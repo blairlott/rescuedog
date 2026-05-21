@@ -145,10 +145,31 @@ Deno.serve(async (req) => {
     }
     const adset_id: string = adsetRes.body.id;
 
+    // Create AdCreative referencing the IG-native post.
+    const creativeRes = await metaPost(`${acct}/adcreatives`, {
+      name: `IGBoost_${post_id}_${v.suffix}_creative`,
+      object_story_spec: {
+        instagram_actor_id: cfg.ig_user_id,
+      },
+      source_instagram_media_id: post_id,
+      instagram_user_id: cfg.ig_user_id,
+    });
+    if (!creativeRes.ok) {
+      await admin.from("ig_boost_log").insert({
+        post_id, triggered_by, trigger_value, test_variant: v.variant,
+        campaign_id, adset_id, status: "killed",
+        kill_reason: `creative_create_failed: ${JSON.stringify(creativeRes.body).slice(0, 400)}`,
+        daily_budget_cents: newBudgetCents,
+      });
+      results.push({ variant: v.variant, ok: false, step: "creative", ...creativeRes });
+      return json({ ok: false, post_id, campaign_id, variants: results }, 502);
+    }
+    const creative_id: string = creativeRes.body.id;
+
     const adRes = await metaPost(`${acct}/ads`, {
       name: `IGBoost_${post_id}_${v.variant}`,
       adset_id,
-      creative: { object_story_id: `${cfg.ig_user_id}_${post_id}` },
+      creative: { creative_id },
       status: "ACTIVE",
     });
     if (!adRes.ok) {

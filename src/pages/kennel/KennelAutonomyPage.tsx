@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { Play, Check, X, ExternalLink, Loader2 } from "lucide-react";
+import { MetaAutopilotHealth } from "@/components/kennel/MetaAutopilotHealth";
 
 function StatusPill({ s }: { s: string }) {
   const tone: Record<string, string> = {
@@ -91,6 +92,8 @@ export default function KennelAutonomyPage() {
           <p className="text-sm text-muted-foreground">Phase 4 — Lookalikes, DPA feed, auto-pause, AI creatives, SEO autopilot.</p>
         </div>
       </header>
+
+      <MetaAutopilotHealth />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap" style={{ borderRadius: 0 }}>

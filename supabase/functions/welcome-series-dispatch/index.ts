@@ -3,6 +3,7 @@
 // Idempotent: each row is marked sent/failed so re-runs only process pending rows.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { isNotificationEnabled } from "../_shared/devToggles.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +15,13 @@ const BATCH_SIZE = 25;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Dev-toggle gate (CMS Settings → Dev Controls → Customer Notifications)
+  if (!(await isNotificationEnabled("welcome_series"))) {
+    return new Response(JSON.stringify({ ok: true, processed: 0, skipped: "dev_toggle_off" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

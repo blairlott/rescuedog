@@ -3298,6 +3298,42 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_toggles: {
+        Row: {
+          category: string
+          description: string | null
+          enabled: boolean
+          key: string
+          label: string
+          locked: boolean
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          description?: string | null
+          enabled?: boolean
+          key: string
+          label: string
+          locked?: boolean
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          description?: string | null
+          enabled?: boolean
+          key?: string
+          label?: string
+          locked?: boolean
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       discount_codes: {
         Row: {
           active: boolean

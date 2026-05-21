@@ -5,6 +5,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { syncMailchimpMember } from '../_shared/mailchimpMember.ts';
+import { isNotificationEnabled } from '../_shared/devToggles.ts';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -33,6 +34,11 @@ Deno.serve(async (req) => {
   const { data: setting } = await supabase
     .from('app_settings').select('value').eq('key', 'reengagement_sweep_enabled').maybeSingle();
   if (setting && (setting.value as any) === false) return ok({ skipped: true, reason: 'disabled' });
+
+  // Dev-toggle gate (CMS Settings → Dev Controls → Customer Notifications → Win-back)
+  if (!(await isNotificationEnabled('winback'))) {
+    return ok({ skipped: true, reason: 'dev_toggle_off' });
+  }
 
   const segments = Object.keys(TAG_BY_SEGMENT);
   const { data: rows, error } = await supabase

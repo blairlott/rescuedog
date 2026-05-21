@@ -52,6 +52,8 @@ import { IntegrationsPanel } from "@/components/cms/IntegrationsPanel";
 import { Plug } from "lucide-react";
 import { CreativeQueuePanel } from "@/components/cms/CreativeQueuePanel";
 import { Sparkles } from "lucide-react";
+import { DevControlsPanel } from "@/components/cms/DevControlsPanel";
+import { SlidersHorizontal } from "lucide-react";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -461,6 +463,9 @@ const CmsDashboard = () => {
             <TabsTrigger value="integrations" className="gap-1.5">
               <Plug className="h-3.5 w-3.5" /> Integrations
             </TabsTrigger>
+            <TabsTrigger value="dev-controls" className="gap-1.5">
+              <SlidersHorizontal className="h-3.5 w-3.5" /> Dev Controls
+            </TabsTrigger>
           </TabsList>
 
           {/* ── Content Tab ───────────────────────────────── */}
@@ -673,6 +678,10 @@ const CmsDashboard = () => {
 
           <TabsContent value="integrations">
             <IntegrationsPanel />
+          </TabsContent>
+
+          <TabsContent value="dev-controls">
+            <DevControlsPanel />
           </TabsContent>
         </Tabs>
       </main>

@@ -6,6 +6,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendCapiEventSafe } from "../_shared/metaCapiEvent.ts";
+import { isNotificationEnabled } from "../_shared/devToggles.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,6 +81,11 @@ Deno.serve(async (req) => {
     .from("app_settings").select("value").eq("key", "abandoned_cart_enabled").maybeSingle();
   if (setting && (setting.value as any) === false) {
     return J(200, { ok: true, skipped: true });
+  }
+
+  // Dev-toggle gate (CMS Settings → Dev Controls → Customer Notifications)
+  if (!(await isNotificationEnabled("abandoned_cart"))) {
+    return J(200, { ok: true, skipped: true, reason: "dev_toggle_off" });
   }
 
   const now = Date.now();

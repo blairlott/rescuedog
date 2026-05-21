@@ -79,3 +79,4 @@
 - [Partner Ops Rules](mem://features/partner-ops-rules) — Lindy-triggered vs-tracking-verify, marketplace approval flow, wine 3PL relay exemption, promotion gates
 - [Kennel Ad Optimization](mem://features/kennel-ad-optimization) — DoW, geo, seasonality, retention-risk tables feeding ad bid/budget rules; CONSUMER-only Vinoshipper baseline
 - [Winback Automation](mem://features/winback-automation) — Tiered 60/120/240/365 winback sync across Mailchimp/Meta/Google with auto-recs into Kennel
+- [Dev Toggles](mem://features/dev-toggles) — CMS Settings → Dev Controls: master + sub toggles gating account features and customer notifications; Subscribe & Save locked ON

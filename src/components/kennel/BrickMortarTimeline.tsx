@@ -401,6 +401,10 @@ export function BrickMortarTimeline({ start: startProp, end: endProp, setStart: 
         </div>
       </header>
 
+      <ul className="mb-3 list-disc pl-5 text-[12px] font-bold text-[hsl(0_85%_45%)]" style={{ borderRadius: 0 }}>
+        <li>Waiting on chain authorization data for accurate revenue forecast.</li>
+      </ul>
+
       <CaveatBanner
         title="B&M actuals drive the model · Depletions & Instacart = signals only"
         items={[

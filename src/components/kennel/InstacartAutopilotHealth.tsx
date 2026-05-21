@@ -433,3 +433,241 @@ export function InstacartAutopilotHealth() {
     </div>
   );
 }
+
+// ---------- B2B Auto-Stop Settings subcomponent ----------
+
+type OverrideRow = {
+  accountId: string;
+  label: string;
+  autoStop: boolean;
+  maxErrorPct: number;
+  minRoas: number;
+};
+
+function B2BAutoStopSettings({
+  cfg,
+  setSetting,
+}: {
+  cfg: {
+    b2bAutoStop: boolean;
+    b2bMaxErrorPct: number;
+    b2bMinRoas: number;
+    b2bAccountOverrides: Record<string, { label?: string; autoStop?: boolean; maxErrorPct?: number; minRoas?: number }>;
+    globalMaxErrorPct: number;
+    globalMinRoas: number;
+  };
+  setSetting: (key: string, value: any) => Promise<void>;
+}) {
+  const rows: OverrideRow[] = useMemo(() => {
+    return Object.entries(cfg.b2bAccountOverrides ?? {}).map(([accountId, v]) => ({
+      accountId,
+      label: v.label ?? "",
+      autoStop: v.autoStop !== false,
+      maxErrorPct: Number(v.maxErrorPct ?? cfg.b2bMaxErrorPct),
+      minRoas: Number(v.minRoas ?? cfg.b2bMinRoas),
+    }));
+  }, [cfg.b2bAccountOverrides, cfg.b2bMaxErrorPct, cfg.b2bMinRoas]);
+
+  const [draftId, setDraftId] = useState("");
+  const [draftLabel, setDraftLabel] = useState("");
+
+  async function persistOverrides(next: OverrideRow[]) {
+    const map: Record<string, any> = {};
+    for (const r of next) {
+      if (!r.accountId.trim()) continue;
+      map[r.accountId.trim()] = {
+        label: r.label || undefined,
+        autoStop: r.autoStop,
+        maxErrorPct: r.maxErrorPct,
+        minRoas: r.minRoas,
+      };
+    }
+    await setSetting("instacart_autopilot_b2b_account_overrides", map);
+  }
+
+  async function updateRow(idx: number, patch: Partial<OverrideRow>) {
+    const next = rows.map((r, i) => (i === idx ? { ...r, ...patch } : r));
+    await persistOverrides(next);
+  }
+
+  async function removeRow(idx: number) {
+    const next = rows.filter((_, i) => i !== idx);
+    await persistOverrides(next);
+  }
+
+  async function addRow() {
+    if (!draftId.trim()) { toast.error("Account ID required"); return; }
+    if (rows.some(r => r.accountId === draftId.trim())) {
+      toast.error("Account already configured"); return;
+    }
+    const next: OverrideRow[] = [
+      ...rows,
+      {
+        accountId: draftId.trim(),
+        label: draftLabel.trim(),
+        autoStop: true,
+        maxErrorPct: cfg.b2bMaxErrorPct,
+        minRoas: cfg.b2bMinRoas,
+      },
+    ];
+    await persistOverrides(next);
+    setDraftId(""); setDraftLabel("");
+    toast.success("Account override added");
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm uppercase tracking-brand flex items-center gap-2">
+          <ShieldAlert className="h-4 w-4" /> B2B Auto-Stop Settings
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Configure error-rate and ROAS thresholds for B2B campaigns. Per-account overrides
+          let you set tighter (or looser) auto-stop rules for individual advertiser accounts.
+          When B2B auto-stop trips, only B2B execution is paused — consumer autopilot keeps running.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {/* Defaults */}
+        <div className="border border-border p-3 bg-muted/30" style={{ borderRadius: 0 }}>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-brand">B2B segment defaults</div>
+              <p className="text-[11px] text-muted-foreground">
+                Applied to all B2B campaigns without a per-account override. Tighter than the global thresholds
+                ({cfg.globalMaxErrorPct}% err / {cfg.globalMinRoas.toFixed(2)}x ROAS).
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Auto-stop B2B</span>
+              <Switch
+                checked={cfg.b2bAutoStop}
+                onCheckedChange={(v) => setSetting("instacart_autopilot_b2b_auto_stop_enabled", v)}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">B2B max error rate (%)</label>
+              <Input
+                type="number" min={1} max={100} step={0.5}
+                value={cfg.b2bMaxErrorPct}
+                onChange={(e) => setSetting("instacart_autopilot_b2b_max_error_rate_pct", Number(e.target.value))}
+                className="h-8 text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">B2B min trailing ROAS (x)</label>
+              <Input
+                type="number" min={0} step={0.1}
+                value={cfg.b2bMinRoas}
+                onChange={(e) => setSetting("instacart_autopilot_b2b_min_roas", Number(e.target.value))}
+                className="h-8 text-xs"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Per-account overrides */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-brand">Per-account overrides</div>
+              <p className="text-[11px] text-muted-foreground">
+                Override defaults for specific Instacart advertiser accounts.
+              </p>
+            </div>
+            <Badge variant="outline" className="text-[10px]">{rows.length} account{rows.length === 1 ? "" : "s"}</Badge>
+          </div>
+
+          {rows.length > 0 && (
+            <div className="border border-border overflow-x-auto" style={{ borderRadius: 0 }}>
+              <table className="w-full text-xs">
+                <thead className="bg-muted">
+                  <tr className="text-left">
+                    <th className="p-2">Account ID</th>
+                    <th className="p-2">Label</th>
+                    <th className="p-2">Auto-stop</th>
+                    <th className="p-2">Max err %</th>
+                    <th className="p-2">Min ROAS</th>
+                    <th className="p-2 w-8"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, idx) => (
+                    <tr key={r.accountId} className="border-t border-border">
+                      <td className="p-2 font-mono">{r.accountId}</td>
+                      <td className="p-2">
+                        <Input
+                          value={r.label}
+                          onChange={(e) => updateRow(idx, { label: e.target.value })}
+                          placeholder="e.g. Whole Foods B2B"
+                          className="h-7 text-xs"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <Switch
+                          checked={r.autoStop}
+                          onCheckedChange={(v) => updateRow(idx, { autoStop: v })}
+                        />
+                      </td>
+                      <td className="p-2">
+                        <Input
+                          type="number" min={1} max={100} step={0.5}
+                          value={r.maxErrorPct}
+                          onChange={(e) => updateRow(idx, { maxErrorPct: Number(e.target.value) })}
+                          className="h-7 text-xs w-20"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <Input
+                          type="number" min={0} step={0.1}
+                          value={r.minRoas}
+                          onChange={(e) => updateRow(idx, { minRoas: Number(e.target.value) })}
+                          className="h-7 text-xs w-20"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <Button
+                          size="icon" variant="ghost" className="h-7 w-7"
+                          onClick={() => removeRow(idx)}
+                          aria-label="Remove override"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-end gap-2 mt-3">
+            <div className="space-y-1 flex-1 min-w-[160px]">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Add account ID</label>
+              <Input
+                value={draftId}
+                onChange={(e) => setDraftId(e.target.value)}
+                placeholder="advertiser_12345"
+                className="h-8 text-xs"
+              />
+            </div>
+            <div className="space-y-1 flex-1 min-w-[160px]">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Label (optional)</label>
+              <Input
+                value={draftLabel}
+                onChange={(e) => setDraftLabel(e.target.value)}
+                placeholder="e.g. Sysco B2B"
+                className="h-8 text-xs"
+              />
+            </div>
+            <Button size="sm" onClick={addRow}>
+              <Plus className="h-3 w-3 mr-1" /> Add override
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

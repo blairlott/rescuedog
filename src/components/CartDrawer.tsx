@@ -122,6 +122,13 @@ export const CartDrawer = () => {
   const bottlesNeeded = freeShippingBottleCount - totalBottlesEffective;
   const dollarsNeeded = Math.max(0, merchFreeShippingThreshold - totalPrice);
   const showNudge = !isMerchRoute && !shippingIncluded && bottlesNeeded > 0 && bottlesNeeded <= 2 && totalItems > 0;
+  // Wine: 6–11 bottles qualify for the flat $9.99 ladder rung. Signals that
+  // shipping just dropped to a flat fee and 12+ unlocks free shipping.
+  const showFlatShippingNote =
+    !isMerchRoute &&
+    !shippingIncluded &&
+    totalBottlesEffective >= VS_FLAT_SHIPPING_MIN_BOTTLES &&
+    totalItems > 0;
   const showMerchNudge = isMerchRoute && !shippingIncluded && dollarsNeeded > 0 && dollarsNeeded <= 25 && totalItems > 0;
   const bottlesToCase = !isMerchRoute && caseBottles > 0 && caseBottles < fullCaseCount
     ? fullCaseCount - caseBottles

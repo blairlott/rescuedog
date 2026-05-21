@@ -22,6 +22,7 @@ import { PairWineWithMerch } from "@/components/cross-sell/PairWineWithMerch";
 import { ProductReviews, useProductRating } from "@/components/reviews/ProductReviews";
 import { LocalRescueLine } from "@/components/rescue/LocalRescueLine";
 import { isBundleHandle } from "@/lib/wineBundles";
+import { WineShippingPolicy } from "@/components/cart/WineShippingPolicy";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();

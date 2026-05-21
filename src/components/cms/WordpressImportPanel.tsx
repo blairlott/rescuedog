@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Download, FileText, CalendarDays, FileBox, ArrowRightLeft } from "lucide-react";
+import { Loader2, Download, FileText, CalendarDays, FileBox, ArrowRightLeft, Globe, Sparkles } from "lucide-react";
 
 type Run = {
   id: string; source_url: string; post_type: string; status: string;
@@ -24,6 +24,28 @@ export function WordpressImportPanel() {
   const [siteUrl, setSiteUrl] = useState(() => localStorage.getItem("wp_import_site") ?? "https://rescuedogwines.com");
   const [runs, setRuns] = useState<Run[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
+  const [fcBusy, setFcBusy] = useState(false);
+  const [seedBusy, setSeedBusy] = useState(false);
+
+  const runFirecrawl = async () => {
+    setFcBusy(true);
+    const { data, error } = await supabase.functions.invoke("firecrawl-blog-import", {
+      body: { index_url: `${siteUrl.replace(/\/$/, "")}/news/`, limit: 100 },
+    });
+    setFcBusy(false);
+    if (error) return toast({ title: "Firecrawl import failed", description: error.message, variant: "destructive" });
+    if (data?.error) return toast({ title: "Firecrawl import failed", description: data.error, variant: "destructive" });
+    toast({ title: `Imported ${data?.inserted ?? 0} new, updated ${data?.updated ?? 0}`, description: `${data?.failed ?? 0} failed of ${data?.scraped ?? 0} scraped` });
+  };
+
+  const runSeedDrafts = async () => {
+    setSeedBusy(true);
+    const { data, error } = await supabase.functions.invoke("seed-seo-drafts", { body: {} });
+    setSeedBusy(false);
+    if (error) return toast({ title: "Seed failed", description: error.message, variant: "destructive" });
+    if (data?.error) return toast({ title: "Seed failed", description: data.error, variant: "destructive" });
+    toast({ title: `${data?.drafts_created ?? 0} drafts seeded`, description: `${data?.passed_compliance ?? 0} clean · ${data?.flagged_compliance ?? 0} flagged · ${data?.failed ?? 0} failed` });
+  };
 
   const loadRuns = async () => {
     const { data } = await supabase.from("wp_import_runs").select("*").order("started_at", { ascending: false }).limit(15);
@@ -83,6 +105,34 @@ export function WordpressImportPanel() {
               </button>
             );
           })}
+        </div>
+
+        <div className="border-t border-border pt-6 space-y-3">
+          <h3 className="text-sm font-bold text-foreground">Firecrawl + AI tools</h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <button disabled={fcBusy} onClick={runFirecrawl}
+              className="text-left border border-border p-4 hover:border-primary disabled:opacity-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-primary" />
+                  <span className="font-bold text-sm">Firecrawl import (rescuedogwines.com)</span>
+                </div>
+                {fcBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4 text-muted-foreground" />}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Scrapes the live blog index, rehosts cover images, and upserts into the CMS. Use this when WP REST is unreachable.</p>
+            </button>
+            <button disabled={seedBusy} onClick={runSeedDrafts}
+              className="text-left border border-border p-4 hover:border-primary disabled:opacity-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="font-bold text-sm">Seed 20 SEO drafts (backdated)</span>
+                </div>
+                {seedBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4 text-muted-foreground" />}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Generates 20 gap-fill drafts spread over 24 months via Lovable AI. Each draft passes through the 7-rule compliance check. Saved as drafts for Blair to review.</p>
+            </button>
+          </div>
         </div>
 
         <div>

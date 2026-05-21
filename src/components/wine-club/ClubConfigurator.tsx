@@ -215,9 +215,6 @@ export function ClubConfigurator({ tiers, onSelect, isGift = false, onGiftChange
               <Check className="h-4 w-4 text-primary flex-shrink-0" /> 20% off à la carte (25% on full cases)
             </li>
             <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary flex-shrink-0" /> Shipping included on club shipments
-            </li>
-            <li className="flex items-center gap-2">
               <Check className="h-4 w-4 text-primary flex-shrink-0" /> Cancel anytime
             </li>
           </ul>

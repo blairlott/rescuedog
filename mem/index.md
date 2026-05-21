@@ -33,6 +33,7 @@
 - [Pricing Display](mem://features/pricing-display) — Wine Club Price and sampler disclaimer
 - [Cart Marketing](mem://features/cart-marketing) — Shipping terminology and upsell rules
 - [Subscriptions](mem://features/subscriptions) — Subscribe & Save and curated box tiers
+- [Subscribe vs Club](mem://features/subscribe-vs-club) — S&S is auto-ship, not membership; never stack with club discount
 - [Wine Club System](mem://features/wine-club-system) — 14 tiers, flat 20% off, signup UX + portal handing off to Vinoshipper
 - [Wine Club Customization](mem://features/wine-club-customization) — Per-shipment customization, `origin` column, legacy VS members gated
 - [Wine Club Automation](mem://features/wine-club-automation) — Monday cadence, AI curation, weather holds, UPS Access Points, auto-dispatch

@@ -150,7 +150,6 @@ Deno.serve(async (req) => {
       name: `IGBoost_${post_id}_${v.suffix}_creative`,
       object_story_spec: {
         page_id: cfg.fb_page_id,
-        instagram_actor_id: cfg.ig_user_id,
       },
       source_instagram_media_id: post_id,
       instagram_user_id: cfg.ig_user_id,

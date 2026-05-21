@@ -351,6 +351,19 @@ export function InstacartAutopilotHealth() {
         </CardContent>
       </Card>
 
+      {/* B2B Auto-Stop Settings */}
+      <B2BAutoStopSettings
+        cfg={{
+          b2bAutoStop: cfg.b2bAutoStop,
+          b2bMaxErrorPct: cfg.b2bMaxErrorPct,
+          b2bMinRoas: cfg.b2bMinRoas,
+          b2bAccountOverrides: cfg.b2bAccountOverrides,
+          globalMaxErrorPct: cfg.maxErrorPct,
+          globalMinRoas: cfg.minRoas,
+        }}
+        setSetting={setSetting}
+      />
+
       {/* Evaluation log */}
       <Card>
         <CardHeader className="pb-2">

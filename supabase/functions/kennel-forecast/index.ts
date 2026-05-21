@@ -302,7 +302,10 @@ Deno.serve(async (req) => {
       }
       if (trendSpend > 0 && baselineRoas > 0) {
         const implied = trendRev / trendSpend;
-        const targetRoas = Math.min(roasCeiling, Math.max(roasFloor, implied)) * roasTilt * uplift.roas;
+        // During Q4 (uplift active) widen the ROAS ceiling so historical Q4
+        // efficiency isn't clamped down to a depressed off-season baseline.
+        const ceilingActive = uplift.roas > 1 ? roasCeiling * 2.5 : roasCeiling;
+        const targetRoas = Math.min(ceilingActive, Math.max(roasFloor, implied)) * roasTilt * uplift.roas;
         trendRev = trendSpend * targetRoas;
       }
       const roas = trendSpend > 0 ? trendRev / trendSpend : 0;

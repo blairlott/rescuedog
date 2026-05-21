@@ -69,7 +69,7 @@ export function EmailCapturePrompt() {
   if (!open) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:max-w-sm z-[60] bg-background border border-foreground shadow-lg p-4 pr-10 relative">
+    <div className="fixed bottom-24 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:max-w-sm z-[60] bg-background border border-foreground shadow-lg p-4 pr-10">
       <button type="button" onClick={dismiss} aria-label="Close" className="absolute top-2 right-2 p-2 text-muted-foreground hover:text-foreground z-20 cursor-pointer">
         <X className="h-4 w-4" />
       </button>

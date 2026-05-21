@@ -97,6 +97,7 @@ const CrmIntelligencePage = lazy(() => import("./pages/crm/CrmIntelligencePage")
 const CrmCustomerMapPage = lazy(() => import("./pages/crm/CrmCustomerMapPage"));
 const CrmWebhooksPage = lazy(() => import("./pages/crm/CrmWebhooksPage"));
 const CrmLegacyMigrationPage = lazy(() => import("./pages/CrmLegacyMigrationPage"));
+const CrmCancellationsPage = lazy(() => import("./pages/crm/CrmCancellationsPage"));
 const RewardsTermsPage = lazy(() => import("./pages/RewardsTermsPage"));
 const RewardsPage = lazy(() => import("./pages/RewardsPage"));
 const PoliciesPage = lazy(() => import("./pages/PoliciesPage"));

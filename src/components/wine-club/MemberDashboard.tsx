@@ -10,6 +10,9 @@ import { NextShipmentCustomizer } from "./NextShipmentCustomizer";
 import { NextShipmentCountdown } from "./NextShipmentCountdown";
 import { CancelMembershipDialog } from "./CancelMembershipDialog";
 import { GiftMembershipDialog } from "./GiftMembershipDialog";
+import { VinoshipperPortalPanel } from "./VinoshipperPortalPanel";
+import { YourPackStats } from "./YourPackStats";
+import { Link } from "react-router-dom";
 
 const frequencyLabel: Record<string, string> = {
   monthly: "Monthly",
@@ -77,6 +80,8 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
     <div className="max-w-4xl mx-auto">
       {/* Members-first countdown — drives anticipation for the next release */}
       <NextShipmentCountdown nextShipmentDate={membership.next_shipment_date} />
+      {/* Your Pack — lifetime stats */}
+      <YourPackStats membershipId={membership.id} userId={(membership as any).user_id} />
       {/* Status Banner */}
       <div className="border border-primary bg-primary/5 p-6 mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -174,6 +179,20 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
 
       {/* Next Shipment Customizer — handles its own skip CTA when a shipment exists */}
       <NextShipmentCustomizer membership={membership} />
+
+      {/* Shipment history shortcut */}
+      <div className="mt-8">
+        <Button asChild variant="outline" className="uppercase tracking-brand text-xs font-bold">
+          <Link to="/account/shipments">
+            <Package className="h-4 w-4 mr-1.5" /> View Shipment History & Tracking
+          </Link>
+        </Button>
+      </div>
+
+      {/* Vinoshipper member-portal deep-links */}
+      <div className="mt-8">
+        <VinoshipperPortalPanel vinoshipperCustomerId={(membership as any).vinoshipper_customer_id} />
+      </div>
 
       {/* Gift a Membership */}
       <div className="mt-12 border border-primary bg-primary/5 p-6">

@@ -66,28 +66,25 @@ export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
     ) || null;
   }, [frequency, bottleCount, wineType, tiers]);
 
-  // When frequency changes, snap bottle count to the nearest available option
-  // (don't wipe downstream — users can keep iterating without re-picking).
+  // When upstream changes, snap downstream to the closest available option
+  // (don't wipe — users can keep iterating without re-picking everything).
   const handleFrequency = (val: string) => {
     setFrequency(val);
-    const counts = [...new Set(tiers.filter((t) => t.frequency === val).map((t) => t.bottle_count))].sort(
-      (a, b) => a - b,
-    );
-    if (counts.length && !counts.includes(bottleCount ?? -1)) {
-      const next = counts.find((c) => c >= (bottleCount ?? 0)) ?? counts[0];
-      setBottleCount(next);
-    }
+    const counts = [
+      ...new Set(tiers.filter((t) => t.frequency === val).map((t) => t.bottle_count)),
+    ].sort((a, b) => a - b);
+    const nextCount =
+      bottleCount && counts.includes(bottleCount)
+        ? bottleCount
+        : counts.find((c) => c >= (bottleCount ?? 0)) ?? counts[0] ?? null;
+    if (nextCount !== bottleCount) setBottleCount(nextCount);
     const types = tiers
-      .filter((t) => t.frequency === val && t.bottle_count === (bottleCount ?? next_unused()))
+      .filter((t) => t.frequency === val && t.bottle_count === nextCount)
       .map((t) => t.wine_type);
     if (wineType && types.length && !types.includes(wineType)) {
       setWineType(types[0]);
     }
   };
-  // Tiny helper to keep TS happy in the inline `bottleCount ?? ...` fallback above.
-  function next_unused() {
-    return 0;
-  }
 
   const handleBottleCount = (val: number) => {
     setBottleCount(val);

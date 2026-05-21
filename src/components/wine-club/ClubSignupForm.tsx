@@ -34,6 +34,7 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [creatingAccount, setCreatingAccount] = useState(false);
+  const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [form, setForm] = useState({
     shipping_address_line1: "",
     shipping_address_line2: "",
@@ -64,6 +65,20 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
       }
       setCreatingAccount(true);
       try {
+        if (mode === "signin") {
+          const { error: signInErr } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (signInErr) {
+            toast.error(signInErr.message || "Could not sign in");
+            setCreatingAccount(false);
+            return;
+          }
+          await new Promise((r) => setTimeout(r, 400));
+          setCreatingAccount(false);
+          // fall through to build payload
+        } else {
         const { data: sd, error } = await supabase.auth.signUp({
           email,
           password,
@@ -87,8 +102,9 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
             });
             if (signInErr) {
               toast.error(
-                "You already have an account with this email. Sign in to rejoin, or use the password you set previously.",
+                "You already have an account with this email. Switch to 'Sign in' below and enter your existing password to rejoin.",
               );
+              setMode("signin");
               setCreatingAccount(false);
               return;
             }
@@ -110,6 +126,7 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
           // Let the auth context propagate before submitting so useJoinClub
           // sees the new user.
           await new Promise((r) => setTimeout(r, 400));
+        }
         }
       } catch (err: any) {
         toast.error(err?.message || "Could not create account");
@@ -366,19 +383,32 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
       {!user && (
         <div className="border border-border bg-muted/30 p-5 mb-8 space-y-4">
           <div>
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-brand">
-              Create your account
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              We'll create your Rescue Dog Wines account as you join — used for
-              order history, shipment customization, and secure payment with our
-              compliance partner Vinoshipper.{" "}
-              <Link
-                to="/login?redirect=/club"
-                className="underline hover:text-foreground"
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h3 className="text-sm font-bold text-foreground uppercase tracking-brand">
+                {mode === "signup" ? "Create your account" : "Sign in to rejoin"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+                className="text-xs underline text-muted-foreground hover:text-foreground"
               >
-                Already have an account? Sign in
-              </Link>
+                {mode === "signup"
+                  ? "Already a member? Sign in"
+                  : "New here? Create an account"}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {mode === "signup"
+                ? "We'll create your Rescue Dog Wines account as you join — used for order history, shipment customization, and secure card-on-file with our compliance partner Vinoshipper."
+                : "Welcome back! Sign in with your existing password to rejoin or gift a membership."}{" "}
+              {mode === "signin" && (
+                <Link
+                  to="/forgot-password"
+                  className="underline hover:text-foreground"
+                >
+                  Forgot password?
+                </Link>
+              )}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -402,8 +432,8 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                autoComplete="new-password"
-                placeholder="At least 6 characters"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                placeholder={mode === "signup" ? "At least 6 characters" : "Your password"}
               />
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Wine, ArrowRight, Check, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WineClubDisclaimer } from "@/components/WineClubDisclaimer";
@@ -27,6 +27,24 @@ export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
   const [bottleCount, setBottleCount] = useState<number | null>(null);
   const [wineType, setWineType] = useState<string | null>(null);
 
+  // Smart defaults: pick the most popular combo (Quarterly / 4 / Mixed) if the
+  // tier catalog contains one. Falls back to the first available combination so
+  // users land on a matched tier with zero clicks.
+  useEffect(() => {
+    if (!tiers?.length || frequency) return;
+    const preferred =
+      tiers.find(
+        (t) => t.frequency === "quarterly" && t.bottle_count === 4 && t.wine_type === "mixed",
+      ) ??
+      tiers.find((t) => t.frequency === "quarterly") ??
+      tiers[0];
+    if (preferred) {
+      setFrequency(preferred.frequency);
+      setBottleCount(preferred.bottle_count);
+      setWineType(preferred.wine_type);
+    }
+  }, [tiers, frequency]);
+
   // Derive available options based on selections
   const availableBottleCounts = useMemo(() => {
     if (!frequency) return [];
@@ -48,50 +66,45 @@ export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
     ) || null;
   }, [frequency, bottleCount, wineType, tiers]);
 
-  // Reset downstream when upstream changes
+  // When upstream changes, snap downstream to the closest available option
+  // (don't wipe — users can keep iterating without re-picking everything).
   const handleFrequency = (val: string) => {
     setFrequency(val);
-    setBottleCount(null);
-    setWineType(null);
+    const counts = [
+      ...new Set(tiers.filter((t) => t.frequency === val).map((t) => t.bottle_count)),
+    ].sort((a, b) => a - b);
+    const nextCount =
+      bottleCount && counts.includes(bottleCount)
+        ? bottleCount
+        : counts.find((c) => c >= (bottleCount ?? 0)) ?? counts[0] ?? null;
+    if (nextCount !== bottleCount) setBottleCount(nextCount);
+    const types = tiers
+      .filter((t) => t.frequency === val && t.bottle_count === nextCount)
+      .map((t) => t.wine_type);
+    if (wineType && types.length && !types.includes(wineType)) {
+      setWineType(types[0]);
+    }
   };
 
   const handleBottleCount = (val: number) => {
     setBottleCount(val);
-    setWineType(null);
+    const types = tiers
+      .filter((t) => t.frequency === frequency && t.bottle_count === val)
+      .map((t) => t.wine_type);
+    if (wineType && types.length && !types.includes(wineType)) {
+      setWineType(types[0]);
+    }
   };
-
-  const currentStep = !frequency ? 1 : !bottleCount ? 2 : !wineType ? 3 : 4;
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Step indicators */}
-      <div className="flex items-center justify-center gap-2 mb-10">
-        {[1, 2, 3].map((step) => (
-          <div key={step} className="flex items-center gap-2">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                currentStep > step
-                  ? "bg-primary text-primary-foreground"
-                  : currentStep === step
-                  ? "bg-primary/10 text-primary border-2 border-primary"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {currentStep > step ? <Check className="h-4 w-4" /> : step}
-            </div>
-            {step < 3 && (
-              <div className={`w-12 h-0.5 ${currentStep > step ? "bg-primary" : "bg-border"}`} />
-            )}
-          </div>
-        ))}
-      </div>
+      <p className="text-center text-sm text-muted-foreground mb-8">
+        We've pre-picked our most popular combo. Tweak any option below — your tier updates instantly.
+      </p>
 
-      {/* Step 1: Frequency */}
-      <div className="mb-8">
-        <h3 className="text-sm font-bold uppercase tracking-brand text-muted-foreground mb-1">
-          Step 1
-        </h3>
-        <p className="text-lg font-bold text-foreground mb-4">How often do you want wine delivered?</p>
+      {/* Frequency */}
+      <div className="mb-6">
+        <p className="text-sm font-bold uppercase tracking-brand text-muted-foreground mb-3">Frequency</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {frequencyOptions.map((opt) => (
             <button
@@ -110,13 +123,10 @@ export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
         </div>
       </div>
 
-      {/* Step 2: Bottle Count */}
-      {frequency && (
-        <div className="mb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <h3 className="text-sm font-bold uppercase tracking-brand text-muted-foreground mb-1">
-            Step 2
-          </h3>
-          <p className="text-lg font-bold text-foreground mb-4">How many bottles per shipment?</p>
+      {/* Bottle Count */}
+      {frequency && availableBottleCounts.length > 0 && (
+        <div className="mb-6">
+          <p className="text-sm font-bold uppercase tracking-brand text-muted-foreground mb-3">Bottles per shipment</p>
           <div className="grid grid-cols-3 gap-3">
             {availableBottleCounts.map((count) => (
               <button
@@ -136,13 +146,10 @@ export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
         </div>
       )}
 
-      {/* Step 3: Wine Type */}
-      {frequency && bottleCount && (
-        <div className="mb-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <h3 className="text-sm font-bold uppercase tracking-brand text-muted-foreground mb-1">
-            Step 3
-          </h3>
-          <p className="text-lg font-bold text-foreground mb-4">What type of wine do you prefer?</p>
+      {/* Wine Type */}
+      {frequency && bottleCount && availableWineTypes.length > 0 && (
+        <div className="mb-8">
+          <p className="text-sm font-bold uppercase tracking-brand text-muted-foreground mb-3">Wine type</p>
           <div className="grid grid-cols-3 gap-3">
             {wineTypeOptions
               .filter((opt) => availableWineTypes.includes(opt.value))

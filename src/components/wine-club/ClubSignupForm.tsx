@@ -54,8 +54,8 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
 
     // No account yet? Create one inline before saving the membership.
     if (!user) {
-      if (!email || !password || !firstName || !lastName) {
-        toast.error("Please fill in your name, email, and password");
+      if (!email || !password) {
+        toast.error("Please enter your email and password");
         return;
       }
       if (password.length < 6) {
@@ -69,7 +69,9 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/club`,
-            data: { full_name: `${firstName} ${lastName}`.trim() },
+            data: firstName || lastName
+              ? { full_name: `${firstName} ${lastName}`.trim() }
+              : undefined,
           },
         });
         if (error) {
@@ -123,11 +125,14 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
     // and no recurring billing in Vinoshipper.
     const payload: JoinClubData = {
       tier_id: tier.id,
-      shipping_address_line1: form.shipping_address_line1,
+      // For self-signup these stay blank — Vinoshipper captures the real
+      // address during card-on-file. For gifts we collect the recipient
+      // address above and pass it through here.
+      shipping_address_line1: form.shipping_address_line1 || undefined,
       shipping_address_line2: form.shipping_address_line2 || undefined,
-      shipping_city: form.shipping_city,
-      shipping_state: form.shipping_state,
-      shipping_zip: form.shipping_zip,
+      shipping_city: form.shipping_city || undefined,
+      shipping_state: form.shipping_state || undefined,
+      shipping_zip: form.shipping_zip || undefined,
       is_gift: form.is_gift,
       gift_message: form.is_gift ? form.gift_message : undefined,
       gift_recipient_name: form.is_gift ? form.gift_recipient_name : undefined,
@@ -283,16 +288,13 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
         </div>
       )}
 
-      {/* Shipping Address */}
+      {/* Shipping Address — only required for gifts (we need recipient's address).
+          For self-signup, Vinoshipper collects the shipping address during card
+          capture, so we skip it here to cut click fatigue. */}
+      {form.is_gift && (
       <div className="mb-8">
-        <h3 className="text-lg font-bold text-foreground mb-1">
-          {form.is_gift ? "Recipient's Shipping Address" : "Shipping Address"}
-        </h3>
-        <p className="text-xs text-muted-foreground mb-4">
-          {form.is_gift
-            ? "Where should we ship the wine to your gift recipient?"
-            : "Where should we deliver your club shipments?"}
-        </p>
+        <h3 className="text-lg font-bold text-foreground mb-1">Recipient's Shipping Address</h3>
+        <p className="text-xs text-muted-foreground mb-4">Where should we ship the wine to your gift recipient?</p>
         <div className="space-y-4">
           <div>
             <Label htmlFor="line1">Street Address *</Label>
@@ -300,7 +302,7 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
               id="line1"
               value={form.shipping_address_line1}
               onChange={(e) => update("shipping_address_line1", e.target.value)}
-              required
+              required={form.is_gift}
             />
           </div>
           <div>
@@ -318,7 +320,7 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
                 id="city"
                 value={form.shipping_city}
                 onChange={(e) => update("shipping_city", e.target.value)}
-                required
+                required={form.is_gift}
               />
             </div>
             <div>
@@ -342,42 +344,23 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
                 id="zip"
                 value={form.shipping_zip}
                 onChange={(e) => update("shipping_zip", e.target.value)}
-                required
+                required={form.is_gift}
                 maxLength={10}
               />
             </div>
           </div>
         </div>
       </div>
+      )}
 
       {/* Customization note — sets expectation that Vinoshipper emails the customization link */}
       <div className="mb-8 border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
         Before each release, Vinoshipper will email you a link to your customization page where you can swap or adjust wines before the deadline.
       </div>
 
-      {/* Name (used to prefill the Vinoshipper payment step) */}
-      {(tier.vinoshipper_join_url || !user) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <div>
-            <Label htmlFor="first_name">First Name *</Label>
-            <Input
-              id="first_name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="last_name">Last Name *</Label>
-            <Input
-              id="last_name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
-            />
-          </div>
-        </div>
-      )}
+      {/* Name fields removed — Vinoshipper collects them during card capture.
+          For gifts we still want the recipient's name (captured above) but the
+          giver's name is optional and Vinoshipper will prompt for it. */}
 
       {/* Inline account creation for guests */}
       {!user && (
@@ -463,11 +446,11 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
           isSubmitting ||
           creatingAccount ||
           !tier.vinoshipper_join_url ||
-          !form.shipping_address_line1 ||
-          !form.shipping_city ||
-          !form.shipping_state ||
-          !form.shipping_zip ||
-          ((!!tier.vinoshipper_join_url || !user) && (!firstName || !lastName)) ||
+          (form.is_gift &&
+            (!form.shipping_address_line1 ||
+              !form.shipping_city ||
+              !form.shipping_state ||
+              !form.shipping_zip)) ||
           (!user && (!email || !password)) ||
           (form.is_gift && (!form.gift_recipient_name || !form.gift_recipient_email))
         }

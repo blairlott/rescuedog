@@ -679,6 +679,10 @@ const CmsDashboard = () => {
           <TabsContent value="integrations">
             <IntegrationsPanel />
           </TabsContent>
+
+          <TabsContent value="dev-controls">
+            <DevControlsPanel />
+          </TabsContent>
         </Tabs>
       </main>
 

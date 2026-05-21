@@ -174,9 +174,6 @@ export function CreativeQueuePanel() {
 
   return (
     <div className="space-y-8">
-      {/* Content seed library — reference uploads */}
-      <ContentSeedPanel />
-
       {/* Generator */}
       <Card className="p-6 border border-border rounded-none">
         <div className="flex items-center gap-2 mb-4">

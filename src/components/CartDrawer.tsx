@@ -670,7 +670,16 @@ export const CartDrawer = () => {
                 <CartWineClubUpsell />
                 {showNudge && (
                   <div className="text-xs bg-brand-gold/10 border border-brand-gold/30 px-3 py-2 flex items-center justify-between">
-                    <span><strong>Add {bottlesNeeded} more bottle{bottlesNeeded !== 1 ? 's' : ''}</strong> — shipping included at {freeShippingBottleCount}+</span>
+                    <span>
+                      <strong>Add {bottlesNeeded} more bottle{bottlesNeeded !== 1 ? 's' : ''}</strong> — flat ${VS_FLAT_SHIPPING_USD.toFixed(2)} shipping at {VS_FLAT_SHIPPING_MIN_BOTTLES}+, included at {freeShippingBottleCount}+
+                    </span>
+                  </div>
+                )}
+                {showFlatShippingNote && (
+                  <div className="text-xs bg-brand-gold/10 border border-brand-gold/30 px-3 py-2 flex items-center justify-between">
+                    <span>
+                      <strong>Flat ${VS_FLAT_SHIPPING_USD.toFixed(2)} shipping unlocked</strong> — add {freeShippingBottleCount - totalBottlesEffective} more for shipping included
+                    </span>
                   </div>
                 )}
                 {showMerchNudge && (

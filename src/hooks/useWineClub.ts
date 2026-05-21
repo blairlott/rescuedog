@@ -105,11 +105,11 @@ export function useMyGiftMemberships() {
 
 export interface JoinClubData {
   tier_id: string;
-  shipping_address_line1: string;
+  shipping_address_line1?: string;
   shipping_address_line2?: string;
-  shipping_city: string;
-  shipping_state: string;
-  shipping_zip: string;
+  shipping_city?: string;
+  shipping_state?: string;
+  shipping_zip?: string;
   wine_preferences?: string[];
   is_gift?: boolean;
   gift_message?: string;

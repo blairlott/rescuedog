@@ -49,10 +49,25 @@ export function VinoshipperClubHandoff({
   const [confirmed, setConfirmed] = useState(false);
   const [completedFired, setCompletedFired] = useState(false);
 
-  // Append prefill query params if the joinUrl is a Vinoshipper URL.
+  // Build an iframe-friendly embed URL. Vinoshipper's marketing /shop/...
+  // page is NOT iframe-safe (sets X-Frame-Options and renders the full
+  // store chrome). Their official embed endpoint at
+  //   https://vinoshipper.com/ui/embed/clubs/{producerId}?clubId={clubId}
+  // is purpose-built for iframe usage and renders the actual card-capture
+  // form. We derive producerId + clubId from the stored joinUrl
+  // (`/shop/{producerId}/club/{clubId}`) and fall back to the raw joinUrl
+  // if it doesn't match.
   const url = (() => {
     try {
-      const u = new URL(joinUrl);
+      let u: URL;
+      const match = joinUrl.match(/vinoshipper\.com\/shop\/(\d+)\/club\/(\d+)/i);
+      if (match) {
+        u = new URL(
+          `https://vinoshipper.com/ui/embed/clubs/${match[1]}?clubId=${match[2]}&theme=red`,
+        );
+      } else {
+        u = new URL(joinUrl);
+      }
       if (prefill?.email) u.searchParams.set("email", prefill.email);
       if (prefill?.firstName) u.searchParams.set("firstName", prefill.firstName);
       if (prefill?.lastName) u.searchParams.set("lastName", prefill.lastName);
@@ -61,8 +76,6 @@ export function VinoshipperClubHandoff({
       if (prefill?.city) u.searchParams.set("city", prefill.city);
       if (prefill?.state) u.searchParams.set("state", prefill.state);
       if (prefill?.zip) u.searchParams.set("zip", prefill.zip);
-      // Hint Vinoshipper to render its embedded/iframe-safe layout.
-      u.searchParams.set("embed", "1");
       return u.toString();
     } catch {
       return joinUrl;

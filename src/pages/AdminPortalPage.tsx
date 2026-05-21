@@ -9,15 +9,27 @@ import { Shield, Lock } from "lucide-react";
 import { ADMIN_AREAS, hasAreaAccess } from "@/lib/adminAreas";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import { AbVariantTile } from "@/components/admin/AbVariantTile";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Bell } from "lucide-react";
 
 type RoleRow = { role: string };
+type PendingRequest = {
+  id: string;
+  user_email: string | null;
+  user_name: string | null;
+  requested_area: string;
+  message: string | null;
+  created_at: string;
+};
+
+const READ_ONLY_ROLES = new Set(["viewer", "executive"]);
+const ADMIN_ROLES = new Set(["owner", "admin"]);
 
 const AdminPortalPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [checking, setChecking] = useState(true);
   const [roles, setRoles] = useState<string[] | null>(null);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,19 +39,39 @@ const AdminPortalPage = () => {
     return ((data as RoleRow[] | null) || []).map((r) => r.role);
   };
 
+  const loadPendingRequests = async (userRoles: string[]) => {
+    if (!userRoles.some((r) => ADMIN_ROLES.has(r))) {
+      setPendingRequests([]);
+      return;
+    }
+    const { data } = await supabase
+      .from("access_requests")
+      .select("id, user_email, user_name, requested_area, message, created_at")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setPendingRequests((data as PendingRequest[] | null) || []);
+  };
+
   useEffect(() => {
     let mounted = true;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!mounted) return;
-      if (session?.user) setRoles(await loadRoles(session.user.id));
-      else setRoles(null);
+      if (session?.user) {
+        const userRoles = await loadRoles(session.user.id);
+        setRoles(userRoles);
+        await loadPendingRequests(userRoles);
+      } else setRoles(null);
       setChecking(false);
     })();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_e, session) => {
       if (!mounted) return;
-      if (session?.user) setRoles(await loadRoles(session.user.id));
-      else setRoles(null);
+      if (session?.user) {
+        const userRoles = await loadRoles(session.user.id);
+        setRoles(userRoles);
+        await loadPendingRequests(userRoles);
+      } else setRoles(null);
     });
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
@@ -55,6 +87,7 @@ const AdminPortalPage = () => {
     }
     const userRoles = await loadRoles(data.user.id);
     setRoles(userRoles);
+    await loadPendingRequests(userRoles);
     setLoading(false);
     toast({
       title: "Welcome back",
@@ -118,6 +151,32 @@ const AdminPortalPage = () => {
     <div className="min-h-screen bg-secondary">
       <AdminTopNav roles={roles} />
       <main className="container mx-auto px-4 py-12 max-w-4xl">
+        {pendingRequests.length > 0 && (
+          <div className="mb-6 border border-primary/40 bg-primary/5 p-4 flex items-start gap-3">
+            <Bell className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+            <div className="flex-1 text-sm">
+              <div className="font-bold text-foreground mb-1">
+                {pendingRequests.length} pending access request{pendingRequests.length === 1 ? "" : "s"}
+              </div>
+              <ul className="space-y-1 text-muted-foreground">
+                {pendingRequests.slice(0, 5).map((r) => (
+                  <li key={r.id}>
+                    <strong className="text-foreground">{r.user_name || r.user_email || "Unknown"}</strong>
+                    {" → "}{r.requested_area}
+                    {r.message ? <span className="opacity-75"> · "{r.message.slice(0, 80)}{r.message.length > 80 ? "…" : ""}"</span> : null}
+                  </li>
+                ))}
+                {pendingRequests.length > 5 && (
+                  <li className="opacity-75">+ {pendingRequests.length - 5} more</li>
+                )}
+              </ul>
+              <Link to="/crm/admin" className="inline-block mt-2 text-primary hover:underline text-xs font-bold uppercase tracking-wide">
+                Review in CRM → Users
+              </Link>
+            </div>
+          </div>
+        )}
+
         <h1 className="text-2xl font-bold text-foreground mb-2">Choose a workspace</h1>
         <p className="text-sm text-muted-foreground mb-8">
           You have access to the workspaces below based on your roles ({roles.length ? roles.join(", ") : "none yet"}).
@@ -127,23 +186,42 @@ const AdminPortalPage = () => {
           {ADMIN_AREAS.map((t) => {
             const allowed = hasAreaAccess(t, roles);
             const to = allowed ? t.to : `/admin/request-access?area=${t.key}`;
+            // Read-only intersect: user is "allowed" only because of viewer/executive.
+            // i.e., none of the area's editor roles are present.
+            const editorRoles = t.roles.filter((r) => !READ_ONLY_ROLES.has(r));
+            const hasEditorRole = editorRoles.some((r) => roles.includes(r));
+            const readOnly = allowed && !hasEditorRole;
             return (
-              <Link
+              <div
                 key={t.key}
-                to={to}
                 className={`group block border border-border bg-background p-6 hover:border-primary transition-colors relative ${
                   !allowed ? "opacity-75" : ""
                 }`}
               >
-                <t.icon className="h-6 w-6 text-primary mb-3" />
-                <h3 className="font-bold text-foreground mb-1 flex items-center gap-2">
-                  {t.title}
-                  {!allowed && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {allowed ? t.desc : "You don't have access — click to request."}
-                </p>
-              </Link>
+                <Link to={to} className="block">
+                  <t.icon className="h-6 w-6 text-primary mb-3" />
+                  <h3 className="font-bold text-foreground mb-1 flex items-center gap-2">
+                    {t.title}
+                    {!allowed && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+                    {readOnly && (
+                      <span className="text-[10px] font-bold uppercase tracking-wide bg-muted text-muted-foreground px-1.5 py-0.5">
+                        Read-only
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {allowed ? t.desc : "You don't have access — click to request."}
+                  </p>
+                </Link>
+                {readOnly && (
+                  <Link
+                    to={`/admin/request-access?area=${t.key}&level=edit`}
+                    className="mt-3 inline-block text-xs text-primary hover:underline font-bold uppercase tracking-wide"
+                  >
+                    Request full access →
+                  </Link>
+                )}
+              </div>
             );
           })}
         </div>

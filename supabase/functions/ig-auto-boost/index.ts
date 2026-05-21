@@ -150,9 +150,11 @@ Deno.serve(async (req) => {
       name: `IGBoost_${post_id}_${v.suffix}_creative`,
       object_story_spec: {
         page_id: cfg.fb_page_id,
+        link_data: { link: "https://rescuedogwines.com/shop" },
       },
       source_instagram_media_id: post_id,
       instagram_user_id: cfg.ig_user_id,
+      degrees_of_freedom_spec: { creative_features_spec: { standard_enhancements: { enroll_status: "OPT_OUT" } } },
     });
     if (!creativeRes.ok) {
       await admin.from("ig_boost_log").insert({

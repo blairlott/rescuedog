@@ -129,6 +129,7 @@ const KennelSiteIntelPage = lazy(() => import("./pages/kennel/KennelSiteIntelPag
 const ExecutiveCommandCenter = lazy(() => import("./pages/intelligence/ExecutiveCommandCenter"));
 const ForcePasswordChangePage = lazy(() => import("./pages/ForcePasswordChangePage"));
 
+// Rebuild trigger
 const queryClient = new QueryClient();
 
 const PageFallback = () => (

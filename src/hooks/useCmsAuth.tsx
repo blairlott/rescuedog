@@ -60,7 +60,10 @@ export const CmsAuthProvider = ({ children }: { children: ReactNode }) => {
         if (!isMounted) return;
         const userRoles = (roleRows || []).map((r: any) => String(r.role));
         setRoles(userRoles);
-        setIsCmsEditor(!editorErr && !!editorFlag);
+        // Treat read-only `viewer` / `executive` as CMS-accessible (read-only).
+        // canEdit() below still returns false for them, so they cannot edit/publish.
+        const hasReadOnlyBackend = userRoles.some((r) => r === "viewer" || r === "executive");
+        setIsCmsEditor((!editorErr && !!editorFlag) || hasReadOnlyBackend);
       } else {
         setRoles([]);
         setIsCmsEditor(false);

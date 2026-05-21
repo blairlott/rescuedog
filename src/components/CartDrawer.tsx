@@ -33,6 +33,7 @@ import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInte
 import { CartLineSizePicker } from "@/components/cart/CartLineSizePicker";
 import { addLinesAndGoToHostedCart } from "@/lib/vinoshipperInjector";
 import { recordCheckoutIntent } from "@/lib/abCheckoutIntent";
+import { VS_FLAT_SHIPPING_MIN_BOTTLES, VS_FLAT_SHIPPING_USD } from "@/lib/vinoshipperConfig";
 import { supabase } from "@/integrations/supabase/client";
 
 const LAST_ORDER_KEY = "rdw_last_order";
@@ -121,6 +122,13 @@ export const CartDrawer = () => {
   const bottlesNeeded = freeShippingBottleCount - totalBottlesEffective;
   const dollarsNeeded = Math.max(0, merchFreeShippingThreshold - totalPrice);
   const showNudge = !isMerchRoute && !shippingIncluded && bottlesNeeded > 0 && bottlesNeeded <= 2 && totalItems > 0;
+  // Wine: 6–11 bottles qualify for the flat $9.99 ladder rung. Signals that
+  // shipping just dropped to a flat fee and 12+ unlocks free shipping.
+  const showFlatShippingNote =
+    !isMerchRoute &&
+    !shippingIncluded &&
+    totalBottlesEffective >= VS_FLAT_SHIPPING_MIN_BOTTLES &&
+    totalItems > 0;
   const showMerchNudge = isMerchRoute && !shippingIncluded && dollarsNeeded > 0 && dollarsNeeded <= 25 && totalItems > 0;
   const bottlesToCase = !isMerchRoute && caseBottles > 0 && caseBottles < fullCaseCount
     ? fullCaseCount - caseBottles
@@ -662,7 +670,16 @@ export const CartDrawer = () => {
                 <CartWineClubUpsell />
                 {showNudge && (
                   <div className="text-xs bg-brand-gold/10 border border-brand-gold/30 px-3 py-2 flex items-center justify-between">
-                    <span><strong>Add {bottlesNeeded} more bottle{bottlesNeeded !== 1 ? 's' : ''}</strong> — shipping included at {freeShippingBottleCount}+</span>
+                    <span>
+                      <strong>Add {bottlesNeeded} more bottle{bottlesNeeded !== 1 ? 's' : ''}</strong> — flat ${VS_FLAT_SHIPPING_USD.toFixed(2)} shipping at {VS_FLAT_SHIPPING_MIN_BOTTLES}+, included at {freeShippingBottleCount}+
+                    </span>
+                  </div>
+                )}
+                {showFlatShippingNote && (
+                  <div className="text-xs bg-brand-gold/10 border border-brand-gold/30 px-3 py-2 flex items-center justify-between">
+                    <span>
+                      <strong>Flat ${VS_FLAT_SHIPPING_USD.toFixed(2)} shipping unlocked</strong> — add {freeShippingBottleCount - totalBottlesEffective} more for shipping included
+                    </span>
                   </div>
                 )}
                 {showMerchNudge && (

@@ -95,6 +95,17 @@ const AdminPortalPage = () => {
       return;
     }
     const userRoles = await loadRoles(data.user.id);
+    // Force password change for newly-provisioned accounts
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("must_change_password")
+      .eq("id", data.user.id)
+      .maybeSingle();
+    if (profile?.must_change_password) {
+      setLoading(false);
+      navigate("/admin/change-password", { replace: true });
+      return;
+    }
     setRoles(userRoles);
     await loadPendingRequests(userRoles);
     setLoading(false);

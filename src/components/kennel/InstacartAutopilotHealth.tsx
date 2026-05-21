@@ -649,6 +649,7 @@ type OverrideRow = {
   autoStop: boolean;
   maxErrorPct: number;
   minRoas: number;
+  cooldownMinutes: number;
 };
 
 function B2BAutoStopSettings({
@@ -659,7 +660,7 @@ function B2BAutoStopSettings({
     b2bAutoStop: boolean;
     b2bMaxErrorPct: number;
     b2bMinRoas: number;
-    b2bAccountOverrides: Record<string, { label?: string; autoStop?: boolean; maxErrorPct?: number; minRoas?: number }>;
+    b2bAccountOverrides: Record<string, { label?: string; autoStop?: boolean; maxErrorPct?: number; minRoas?: number; cooldownMinutes?: number }>;
     globalMaxErrorPct: number;
     globalMinRoas: number;
   };
@@ -672,11 +673,61 @@ function B2BAutoStopSettings({
       autoStop: v.autoStop !== false,
       maxErrorPct: Number(v.maxErrorPct ?? cfg.b2bMaxErrorPct),
       minRoas: Number(v.minRoas ?? cfg.b2bMinRoas),
+      cooldownMinutes: Number(v.cooldownMinutes ?? 60),
     }));
   }, [cfg.b2bAccountOverrides, cfg.b2bMaxErrorPct, cfg.b2bMinRoas]);
 
   const [draftId, setDraftId] = useState("");
   const [draftLabel, setDraftLabel] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Suggested accounts pulled from ad_campaigns metadata for B2B campaigns.
+  const { data: suggestions = [] } = useQuery({
+    queryKey: ["instacart-b2b-account-suggestions"],
+    queryFn: async () => {
+      const { data } = await supabase.from("ad_campaigns")
+        .select("external_id,name,metadata,objective")
+        .eq("platform_slug", "instacart")
+        .limit(500);
+      const seen = new Map<string, string>();
+      for (const row of (data ?? []) as any[]) {
+        const md = (row.metadata ?? {}) as Record<string, any>;
+        const isB2B = md.b2b === true
+          || /b2b|wholesale|on[-_ ]?premise|off[-_ ]?premise/i.test(String(row.objective ?? ""))
+          || String(md.segment ?? "").toLowerCase() === "b2b";
+        if (!isB2B) continue;
+        const aid = String(md.account_id ?? md.advertiser_id ?? md.advertiser_account_id ?? row.external_id ?? "").trim();
+        if (!aid) continue;
+        if (!seen.has(aid)) seen.set(aid, String(md.account_label ?? md.advertiser_name ?? row.name ?? aid));
+      }
+      return Array.from(seen.entries()).map(([id, label]) => ({ id, label }));
+    },
+    staleTime: 60_000,
+  });
+
+  // Per-account stop history from kill-switch evaluations.
+  const { data: stopHistory = [] } = useQuery({
+    queryKey: ["instacart-b2b-stop-history"],
+    queryFn: async () => {
+      const { data } = await supabase.from("ad_autopilot_kill_switch_evaluations" as any)
+        .select("id,created_at,switch_name,status,measured_value,threshold,tripped,detail")
+        .eq("platform", "instacart")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      return (data ?? []) as any[];
+    },
+    refetchInterval: 60_000,
+  });
+  const historyByAccount = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const ev of stopHistory) {
+      const aid = String((ev?.detail ?? {})?.account_id ?? "").trim();
+      if (!aid) continue;
+      if (!map.has(aid)) map.set(aid, []);
+      map.get(aid)!.push(ev);
+    }
+    return map;
+  }, [stopHistory]);
 
   async function persistOverrides(next: OverrideRow[]) {
     const map: Record<string, any> = {};
@@ -687,6 +738,7 @@ function B2BAutoStopSettings({
         autoStop: r.autoStop,
         maxErrorPct: r.maxErrorPct,
         minRoas: r.minRoas,
+        cooldownMinutes: r.cooldownMinutes,
       };
     }
     await setSetting("instacart_autopilot_b2b_account_overrides", map);
@@ -707,14 +759,16 @@ function B2BAutoStopSettings({
     if (rows.some(r => r.accountId === draftId.trim())) {
       toast.error("Account already configured"); return;
     }
+    const suggested = suggestions.find(s => s.id === draftId.trim());
     const next: OverrideRow[] = [
       ...rows,
       {
         accountId: draftId.trim(),
-        label: draftLabel.trim(),
+        label: draftLabel.trim() || suggested?.label || "",
         autoStop: true,
         maxErrorPct: cfg.b2bMaxErrorPct,
         minRoas: cfg.b2bMinRoas,
+        cooldownMinutes: 60,
       },
     ];
     await persistOverrides(next);
@@ -797,11 +851,14 @@ function B2BAutoStopSettings({
                     <th className="p-2">Auto-stop</th>
                     <th className="p-2">Max err %</th>
                     <th className="p-2">Min ROAS</th>
+                    <th className="p-2">Cooldown (min)</th>
+                    <th className="p-2">Stop history</th>
                     <th className="p-2 w-8"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((r, idx) => (
+                    <>
                     <tr key={r.accountId} className="border-t border-border">
                       <td className="p-2 font-mono">{r.accountId}</td>
                       <td className="p-2">
@@ -835,6 +892,32 @@ function B2BAutoStopSettings({
                         />
                       </td>
                       <td className="p-2">
+                        <Input
+                          type="number" min={0} max={1440} step={5}
+                          value={r.cooldownMinutes}
+                          onChange={(e) => updateRow(idx, { cooldownMinutes: Math.max(0, Number(e.target.value)) })}
+                          className="h-7 text-xs w-20"
+                        />
+                      </td>
+                      <td className="p-2">
+                        {(() => {
+                          const hist = historyByAccount.get(r.accountId) ?? [];
+                          const trips = hist.filter(h => h.tripped).length;
+                          return (
+                            <Button
+                              size="sm" variant="ghost"
+                              className="h-7 text-[11px] px-2"
+                              onClick={() => setExpanded(expanded === r.accountId ? null : r.accountId)}
+                            >
+                              {trips > 0
+                                ? <Badge variant="destructive" className="text-[10px] mr-1">{trips}</Badge>
+                                : <Badge variant="secondary" className="text-[10px] mr-1">{hist.length}</Badge>}
+                              {expanded === r.accountId ? "Hide" : "View"}
+                            </Button>
+                          );
+                        })()}
+                      </td>
+                      <td className="p-2">
                         <Button
                           size="icon" variant="ghost" className="h-7 w-7"
                           onClick={() => removeRow(idx)}
@@ -844,6 +927,49 @@ function B2BAutoStopSettings({
                         </Button>
                       </td>
                     </tr>
+                    {expanded === r.accountId && (
+                      <tr key={`${r.accountId}-hist`} className="bg-muted/30 border-t border-border">
+                        <td colSpan={8} className="p-2">
+                          {(() => {
+                            const hist = historyByAccount.get(r.accountId) ?? [];
+                            if (hist.length === 0) {
+                              return <p className="text-[11px] text-muted-foreground">No kill-switch evaluations logged for this account yet.</p>;
+                            }
+                            return (
+                              <table className="w-full text-[11px]">
+                                <thead>
+                                  <tr className="text-left text-muted-foreground">
+                                    <th className="p-1">When</th>
+                                    <th className="p-1">Switch</th>
+                                    <th className="p-1">Status</th>
+                                    <th className="p-1 text-right">Measured</th>
+                                    <th className="p-1 text-right">Threshold</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {hist.slice(0, 15).map(h => (
+                                    <tr key={h.id} className="border-t border-border">
+                                      <td className="p-1 whitespace-nowrap">{new Date(h.created_at).toLocaleString()}</td>
+                                      <td className="p-1 font-mono">{h.switch_name}</td>
+                                      <td className="p-1">
+                                        {h.tripped
+                                          ? <Badge variant="destructive" className="text-[10px]">TRIPPED</Badge>
+                                          : h.status === "at_risk"
+                                            ? <Badge className="text-[10px] bg-amber-500 text-white">AT RISK</Badge>
+                                            : <Badge variant="secondary" className="text-[10px]">{String(h.status).toUpperCase()}</Badge>}
+                                      </td>
+                                      <td className="p-1 text-right tabular-nums">{h.measured_value ?? "—"}</td>
+                                      <td className="p-1 text-right tabular-nums">{h.threshold ?? "—"}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            );
+                          })()}
+                        </td>
+                      </tr>
+                    )}
+                    </>
                   ))}
                 </tbody>
               </table>
@@ -852,13 +978,21 @@ function B2BAutoStopSettings({
 
           <div className="flex flex-wrap items-end gap-2 mt-3">
             <div className="space-y-1 flex-1 min-w-[160px]">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Add account ID</label>
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Add account ID{suggestions.length > 0 ? ` (${suggestions.length} detected)` : ""}
+              </label>
               <Input
                 value={draftId}
                 onChange={(e) => setDraftId(e.target.value)}
                 placeholder="advertiser_12345"
                 className="h-8 text-xs"
+                list="b2b-account-suggestions"
               />
+              <datalist id="b2b-account-suggestions">
+                {suggestions.map(s => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </datalist>
             </div>
             <div className="space-y-1 flex-1 min-w-[160px]">
               <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Label (optional)</label>

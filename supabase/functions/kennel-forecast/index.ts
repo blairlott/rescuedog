@@ -231,12 +231,14 @@ Deno.serve(async (req) => {
     let cumSpend = 0, cumRev = 0;
     // Planning uplift: restored budgets + improved ROAS in OND 2026 (Q4 push).
     // Spend and ROAS multipliers applied on top of seasonality, peaking in Nov.
+    // DTC EoY pattern: Q4 revenue typically runs 2x+ baseline. Uplift compounds
+    // restored budgets with improved ROAS, peaking Nov (BFCM + Giving Tuesday).
     const ondUplift = (d: Date): { spend: number; roas: number } => {
       const y = d.getUTCFullYear();
       const m = d.getUTCMonth(); // 0-indexed
-      if (y === 2026 && m === 9)  return { spend: 1.35, roas: 1.18 }; // Oct
-      if (y === 2026 && m === 10) return { spend: 1.55, roas: 1.28 }; // Nov (BFCM + Giving Tuesday)
-      if (y === 2026 && m === 11) return { spend: 1.40, roas: 1.22 }; // Dec
+      if (y === 2026 && m === 9)  return { spend: 1.70, roas: 1.25 }; // Oct  ~2.1x rev
+      if (y === 2026 && m === 10) return { spend: 2.10, roas: 1.40 }; // Nov  ~2.9x rev (peak)
+      if (y === 2026 && m === 11) return { spend: 1.85, roas: 1.30 }; // Dec  ~2.4x rev
       return { spend: 1, roas: 1 };
     };
     for (let h = 1; h <= horizon; h++) {

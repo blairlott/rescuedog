@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Loader2, Sparkles, Check, X, ImageIcon, RefreshCw } from "lucide-react";
-import { ContentSeedPanel } from "@/components/cms/ContentSeedPanel";
 
 type AssetType = "hero" | "pdp" | "banner" | "ad_creative";
 type BrandLockup = "wine" | "merch";

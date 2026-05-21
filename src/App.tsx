@@ -98,6 +98,7 @@ const CrmCustomerMapPage = lazy(() => import("./pages/crm/CrmCustomerMapPage"));
 const CrmWebhooksPage = lazy(() => import("./pages/crm/CrmWebhooksPage"));
 const CrmLegacyMigrationPage = lazy(() => import("./pages/CrmLegacyMigrationPage"));
 const CrmCancellationsPage = lazy(() => import("./pages/crm/CrmCancellationsPage"));
+const CrmCustomerServicePage = lazy(() => import("./pages/crm/CrmCustomerServicePage"));
 const RewardsTermsPage = lazy(() => import("./pages/RewardsTermsPage"));
 const RewardsPage = lazy(() => import("./pages/RewardsPage"));
 const PoliciesPage = lazy(() => import("./pages/PoliciesPage"));
@@ -256,6 +257,7 @@ function AppContent() {
         <Route path="customer-map" element={<CrmCustomerMapPage />} />
         <Route path="webhooks" element={<CrmWebhooksPage />} />
         <Route path="cancellations" element={<CrmCancellationsPage />} />
+        <Route path="customer-service" element={<CrmCustomerServicePage />} />
         <Route path="legacy-migration" element={<CrmLegacyMigrationPage />} />
       </Route>
       <Route path="/dropship" element={<DropshipDashboard />} />

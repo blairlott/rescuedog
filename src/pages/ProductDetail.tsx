@@ -506,6 +506,11 @@ const ProductDetail = () => {
       <div className="container mx-auto px-4 pb-12">
         <ProductReviews productHandle={product.handle} />
       </div>
+      {!isMerch && (
+        <div className="container mx-auto px-4 pb-12 max-w-3xl">
+          <WineShippingPolicy variant="full" />
+        </div>
+      )}
       {/* Mobile sticky add-to-cart bar */}
       <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur border-t border-border p-3 pb-[env(safe-area-inset-bottom)] space-y-1.5">
         {/* Status line: ship-to-state + member savings */}

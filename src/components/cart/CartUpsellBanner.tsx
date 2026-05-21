@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Wine, Sparkles, Gift } from "lucide-react";
 import { useCartSettings } from "@/hooks/useCartSettings";
 import { useIsMember } from "@/hooks/useIsMember";
+import { VS_FLAT_SHIPPING_USD, VS_FLAT_SHIPPING_MIN_BOTTLES } from "@/lib/vinoshipperConfig";
 
 interface CartUpsellBannerProps {
   totalBottles: number;
@@ -26,7 +27,7 @@ export function CartUpsellBanner({ totalBottles, cartTotal }: CartUpsellBannerPr
         <div className="flex items-start gap-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm">
           <Wine className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
           <p className="text-amber-800 dark:text-amber-200">
-            Add <strong>{halfCaseCount - totalBottles} more bottle{halfCaseCount - totalBottles !== 1 ? 's' : ''}</strong> for a half-case — save on shipping!
+            Add <strong>{halfCaseCount - totalBottles} more bottle{halfCaseCount - totalBottles !== 1 ? 's' : ''}</strong> to unlock flat ${VS_FLAT_SHIPPING_USD.toFixed(2)} shipping at {VS_FLAT_SHIPPING_MIN_BOTTLES}+ bottles.
           </p>
         </div>
       )}

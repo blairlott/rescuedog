@@ -330,6 +330,53 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
     }
   };
 
+  const downloadCsv = () => {
+    // Aggregate the visible series into monthly pro-forma rows so the export is
+    // budget-ready regardless of which chart bucket (day vs month) is active.
+    type Row = { spend: number; revenue: number; revenue_lower: number; revenue_upper: number; shipping: number; net_revenue: number };
+    const months = new Map<string, Row>();
+    for (const p of mergedChartData) {
+      const m = p.date.slice(0, 7); // YYYY-MM
+      const cur = months.get(m) ?? { spend: 0, revenue: 0, revenue_lower: 0, revenue_upper: 0, shipping: 0, net_revenue: 0 };
+      cur.spend += Number(p.spend) || 0;
+      cur.revenue += Number(p.revenue) || 0;
+      cur.revenue_lower += Number(p.revenue_lower) || 0;
+      cur.revenue_upper += Number(p.revenue_upper) || 0;
+      cur.shipping += Number((p as any).shipping) || 0;
+      cur.net_revenue += Number((p as any).net_revenue) || 0;
+      months.set(m, cur);
+    }
+    const todayMonth = isoDay(today).slice(0, 7);
+    const header = [
+      "month", "segment", "spend", "revenue", "revenue_lower", "revenue_upper",
+      "net_revenue", "roas", "shipping_cost",
+    ];
+    const rows = Array.from(months.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, v]) => {
+        const segment = month < todayMonth ? "actual" : month === todayMonth ? "actual+forecast" : "forecast";
+        const roas = v.spend > 0 ? v.revenue / v.spend : 0;
+        return [
+          month, segment,
+          v.spend.toFixed(2), v.revenue.toFixed(2),
+          v.revenue_lower.toFixed(2), v.revenue_upper.toFixed(2),
+          v.net_revenue.toFixed(2), roas.toFixed(4),
+          v.shipping.toFixed(2),
+        ];
+      });
+    const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `dtc-proforma_${activePlatform}_${isoDay(start)}_to_${isoDay(effectiveEnd)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} months · ${activePlatform.toUpperCase()}`);
+  };
+
   // Auto-regenerate the forecast whenever the date range or platform changes.
   // Debounce so dragging the date inputs doesn't fire on every keystroke.
   const firstRunRef = useRef(true);

@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Lock, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
-import { findArea, ADMIN_AREAS } from "@/lib/adminAreas";
+import { findArea, ADMIN_AREAS, REQUESTABLE_ROLES_BY_AREA } from "@/lib/adminAreas";
 
 export default function RequestAccessPage() {
   const [params] = useSearchParams();
@@ -19,8 +20,11 @@ export default function RequestAccessPage() {
   const [roles, setRoles] = useState<string[]>([]);
   const [user, setUser] = useState<{ id: string; email?: string | null; full_name?: string | null } | null>(null);
   const [message, setMessage] = useState("");
+  const [requestedRole, setRequestedRole] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [existingRequestId, setExistingRequestId] = useState<string | null>(null);
+
+  const roleOptions = area ? REQUESTABLE_ROLES_BY_AREA[area.key] || [] : [];
 
   useEffect(() => {
     (async () => {
@@ -51,6 +55,10 @@ export default function RequestAccessPage() {
 
   const submit = async () => {
     if (!user || !area) return;
+    if (!requestedRole) {
+      toast.error("Pick the role that best fits your job.");
+      return;
+    }
     setSubmitting(true);
     const composedMessage = [
       requestedLevel === "edit" ? "[Elevated edit/admin access requested]" : null,
@@ -63,6 +71,7 @@ export default function RequestAccessPage() {
         user_email: user.email ?? null,
         user_name: user.full_name ?? null,
         requested_area: area.key,
+        requested_role: requestedRole,
         message: composedMessage || null,
       })
       .select("id")
@@ -89,7 +98,7 @@ export default function RequestAccessPage() {
             userEmail: user.email,
             currentRoles: roles.length ? roles.join(", ") : "(none)",
             requestedArea: area.title,
-            requestedRole: requestedLevel === "edit" ? "full edit / admin for this area" : "access to this area",
+              requestedRole: roleOptions.find((r) => r.value === requestedRole)?.label || requestedRole,
             message: message.trim() || undefined,
             reviewUrl: `${window.location.origin}/admin`,
           },
@@ -145,6 +154,22 @@ export default function RequestAccessPage() {
                   : <>You don't currently have access to <strong>{area.title}</strong>. Submit a request and an admin will review it.</>}
               </p>
               <div className="space-y-4">
+                <div>
+                  <Label htmlFor="role">Which role fits your job?</Label>
+                  <Select value={requestedRole} onValueChange={setRequestedRole}>
+                    <SelectTrigger id="role">
+                      <SelectValue placeholder="Pick the role you need…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roleOptions.map((r) => (
+                        <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Don't worry about picking the wrong one — an admin will confirm or adjust before granting access.
+                  </p>
+                </div>
                 <div>
                   <Label htmlFor="msg">Why do you need access? (optional)</Label>
                   <Textarea

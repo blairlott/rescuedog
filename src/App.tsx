@@ -255,6 +255,7 @@ function AppContent() {
         <Route path="intelligence" element={<CrmIntelligencePage />} />
         <Route path="customer-map" element={<CrmCustomerMapPage />} />
         <Route path="webhooks" element={<CrmWebhooksPage />} />
+        <Route path="cancellations" element={<CrmCancellationsPage />} />
         <Route path="legacy-migration" element={<CrmLegacyMigrationPage />} />
       </Route>
       <Route path="/dropship" element={<DropshipDashboard />} />

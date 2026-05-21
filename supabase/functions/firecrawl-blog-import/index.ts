@@ -98,10 +98,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const authHeader = req.headers.get("Authorization") ?? "";
+  // Service-role client — do NOT forward the request's Authorization header,
+  // it may be a shared-secret bearer (not a JWT) which postgrest rejects.
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
   );
 
   // Admin gate

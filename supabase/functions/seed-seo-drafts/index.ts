@@ -103,6 +103,44 @@ Return JSON: { "excerpt": "1-2 sentence meta description under 160 chars", "body
   return { body_html: parsed.body_html ?? "", excerpt: parsed.excerpt ?? "" };
 }
 
+// Generate a cover image via Gemini image model and upload to blog-media.
+// Returns the public URL or null on any failure (non-fatal).
+async function generateCoverImage(topic: Topic, supabase: any): Promise<string | null> {
+  try {
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!apiKey) return null;
+    const imagePrompt = `Editorial photograph for a Lodi, California winery blog post titled "${topic.title}". Warm natural light, shallow depth of field, no text overlays, no people's faces visible, no logos. Subject: ${topic.tags.join(", ")}. Mood: warm, grounded, mission-driven. Wide 16:9 aspect, magazine-quality.`;
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image",
+        messages: [{ role: "user", content: imagePrompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    // Gemini image responses return base64 in choices[0].message.images[0].image_url.url (data URI)
+    const imgUrl: string | undefined =
+      j?.choices?.[0]?.message?.images?.[0]?.image_url?.url ??
+      j?.choices?.[0]?.message?.images?.[0]?.url;
+    if (!imgUrl) return null;
+    const m = imgUrl.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+    if (!m) return null;
+    const mime = m[1];
+    const ext = mime.split("/")[1] || "png";
+    const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
+    const path = `seo-seed/${topic.slug}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("blog-media").upload(path, bytes, {
+      contentType: mime, upsert: true,
+    });
+    if (error) return null;
+    const { data } = supabase.storage.from("blog-media").getPublicUrl(path);
+    return data.publicUrl ?? null;
+  } catch { return null; }
+}
+
 // Spread N topics naturally across the last 24 months. Avoid identical days.
 function backdate(index: number, total: number): string {
   const monthsBack = Math.floor((index / total) * 23) + 1; // 1..24
@@ -140,6 +178,7 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch {}
   const topics: Topic[] = Array.isArray(body.topics) && body.topics.length ? body.topics : DEFAULT_TOPICS;
   const dryRun: boolean = !!body.dry_run;
+  const skipImages: boolean = !!body.skip_images;
 
   const results: any[] = [];
   for (let i = 0; i < topics.length; i++) {
@@ -149,6 +188,7 @@ Deno.serve(async (req) => {
       const plain = (body_html + " " + (excerpt || "") + " " + t.title).replace(/<[^>]+>/g, " ");
       const failures = complianceCheck(plain);
       const publishedAt = backdate(i, topics.length);
+      const cover = skipImages ? null : await generateCoverImage(t, supabase);
 
       const row = {
         source: "rdw-seed",
@@ -158,7 +198,7 @@ Deno.serve(async (req) => {
         title: t.title,
         excerpt,
         body_html,
-        cover_image_url: null,
+        cover_image_url: cover,
         author: "Rescue Dog Wines",
         tags: t.tags,
         published_at: publishedAt,

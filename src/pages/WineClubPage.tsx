@@ -160,7 +160,6 @@ const WineClubPage = () => {
                 {selectedTier ? (
                   selectedTier.vinoshipper_join_url ? (
                     <VinoshipperInlineSignup
-                      tier={selectedTier as any}
                       joinUrl={selectedTier.vinoshipper_join_url}
                       tierName={selectedTier.name}
                       onBack={() => setSelectedTier(null)}

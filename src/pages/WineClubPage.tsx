@@ -166,30 +166,7 @@ const WineClubPage = () => {
             <section className="py-16 bg-secondary relative" id="tiers">
               <CmsEditButton onClick={() => setEditSection("membership")} scope="wine_club" />
               <div className="container mx-auto px-4">
-                {selectedTier ? (
-                  selectedTier.vinoshipper_join_url ? (
-                    <VinoshipperInlineSignup
-                      joinUrl={selectedTier.vinoshipper_join_url}
-                      tierName={selectedTier.name}
-                      onBack={() => setSelectedTier(null)}
-                    />
-                  ) : (
-                    <div className="max-w-2xl mx-auto text-center border border-border p-8">
-                      <p className="text-sm text-muted-foreground">
-                        This tier isn't connected to our signup partner yet.
-                        Please pick another tier or contact us.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedTier(null)}
-                        className="mt-4 text-sm underline text-foreground"
-                      >
-                        Back to club selection
-                      </button>
-                    </div>
-                  )
-                ) : (
-                  <>
+                <>
                     <div className="text-center mb-10">
                       <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Design Your Own Wine Club</h2>
                       <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -204,9 +181,18 @@ const WineClubPage = () => {
                       <div className="flex justify-center py-12">
                         <div className="border border-border p-6 animate-pulse h-40 w-full max-w-2xl bg-muted/30" />
                       </div>
-                    ) : tiers ? (
-                      <ClubConfigurator tiers={tiers} onSelect={handleSelectTier} />
-                    ) : null}
+                    ) : allClubsJoinUrl ? (
+                      <VinoshipperInlineSignup
+                        joinUrl={allClubsJoinUrl}
+                        tierName="Wine Club"
+                        showBack={false}
+                        onBack={() => {}}
+                      />
+                    ) : (
+                      <p className="text-center text-sm text-muted-foreground">
+                        Sign-up isn't available right now — please try again shortly.
+                      </p>
+                    )}
 
                     {!user && (
                       <p className="mt-8 text-center text-xs text-muted-foreground max-w-md mx-auto">
@@ -235,8 +221,7 @@ const WineClubPage = () => {
                         <Gift className="h-4 w-4" /> Gift a Membership
                       </Button>
                     </div>
-                  </>
-                )}
+                </>
               </div>
             </section>
           </>

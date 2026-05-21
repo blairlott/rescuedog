@@ -25,20 +25,11 @@ export default defineConfig(({ mode }) => ({
     sourcemap: false,
     rollupOptions: {
       output: {
-        // Split big shared deps into long-cacheable vendor chunks so the
-        // initial route doesn't ship every page's dependency graph.
+        // Keep third-party dependencies in one vendor chunk. Splitting React
+        // away from React-adjacent packages can create production-only circular
+        // imports that blank the published app before React initializes.
         manualChunks: (id) => {
           if (!id.includes("node_modules")) return undefined;
-          // Keep React in its own base chunk first. Radix/shadcn packages import
-          // React during module initialization, and splitting React-adjacent UI
-          // packages too aggressively can produce a blank production page.
-          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "vendor-react";
-          if (id.includes("react-router")) return "vendor-router";
-          if (id.includes("@supabase")) return "vendor-supabase";
-          if (id.includes("lucide-react")) return "vendor-icons";
-          if (id.includes("@tanstack")) return "vendor-query";
-          if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
-          if (id.includes("framer-motion") || id.includes("motion")) return "vendor-motion";
           return "vendor";
         },
       },

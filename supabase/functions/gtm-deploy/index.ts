@@ -1,4 +1,6 @@
-// One-shot GTM API deploy: attach All Pages trigger to tag 92 and publish workspace 45.
+// GTM GCLID Capture Tag deployer for container GTM-5DBQXWP7 (RDW Vinoshipper).
+// Uses OAuth refresh-token flow. Self-discovers account/workspace/All-Pages trigger.
+// Creates GCLID URL variable + HTML tag, versions, publishes, signals Kennel.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,29 +8,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ACCOUNT_ID = "6001966416";
-const CONTAINER_ID = "181437300";
-const WORKSPACE_ID = "45";
-const TAG_ID = "92";
-const ALL_PAGES_TRIGGER_ID = "2147479553";
+const PUBLIC_CONTAINER_ID = "GTM-5DBQXWP7";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const TAG_HTML = `<script>
-// GCLID Capture + Vinoshipper Link Append
 (function() {
-  var urlParams = new URLSearchParams(window.location.search);
-  var gclid = urlParams.get('gclid');
-  if (gclid) { localStorage.setItem('gclid', gclid); }
-  var storedGclid = localStorage.getItem('gclid');
-  if (storedGclid) {
+  var gclid = '{{URL - GCLID Param}}';
+  if (gclid) {
+    try { sessionStorage.setItem('gclid', gclid); } catch (e) {}
     var links = document.querySelectorAll('a[href*="vinoshipper.com"]');
     links.forEach(function(link) {
-      var href = link.getAttribute('href');
-      if (href.indexOf('gclid=') === -1) {
-        href += (href.indexOf('?') === -1 ? '?' : '&') + 'gclid=' + storedGclid;
-        link.setAttribute('href', href);
-      }
+      try {
+        var url = new URL(link.href);
+        url.searchParams.set('gclid', gclid);
+        link.href = url.toString();
+      } catch (e) {}
     });
   }
 })();
@@ -42,116 +37,238 @@ function json(b: unknown, s = 200) {
 }
 
 async function log(admin: any, action: string, status: string, opts: { version_id?: string; error?: string; response?: unknown } = {}) {
-  await admin.from("gtm_deploy_log").insert({
-    tag_id: TAG_ID,
-    action,
-    status,
-    version_id: opts.version_id ?? null,
-    error: opts.error ?? null,
-    response: opts.response ?? null,
-  });
+  try {
+    await admin.from("gtm_deploy_log").insert({
+      tag_id: PUBLIC_CONTAINER_ID,
+      action,
+      status,
+      version_id: opts.version_id ?? null,
+      error: opts.error ?? null,
+      response: opts.response ?? null,
+    });
+  } catch (_e) { /* table may not exist */ }
 }
 
-async function notifyLindy(message: string) {
-  try {
-    await fetch(`${SUPABASE_URL}/functions/v1/kennel-alert-dispatch`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SERVICE_ROLE}` },
-      body: JSON.stringify({
-        event_type: "auto_executed",
-        channel: "gtm",
-        action: "gtm_gclid_tag_deployed",
-        message,
-        deep_link: "https://tagmanager.google.com/",
-      }),
-    });
-  } catch (_e) { /* swallow */ }
+async function getAccessToken(): Promise<string> {
+  const client_id = Deno.env.get("GOOGLE_CLIENT_ID");
+  const client_secret = Deno.env.get("GOOGLE_CLIENT_SECRET");
+  const refresh_token = Deno.env.get("GTM_REFRESH_TOKEN");
+  if (!client_id || !client_secret || !refresh_token) {
+    throw new Error("missing GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GTM_REFRESH_TOKEN");
+  }
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id, client_secret, refresh_token, grant_type: "refresh_token" }),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || !j.access_token) {
+    throw new Error(`token exchange failed ${res.status}: ${JSON.stringify(j)}`);
+  }
+  return j.access_token as string;
+}
+
+async function gtm(path: string, token: string, init: RequestInit = {}) {
+  const res = await fetch(`https://tagmanager.googleapis.com/tagmanager/v2/${path}`, {
+    ...init,
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(init.headers || {}),
+    },
+  });
+  const body = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, body };
+}
+
+async function signalKennel(versionId: string) {
+  const secret = Deno.env.get("KENNEL_EXTERNAL_SIGNAL_SECRET");
+  if (!secret) return { ok: false, error: "KENNEL_EXTERNAL_SIGNAL_SECRET missing" };
+  const payload = JSON.stringify({
+    signal: "gtm_gclid_tag_deployed",
+    container: PUBLIC_CONTAINER_ID,
+    version_id: versionId,
+    deployed_at: new Date().toISOString(),
+  });
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  const hex = Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/kennel-external-signal`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-kennel-signature": `sha256=${hex}`,
+    },
+    body: payload,
+  });
+  return { ok: res.ok, status: res.status, body: await res.text().catch(() => "") };
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-
-  const token = Deno.env.get("GTM_ACCESS_TOKEN");
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-  if (!token) {
-    await log(admin, "start", "error", { error: "GTM_ACCESS_TOKEN missing" });
-    return json({ ok: false, error: "GTM_ACCESS_TOKEN missing" }, 500);
+  let token: string;
+  try {
+    token = await getAccessToken();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    await log(admin, "oauth", "error", { error: msg });
+    return json({ ok: false, step: "oauth", error: msg }, 500);
   }
 
-  // GET = scope probe; POST = run deploy.
+  // GET = probe scopes only
   if (req.method === "GET") {
     const ti = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(token)}`);
-    const tiJson = await ti.json().catch(() => ({}));
-    return json({ tokeninfo_status: ti.status, tokeninfo: tiJson });
+    return json({ tokeninfo_status: ti.status, tokeninfo: await ti.json().catch(() => ({})) });
   }
 
-  const authHeaders = {
-    "Authorization": `Bearer ${token}`,
-    "Content-Type": "application/json",
-  };
+  // Step 1a: find account + container
+  const accountsRes = await gtm("accounts", token);
+  if (!accountsRes.ok) {
+    await log(admin, "list_accounts", "error", { error: `${accountsRes.status}`, response: accountsRes.body });
+    return json({ ok: false, step: "list_accounts", ...accountsRes }, 500);
+  }
+  const accounts: any[] = accountsRes.body.account || [];
+  let accountId: string | null = null;
+  let containerId: string | null = null;
+  for (const acc of accounts) {
+    const cRes = await gtm(`accounts/${acc.accountId}/containers`, token);
+    if (!cRes.ok) continue;
+    const match = (cRes.body.container || []).find((c: any) => c.publicId === PUBLIC_CONTAINER_ID);
+    if (match) {
+      accountId = acc.accountId;
+      containerId = match.containerId;
+      break;
+    }
+  }
+  if (!accountId || !containerId) {
+    const err = `container ${PUBLIC_CONTAINER_ID} not found in any authorized account`;
+    await log(admin, "find_container", "error", { error: err });
+    return json({ ok: false, step: "find_container", error: err }, 404);
+  }
 
-  // Step 1: PATCH the tag with firing trigger + html parameter
-  const tagUrl = `https://tagmanager.googleapis.com/tagmanager/v2/accounts/${ACCOUNT_ID}/containers/${CONTAINER_ID}/workspaces/${WORKSPACE_ID}/tags/${TAG_ID}`;
-  const patchBody = {
+  // Step 1b: default workspace
+  const wsRes = await gtm(`accounts/${accountId}/containers/${containerId}/workspaces`, token);
+  if (!wsRes.ok) {
+    await log(admin, "list_workspaces", "error", { error: `${wsRes.status}`, response: wsRes.body });
+    return json({ ok: false, step: "list_workspaces", ...wsRes }, 500);
+  }
+  const workspaces: any[] = wsRes.body.workspace || [];
+  const workspace = workspaces.find((w) => w.name === "Default Workspace") || workspaces[0];
+  if (!workspace) {
+    return json({ ok: false, step: "list_workspaces", error: "no workspaces" }, 500);
+  }
+  const wsPath = `accounts/${accountId}/containers/${containerId}/workspaces/${workspace.workspaceId}`;
+
+  // Step 2: create or reuse GCLID URL variable
+  const varsRes = await gtm(`${wsPath}/variables`, token);
+  const existingVar = (varsRes.body?.variable || []).find((v: any) => v.name === "URL - GCLID Param");
+  if (!existingVar) {
+    const varCreate = await gtm(`${wsPath}/variables`, token, {
+      method: "POST",
+      body: JSON.stringify({
+        name: "URL - GCLID Param",
+        type: "u",
+        parameter: [
+          { type: "template", key: "component", value: "QUERY" },
+          { type: "template", key: "queryKey", value: "gclid" },
+        ],
+      }),
+    });
+    if (!varCreate.ok) {
+      await log(admin, "create_variable", "error", { error: `${varCreate.status}`, response: varCreate.body });
+      return json({ ok: false, step: "create_variable", ...varCreate }, 500);
+    }
+    await log(admin, "create_variable", "success", { response: varCreate.body });
+  } else {
+    await log(admin, "create_variable", "skipped", { response: { reason: "already exists" } });
+  }
+
+  // Step 3: All Pages trigger
+  const trigRes = await gtm(`${wsPath}/triggers`, token);
+  if (!trigRes.ok) {
+    await log(admin, "list_triggers", "error", { error: `${trigRes.status}`, response: trigRes.body });
+    return json({ ok: false, step: "list_triggers", ...trigRes }, 500);
+  }
+  const triggers: any[] = trigRes.body.trigger || [];
+  // Built-in All Pages trigger has id 2147479553 but may not show in list; fall back if absent.
+  let allPages = triggers.find((t) => t.name === "All Pages" || t.type === "pageview");
+  const allPagesId = allPages?.triggerId || "2147479553";
+
+  // Step 4: create or update GCLID capture tag
+  const tagsRes = await gtm(`${wsPath}/tags`, token);
+  const existingTag = (tagsRes.body?.tag || []).find((t: any) => t.name === "RDW - GCLID Capture + Vinoshipper Link Append");
+  const tagBody = {
     name: "RDW - GCLID Capture + Vinoshipper Link Append",
     type: "html",
-    firingTriggerId: [ALL_PAGES_TRIGGER_ID],
     parameter: [
       { type: "template", key: "html", value: TAG_HTML },
       { type: "boolean", key: "supportDocumentWrite", value: "false" },
     ],
+    firingTriggerId: [allPagesId],
   };
-
-  const patchRes = await fetch(tagUrl, {
-    method: "PUT", // GTM API uses PUT to replace; PATCH is also accepted but PUT is canonical
-    headers: authHeaders,
-    body: JSON.stringify(patchBody),
-  });
-  const patchJson = await patchRes.json().catch(() => ({}));
-  if (!patchRes.ok) {
-    await log(admin, "patch_tag", "error", { error: `${patchRes.status}: ${JSON.stringify(patchJson)}`, response: patchJson });
-    return json({ ok: false, step: "patch_tag", status: patchRes.status, response: patchJson }, 500);
+  let tagResult;
+  if (existingTag) {
+    tagResult = await gtm(`${wsPath}/tags/${existingTag.tagId}`, token, {
+      method: "PUT",
+      body: JSON.stringify(tagBody),
+    });
+  } else {
+    tagResult = await gtm(`${wsPath}/tags`, token, {
+      method: "POST",
+      body: JSON.stringify(tagBody),
+    });
   }
-  await log(admin, "patch_tag", "success", { response: patchJson });
+  if (!tagResult.ok) {
+    await log(admin, "upsert_tag", "error", { error: `${tagResult.status}`, response: tagResult.body });
+    return json({ ok: false, step: "upsert_tag", ...tagResult }, 500);
+  }
+  await log(admin, "upsert_tag", "success", { response: tagResult.body });
 
-  // Step 2: Create workspace version
-  const versionUrl = `https://tagmanager.googleapis.com/tagmanager/v2/accounts/${ACCOUNT_ID}/containers/${CONTAINER_ID}/workspaces/${WORKSPACE_ID}:create_version`;
-  const versionRes = await fetch(versionUrl, {
+  // Step 5: create version
+  const versionRes = await gtm(`${wsPath}:create_version`, token, {
     method: "POST",
-    headers: authHeaders,
     body: JSON.stringify({
-      name: "GCLID Capture Tag - Trigger Fix",
-      notes: "Assigned All Pages trigger to tag 92 (RDW GCLID Capture). Deployed by Kennel gtm-deploy edge function.",
+      name: "GCLID Capture Tag — Z3 OCI Unblock",
+      notes: "Captures gclid URL param and appends to all vinoshipper.com outbound links. Required for Z3 offline conversion uploads.",
     }),
   });
-  const versionJson = await versionRes.json().catch(() => ({}));
   if (!versionRes.ok) {
-    await log(admin, "create_version", "error", { error: `${versionRes.status}: ${JSON.stringify(versionJson)}`, response: versionJson });
-    return json({ ok: false, step: "create_version", status: versionRes.status, response: versionJson }, 500);
+    await log(admin, "create_version", "error", { error: `${versionRes.status}`, response: versionRes.body });
+    return json({ ok: false, step: "create_version", ...versionRes }, 500);
   }
-  const versionId: string | undefined = versionJson?.containerVersion?.containerVersionId;
-  await log(admin, "create_version", "success", { version_id: versionId, response: versionJson });
-
+  const versionId: string | undefined = versionRes.body?.containerVersion?.containerVersionId;
+  await log(admin, "create_version", "success", { version_id: versionId, response: versionRes.body });
   if (!versionId) {
-    await log(admin, "publish_version", "error", { error: "no versionId returned" });
-    return json({ ok: false, step: "publish_version", error: "no versionId", response: versionJson }, 500);
+    return json({ ok: false, step: "create_version", error: "no versionId returned", response: versionRes.body }, 500);
   }
 
-  // Step 3: Publish version
-  const publishUrl = `https://tagmanager.googleapis.com/tagmanager/v2/accounts/${ACCOUNT_ID}/containers/${CONTAINER_ID}/versions/${versionId}:publish`;
-  const publishRes = await fetch(publishUrl, { method: "POST", headers: authHeaders });
-  const publishJson = await publishRes.json().catch(() => ({}));
+  // Step 6: publish
+  const publishRes = await gtm(`accounts/${accountId}/containers/${containerId}/versions/${versionId}:publish`, token, { method: "POST" });
   if (!publishRes.ok) {
-    await log(admin, "publish_version", "error", { version_id: versionId, error: `${publishRes.status}: ${JSON.stringify(publishJson)}`, response: publishJson });
-    return json({ ok: false, step: "publish_version", status: publishRes.status, response: publishJson }, 500);
+    await log(admin, "publish_version", "error", { version_id: versionId, error: `${publishRes.status}`, response: publishRes.body });
+    return json({ ok: false, step: "publish_version", ...publishRes }, 500);
   }
-  await log(admin, "publish_version", "success", { version_id: versionId, response: publishJson });
+  await log(admin, "publish_version", "success", { version_id: versionId, response: publishRes.body });
 
-  // Step 4: Notify Lindy
-  await notifyLindy(
-    "GTM GCLID tag deployed ✅ — tag 92 now fires on All Pages, workspace published. Z3 OCI upload will activate on next 2am run.",
-  );
+  // Step 7: signal Kennel
+  const kennel = await signalKennel(versionId);
+  await log(admin, "kennel_signal", kennel.ok ? "success" : "error", { version_id: versionId, response: kennel });
 
-  return json({ ok: true, version_id: versionId, patch: patchJson, version: versionJson, publish: publishJson });
+  return json({
+    ok: true,
+    account_id: accountId,
+    container_id: containerId,
+    workspace_id: workspace.workspaceId,
+    all_pages_trigger_id: allPagesId,
+    version_id: versionId,
+    kennel_signal: kennel,
+  });
 });

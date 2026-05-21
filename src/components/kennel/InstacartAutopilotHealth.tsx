@@ -857,9 +857,9 @@ function B2BAutoStopSettings({
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, idx) => (
-                    <>
-                    <tr key={r.accountId} className="border-t border-border">
+                   {rows.map((r, idx) => (
+                    <React.Fragment key={r.accountId}>
+                    <tr className="border-t border-border">
                       <td className="p-2 font-mono">{r.accountId}</td>
                       <td className="p-2">
                         <Input
@@ -928,7 +928,7 @@ function B2BAutoStopSettings({
                       </td>
                     </tr>
                     {expanded === r.accountId && (
-                      <tr key={`${r.accountId}-hist`} className="bg-muted/30 border-t border-border">
+                      <tr className="bg-muted/30 border-t border-border">
                         <td colSpan={8} className="p-2">
                           {(() => {
                             const hist = historyByAccount.get(r.accountId) ?? [];
@@ -969,7 +969,7 @@ function B2BAutoStopSettings({
                         </td>
                       </tr>
                     )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

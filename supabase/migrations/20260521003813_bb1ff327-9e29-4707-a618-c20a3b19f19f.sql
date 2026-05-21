@@ -1,0 +1,1 @@
+ALTER VIEW public.wine_club_cancellation_analytics SET (security_invoker = true);

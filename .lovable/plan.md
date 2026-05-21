@@ -161,3 +161,8 @@ Phase 5 — Close the loop
 New CRM page: `/kennel/autonomy` (single tabbed surface for all five).
 
 **Next up:** Phase 5 — close the loop (welcome series activation, cancellation analytics, A/B framework dashboard).
+
+**Phase 5 — shipped (close the loop)**
+- **Welcome series activated** — dropped the July-2026 launch cutoff inside `enqueue_welcome_series` (`handle_new_user` still calls it). Kill switch remains `app_settings.welcome_series_enabled`. New cron `welcome-series-dispatch-15min` runs `welcome-series-dispatch` every 15 min so the 5-step series (`welcome-1-story` → `welcome-5-nudge`) actually fires for every new customer signup.
+- **Cancellation analytics dashboard** — new SECURITY INVOKER view `wine_club_cancellation_analytics` (reasons, source, tier, tenure days, month). New CRM page `/crm/cancellations` (admin-only): KPI cards (total / 30d / 90d / avg tenure), top-reason horizontal bars, last-12-month bar chart, tier rollup, and most-recent table. Added "Cancellations" sidebar link.
+- **A/B framework dashboard** — surfaced existing `/admin/ab-results` (lovable vs legacy site funnel from `ab_results_summary`) inside the CRM sidebar as "A/B Results" so admins reach it from the CRM. Per-experiment results remain at `/cms/experiments`.

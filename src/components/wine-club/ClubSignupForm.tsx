@@ -53,6 +53,14 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Wait for the auth session to resolve before deciding whether to
+    // create an account — otherwise a signed-in member could be briefly
+    // treated as a guest and prompted for credentials.
+    if (authLoading) {
+      toast.info("Just a sec — checking your session…");
+      return;
+    }
+
     // No account yet? Create one inline before saving the membership.
     if (!user) {
       if (!email || !password) {

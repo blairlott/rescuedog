@@ -136,10 +136,21 @@ function AppContent() {
   useCartSync();
   useAbandonedCartSnapshot();
   useEffect(() => {
+    // Click-ID capture must run synchronously on mount so we don't lose the
+    // query param if the user navigates away. Pixel + AB handshake can wait
+    // until the browser is idle — keeps them off the critical render path.
     captureFbclid();
     captureGclid();
-    initVariantHandshake();
-    initMetaPixel();
+    const ric: (cb: () => void) => number =
+      (window as any).requestIdleCallback?.bind(window) ??
+      ((cb: () => void) => window.setTimeout(cb, 200) as unknown as number);
+    const id = ric(() => {
+      initVariantHandshake();
+      initMetaPixel();
+    });
+    return () => {
+      (window as any).cancelIdleCallback?.(id);
+    };
   }, []);
   const location = useLocation();
   const path = location.pathname.toLowerCase();

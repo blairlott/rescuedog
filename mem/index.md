@@ -85,3 +85,4 @@
 - [Winback Automation](mem://features/winback-automation) — Tiered 60/120/240/365 winback sync across Mailchimp/Meta/Google with auto-recs into Kennel
 - [Dev Toggles](mem://features/dev-toggles) — CMS Settings → Dev Controls: master + sub toggles gating account features and customer notifications; Subscribe & Save locked ON
 - [Backend Viewer Role](mem://features/backend-viewer-role) — Read-only `viewer` app_role + pending_role_grants pre-signup mechanism; SELECT-only sweep, no write paths
+- [Access Request Flow](mem://features/access-request-flow) — Read-only users request elevated edit access; admin email + in-portal banner

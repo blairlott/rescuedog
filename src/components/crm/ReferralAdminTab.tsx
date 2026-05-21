@@ -87,21 +87,11 @@ export function ReferralAdminTab() {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const { error } = await supabase
-      .from("referral_rewards")
-      .update({
-        status: "approved",
-        referrer_points: points,
-        referred_points: points,
-        approved_at: new Date().toISOString(),
-        approved_by: user?.id,
-      } as any)
-      .eq("id", reward.id);
-
-    if (error) {
-      toast.error("Failed to approve referral");
+    const { data, error } = await supabase.functions.invoke("referral-approve", {
+      body: { referral_id: reward.id, action: "approve", points },
+    });
+    if (error || (data && (data as any).error)) {
+      toast.error(`Failed to approve referral: ${error?.message || (data as any).error}`);
     } else {
       toast.success(`Approved! ${points} points credited to both users`);
       fetchRewards();
@@ -111,13 +101,11 @@ export function ReferralAdminTab() {
 
   const rejectReferral = async (reward: ReferralReward) => {
     setProcessingId(reward.id);
-    const { error } = await supabase
-      .from("referral_rewards")
-      .update({ status: "rejected" } as any)
-      .eq("id", reward.id);
-
-    if (error) {
-      toast.error("Failed to reject referral");
+    const { data, error } = await supabase.functions.invoke("referral-approve", {
+      body: { referral_id: reward.id, action: "reject" },
+    });
+    if (error || (data && (data as any).error)) {
+      toast.error(`Failed to reject referral: ${error?.message || (data as any).error}`);
     } else {
       toast.success("Referral rejected");
       fetchRewards();

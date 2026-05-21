@@ -20,6 +20,13 @@ interface VinoshipperClubHandoffProps {
     state?: string;
     zip?: string;
   };
+  /**
+   * Called when the customer confirms (or we detect) that Vinoshipper card
+   * capture is complete. Parent persists the local membership row only after
+   * this fires — so we never end up with a membership in our DB that has no
+   * card on file in Vinoshipper.
+   */
+  onCompleted?: () => void;
 }
 
 /**
@@ -36,9 +43,11 @@ export function VinoshipperClubHandoff({
   joinUrl,
   tierName,
   prefill,
+  onCompleted,
 }: VinoshipperClubHandoffProps) {
   const { user } = useCustomerAuth();
   const [confirmed, setConfirmed] = useState(false);
+  const [completedFired, setCompletedFired] = useState(false);
 
   // Append prefill query params if the joinUrl is a Vinoshipper URL.
   const url = (() => {
@@ -82,6 +91,30 @@ export function VinoshipperClubHandoff({
     };
   }, [open, user]);
 
+  // Reset confirmation state each time the dialog opens.
+  useEffect(() => {
+    if (open) {
+      setConfirmed(false);
+      setCompletedFired(false);
+    }
+  }, [open]);
+
+  // Fire onCompleted exactly once when we detect confirmation via polling.
+  useEffect(() => {
+    if (confirmed && !completedFired) {
+      setCompletedFired(true);
+      onCompleted?.();
+    }
+  }, [confirmed, completedFired, onCompleted]);
+
+  const handleManualConfirm = () => {
+    setConfirmed(true);
+    if (!completedFired) {
+      setCompletedFired(true);
+      onCompleted?.();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-3xl p-0 overflow-hidden">
@@ -121,6 +154,20 @@ export function VinoshipperClubHandoff({
               className="relative w-full h-[640px] border-0 bg-background"
               allow="payment *"
             />
+            <div className="px-6 py-4 border-t border-border bg-muted/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Finished saving your card with Vinoshipper? Confirm below to
+                activate your membership. Closing this window without saving a
+                card will <strong>not</strong> enroll you.
+              </p>
+              <Button
+                type="button"
+                onClick={handleManualConfirm}
+                className="uppercase tracking-brand text-xs font-bold whitespace-nowrap"
+              >
+                I've Saved My Card
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>

@@ -28,6 +28,7 @@ interface ClubSignupFormProps {
 export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift = false, backLabel }: ClubSignupFormProps) {
   const { user } = useCustomerAuth();
   const [handoffOpen, setHandoffOpen] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState<JoinClubData | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -116,10 +117,11 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
       setCreatingAccount(false);
     }
 
-    // Persist a local membership draft so we capture gift data, address,
-    // etc. Vinoshipper owns card capture + recurring billing, and members
-    // customize each release via the link Vinoshipper emails them.
-    onSubmit({
+    // Build the membership payload but DO NOT persist it yet. We require
+    // the customer to complete Vinoshipper card capture first — otherwise
+    // we end up with a membership row in our DB that has no card on file
+    // and no recurring billing in Vinoshipper.
+    const payload: JoinClubData = {
       tier_id: tier.id,
       shipping_address_line1: form.shipping_address_line1,
       shipping_address_line2: form.shipping_address_line2 || undefined,
@@ -130,14 +132,17 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
       gift_message: form.is_gift ? form.gift_message : undefined,
       gift_recipient_name: form.is_gift ? form.gift_recipient_name : undefined,
       gift_recipient_email: form.is_gift ? form.gift_recipient_email : undefined,
-    });
+    };
 
-    // If this tier is linked to a Vinoshipper Club, immediately open the
-    // inline VS handoff so the customer can enter card-on-file without
-    // leaving /club.
-    if (tier.vinoshipper_join_url) {
-      setHandoffOpen(true);
+    if (!tier.vinoshipper_join_url) {
+      toast.error(
+        "This club tier isn't connected to our payment partner yet. Please choose a different tier or contact us to finish setup.",
+      );
+      return;
     }
+
+    setPendingSubmit(payload);
+    setHandoffOpen(true);
   };
 
   const frequencyLabel: Record<string, string> = {
@@ -430,8 +435,10 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
             <p className="font-bold text-foreground mb-1">Secure card on file</p>
             <p className="text-muted-foreground text-xs">
               After you continue, our compliance & shipping partner (Vinoshipper)
-              will open a secure payment step right here on this page to save your
-              card. Future club shipments ship and bill automatically.
+              will open a secure payment step right here on this page to save
+              your card. <strong>A card on file is required</strong> — your
+              membership is not active until card capture is complete. Future
+              club shipments ship and bill automatically.
             </p>
           </div>
         </div>
@@ -439,11 +446,11 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
         <div className="border border-brand-gold/30 bg-brand-gold/5 p-4 mb-8 text-sm flex gap-3">
           <AlertTriangle className="h-5 w-5 text-brand-gold shrink-0 mt-0.5" />
           <div>
-            <p className="font-bold text-foreground mb-1">Payment setup pending</p>
+            <p className="font-bold text-foreground mb-1">Tier not yet available</p>
             <p className="text-muted-foreground text-xs">
-              This tier isn't fully linked to Vinoshipper yet. Your preferences
-              and shipping address will be saved, and our team will reach out to
-              complete payment setup before your first shipment.
+              This tier isn't connected to our secure payment partner yet, so
+              we can't take card-on-file. Please pick a different tier or
+              contact us — we'll finish setup and reach out when it's ready.
             </p>
           </div>
         </div>
@@ -455,6 +462,7 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
         disabled={
           isSubmitting ||
           creatingAccount ||
+          !tier.vinoshipper_join_url ||
           !form.shipping_address_line1 ||
           !form.shipping_city ||
           !form.shipping_state ||
@@ -469,6 +477,8 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
           ? "Creating your account..."
           : isSubmitting
           ? "Processing..."
+          : !tier.vinoshipper_join_url
+          ? "Choose another tier"
           : tier.vinoshipper_join_url
           ? `Continue to Secure Payment`
           : form.is_gift
@@ -479,7 +489,18 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
       {tier.vinoshipper_join_url && (
         <VinoshipperClubHandoff
           open={handoffOpen}
-          onClose={() => setHandoffOpen(false)}
+          onClose={() => {
+            setHandoffOpen(false);
+            // If they closed without confirming card capture, drop the
+            // pending payload so we don't accidentally persist it later.
+            setPendingSubmit(null);
+          }}
+          onCompleted={() => {
+            if (pendingSubmit) {
+              onSubmit(pendingSubmit);
+              setPendingSubmit(null);
+            }
+          }}
           joinUrl={tier.vinoshipper_join_url}
           tierName={tier.name}
           prefill={{

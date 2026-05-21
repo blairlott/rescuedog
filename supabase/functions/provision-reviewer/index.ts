@@ -3,7 +3,7 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 
-const SITE_NAME = 'shopify-buddy-b2b'
+const SITE_NAME = 'Rescue Dog Wines'
 const SENDER_DOMAIN = 'notify.partner.rescuedog.com'
 const FROM_DOMAIN = 'partner.rescuedog.com'
 
@@ -167,8 +167,8 @@ Deno.serve(async (req) => {
       recipientName: reviewerName,
       loginEmail: reviewerEmail,
       tempPassword,
-      loginUrl: `${(Deno.env.get('PUBLIC_SITE_URL') ?? 'https://shopify-buddy-b2b.lovable.app')}/crm/login`,
-      siteUrl: Deno.env.get('PUBLIC_SITE_URL') ?? 'https://shopify-buddy-b2b.lovable.app',
+      loginUrl: `${(Deno.env.get('PUBLIC_SITE_URL') ?? 'https://rescuedog.lovable.app')}/crm/login`,
+      siteUrl: Deno.env.get('PUBLIC_SITE_URL') ?? 'https://rescuedog.lovable.app',
       fromBlair: true,
     }
 

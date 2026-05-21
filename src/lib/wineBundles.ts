@@ -30,6 +30,20 @@ export function effectiveBottleCount<T extends BottleCountable>(items: T[]): num
   }, 0);
 }
 
+/**
+ * Wine bottles eligible for the FULL-CASE discount. Sampler / bundle
+ * SKUs are excluded entirely — matches Vinoshipper's "Excluded from
+ * Discounts" rule, so a 6-Bottle Sampler can't push a cart over the
+ * 12-bottle case-discount threshold or be discounted itself.
+ */
+export function caseEligibleBottleCount<T extends BottleCountable>(items: T[]): number {
+  return items.reduce((sum, i) => {
+    if (i.product.node.productKind && i.product.node.productKind !== "wine") return sum;
+    if (isBundleHandle(i.product.node.handle)) return sum;
+    return sum + i.quantity;
+  }, 0);
+}
+
 export interface DiscountableItem extends BottleCountable {
   price: { amount: string };
 }

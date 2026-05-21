@@ -33,10 +33,10 @@ function EditableField({ label, value, onSave, type = "text" }: {
   return (
     <div className="flex items-center gap-1">
       <Input value={draft} onChange={(e) => setDraft(e.target.value)} type={type} className="h-7 text-sm w-full" autoFocus />
-      <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => { onSave(draft); setEditing(false); }}>
+      <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => { onSave(draft); setEditing(false); }} aria-label="Save">
         <Check className="h-3 w-3 text-green-600" />
       </Button>
-      <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => setEditing(false)}>
+      <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => setEditing(false)} aria-label="Cancel edit">
         <X className="h-3 w-3 text-destructive" />
       </Button>
     </div>
@@ -258,7 +258,7 @@ export default function CrmAccountDetail() {
               </SelectContent>
             </Select>
             <Textarea value={activityText} onChange={(e) => setActivityText(e.target.value)} placeholder="Add an activity..." className="flex-1" rows={1} />
-            <Button onClick={handleAddActivity} disabled={!activityText.trim() || addActivity.isPending} size="icon">
+            <Button onClick={handleAddActivity} disabled={!activityText.trim() || addActivity.isPending} size="icon" aria-label="Add activity">
               <Plus className="h-4 w-4" />
             </Button>
           </div>

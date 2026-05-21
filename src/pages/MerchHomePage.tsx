@@ -11,6 +11,7 @@ import { ShopifyProduct } from "@/lib/shopify";
 import { isWineProduct } from "@/lib/productUtils";
 import { cn } from "@/lib/utils";
 import heroImg from "@/assets/merch-hero.jpg";
+import heroImgWebp from "@/assets/merch-hero.webp";
 import missionImg from "@/assets/merch-mission.jpg";
 import { BundleStrip } from "@/components/merch/BundleStrip";
 import { WineBarStrip } from "@/components/merch/WineBarStrip";
@@ -55,13 +56,18 @@ const MerchHomePage = () => {
 
       {/* Hero */}
       <section className="relative h-[70vh] min-h-[520px] flex items-center bg-foreground">
-        <img
-          src={heroImg}
-          alt="Rescue dog with branded gear"
-          className="absolute inset-0 w-full h-full object-cover opacity-70"
-          width={1920}
-          height={1088}
-        />
+        <picture>
+          <source srcSet={heroImgWebp} type="image/webp" />
+          <img
+            src={heroImg}
+            alt="Rescue dog with branded gear"
+            className="absolute inset-0 w-full h-full object-cover opacity-70"
+            width={1920}
+            height={1088}
+            fetchPriority="high"
+            decoding="async"
+          />
+        </picture>
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/40 to-transparent" />
         <div className="relative container mx-auto px-4">
           <p className="text-primary-foreground/90 text-xs md:text-sm tracking-brand uppercase mb-4 font-bold">

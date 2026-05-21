@@ -217,7 +217,7 @@ export default function CrmDashboard() {
                         <div className="flex items-center gap-1.5">
                           {a.account_name}
                           <Link to={`/crm/account/${a.id}`}>
-                            <Button variant="ghost" size="icon" className="h-5 w-5 text-primary hover:text-primary/80">
+                            <Button variant="ghost" size="icon" className="h-5 w-5 text-primary hover:text-primary/80" aria-label={`View ${a.account_name} details`}>
                               <Info className="h-3.5 w-3.5" />
                             </Button>
                           </Link>
@@ -311,10 +311,10 @@ export default function CrmDashboard() {
                           </Link>
                           {canEditAccount(a) && (
                             <>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditAccount(a); setFormOpen(true); }}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditAccount(a); setFormOpen(true); }} aria-label={`Edit ${a.account_name}`}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" aria-label={`Delete ${a.account_name}`} onClick={() => {
                                 if (confirm("Delete this account?")) {
                                   deleteAccount.mutate(a.id, { onSuccess: () => toast.success("Deleted") });
                                 }

@@ -295,8 +295,8 @@ export function SkusTab() {
                   <TableCell>{dollars(s.retail_cents)}</TableCell>
                   <TableCell><Badge variant={margin > 0 ? "default" : "secondary"}>{dollars(margin)}</Badge></TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => { setDraft(s); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => { if (confirm("Delete SKU?")) del.mutate(s.id); }}><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => { setDraft(s); setOpen(true); }} aria-label="Edit SKU"><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => { if (confirm("Delete SKU?")) del.mutate(s.id); }} aria-label="Delete SKU"><Trash2 className="h-4 w-4" /></Button>
                   </TableCell>
                 </TableRow>
                 {s.notes && (

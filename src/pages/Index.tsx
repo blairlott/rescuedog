@@ -11,6 +11,7 @@ import { isWineProduct, isRescueDogDomain } from "@/lib/productUtils";
 import MerchHomePage from "./MerchHomePage";
 import { useState, useRef, useCallback } from "react";
 import heroRedBlend from "@/assets/hero-red-blend-v2.jpg";
+import heroRedBlendWebp from "@/assets/hero-red-blend-v2.webp";
 import rdwHero from "@/assets/migrated/rdw-hero.jpg";
 import lodiSustainable from "@/assets/migrated/lodi-sustainable.png";
 import ig1 from "@/assets/migrated/ig-1.webp";
@@ -170,6 +171,8 @@ const Index = () => {
         title="Award-Winning Sustainable Wines That Help Rescue Dogs"
         description="Lodi-grown, sustainably crafted wines. 50% of profits support animal rescue. Flat $9.99 shipping on 6+ bottles, included on 12+. Join the Wine Club for 20% off."
         path="/"
+        preloadImage={!hero.config.imageUrl ? heroRedBlendWebp : undefined}
+        preloadImageType="image/webp"
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Organization",
@@ -184,11 +187,26 @@ const Index = () => {
       {/* Hero — Full-bleed image background */}
       <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden">
         <CmsEditButton onClick={() => setEditSection("hero")} />
-        <img
-          src={hero.config.imageUrl || heroRedBlend}
-          alt="Friends enjoying Rescue Dog Wines with the 2023 Red Blend"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        {hero.config.imageUrl ? (
+          <img
+            src={hero.config.imageUrl}
+            alt="Friends enjoying Rescue Dog Wines with the 2023 Red Blend"
+            className="absolute inset-0 w-full h-full object-cover"
+            fetchPriority="high"
+            decoding="async"
+          />
+        ) : (
+          <picture>
+            <source srcSet={heroRedBlendWebp} type="image/webp" />
+            <img
+              src={heroRedBlend}
+              alt="Friends enjoying Rescue Dog Wines with the 2023 Red Blend"
+              className="absolute inset-0 w-full h-full object-cover"
+              fetchPriority="high"
+              decoding="async"
+            />
+          </picture>
+        )}
         <div className="absolute inset-0 bg-foreground/30" />
 
         <div className="relative container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">

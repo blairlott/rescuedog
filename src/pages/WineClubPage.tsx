@@ -68,7 +68,7 @@ const WineClubPage = () => {
       title: "Wine Club Hero",
       fields: [
         { key: "title", label: "Title", type: "text", value: getVal("hero", "title", "Wine Club") },
-        { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("hero", "subtitle", "Join one of our free wine clubs and enjoy monthly, quarterly or yearly shipments of Rescue Dog Wines at 20% off — 25% on full cases. Delivered to your doorstep or gift a membership to friends and family!") },
+        { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("hero", "subtitle", "Join one of our free wine clubs and enjoy monthly, quarterly or yearly shipments of Rescue Dog Wines at 20% off — 25% on full cases — with shipping included. Delivered to your doorstep or gift a membership to friends and family!") },
         { key: "image", label: "Background Image URL", type: "url", value: getVal("hero", "image", "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1920") },
       ],
     },
@@ -76,7 +76,7 @@ const WineClubPage = () => {
       title: "Membership Section",
       fields: [
         { key: "heading", label: "Heading", type: "text", value: getVal("membership", "heading", "Choose Your Club") },
-      { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase (25% on full cases).") },
+      { key: "subtitle", label: "Subtitle", type: "textarea", value: getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase (25% on full cases) and shipping included on shipments.") },
       ],
     },
   };
@@ -104,7 +104,7 @@ const WineClubPage = () => {
     <div className="min-h-screen flex flex-col">
       <Seo
         title="Wine Club"
-        description="Join the Rescue Dog Wines club — free to join, 20% off (25% on full cases), cancel anytime. Every shipment supports rescue dogs."
+        description="Join the Rescue Dog Wines club — free to join, 20% off (25% on full cases), shipping included on club shipments, cancel anytime. Every shipment supports rescue dogs."
         path="/club"
         breadcrumbs={[
           { name: "Home", path: "/" },
@@ -123,7 +123,7 @@ const WineClubPage = () => {
               {getVal("hero", "title", "Wine Club")}
             </h1>
             <p className="text-primary-foreground/80 text-lg max-w-2xl mx-auto">
-              {getVal("hero", "subtitle", "Join one of our free wine clubs and enjoy monthly, quarterly or yearly shipments of Rescue Dog Wines at 20% off — 25% on full cases. Delivered to your doorstep or gift a membership to friends and family!")}
+              {getVal("hero", "subtitle", "Join one of our free wine clubs and enjoy monthly, quarterly or yearly shipments of Rescue Dog Wines at 20% off — 25% on full cases — with shipping included. Delivered to your doorstep or gift a membership to friends and family!")}
             </p>
           </div>
         </section>
@@ -171,7 +171,7 @@ const WineClubPage = () => {
                         {getVal("membership", "heading", "Choose Your Club")}
                       </h3>
                       <p className="text-muted-foreground max-w-2xl mx-auto">
-                        {getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase (25% on full cases).")}
+                        {getVal("membership", "subtitle", "From casual sippers to dedicated collectors, there's a club for you. All clubs are free to join with 20% off every wine purchase (25% on full cases) and shipping included on shipments.")}
                       </p>
                     </div>
 

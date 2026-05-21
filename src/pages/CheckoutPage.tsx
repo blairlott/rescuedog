@@ -16,6 +16,11 @@ import { toast } from "sonner";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
+import { useIsMember } from "@/hooks/useIsMember";
+import { Link } from "react-router-dom";
+import { Sparkles } from "lucide-react";
+import { caseEligibleBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
+import { memberDiscountPercent } from "@/lib/vinoshipperConfig";
 
 const STRIPE_PK = import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN as string | undefined;
 const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
@@ -175,6 +180,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, clearCart } = useCartStore();
   const { user } = useCustomerAuth();
+  const { isMember } = useIsMember();
 
   const [form, setForm] = useState<CustomerForm>(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
@@ -196,6 +202,25 @@ export default function CheckoutPage() {
   const merchCents = merchItems.reduce((s, i) => s + lineUnitCents(i) * i.quantity, 0);
   // Tax + shipping calc deferred to backend (keeping client display simple).
   const subtotalCents = wineCents + merchCents;
+
+  // Subtle "what you'd save as a member" preview. Uses the same rules as
+  // Vinoshipper: bundles/samplers excluded; 25% on full case (12+), else 20%.
+  const eligibleWineSubtotal = discountEligibleSubtotal(
+    wineItems.map((i) => ({
+      product: { node: { handle: (i.product.node as any).handle, productKind: i.product.node.productKind } },
+      quantity: i.quantity,
+      price: { amount: i.price.amount },
+    })),
+  );
+  const caseBottles = caseEligibleBottleCount(
+    wineItems.map((i) => ({
+      product: { node: { handle: (i.product.node as any).handle, productKind: i.product.node.productKind } },
+      quantity: i.quantity,
+    })),
+  );
+  const memberPct = memberDiscountPercent(caseBottles);
+  const memberSavingsCents = Math.round(eligibleWineSubtotal * 100 * (memberPct / 100));
+  const memberTotalCents = subtotalCents - memberSavingsCents;
 
   const canSubmit = useMemo(() => {
     return (
@@ -467,6 +492,23 @@ export default function CheckoutPage() {
             <span>Total</span>
             <span className="font-mono">${(subtotalCents / 100).toFixed(2)}</span>
           </div>
+          {!isMember && memberSavingsCents > 0 && (
+            <div className="border-t border-dashed border-primary/30 pt-3 mt-1 space-y-1">
+              <div className="flex justify-between text-xs items-center">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Sparkles className="h-3 w-3 text-primary" />
+                  Wine Club price ({memberPct}% off wine)
+                </span>
+                <span className="font-mono text-foreground">
+                  ${(memberTotalCents / 100).toFixed(2)}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                You'd save <span className="font-semibold text-primary">${(memberSavingsCents / 100).toFixed(2)}</span> on this order as a member.{" "}
+                <Link to="/club" className="underline hover:text-primary">Join the Club</Link>
+              </p>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">
             One card. One charge. Wine ships via our compliance partner Vinoshipper; merch ships from our US fulfillment partners.
           </p>

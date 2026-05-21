@@ -83,6 +83,11 @@ Deno.serve(async (req) => {
     return J(200, { ok: true, skipped: true });
   }
 
+  // Dev-toggle gate (CMS Settings → Dev Controls → Customer Notifications)
+  if (!(await isNotificationEnabled("abandoned_cart"))) {
+    return J(200, { ok: true, skipped: true, reason: "dev_toggle_off" });
+  }
+
   const now = Date.now();
   const twoHoursAgo = new Date(now - 2 * 60 * 60 * 1000).toISOString();
   const dayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();

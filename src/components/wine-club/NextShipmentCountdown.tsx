@@ -23,17 +23,14 @@ export function NextShipmentCountdown({ nextShipmentDate, tierFrequency }: Props
     return () => clearInterval(t);
   }, []);
 
-  // Prefer the stored date, but fall back to (or override with) the tier's
-  // published cadence if the stored value is missing or already in the past.
-  let effectiveDate = nextShipmentDate;
-  const storedTs = effectiveDate ? new Date(effectiveDate).getTime() : NaN;
-  if (!effectiveDate || !Number.isFinite(storedTs) || storedTs - now <= 0) {
-    if (tierFrequency) {
-      effectiveDate = getNextShipmentDateForFrequency(tierFrequency);
-    } else {
-      return null;
-    }
-  }
+  // Always derive from the tier's published cadence when we know it — this
+  // keeps the countdown accurate for members whose stored next_shipment_date
+  // was set before the cadence was tier-aware. Fall back to the stored
+  // value only if no tier frequency is available.
+  const effectiveDate = tierFrequency
+    ? getNextShipmentDateForFrequency(tierFrequency)
+    : nextShipmentDate;
+  if (!effectiveDate) return null;
 
   const target = new Date(effectiveDate!).getTime();
   if (!Number.isFinite(target)) return null;

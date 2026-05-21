@@ -110,11 +110,11 @@ export default function MixSixPage() {
                           <p className="text-xs text-muted-foreground mt-0.5">${price.toFixed(2)}</p>
                         </div>
                         <div className="flex items-center gap-2 mt-2">
-                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => dec(w.node.handle)} disabled={n === 0}>
+                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => dec(w.node.handle)} disabled={n === 0} aria-label={`Decrease ${w.node.title}`}>
                             <Minus className="h-3 w-3" />
                           </Button>
                           <span className="w-6 text-center text-sm font-bold">{n}</span>
-                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => inc(w.node.handle)}>
+                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => inc(w.node.handle)} aria-label={`Increase ${w.node.title}`}>
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>

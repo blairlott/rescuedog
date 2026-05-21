@@ -73,6 +73,10 @@ export function TierCard({ tier, onSelect, isSelected }: TierCardProps) {
         </li>
         <li className="flex items-center gap-2">
           <Check className="h-4 w-4 text-primary" />
+          Shipping included on club shipments
+        </li>
+        <li className="flex items-center gap-2">
+          <Check className="h-4 w-4 text-primary" />
           Cancel anytime
         </li>
       </ul>

@@ -186,6 +186,7 @@ Deno.serve(async (req) => {
           b2b_max_bid_pct: b2bMaxBidPct,
           b2b_daily_cap: b2bDailyCap,
           allowed,
+          kill_switches: killSwitchLog,
           ...autoStopDetail,
         },
       });

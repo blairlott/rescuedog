@@ -124,6 +124,7 @@ const KennelKeywordsPage = lazy(() => import("./pages/kennel/KennelKeywordsPage"
 const KennelPlatformRadarPage = lazy(() => import("./pages/kennel/KennelPlatformRadarPage"));
 const KennelAutonomyPage = lazy(() => import("./pages/kennel/KennelAutonomyPage"));
 const ExecutiveCommandCenter = lazy(() => import("./pages/intelligence/ExecutiveCommandCenter"));
+const ForcePasswordChangePage = lazy(() => import("./pages/ForcePasswordChangePage"));
 import { v2Routes } from "./v2/routes";
 import { v3Routes } from "./v3/routes";
 

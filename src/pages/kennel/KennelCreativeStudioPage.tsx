@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Upload, Sparkles, Image as ImageIcon, Film, Type, KeyRound, ExternalLink, Download, Instagram } from "lucide-react";
 import { ContentSeedPanel } from "@/components/cms/ContentSeedPanel";
+import { AIReviewPanel } from "@/components/creative-studio/AIReviewPanel";
 
 const RATIOS: { id: string; label: string; group: string }[] = [
   { id: "1:1", label: "Meta Feed / Carrot / Instacart (1:1)", group: "Social" },
@@ -286,6 +287,9 @@ export default function KennelCreativeStudioPage() {
 
       {/* Content Seed Library — moved here from CMS → Creative Queue */}
       <ContentSeedPanel />
+
+      {/* AI Review — autonomous HD enhancements and creative scene variants */}
+      <AIReviewPanel />
 
       {setupChecked && !creatomateReady && (
         <Card className="p-4 border-dashed">

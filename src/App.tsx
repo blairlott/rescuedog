@@ -305,6 +305,7 @@ function AppContent() {
         <Route path="keywords" element={<KennelKeywordsPage />} />
         <Route path="platform-radar" element={<KennelPlatformRadarPage />} />
         <Route path="autonomy" element={<KennelAutonomyPage />} />
+        <Route path="z8" element={<KennelZ8Page />} />
       </Route>
       <Route path="/intelligence" element={<KennelGuard><ExecutiveCommandCenter /></KennelGuard>} />
       {v2Routes()}

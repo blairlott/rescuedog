@@ -262,7 +262,7 @@ export function SommelierChat() {
               disabled={loading}
               className="text-sm"
             />
-            <Button type="submit" size="icon" disabled={loading || !input.trim()}>
+            <Button type="submit" size="icon" disabled={loading || !input.trim()} aria-label="Send message">
               <Send className="h-4 w-4" />
             </Button>
           </form>

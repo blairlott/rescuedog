@@ -32,6 +32,7 @@ import { template as clubShipmentShipped } from './club-shipment-shipped.tsx'
 import { template as clubGiftShipmentShipped } from './club-gift-shipment-shipped.tsx'
 import { template as wineSubPaymentFailed } from './wine-subscription-payment-failed.tsx'
 import { template as wineSubCardExpiring } from './wine-subscription-card-expiring.tsx'
+import { template as autopilotAutoStopped } from './autopilot-auto-stopped.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'ambassador-welcome': ambassadorWelcome,
@@ -57,4 +58,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'club-gift-shipment-shipped': clubGiftShipmentShipped,
   'wine-subscription-payment-failed': wineSubPaymentFailed,
   'wine-subscription-card-expiring': wineSubCardExpiring,
+  'autopilot-auto-stopped': autopilotAutoStopped,
 }

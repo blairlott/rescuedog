@@ -259,7 +259,20 @@ export function ContentSeedPanel() {
           {filtered.map((r) => (
             <div key={r.id} className="group border border-border rounded-none overflow-hidden bg-muted">
               <a href={r.public_url} target="_blank" rel="noreferrer">
-                <img src={r.public_url} alt={r.label || r.file_name} className="w-full aspect-square object-cover" />
+                {r.mime_type?.startsWith("video/") ? (
+                  <video
+                    src={r.public_url}
+                    className="w-full aspect-square object-cover bg-black"
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    onMouseEnter={(e) => (e.currentTarget as HTMLVideoElement).play().catch(() => {})}
+                    onMouseLeave={(e) => (e.currentTarget as HTMLVideoElement).pause()}
+                  />
+                ) : (
+                  <img src={r.public_url} alt={r.label || r.file_name} className="w-full aspect-square object-cover" />
+                )}
               </a>
               <div className="p-2 space-y-1">
                 <p className="text-[11px] truncate" title={r.file_name}>{r.label || r.file_name}</p>

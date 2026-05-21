@@ -320,7 +320,7 @@ const ProductDetail = () => {
                 {!isMerch && (
                   <li className="flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5" />
-                    Shipping included on 6+
+                    Flat $9.99 ship on 6+ · included on 12+
                   </li>
                 )}
                 {isMerch && (

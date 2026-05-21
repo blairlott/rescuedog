@@ -2834,7 +2834,10 @@ export type Database = {
           id: string
           label: string | null
           mime_type: string | null
+          parent_seed_id: string | null
           public_url: string
+          refine_prompt: string | null
+          refined: boolean
           size_bytes: number | null
           storage_path: string
           tags: string[] | null
@@ -2847,7 +2850,10 @@ export type Database = {
           id?: string
           label?: string | null
           mime_type?: string | null
+          parent_seed_id?: string | null
           public_url: string
+          refine_prompt?: string | null
+          refined?: boolean
           size_bytes?: number | null
           storage_path: string
           tags?: string[] | null
@@ -2860,13 +2866,24 @@ export type Database = {
           id?: string
           label?: string | null
           mime_type?: string | null
+          parent_seed_id?: string | null
           public_url?: string
+          refine_prompt?: string | null
+          refined?: boolean
           size_bytes?: number | null
           storage_path?: string
           tags?: string[] | null
           uploaded_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "creative_seed_assets_parent_seed_id_fkey"
+            columns: ["parent_seed_id"]
+            isOneToOne: false
+            referencedRelation: "creative_seed_assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_cohorts: {
         Row: {

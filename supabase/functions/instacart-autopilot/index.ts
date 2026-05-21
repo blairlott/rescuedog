@@ -119,6 +119,46 @@ Deno.serve(async (req) => {
     let spendOut = 0;
     let salesOut = 0;
     let notificationSent = false;
+    const killSwitchLog: Array<Record<string, unknown>> = [];
+
+    const logKillSwitch = async (row: {
+      switch_name: string;
+      status: "ok" | "at_risk" | "tripped" | "skipped";
+      measured_value?: number | null;
+      threshold?: number | null;
+      window_seconds?: number | null;
+      sample_size?: number | null;
+      failures?: number | null;
+      computed_roas?: number | null;
+      spend_cents?: number | null;
+      sales_cents?: number | null;
+      would_trip?: boolean;
+      tripped?: boolean;
+      detail?: Record<string, unknown>;
+    }) => {
+      const payload = {
+        platform: "instacart",
+        switch_name: row.switch_name,
+        status: row.status,
+        measured_value: row.measured_value ?? null,
+        threshold: row.threshold ?? null,
+        window_seconds: row.window_seconds ?? null,
+        sample_size: row.sample_size ?? null,
+        failures: row.failures ?? null,
+        computed_roas: row.computed_roas ?? null,
+        spend_cents: row.spend_cents ?? null,
+        sales_cents: row.sales_cents ?? null,
+        would_trip: !!row.would_trip,
+        tripped: !!row.tripped,
+        detail: row.detail ?? {},
+      };
+      killSwitchLog.push(payload);
+      try {
+        await admin.from("ad_autopilot_kill_switch_evaluations").insert(payload);
+      } catch (e) {
+        console.warn("kill-switch log insert failed", row.switch_name, e);
+      }
+    };
 
     const writeEvaluation = async (finalEnabled: boolean) => {
       await admin.from("ad_autopilot_evaluations").insert({
@@ -235,6 +275,20 @@ Deno.serve(async (req) => {
       const failures = sample.filter((r: any) => r.success === false).length;
       const errPct = (failures / sample.length) * 100;
       errPctOut = Number(errPct.toFixed(2));
+      const errStatus: "ok" | "at_risk" | "tripped" =
+        errPct > maxErrorRatePct ? "tripped" :
+        errPct >= maxErrorRatePct * 0.75 ? "at_risk" : "ok";
+      await logKillSwitch({
+        switch_name: "error_rate",
+        status: errStatus,
+        measured_value: errPctOut,
+        threshold: maxErrorRatePct,
+        sample_size: sample.length,
+        failures,
+        would_trip: errStatus === "tripped",
+        tripped: errStatus === "tripped",
+        detail: { window_size: errorWindow, min_actions_for_eval: minActionsForEval },
+      });
       if (errPct > maxErrorRatePct) {
         await autoStop("error_rate_exceeded", {
           error_pct: Number(errPct.toFixed(2)),
@@ -245,6 +299,14 @@ Deno.serve(async (req) => {
         await writeEvaluation(false);
         return J(200, { ok: true, auto_stopped: "error_rate_exceeded", error_pct: errPct, failures, window: sample.length });
       }
+    } else {
+      await logKillSwitch({
+        switch_name: "error_rate",
+        status: "skipped",
+        sample_size: sample.length,
+        threshold: maxErrorRatePct,
+        detail: { reason: "insufficient_sample", min_actions_for_eval: minActionsForEval, window_size: errorWindow },
+      });
     }
 
     // Auto-stop #2: ROAS over the trailing window dropped below threshold.
@@ -259,6 +321,22 @@ Deno.serve(async (req) => {
     if (spend >= 10_000) { // require $100+ trailing spend before evaluating
       const roas = sales / spend;
       roasOut = Number(roas.toFixed(3));
+      const roasStatus: "ok" | "at_risk" | "tripped" =
+        roas < minRoas ? "tripped" :
+        roas < minRoas * 1.15 ? "at_risk" : "ok";
+      await logKillSwitch({
+        switch_name: "roas",
+        status: roasStatus,
+        measured_value: roasOut,
+        threshold: minRoas,
+        window_seconds: roasWindowDays * 86400,
+        computed_roas: roasOut,
+        spend_cents: spend,
+        sales_cents: sales,
+        would_trip: roasStatus === "tripped",
+        tripped: roasStatus === "tripped",
+        detail: { window_days: roasWindowDays, campaigns: (campMetrics ?? []).length },
+      });
       if (roas < minRoas) {
         await autoStop("roas_below_threshold", {
           roas: Number(roas.toFixed(3)),
@@ -270,6 +348,16 @@ Deno.serve(async (req) => {
         await writeEvaluation(false);
         return J(200, { ok: true, auto_stopped: "roas_below_threshold", roas, min_roas: minRoas, spend_cents: spend, sales_cents: sales });
       }
+    } else {
+      await logKillSwitch({
+        switch_name: "roas",
+        status: "skipped",
+        threshold: minRoas,
+        window_seconds: roasWindowDays * 86400,
+        spend_cents: spend,
+        sales_cents: sales,
+        detail: { reason: "insufficient_spend", min_spend_cents: 10_000, window_days: roasWindowDays },
+      });
     }
 
     // Daily cap check.

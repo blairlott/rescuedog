@@ -166,24 +166,37 @@ Deno.serve(async (req) => {
             (emails ?? []).forEach((p: any) => { if (p?.email) recipients.add(p.email); });
           }
         }
-        const subject = `[Autopilot Auto-Stopped] Instacart — ${reason}`;
-        const text =
-          `Instacart autopilot was just auto-stopped.\n\n` +
-          `Reason: ${reason}\n` +
-          `Details: ${JSON.stringify(detail, null, 2)}\n\n` +
-          `Re-enable from /kennel/instacart-ads after investigating.`;
+        const stoppedAt = new Date().toISOString();
+        const reasonLabel =
+          reason === "error_rate_exceeded" ? "Error rate exceeded threshold" :
+          reason === "roas_below_threshold" ? "Trailing ROAS below threshold" :
+          reason;
+        const templateData = {
+          platform: "Instacart",
+          reason,
+          reasonLabel,
+          stoppedAt,
+          errorPct: (detail as any).error_pct ?? null,
+          errorSample: (detail as any).window ?? null,
+          maxErrorPct: (detail as any).threshold_pct ?? null,
+          roas: (detail as any).roas ?? null,
+          minRoas: (detail as any).min_roas ?? null,
+          spendCents: (detail as any).spend_cents ?? null,
+          salesCents: (detail as any).sales_cents ?? null,
+          windowDays: (detail as any).window_days ?? null,
+          detailJson: JSON.stringify(detail, null, 2),
+        };
+        const idemBase = `instacart-autopilot-stop-${reason}-${stoppedAt.slice(0, 16)}`;
         for (const to of recipients) {
-          await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-transactional-email`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-cron-secret": Deno.env.get("KENNEL_INGEST_SECRET") ?? "",
+          const { error: invokeErr } = await admin.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "autopilot-auto-stopped",
+              recipientEmail: to,
+              idempotencyKey: `${idemBase}-${to}`,
+              templateData,
             },
-            body: JSON.stringify({
-              to, subject, text,
-              template: "autopilot_auto_stopped",
-            }),
-          }).catch(() => {});
+          });
+          if (invokeErr) console.warn("autopilot notify invoke failed", to, invokeErr);
         }
         notificationSent = recipients.size > 0;
       } catch (e) {

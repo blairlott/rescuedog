@@ -79,7 +79,7 @@ export default function MixSixPage() {
       <Header />
       <PageHero
         title="Build Your Mix"
-        subtitle="Pick any 6+ bottles. Unlock up to 15% off, shipping included on 6+."
+        subtitle="Pick any 6+ bottles. Unlock up to 15% off, Flat $9.99 ship on 6+, included on 12+."
         compact
       />
       <main className="flex-1 py-10">
@@ -162,7 +162,7 @@ export default function MixSixPage() {
               {cartLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : `Add mix to cart`}
             </Button>
             <p className="text-[11px] text-muted-foreground leading-tight">
-              Shipping included on 6+ bottles. Mix discount applied automatically at checkout.
+              Flat $9.99 shipping on 6+ bottles, included on 12+. Mix discount applied automatically at checkout.
             </p>
           </aside>
         </div>

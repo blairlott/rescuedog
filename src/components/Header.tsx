@@ -65,7 +65,7 @@ export function Header() {
     });
   };
 
-  const wineBannerText = getVal("banner", "wine_banner", "Shipping included on 6+ btls · Use STOCKUP for 20% off 12+ btls");
+  const wineBannerText = getVal("banner", "wine_banner", "Flat $9.99 shipping on 6+ btls · Shipping included on 12+ · Wine Club members save 20%");
   const merchBannerText = getVal("banner", "merch_banner", "50% of our profits supports rescue organizations.");
   const activeBannerText = isMerch ? merchBannerText : wineBannerText;
   const activeBannerKey = isMerch ? "merch_banner" : "wine_banner";
@@ -92,7 +92,7 @@ export function Header() {
       banner: {
       title: "Announcement Banner",
       fields: [
-        { key: "wine_banner", label: "Wine Site Banner Text", type: "text", value: getVal("banner", "wine_banner", "Shipping included on 6+ btls · Use STOCKUP for 20% off 12+ btls") },
+        { key: "wine_banner", label: "Wine Site Banner Text", type: "text", value: getVal("banner", "wine_banner", "Flat $9.99 shipping on 6+ btls · Shipping included on 12+ · Wine Club members save 20%") },
         { key: "merch_banner", label: "Merch Site Banner Text", type: "text", value: getVal("banner", "merch_banner", "50% of our profits supports rescue organizations.") },
       ],
     },

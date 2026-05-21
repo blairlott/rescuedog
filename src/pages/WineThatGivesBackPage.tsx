@@ -186,7 +186,7 @@ export default function WineThatGivesBackPage() {
             <PawPrint className="h-8 w-8 mx-auto mb-6 text-background/60" />
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Drink well. Do better.</h2>
             <p className="text-background/70 mb-8 max-w-xl mx-auto">
-              Award-winning Lodi wines. 50% of profits to dog rescue. Shipping included on 6+ bottles.
+              Award-winning Lodi wines. 50% of profits to dog rescue. Flat $9.99 shipping on 6+ bottles, included on 12+.
             </p>
             <Link to="/wines" className="inline-flex items-center gap-2 bg-background text-foreground px-8 py-4 text-xs uppercase tracking-[0.25em] font-bold hover:bg-background/90">
               Shop the wines <ArrowRight className="h-3.5 w-3.5" />

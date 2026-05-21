@@ -42,13 +42,13 @@ export default function CrmCancellationsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["crm-cancellations"],
     queryFn: async (): Promise<Row[]> => {
-      const { data, error } = await supabase
-        .from("wine_club_cancellation_analytics" as any)
+      const { data, error } = await (supabase as any)
+        .from("wine_club_cancellation_analytics")
         .select("*")
         .order("cancelled_at", { ascending: false })
         .limit(2000);
       if (error) throw error;
-      return (data as Row[]) || [];
+      return ((data as unknown) as Row[]) || [];
     },
     enabled: !!role?.isAdminOrOwner,
   });

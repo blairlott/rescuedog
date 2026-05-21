@@ -495,14 +495,51 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
           <div className="border-2 border-foreground bg-muted/40 p-3 mb-4 flex items-start gap-3" style={{ borderRadius: 0 }}>
             <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <div className="flex-1 text-[11px] text-foreground leading-relaxed">
-              <div className="uppercase tracking-brand font-bold mb-1">DTC e-commerce only · naive trend + day-of-week seasonality (not MMM)</div>
+              <div className="uppercase tracking-brand font-bold mb-1">How to read this forecast</div>
               <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
-                <li>Scope: paid Meta + Google spend driving <strong>DTC website revenue only</strong>. Excludes wholesale/B&M (see Brick & Mortar tile) and Instacart.</li>
-                <li>Linear regression on the lookback window plus a 7-day seasonality pattern. Strategy-mode sliders tilt spend, revenue, and ROAS within ±15–30%.</li>
-                <li>Range bands are ±1.96σ on residuals — directional confidence, not a guarantee.</li>
-                <li>Long horizons (1–3 years) extrapolate trend confidently — treat as a planning baseline, not a budget commit.</li>
-                <li>Actuals before today: <strong>ad_performance_daily</strong> (paid spend + attributed DTC revenue) plus <strong>business_revenue_facts</strong> (total DTC net revenue) when viewing All.</li>
+                <li><strong>Apples-to-apples regressions.</strong> CAGR compares trailing 90d vs prior 90d, annualized and clamped ±50%/+100%. Q4 YoY is measured prior-Q4-vs-prior-Q4 (geometric mean of consecutive years), clamped −25%/+75%.</li>
+                <li><strong>Q4 is data-derived, not a toggle.</strong> The OND floor = average of the last 2 prior Q4s × measured YoY growth, distributed across Oct/Nov/Dec by your real monthly seasonal index. No hardcoded "EoY 2x" assumption.</li>
+                <li><strong>Seasonality is dual-layer.</strong> Day-of-week + calendar-month indices, both estimated over the last 4 years (≥3 prior Q4s required for a meaningful holiday curve). Critical for wine + gifting brands where Q4 ≠ Q2.</li>
+                <li><strong>Scenarios are levers, not new regressions.</strong> The Spend / ROAS sliders below scale the forecast (future only) in real time. They simulate budget restoration or efficiency change — actuals stay frozen.</li>
+                <li><strong>Range bands are ±1.96σ on residuals</strong> (95% interval) — directional confidence, not a guarantee. Widens with horizon and volatility.</li>
+                <li><strong>What this is NOT.</strong> Not a media-mix model — no saturation curves, no incrementality, no cross-channel attribution. Treat 1–3yr horizons as a planning baseline, not a budget commit.</li>
+                <li><strong>Sources.</strong> Paid: <code>ad_performance_daily</code>. Total DTC: <code>business_revenue_facts</code> (when viewing All).</li>
               </ul>
+            </div>
+          </div>
+          <div className="border-2 border-foreground p-3 mb-4" style={{ borderRadius: 0 }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="uppercase tracking-brand text-[10px] font-bold text-foreground">Scenario levers · applied to forecast only</div>
+              <Button size="sm" variant="ghost" onClick={() => { setSpendLever(0); setRoasLever(0); }}
+                disabled={spendLever === 0 && roasLever === 0}
+                style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-6 px-2"
+              >
+                Reset
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center justify-between text-[10px] uppercase tracking-brand text-muted-foreground mb-1">
+                  <span>Spend lever (volume)</span>
+                  <span className="text-foreground tabular-nums font-bold">{spendLever >= 0 ? "+" : ""}{spendLever}%</span>
+                </div>
+                <input type="range" min={-50} max={50} step={5} value={spendLever}
+                  onChange={(e) => setSpendLever(Number(e.target.value))}
+                  className="w-full accent-primary"
+                />
+                <div className="text-[10px] text-muted-foreground mt-0.5">Restored / paused budget. Revenue scales with spend at current efficiency.</div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-[10px] uppercase tracking-brand text-muted-foreground mb-1">
+                  <span>ROAS lever (efficiency)</span>
+                  <span className="text-foreground tabular-nums font-bold">{roasLever >= 0 ? "+" : ""}{roasLever}%</span>
+                </div>
+                <input type="range" min={-25} max={25} step={5} value={roasLever}
+                  onChange={(e) => setRoasLever(Number(e.target.value))}
+                  className="w-full accent-primary"
+                />
+                <div className="text-[10px] text-muted-foreground mt-0.5">Creative / targeting improvement. Lifts revenue without spending more.</div>
+              </div>
             </div>
           </div>
           {summary && (

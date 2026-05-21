@@ -34,13 +34,12 @@ export function FreeShippingBar({ totalBottles, cartTotal = 0, mode = "wine" }: 
     );
   }
 
-  // Wine mode: stacked rewards. Tied-house / ABC laws prohibit giving away
-  // merch with wine purchases — no "free gift" tiers allowed.
-  // Members get the higher club discount on cases; everyone else sees the
-  // public case discount.
+  // Wine mode: case-discount milestone. Shipping is NOT shown as a reward
+  // at checkout — it's a delivery term, not a loyalty perk. Members get
+  // the higher club discount on cases; everyone else sees the public case
+  // discount.
   const effectiveCaseDiscount = isMember ? discountPercent : fullCaseDiscount;
   const milestones = [
-    { at: freeShippingBottleCount, label: "Shipping included", icon: Truck },
     {
       at: fullCaseCount,
       label: isMember

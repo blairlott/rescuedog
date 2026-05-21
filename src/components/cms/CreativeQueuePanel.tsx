@@ -52,8 +52,8 @@ const STATUS_COLORS: Record<Status, string> = {
 
 export function CreativeQueuePanel() {
   const { toast } = useToast();
-  const { isAdmin, isOwner } = useUserRole();
-  const canApprove = !!(isAdmin || isOwner); // Blair-only
+  const { data: roleInfo } = useUserRole();
+  const canApprove = !!roleInfo?.isAdminOrOwner; // Blair-only
 
   const [rows, setRows] = useState<QueueRow[]>([]);
   const [loading, setLoading] = useState(true);

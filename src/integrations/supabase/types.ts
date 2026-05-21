@@ -10601,6 +10601,7 @@ export type Database = {
       is_ad_ops: { Args: { _user_id: string }; Returns: boolean }
       is_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
       is_ambassador_manager: { Args: { _user_id: string }; Returns: boolean }
+      is_backend_viewer: { Args: { _user_id: string }; Returns: boolean }
       is_brand_ambassador: { Args: { _user_id: string }; Returns: boolean }
       is_cms_editor: { Args: { _user_id: string }; Returns: boolean }
       is_dropship_manager: { Args: { _user_id: string }; Returns: boolean }

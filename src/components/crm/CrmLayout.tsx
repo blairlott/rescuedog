@@ -3,7 +3,7 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook, TrendingDown, FlaskConical } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
 import { CrmBreadcrumbs } from "@/components/crm/CrmBreadcrumbs";
@@ -28,6 +28,8 @@ export default function CrmLayout() {
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/compliance", label: "Compliance", icon: ShieldCheck }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/leads", label: "Leads", icon: Mail }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/webhooks", label: "Webhooks", icon: Webhook }] : []),
+    ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/cancellations", label: "Cancellations", icon: TrendingDown }] : []),
+    ...(roleInfo?.isAdminOrOwner ? [{ to: "/admin/ab-results", label: "A/B Results", icon: FlaskConical }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin#depletion-uploader", label: "Depletion Upload", icon: FileText }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/legacy-migration", label: "Legacy Migration", icon: Link2 }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin", label: "Users", icon: Users }] : []),

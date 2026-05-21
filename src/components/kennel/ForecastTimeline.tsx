@@ -310,12 +310,12 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
   }, [chartData, shipping, spendLever, roasLever, todayKey]);
 
   const summary = useMemo(() => {
-    if (chartData.length === 0) return null;
+    if (mergedChartData.length === 0) return null;
     // Split on the bucket boundary so the current month counts as "history" (it has real data)
     // rather than getting dropped by a daily-string vs monthly-key mismatch.
-    const hist = chartData.filter((p) => p.date <= todayKey);
-    const fut  = chartData.filter((p) => p.date >  todayKey);
-    const sum = (arr: typeof chartData, k: keyof Point) => arr.reduce((s, p) => s + (Number(p[k]) || 0), 0);
+    const hist = mergedChartData.filter((p) => p.date <= todayKey);
+    const fut  = mergedChartData.filter((p) => p.date >  todayKey);
+    const sum = (arr: typeof mergedChartData, k: string) => arr.reduce((s, p) => s + (Number((p as any)[k]) || 0), 0);
     const histSpend = sum(hist, "spend"); const histRev = sum(hist, "revenue");
     const futSpend  = sum(fut,  "spend"); const futRev  = sum(fut,  "revenue");
     return {
@@ -328,7 +328,7 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
       histNet: histRev - histSpend,
       futNet:  futRev  - futSpend,
     };
-  }, [chartData, todayKey]);
+  }, [mergedChartData, todayKey]);
 
   const generate = async () => {
     setBusy(true);

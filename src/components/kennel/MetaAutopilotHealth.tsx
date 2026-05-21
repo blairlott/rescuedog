@@ -80,6 +80,34 @@ export function MetaAutopilotHealth() {
     refetchInterval: 30_000,
   });
 
+  // EMQ (Event Match Quality) — share of live successful Purchase events in the
+  // last 7 days that carry each identifier. Higher coverage = better attribution
+  // for ASC/Advantage+. fbp/fbc require the browser Pixel to be loaded.
+  const emqQ = useQuery({
+    queryKey: ["meta-autopilot-emq"],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("meta_capi_events" as any)
+        .select("email_hash,fbp,fbc")
+        .eq("success", true)
+        .eq("test_mode", false)
+        .gte("sent_at", since)
+        .limit(2000);
+      if (error) throw error;
+      const rows = (data ?? []) as any[];
+      const total = rows.length;
+      const withEmail = rows.filter((r) => r.email_hash).length;
+      const withFbp = rows.filter((r) => r.fbp).length;
+      const withFbc = rows.filter((r) => r.fbc).length;
+      // 0–10 score, weighted toward signals Meta values most for attribution.
+      const score = total === 0 ? null :
+        Math.round(((withEmail / total) * 4 + (withFbp / total) * 3 + (withFbc / total) * 3) * 10) / 10;
+      return { total, withEmail, withFbp, withFbc, score };
+    },
+    refetchInterval: 60_000,
+  });
+
   const cfg = settingsQ.data ?? {};
   const enabled = cfg.meta_autopilot_enabled === true;
   const cooldownMin = Number(cfg.meta_autopilot_cooldown_minutes ?? 60);
@@ -265,6 +293,51 @@ export function MetaAutopilotHealth() {
         <Stat label="Trailing ROAS" value={`${num(latest?.trailing_roas, 2)}x`} sub={`min ${num(cfg.meta_autopilot_min_roas, 2)}x`} />
         <Stat label="Trailing spend" value={dollars(latest?.trailing_spend_cents)} sub={`window ${cfg.meta_autopilot_roas_window_days ?? 7}d`} />
         <Stat label="Daily cap" value={`${latest?.executed ?? 0}/${cfg.meta_autopilot_daily_action_cap ?? 10}`} sub="executed today" />
+      </div>
+
+      {/* EMQ — Event Match Quality */}
+      <div>
+        <div className="text-[11px] uppercase tracking-brand font-bold text-foreground mb-2 flex items-center justify-between">
+          <span>Event match quality (last 7d Purchase events)</span>
+          {emqQ.data ? (
+            <span className="text-muted-foreground normal-case tracking-normal">
+              n={emqQ.data.total} {emqQ.data.score != null ? `· score ${emqQ.data.score}/10` : ""}
+            </span>
+          ) : null}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Stat
+            label="Match score"
+            value={emqQ.data?.score != null ? `${emqQ.data.score}/10` : "—"}
+            sub={
+              emqQ.data == null ? "loading" :
+              emqQ.data.score == null ? "no events" :
+              emqQ.data.score >= 8 ? "strong" :
+              emqQ.data.score >= 6 ? "fair" : "weak — pixel missing?"
+            }
+          />
+          <Stat
+            label="Hashed email"
+            value={emqQ.data && emqQ.data.total ? pct((emqQ.data.withEmail / emqQ.data.total) * 100) : "—"}
+            sub={emqQ.data ? `${emqQ.data.withEmail}/${emqQ.data.total}` : "—"}
+          />
+          <Stat
+            label="_fbp cookie"
+            value={emqQ.data && emqQ.data.total ? pct((emqQ.data.withFbp / emqQ.data.total) * 100) : "—"}
+            sub={emqQ.data ? `${emqQ.data.withFbp}/${emqQ.data.total}` : "—"}
+          />
+          <Stat
+            label="_fbc click ID"
+            value={emqQ.data && emqQ.data.total ? pct((emqQ.data.withFbc / emqQ.data.total) * 100) : "—"}
+            sub={emqQ.data ? `${emqQ.data.withFbc}/${emqQ.data.total}` : "—"}
+          />
+        </div>
+        {emqQ.data && emqQ.data.total > 0 && (emqQ.data.withFbp / emqQ.data.total < 0.4) ? (
+          <div className="mt-2 border-2 border-foreground/30 p-2 text-[11px] text-muted-foreground" style={{ borderRadius: 0 }}>
+            <strong className="text-foreground">Low _fbp coverage.</strong> Browser Meta Pixel may not be firing on the
+            checkout origin. Without _fbp/_fbc, attribution falls back to probabilistic matching and ASC learning slows.
+          </div>
+        ) : null}
       </div>
 
       {/* Kill-switch log */}

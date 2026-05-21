@@ -29,6 +29,7 @@ import {
 import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
 import { useCartSettings } from "@/hooks/useCartSettings";
 import { getSignupPromo, markSignupPromoUsed } from "@/lib/signupPromo";
+import { WineShippingPolicy } from "@/components/cart/WineShippingPolicy";
 
 interface Props {
   open: boolean;
@@ -851,6 +852,8 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
             for delivery.
           </span>
         </label>
+
+        <WineShippingPolicy variant="full" />
         </div>
 
         {/* Sticky bottom CTA — thumb reach on mobile */}

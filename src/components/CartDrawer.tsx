@@ -19,6 +19,7 @@ import { DualCheckoutConfirm } from "@/components/cart/DualCheckoutConfirm";
 import { useGeo } from "@/hooks/useGeo";
 import { useTranslation } from "react-i18next";
 import { CartTrustBlock } from "@/components/cart/CartTrustBlock";
+import { WineShippingPolicy } from "@/components/cart/WineShippingPolicy";
 import { CartGiftToggle } from "@/components/cart/CartGiftToggle";
 import { CartSaveForLater } from "@/components/cart/CartSaveForLater";
 import { CartLineExtras } from "@/components/cart/CartLineExtras";
@@ -619,6 +620,7 @@ export const CartDrawer = () => {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3 pb-3">
                       {!isMerchRoute && <CartTrustBlock totalBottles={totalBottlesEffective} />}
+                      {!isMerchRoute && <WineShippingPolicy variant="compact" />}
                       <CartGiftToggle />
                       <CartSaveForLater />
                     </AccordionContent>

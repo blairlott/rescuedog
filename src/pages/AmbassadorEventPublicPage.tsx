@@ -38,18 +38,22 @@ export default function AmbassadorEventPublicPage() {
   const onRsvp = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const { error } = await supabase.from("ambassador_event_rsvps").insert({
+    const { data: inserted, error } = await supabase.from("ambassador_event_rsvps").insert({
       event_id: event.id,
       name: form.name,
       email: form.email,
       phone: form.phone || null,
       party_size: parseInt(form.party_size) || 1,
       notes: form.notes || null,
-    });
+    }).select("id").single();
     setSubmitting(false);
     if (error) return toast.error(error.message);
     setSubmitted(true);
     toast.success("RSVP confirmed! See you there.");
+    // Fire confirmation email (best-effort).
+    if (inserted?.id) {
+      void supabase.functions.invoke("event-rsvp-confirm", { body: { rsvp_id: inserted.id } });
+    }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;

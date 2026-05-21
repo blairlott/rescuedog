@@ -1,0 +1,1 @@
+UPDATE public.ig_boost_config SET ig_user_id = '17841408353555967';

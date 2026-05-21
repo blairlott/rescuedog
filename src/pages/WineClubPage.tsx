@@ -8,7 +8,6 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 import { useWineClubTiers, useMyMembership } from "@/hooks/useWineClub";
 import type { WineClubTier } from "@/hooks/useWineClub";
-import { ClubConfigurator } from "@/components/wine-club/ClubConfigurator";
 import { VinoshipperInlineSignup } from "@/components/wine-club/VinoshipperInlineSignup";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
 import { GiftMembershipDialog } from "@/components/wine-club/GiftMembershipDialog";
@@ -42,7 +41,6 @@ const WineClubPage = () => {
   const { content, upsert } = useCmsContent("wine_club");
   const [editSection, setEditSection] = useState<EditSection>(null);
   const [editFaqIdx, setEditFaqIdx] = useState<number | null>(null);
-  const [selectedTier, setSelectedTier] = useState<WineClubTier | null>(null);
   const [giftDialogOpen, setGiftDialogOpen] = useState(false);
 
   const { user } = useCustomerAuth();
@@ -67,10 +65,6 @@ const WineClubPage = () => {
     });
   };
 
-  const handleSelectTier = (tier: WineClubTier) => {
-    setSelectedTier(tier);
-  };
-
   const sectionFields: Record<string, { title: string; fields: CmsField[] }> = {
     hero: {
       title: "Wine Club Hero",
@@ -90,7 +84,23 @@ const WineClubPage = () => {
   };
 
   // If user has an active membership, show their dashboard
-  const showMemberDashboard = membership && !selectedTier;
+  const showMemberDashboard = !!membership;
+
+  // Derive Vinoshipper producer id from any tier's join URL so we can render
+  // the full clubs embed (lists every tier) on the main page — guests pick
+  // their tier once, inside Vinoshipper, instead of choosing twice.
+  const vinoshipperProducerId = (() => {
+    for (const t of tiers ?? []) {
+      const m = t.vinoshipper_join_url?.match(
+        /vinoshipper\.com\/shop\/(\d+)\/club\/(\d+)/i,
+      );
+      if (m) return m[1];
+    }
+    return null;
+  })();
+  const allClubsJoinUrl = vinoshipperProducerId
+    ? `https://vinoshipper.com/shop/${vinoshipperProducerId}/club/0`
+    : null;
 
   return (
     <div className="min-h-screen flex flex-col">

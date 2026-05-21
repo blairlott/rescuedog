@@ -6766,6 +6766,42 @@ export type Database = {
         }
         Relationships: []
       }
+      reengagement_log: {
+        Row: {
+          channel: string
+          created_at: string
+          customer_email: string
+          error: string | null
+          id: string
+          segment: string
+          success: boolean
+          tag: string
+          user_id: string | null
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          customer_email: string
+          error?: string | null
+          id?: string
+          segment: string
+          success?: boolean
+          tag: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          customer_email?: string
+          error?: string | null
+          id?: string
+          segment?: string
+          success?: boolean
+          tag?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       referral_rewards: {
         Row: {
           admin_note: string | null
@@ -8034,6 +8070,53 @@ export type Database = {
         }
         Relationships: []
       }
+      wine_club_anniversary_log: {
+        Row: {
+          anniversary_year: number
+          bonus_points: number
+          created_at: string
+          customer_email: string | null
+          error: string | null
+          id: string
+          membership_id: string
+          success: boolean
+          user_id: string | null
+          years_with_club: number
+        }
+        Insert: {
+          anniversary_year: number
+          bonus_points?: number
+          created_at?: string
+          customer_email?: string | null
+          error?: string | null
+          id?: string
+          membership_id: string
+          success?: boolean
+          user_id?: string | null
+          years_with_club: number
+        }
+        Update: {
+          anniversary_year?: number
+          bonus_points?: number
+          created_at?: string
+          customer_email?: string | null
+          error?: string | null
+          id?: string
+          membership_id?: string
+          success?: boolean
+          user_id?: string | null
+          years_with_club?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wine_club_anniversary_log_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "wine_club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wine_club_curation_picks: {
         Row: {
           ai_rationale: string | null
@@ -8518,6 +8601,50 @@ export type Database = {
             foreignKeyName: "wine_club_shipment_items_shipment_id_fkey"
             columns: ["shipment_id"]
             isOneToOne: false
+            referencedRelation: "wine_club_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wine_club_shipment_loyalty_log: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          membership_id: string
+          points_awarded: number
+          shipment_id: string
+          status: string
+          subtotal_cents: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          membership_id: string
+          points_awarded?: number
+          shipment_id: string
+          status?: string
+          subtotal_cents?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          membership_id?: string
+          points_awarded?: number
+          shipment_id?: string
+          status?: string
+          subtotal_cents?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wine_club_shipment_loyalty_log_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: true
             referencedRelation: "wine_club_shipments"
             referencedColumns: ["id"]
           },

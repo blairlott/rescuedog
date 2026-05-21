@@ -13,6 +13,55 @@ const supabase = createClient(
 
 const SHARED_SECRET = Deno.env.get('VINOSHIPPER_WEBHOOK_SECRET');
 
+async function awardShipmentLoyalty(vsOrderId: string) {
+  // Kill switch
+  const { data: setting } = await supabase
+    .from('app_settings').select('value')
+    .eq('key', 'wine_club_shipment_loyalty_enabled').maybeSingle();
+  if (setting && (setting.value as any) === false) return;
+
+  const { data: ship } = await supabase
+    .from('wine_club_shipments')
+    .select('id, membership_id, total_cents, membership:wine_club_memberships!membership_id(user_id)')
+    .eq('vinoshipper_order_id', vsOrderId).maybeSingle();
+  if (!ship?.id) return;
+  const userId = (ship as any).membership?.user_id as string | undefined;
+  if (!userId) return;
+
+  // Dedup: already logged?
+  const { data: existing } = await supabase
+    .from('wine_club_shipment_loyalty_log').select('id').eq('shipment_id', ship.id).maybeSingle();
+  if (existing) return;
+
+  const subtotal = ship.total_cents ?? 0;
+  const url = `${Deno.env.get('SUPABASE_URL')}/functions/v1/award-loyalty-points`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-internal-key': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    },
+    body: JSON.stringify({
+      user_id: userId,
+      subtotal_cents: subtotal,
+      event_type: 'earn_wine_club_shipment',
+      reason: `Wine club shipment ${ship.id}`,
+      order_id: ship.id,
+      metadata: { source: 'vinoshipper_webhook', vs_order_id: vsOrderId },
+    }),
+  });
+  const json = await res.json().catch(() => ({}));
+  await supabase.from('wine_club_shipment_loyalty_log').insert({
+    shipment_id: ship.id,
+    membership_id: ship.membership_id,
+    user_id: userId,
+    subtotal_cents: subtotal,
+    points_awarded: Math.max(0, Math.floor(subtotal / 100)),
+    status: res.ok ? 'awarded' : 'error',
+    error: res.ok ? null : JSON.stringify(json).slice(0, 500),
+  });
+}
+
 function ok(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -49,12 +98,14 @@ async function applyMembershipEvent(identifier: string, event: string, payload: 
 
 async function applyOrderEvent(identifier: string, event: string, payload: Record<string, unknown>) {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  let shouldAwardLoyalty = false;
 
   switch (event) {
     case 'TRACKING_NUMBER':
       if (typeof payload.tracking_number === 'string') updates.tracking_number = payload.tracking_number;
       else if (typeof payload.trackingNumber === 'string') updates.tracking_number = payload.trackingNumber;
       updates.status = 'shipped';
+      shouldAwardLoyalty = true;
       break;
     case 'APPROVED':
       updates.status = 'processing';
@@ -75,6 +126,15 @@ async function applyOrderEvent(identifier: string, event: string, payload: Recor
     .eq('vinoshipper_order_id', identifier);
 
   if (error) throw error;
+
+  // Award loyalty points once per shipment when it transitions to shipped.
+  if (shouldAwardLoyalty) {
+    try {
+      await awardShipmentLoyalty(identifier);
+    } catch (e) {
+      console.error('shipment loyalty award failed (non-fatal)', e);
+    }
+  }
 
   // Fire Meta CAPI PaymentDeclined lifecycle event on card decline.
   if (event === 'CARD_DECLINED') {

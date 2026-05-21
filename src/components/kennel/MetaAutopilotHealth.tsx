@@ -50,7 +50,7 @@ export function MetaAutopilotHealth() {
         .like("key", "meta_autopilot%");
       if (error) throw error;
       const map: Record<string, any> = {};
-      ((data ?? []) as Setting[]).forEach((r) => { map[r.key] = r.value; });
+      ((data ?? []) as unknown as Setting[]).forEach((r) => { map[r.key] = r.value; });
       return map;
     },
     refetchInterval: 30_000,

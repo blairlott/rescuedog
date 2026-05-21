@@ -49,12 +49,14 @@ async function applyMembershipEvent(identifier: string, event: string, payload: 
 
 async function applyOrderEvent(identifier: string, event: string, payload: Record<string, unknown>) {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  let shouldAwardLoyalty = false;
 
   switch (event) {
     case 'TRACKING_NUMBER':
       if (typeof payload.tracking_number === 'string') updates.tracking_number = payload.tracking_number;
       else if (typeof payload.trackingNumber === 'string') updates.tracking_number = payload.trackingNumber;
       updates.status = 'shipped';
+      shouldAwardLoyalty = true;
       break;
     case 'APPROVED':
       updates.status = 'processing';
@@ -75,6 +77,15 @@ async function applyOrderEvent(identifier: string, event: string, payload: Recor
     .eq('vinoshipper_order_id', identifier);
 
   if (error) throw error;
+
+  // Award loyalty points once per shipment when it transitions to shipped.
+  if (shouldAwardLoyalty) {
+    try {
+      await awardShipmentLoyalty(identifier);
+    } catch (e) {
+      console.error('shipment loyalty award failed (non-fatal)', e);
+    }
+  }
 
   // Fire Meta CAPI PaymentDeclined lifecycle event on card decline.
   if (event === 'CARD_DECLINED') {

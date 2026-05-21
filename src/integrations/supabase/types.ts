@@ -4780,12 +4780,14 @@ export type Database = {
           ab_winner_cpl_cents: number
           ab_winner_roas_threshold: number
           daily_budget_per_variant_cents: number
+          daily_total_cap_cents: number
           default_objective: string
           engagement_rate_threshold: number
           excluded_region_keys: string[]
           id: string
           ig_user_id: string
           kill_frequency: number
+          kill_link_clicks_spend_cents: number
           kill_spend_threshold_cents: number
           lal_1pct_audience_id: string
           lal_high_ltv_audience_id: string
@@ -4804,12 +4806,14 @@ export type Database = {
           ab_winner_cpl_cents?: number
           ab_winner_roas_threshold?: number
           daily_budget_per_variant_cents?: number
+          daily_total_cap_cents?: number
           default_objective?: string
           engagement_rate_threshold?: number
           excluded_region_keys?: string[]
           id?: string
           ig_user_id?: string
           kill_frequency?: number
+          kill_link_clicks_spend_cents?: number
           kill_spend_threshold_cents?: number
           lal_1pct_audience_id?: string
           lal_high_ltv_audience_id?: string
@@ -4828,12 +4832,14 @@ export type Database = {
           ab_winner_cpl_cents?: number
           ab_winner_roas_threshold?: number
           daily_budget_per_variant_cents?: number
+          daily_total_cap_cents?: number
           default_objective?: string
           engagement_rate_threshold?: number
           excluded_region_keys?: string[]
           id?: string
           ig_user_id?: string
           kill_frequency?: number
+          kill_link_clicks_spend_cents?: number
           kill_spend_threshold_cents?: number
           lal_1pct_audience_id?: string
           lal_high_ltv_audience_id?: string

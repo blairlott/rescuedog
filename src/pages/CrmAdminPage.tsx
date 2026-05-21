@@ -18,6 +18,7 @@ import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
 import { TestEmailsCard } from "@/components/crm/TestEmailsCard";
 import { DepletionUploadCard } from "@/components/crm/DepletionUploadCard";
+import { AccessRequestsTab } from "@/components/crm/AccessRequestsTab";
 
 interface UserWithRoles {
   id: string;
@@ -237,6 +238,9 @@ export default function CrmAdminPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="approved">Approved Users ({approvedUsers.length})</TabsTrigger>
+            <TabsTrigger value="requests" className="gap-1">
+              <Mail className="h-3.5 w-3.5" /> Access Requests
+            </TabsTrigger>
             <TabsTrigger value="referrals" className="gap-1">
               <Gift className="h-3.5 w-3.5" /> Referrals
             </TabsTrigger>
@@ -246,6 +250,9 @@ export default function CrmAdminPage() {
           </TabsContent>
           <TabsContent value="approved" className="mt-4">
             {renderUserTable(approvedUsers, false)}
+          </TabsContent>
+          <TabsContent value="requests" className="mt-4">
+            <AccessRequestsTab onChanged={fetchUsers} />
           </TabsContent>
           <TabsContent value="referrals" className="mt-4">
             <ReferralAdminTab />

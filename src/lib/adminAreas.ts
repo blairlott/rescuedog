@@ -9,7 +9,12 @@ export interface AdminArea {
   roles: string[];
 }
 
-export const ADMIN_AREAS: AdminArea[] = [
+// Note: the read-only `viewer` and `executive` roles get appended to every
+// area's allowed roles below so backend viewers can navigate the portal.
+// They cannot edit/publish — write-side gating is enforced separately.
+const READ_ONLY_BACKEND_ROLES = ["viewer", "executive"] as const;
+
+const RAW_ADMIN_AREAS: AdminArea[] = [
   {
     key: "cms",
     to: "/cms",
@@ -54,6 +59,11 @@ export const ADMIN_AREAS: AdminArea[] = [
     roles: ["owner", "admin", "ad_ops_manager", "executive", "kennel_viewer"],
   },
 ];
+
+export const ADMIN_AREAS: AdminArea[] = RAW_ADMIN_AREAS.map((area) => ({
+  ...area,
+  roles: Array.from(new Set([...area.roles, ...READ_ONLY_BACKEND_ROLES])),
+}));
 
 export const hasAreaAccess = (area: AdminArea, roles: string[]) =>
   area.roles.some((r) => roles.includes(r));

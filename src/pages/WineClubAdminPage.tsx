@@ -51,8 +51,10 @@ function useWineClubAccess() {
       const isOwner = roleList.includes("owner");
       const isAdmin = roleList.includes("admin");
       const isWineClubManager = roleList.includes("wine_club_manager");
+      const isExecutive = roleList.includes("executive");
+      const isViewer = roleList.includes("viewer");
       return {
-        hasAccess: isOwner || isAdmin || isWineClubManager,
+        hasAccess: isOwner || isAdmin || isWineClubManager || isExecutive || isViewer,
         canManageManagers: isOwner || isAdmin, // only owners/admins can add managers
         isOwner,
       };

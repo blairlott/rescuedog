@@ -29,12 +29,15 @@ const CmsLoginPage = () => {
       return;
     }
 
-    // Check if user has CMS access
-    const { data: isCmsEditor, error: roleError } = await supabase.rpc("is_cms_editor", {
-      _user_id: data.user.id,
-    });
+    // Check if user has CMS access (editors) OR read-only backend access (viewer/executive).
+    const [{ data: isCmsEditor, error: roleError }, { data: roleRows }] = await Promise.all([
+      supabase.rpc("is_cms_editor", { _user_id: data.user.id }),
+      supabase.from("user_roles").select("role").eq("user_id", data.user.id),
+    ]);
+    const userRoles = ((roleRows as { role: string }[] | null) || []).map((r) => r.role);
+    const hasReadOnly = userRoles.some((r) => r === "viewer" || r === "executive");
 
-    if (roleError || !isCmsEditor) {
+    if ((roleError || !isCmsEditor) && !hasReadOnly) {
       await supabase.auth.signOut();
       toast({
         title: "Access denied",
@@ -45,7 +48,12 @@ const CmsLoginPage = () => {
       return;
     }
 
-    toast({ title: "Welcome back!", description: "You now have editing access." });
+    toast({
+      title: "Welcome back!",
+      description: hasReadOnly && !isCmsEditor
+        ? "Read-only access enabled — you can view but not edit."
+        : "You now have editing access.",
+    });
     navigate("/cms");
     setLoading(false);
   };

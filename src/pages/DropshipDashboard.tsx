@@ -12,7 +12,10 @@ import { Truck } from "lucide-react";
 
 export default function DropshipDashboard() {
   const { data: role } = useUserRole();
-  const allowed = role?.isAdminOrOwner || (role?.roles as string[] | undefined)?.includes("dropship_manager");
+  const allowed =
+    role?.isAdminOrOwner ||
+    role?.canViewBackend ||
+    (role?.roles as string[] | undefined)?.includes("dropship_manager");
 
   if (!allowed) {
     return (

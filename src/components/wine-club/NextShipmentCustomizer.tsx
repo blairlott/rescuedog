@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Plus, Minus, Trash2, ShoppingBag, AlertTriangle, CheckCircle2, SkipForward } from "lucide-react";
 import { toast } from "sonner";
 import type { WineClubMembership, WineClubTier } from "@/hooks/useWineClub";
-import { getNextShipmentDateForFrequency, describeShipmentCadence } from "@/lib/wineClubSchedule";
+import { describeShipmentCadence, describeNextShipmentWindow } from "@/lib/wineClubSchedule";
 
 interface ShipmentItem {
   id?: string;
@@ -193,19 +193,17 @@ export function NextShipmentCustomizer({ membership }: Props) {
   }
 
   if (!shipment) {
-    // No DB shipment row yet — fall back to the tier's published cadence
-    // so the box reflects when *this* club actually ships.
+    // No DB shipment row yet — describe the cadence/window without committing
+    // to a specific date (timing flexes with weather).
     const cadenceLabel = describeShipmentCadence(tier?.frequency);
-    const nextDate = membership?.next_shipment_date
-      ?? getNextShipmentDateForFrequency(tier?.frequency);
-    const niceDate = new Date(nextDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const window = describeNextShipmentWindow(tier?.frequency);
     return (
       <div className="border border-border p-8 text-center mb-8">
         <ShoppingBag className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
         <h3 className="text-lg font-bold text-foreground mb-2">Customization opens soon</h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          {cadenceLabel}. Your next shipment is targeted for{" "}
-          <span className="text-foreground font-semibold">{niceDate}</span>.
+          {cadenceLabel}. Your next shipment is timed to arrive{" "}
+          <span className="text-foreground font-semibold">{window}</span>.
           About a week before we process your shipment, we'll email you a link to customize it — swap wines, adjust quantities, update delivery, or skip.
         </p>
       </div>

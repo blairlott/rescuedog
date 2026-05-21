@@ -1,12 +1,12 @@
-import { Calendar, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
-import { getNextShipmentDateForFrequency } from "@/lib/wineClubSchedule";
+import { Sparkles } from "lucide-react";
+import { describeNextShipmentWindow } from "@/lib/wineClubSchedule";
 
 interface Props {
   /** ISO date string */
   nextShipmentDate: string | null;
-  /** Tier frequency (monthly/quarterly/bi-annual/yearly) — used to recompute
-   *  the next ship date when the stored date is stale or in the past. */
+  /** Tier frequency (monthly/quarterly/bi-annual/yearly) — drives the
+   *  human-readable window we show (no specific date, since timing flexes
+   *  with weather). */
   tierFrequency?: string | null;
 }
 
@@ -15,63 +15,27 @@ interface Props {
  * anticipation and gives them a clear window to customize before it ships.
  * Renders nothing when no date is set or the date is in the past.
  */
-export function NextShipmentCountdown({ nextShipmentDate, tierFrequency }: Props) {
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(t);
-  }, []);
-
-  // Always derive from the tier's published cadence when we know it — this
-  // keeps the countdown accurate for members whose stored next_shipment_date
-  // was set before the cadence was tier-aware. Fall back to the stored
-  // value only if no tier frequency is available.
-  const effectiveDate = tierFrequency
-    ? getNextShipmentDateForFrequency(tierFrequency)
-    : nextShipmentDate;
-  if (!effectiveDate) return null;
-
-  const target = new Date(effectiveDate!).getTime();
-  if (!Number.isFinite(target)) return null;
-  const diffMs = target - now;
-  if (diffMs <= 0) return null;
-
-  const totalMinutes = Math.floor(diffMs / 60_000);
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-
-  const formatted = new Date(effectiveDate!).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+export function NextShipmentCountdown({ nextShipmentDate: _ignored, tierFrequency }: Props) {
+  // We intentionally do NOT show a specific date — shipment timing flexes
+  // with weather, so we show only the holiday/seasonal window.
+  if (!tierFrequency) return null;
+  const window = describeNextShipmentWindow(tierFrequency);
 
   return (
-    <div className="border-2 border-primary bg-primary/5 p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div className="flex items-center gap-3">
-        <div className="flex-shrink-0 w-10 h-10 bg-primary text-primary-foreground flex items-center justify-center">
-          <Sparkles className="h-5 w-5" />
-        </div>
-        <div className="leading-tight">
-          <p className="text-[10px] uppercase tracking-brand font-bold text-primary">
-            Next Release · Members First
-          </p>
-          <p className="text-sm font-bold text-foreground">
-            Ships {formatted}
-          </p>
-        </div>
+    <div className="border-2 border-primary bg-primary/5 p-4 mb-6 flex items-center gap-3">
+      <div className="flex-shrink-0 w-10 h-10 bg-primary text-primary-foreground flex items-center justify-center">
+        <Sparkles className="h-5 w-5" />
       </div>
-      <div className="flex items-center gap-2 self-start sm:self-auto">
-        <div className="text-center px-3 py-1.5 border border-border bg-background">
-          <p className="text-lg font-bold text-foreground leading-none">{days}</p>
-          <p className="text-[9px] uppercase tracking-brand text-muted-foreground">Days</p>
-        </div>
-        <div className="text-center px-3 py-1.5 border border-border bg-background">
-          <p className="text-lg font-bold text-foreground leading-none">{hours}</p>
-          <p className="text-[9px] uppercase tracking-brand text-muted-foreground">Hrs</p>
-        </div>
-        <Calendar className="hidden sm:block h-4 w-4 text-muted-foreground" />
+      <div className="leading-tight">
+        <p className="text-[10px] uppercase tracking-brand font-bold text-primary">
+          Next Release · Members First
+        </p>
+        <p className="text-sm font-bold text-foreground">
+          Arrives {window}
+        </p>
+        <p className="text-[11px] text-muted-foreground mt-1">
+          We'll email you about a week before it ships so you can customize.
+        </p>
       </div>
     </div>
   );

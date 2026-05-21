@@ -30,7 +30,7 @@ const perks = [
 type EditSection = "hero" | "membership" | "faq" | null;
 
 const defaultFaqs = [
-  { q: "How often will I receive shipments?", a: "Shipment frequency depends on the club tier you choose. Most clubs ship quarterly, but some offer monthly or bi-monthly options." },
+  { q: "When will my shipments arrive?", a: "We time our quarterly club shipments to arrive a little before holidays like Valentine's Day, Mother's Day, the end of summer, and Thanksgiving. Our yearly shipment should arrive around Thanksgiving. We also continue to push out new club member shipments up until around December 14 for new holiday sign-ups." },
   { q: "Can I customize my selections?", a: "Yes. Before each release, you'll receive an email from Vinoshipper with a link to your customization page where you can swap or adjust wines before the customization deadline." },
   { q: "Can I cancel anytime?", a: "Yes! There are no long-term commitments. You can cancel your membership at any time from your account." },
   { q: "Where do you ship?", a: "We ship to most states in the US. Check availability for your state during sign-up." },

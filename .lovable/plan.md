@@ -1,75 +1,50 @@
-# Meta Purchase Autopilot — Auto-Stop + Guarded Re-enable
+# State-Weighted CAPI Signal Amplification
 
-Port the proven Instacart autopilot pattern to Meta purchase campaigns. Same guardrails (error-rate + ROAS thresholds, daily action cap, allowed-actions whitelist), same kill-switch evaluation log, same guarded re-enable flow (typed confirmation + cooldown), plus a Meta-specific health UI.
+Lindy's spec assumes a greenfield CAPI setup. This project already has the moving parts: `vinoshipper-poll` fires Purchase + Subscribe to Meta via `_shared/serverConversions.ts`, `meta_capi_events` logs every fire, `meta-audience-sync` pushes hashed audiences. To avoid duplication and dual sources of truth, I'll layer the state-weighting logic onto what exists rather than build parallel tables and functions.
 
-## What gets built
+## What I'll build
 
-**1. New edge function: `meta-ads-execute`**
-The Instacart pattern needs an executor; Meta doesn't have one yet. This function takes an action (`pause_campaign`, `resume_campaign`, `adjust_daily_budget`) + a `campaign_id`, calls the Meta Marketing API (`act_<META_ADS_ACCOUNT_ID>/campaigns/{id}`), and logs the result to `ad_execution_log`. Uses existing `META_ADS_ACCESS_TOKEN` + `META_ADS_ACCOUNT_ID` secrets. Budget changes are capped by `meta_autopilot_max_budget_change_pct`.
+### 1. Schema: `state_margin_tiers` (one new table)
 
-**2. New edge function: `meta-autopilot`**
-Mirrors `instacart-autopilot` structure:
-- Loads settings from `app_settings` (see schema below).
-- Pulls pending `ad_recommendations` for `platform='meta'`, filters by confidence + allowed actions + B2B mode.
-- Evaluates two kill switches *before* executing anything:
-  - **Error rate**: % failed Meta executions in the last N actions vs `meta_autopilot_max_error_rate_pct`.
-  - **Trailing Purchase ROAS**: `ad_performance_facts` rolled up over `meta_autopilot_roas_window_days`, compared to `meta_autopilot_min_roas` (default 2.0 — breakeven on 50% margin).
-- Every evaluation (window, failures, computed ROAS, spend, sales) writes a row to `ad_autopilot_kill_switch_evaluations` with `platform='meta'`.
-- If a switch trips: flip `meta_autopilot_enabled=false`, write `ad_autopilot_evaluations` row, send auto-stop email to admins via `send-transactional-email` (new `meta-autopilot-auto-stop` template).
-- If healthy: execute up to `meta_autopilot_daily_action_cap` recommendations via `meta-ads-execute`.
+- `state_code` (PK, 2-letter), `tier` int, `multiplier` numeric(3,2), `notes`, `updated_at`
+- Seed all 50 + DC: Tier 1 (1.20x) for CA, TX, FL, NY, WA, CO, IL, GA; Tier 3 (0.80x) for MT, WY, ND, SD, ID, AK; Tier 2 (1.00x) default for the rest
+- RLS: read for ad_ops + executive, writes service-role only
+- Skip the separate `capi_event_log` table — `meta_capi_events` already logs every CAPI fire with status/payload/response. I'll add three nullable columns to it: `state TEXT`, `raw_value_cents INT`, `multiplier NUMERIC(3,2)`. Same data, one source of truth, existing dedup unchanged.
 
-**3. New `app_settings` keys** (defaults shown)
-- `meta_autopilot_enabled` = false
-- `meta_autopilot_confidence_min` = 0.75
-- `meta_autopilot_max_budget_change_pct` = 20
-- `meta_autopilot_daily_action_cap` = 10
-- `meta_autopilot_allowed_actions` = `["pause_campaign","adjust_daily_budget"]`
-- `meta_autopilot_max_error_rate_pct` = 25
-- `meta_autopilot_error_rate_window` = 50
-- `meta_autopilot_min_roas` = 2.0
-- `meta_autopilot_roas_window_days` = 7
-- `meta_autopilot_min_actions_for_eval` = 10
-- `meta_autopilot_cooldown_minutes` = 60
-- `meta_autopilot_notify_emails` = []
+### 2. `vinoshipper-poll` — state-weight Purchase + Subscribe values
 
-**4. Cron** (07:30 UTC, after Meta ingest)
-Schedules `meta-autopilot` via `pg_cron` + `pg_net`, matching Instacart's cadence.
+In-place modification:
 
-**5. UI: `MetaAutopilotHealth` component**
-New file `src/components/kennel/MetaAutopilotHealth.tsx`, modeled on `InstacartAutopilotHealth`:
-- Risk tile (HEALTHY / AT RISK / WILL STOP / AUTO-STOPPED) driven by latest `ad_autopilot_evaluations` row.
-- Kill-switch evaluation log table (last 50 from `ad_autopilot_kill_switch_evaluations` where `platform='meta'`).
-- Guarded re-enable: typed confirmation ("RE-ENABLE META AUTOPILOT") + acknowledgement checkbox + cooldown countdown.
-- Settings card for thresholds + cap + cooldown.
-- Mount on `KennelChannelsPage` (or a new `KennelMetaAdsPage` mirroring Instacart — see note below).
+- Resolve ship-to state per order, look up multiplier (fallback 1.00)
+- `weighted_value_cents = round(base_cents * multiplier)` where base = `order_total` for Purchase, `STATIC_CLUB_LTV_CENTS` for Subscribe
+- Pass `weightedValueCents` + `state` + `rawValueCents` + `multiplier` into `forwardPurchaseConversion` and `sendMetaSubscribe` so Meta receives the weighted value but `meta_capi_events` records both raw and weighted
+- `event_id` stays `orderId` / `sub-{orderId}` — those are the existing dedup keys the browser pixel + repeat polls already use. Changing the format to `rdw_{id}_purchase_{ts}` would break dedup with the pixel. (Calling this out because it directly contradicts Lindy's spec; happy to reverse if you want a clean cutover.)
+- Add `st` to Meta `user_data` (sha256 of lowercase 2-letter) where missing
 
-**6. Auto-stop email template**
-`supabase/functions/_shared/transactional-email-templates/meta-autopilot-auto-stop.tsx` — same structure as the Instacart one, with reason, measured metrics, and re-enable steps. Registered in `registry.ts`.
+### 3. New edge function: `capi-midfunnel-events`
 
-## Technical notes
+- Public POST (verify_jwt = false), CORS enabled
+- Body: `event_name` ('ViewContent' | 'InitiateCheckout'), `email?`, `phone?`, `state?`, `page_url`, `product_id?`, `value_cents?`, `fbp?`, `fbc?`
+- Look up state multiplier; weight `value_cents`; hash PII; fire to Meta CAPI; log to `meta_capi_events` (event_id = `mf_{sha256(email||visitor)}_{event_name}_{unix}`)
+- Wire up `metaPixel.ts` to call it from `ProductDetail` (ViewContent) and `CartDrawer` checkout handoff (InitiateCheckout)
 
-- **No schema migration needed** — `ad_autopilot_kill_switch_evaluations` and `ad_autopilot_evaluations` already have a `platform` column; we just write `'meta'` rows.
-- **Meta Marketing API auth**: use `META_ADS_ACCESS_TOKEN` (system-user token already in secrets). Endpoint pattern: `POST https://graph.facebook.com/v21.0/{campaign_id}?status=PAUSED&access_token=...`. Budget changes go to `/{campaign_id}?daily_budget={cents}`.
-- **B2B handling**: Meta doesn't have a native B2B flag the way Instacart does, so we treat any campaign with `metadata.b2b=true` or objective matching `/b2b|wholesale|trade/i` the same way (lower per-day cap, stricter budget delta).
-- **Idempotency**: each Meta execution writes to `ad_execution_log` with the recommendation id; retries are no-ops if already executed.
-- **Decision to mount UI**: simplest is to drop `MetaAutopilotHealth` onto an existing page (`KennelChannelsPage` or `KennelMediaBuyingPage`). A dedicated `KennelMetaAdsPage` mirroring Instacart's page is cleaner long-term but adds a route + nav entry. **I'll mount it on `KennelChannelsPage` unless you'd rather have a dedicated page.**
+### 4. Monthly Tier-1 audience export
 
-## Out of scope (call out so we don't sneak it in)
+Add a new row to `meta_audience_segments` (`segment_key = 'highmargin_tier1'`, cadence `monthly`, `segment_query` = SELECT email/first_name/last_name/phone FROM vs_transactions WHERE upper(ship_to_state) IN (8 tier-1 codes) AND transaction_date >= now() - 365 days), then schedule it via existing `meta-audience-sync` invoked by the existing monthly cron. No new sync function needed — `meta-audience-sync` already handles `/users` replacement, hashing, batching, and logging to `meta_audience_sync_runs`.
 
-- No changes to existing CAPI / pixel / ingest functions.
-- No new Meta API permissions request — uses tokens already in place.
-- No automated EMQ scraping (Meta still doesn't expose it via API).
-- Doesn't touch the consumer wine ad-set structure or budgets directly; only acts on `ad_recommendations` you already approve via the pipeline.
+If a monthly cron row doesn't exist yet I'll add one in the same migration.
 
-## Files touched
+## Files
 
-- `supabase/functions/meta-ads-execute/index.ts` (new)
-- `supabase/functions/meta-autopilot/index.ts` (new)
-- `supabase/functions/_shared/transactional-email-templates/meta-autopilot-auto-stop.tsx` (new)
-- `supabase/functions/_shared/transactional-email-templates/registry.ts` (edit)
-- `src/components/kennel/MetaAutopilotHealth.tsx` (new)
-- `src/pages/kennel/KennelChannelsPage.tsx` (mount panel)
-- `app_settings` rows seeded via insert (not migration — it's data)
-- `pg_cron` schedule entry via insert
+- `supabase/migrations/<ts>_state_margin_tiers.sql` — table + seed + RLS + columns on `meta_capi_events` + audience segment row + monthly cron
+- `supabase/functions/vinoshipper-poll/index.ts` — weighting logic
+- `supabase/functions/_shared/serverConversions.ts` — accept `rawValueCents` + `multiplier` + `state` and persist via meta-capi-sender
+- `supabase/functions/capi-midfunnel-events/index.ts` — new
+- `supabase/config.toml` — register new function with `verify_jwt = false`
+- `src/lib/metaPixel.ts` (+ small callers in ProductDetail / CartDrawer) — fire mid-funnel events
 
-Approve and I'll build it end-to-end.
+## Open questions before I touch code
+
+1. **Event ID format**: keep existing (`orderId` / `sub-{orderId}`) for pixel dedup — OR switch to Lindy's `rdw_{id}_{event}_{ts}` and accept double-counting risk on the cutover window?
+2. **Weighted value to Meta**: send the weighted value as the public `value` field (Lindy's intent — biases optimization) and stash raw separately — confirm.
+3. **Mid-funnel client wiring**: hook `ViewContent` on PDP mount and `InitiateCheckout` on Vinoshipper handoff — correct surfaces?

@@ -6583,11 +6583,14 @@ export type Database = {
           fbc: string | null
           fbp: string | null
           id: string
+          multiplier: number | null
           order_id: string
+          raw_value_cents: number | null
           request_payload: Json | null
           response_body: Json | null
           response_status: number | null
           sent_at: string
+          state: string | null
           success: boolean
           test_event_code: string | null
           test_mode: boolean
@@ -6603,11 +6606,14 @@ export type Database = {
           fbc?: string | null
           fbp?: string | null
           id?: string
+          multiplier?: number | null
           order_id: string
+          raw_value_cents?: number | null
           request_payload?: Json | null
           response_body?: Json | null
           response_status?: number | null
           sent_at?: string
+          state?: string | null
           success?: boolean
           test_event_code?: string | null
           test_mode?: boolean
@@ -6623,11 +6629,14 @@ export type Database = {
           fbc?: string | null
           fbp?: string | null
           id?: string
+          multiplier?: number | null
           order_id?: string
+          raw_value_cents?: number | null
           request_payload?: Json | null
           response_body?: Json | null
           response_status?: number | null
           sent_at?: string
+          state?: string | null
           success?: boolean
           test_event_code?: string | null
           test_mode?: boolean
@@ -7707,6 +7716,30 @@ export type Database = {
           style?: string | null
           updated_at?: string
           varietal?: string | null
+        }
+        Relationships: []
+      }
+      state_margin_tiers: {
+        Row: {
+          multiplier: number
+          notes: string | null
+          state_code: string
+          tier: number
+          updated_at: string
+        }
+        Insert: {
+          multiplier: number
+          notes?: string | null
+          state_code: string
+          tier: number
+          updated_at?: string
+        }
+        Update: {
+          multiplier?: number
+          notes?: string | null
+          state_code?: string
+          tier?: number
+          updated_at?: string
         }
         Relationships: []
       }

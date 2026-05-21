@@ -41,6 +41,23 @@ const ProductDetail = () => {
   const { canShip, state: shipState } = useShipState();
   const blockedByState = !!shipState && !canShip;
 
+  // Fire mid-funnel ViewContent to Meta CAPI once per product mount
+  const viewContentSent = useRef(false);
+  useEffect(() => {
+    if (viewContentSent.current) return;
+    if (!product?.handle) return;
+    viewContentSent.current = true;
+    const price = parseFloat(product.priceRange?.minVariantPrice?.amount || "0");
+    import("@/lib/metaPixel").then(({ trackMidfunnelCapi }) => {
+      trackMidfunnelCapi({
+        eventName: "ViewContent",
+        valueCents: Math.round(price * 100),
+        productId: product.handle,
+        state: shipState ?? null,
+      });
+    }).catch(() => {});
+  }, [product?.handle, shipState]);
+
   // Subtle parallax for the sculptural bottle image on hero scroll
   const heroImgRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {

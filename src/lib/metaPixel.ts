@@ -111,3 +111,41 @@ export function trackEvent(eventName: string, params?: Record<string, unknown>, 
     console.warn("[meta-pixel] trackEvent failed", eventName, e);
   }
 }
+
+/** Read a cookie by name (best-effort; returns null in SSR). */
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/[.$?*|{}()[\]\\/+^]/g, "\\$&") + "=([^;]*)"));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+/**
+ * Fire a mid-funnel event (ViewContent / InitiateCheckout / AddToCart) to
+ * Meta CAPI through our server. The server applies the state-margin
+ * multiplier and logs to meta_capi_events. Browser pixel still fires
+ * separately — we pass nothing back as event_id since server generates it.
+ */
+export async function trackMidfunnelCapi(input: {
+  eventName: "ViewContent" | "InitiateCheckout" | "AddToCart";
+  valueCents?: number;
+  productId?: string | number;
+  email?: string | null;
+  state?: string | null;
+}): Promise<void> {
+  try {
+    await supabase.functions.invoke("capi-midfunnel-events", {
+      body: {
+        event_name: input.eventName,
+        value_cents: input.valueCents ?? 0,
+        product_id: input.productId ?? null,
+        email: input.email ?? null,
+        state: input.state ?? null,
+        page_url: typeof window !== "undefined" ? window.location.href : null,
+        fbp: readCookie("_fbp"),
+        fbc: readCookie("_fbc"),
+      },
+    });
+  } catch (e) {
+    console.warn("[meta-capi-midfunnel] failed", input.eventName, e);
+  }
+}

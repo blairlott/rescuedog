@@ -29,6 +29,70 @@ const corsHeaders = {
 
 const VS_BASE = "https://vinoshipper.com/api/v3/p";
 const STATIC_CLUB_LTV_CENTS = 40000; // $400 — replace with real LTV once fresh data accumulates
+const DEFAULT_MULTIPLIER = 1.0;
+
+/** Look up multiplier table once per poll run; key by 2-letter upper state. */
+async function loadStateMultipliers(admin: any): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  try {
+    const { data } = await admin.from("state_margin_tiers").select("state_code, multiplier");
+    for (const r of data ?? []) {
+      const code = String(r.state_code || "").toUpperCase();
+      const m = Number(r.multiplier);
+      if (code && Number.isFinite(m) && m > 0) map.set(code, m);
+    }
+  } catch (e) {
+    console.error("[vs-poll] state_margin_tiers lookup failed", e);
+  }
+  return map;
+}
+
+function resolveMultiplier(map: Map<string, number>, state: string | null | undefined): number {
+  if (!state) return DEFAULT_MULTIPLIER;
+  return map.get(String(state).trim().toUpperCase().slice(0, 2)) ?? DEFAULT_MULTIPLIER;
+}
+
+async function sha256Hex(s: string | null | undefined): Promise<string | null> {
+  if (!s) return null;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s).trim().toLowerCase()));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Best-effort insert into meta_capi_events with weighting metadata. */
+async function logCapiEvent(admin: any, row: {
+  orderId: string;
+  eventName: string;
+  eventId: string;
+  weightedValueCents: number;
+  rawValueCents: number;
+  multiplier: number;
+  state: string | null;
+  email: string | null;
+  ok: boolean;
+  error?: string | null;
+  testMode: boolean;
+}) {
+  try {
+    const emailHash = await sha256Hex(row.email);
+    await admin.from("meta_capi_events").insert({
+      order_id: row.orderId,
+      event_name: row.eventName,
+      event_id: row.eventId,
+      value_cents: row.weightedValueCents,
+      raw_value_cents: row.rawValueCents,
+      multiplier: row.multiplier,
+      state: row.state ? String(row.state).toUpperCase().slice(0, 2) : null,
+      currency: "USD",
+      test_mode: row.testMode,
+      email_hash: emailHash,
+      success: row.ok,
+      error: row.error ?? null,
+    });
+  } catch (e) {
+    // unique-on-(order_id) where test_mode=false AND success=true is expected for replays
+    console.warn("[vs-poll] capi log insert", String(e).slice(0, 200));
+  }
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -260,50 +324,82 @@ Deno.serve(async (req) => {
 
     // Fire CAPI conversions for each new order
     let purchases = 0, subscribes = 0, ltvCents = 0;
+    const multipliers = await loadStateMultipliers(admin);
     for (const o of newOrders) {
       const orderId = String(o.id ?? o.orderId ?? o.invoice);
       const orderTotal = pickNum(o.orderTotal, o.total, o.grandTotal) ?? 0;
-      const valueCents = Math.round(orderTotal * 100);
-      if (valueCents <= 0) continue;
+      const rawCents = Math.round(orderTotal * 100);
+      if (rawCents <= 0) continue;
 
       const cust = o.customer ?? {};
       const ship = o.shipTo ?? cust;
       const shipAddr = ship?.address ?? cust?.address ?? {};
       const club = o.club ?? o.subscription ?? null;
       const isClub = !!club || /club|member/i.test(String(o.cartType ?? o.orderType ?? ""));
+      const shipState = shipAddr.state ?? shipAddr.stateCode ?? null;
+      const mult = resolveMultiplier(multipliers, shipState);
+      const weightedCents = Math.round(rawCents * mult);
 
       // Purchase event (always)
       const conv = await forwardPurchaseConversion({
         orderId,
-        valueCents,
+        valueCents: weightedCents,
         currency: "USD",
         email: cust.email ?? null,
         phone: cust.phone ?? null,
         firstName: cust.firstName ?? null,
         lastName: cust.lastName ?? null,
         city: shipAddr.city ?? null,
-        state: shipAddr.state ?? shipAddr.stateCode ?? null,
+        state: shipState,
         zip: shipAddr.zip ?? shipAddr.postalCode ?? null,
         country: "US",
         debug: testMode,
       });
       if (conv.meta?.ok) purchases++;
-      ltvCents += valueCents;
+      ltvCents += weightedCents;
+      await logCapiEvent(admin, {
+        orderId,
+        eventName: "Purchase",
+        eventId: orderId,
+        weightedValueCents: weightedCents,
+        rawValueCents: rawCents,
+        multiplier: mult,
+        state: shipState,
+        email: cust.email ?? null,
+        ok: !!conv.meta?.ok,
+        error: conv.meta?.error ?? null,
+        testMode,
+      });
 
       // Subscribe event with projected $400 LTV — wine club signups only
       if (isClub && !testMode) {
+        const subRaw = STATIC_CLUB_LTV_CENTS;
+        const subWeighted = Math.round(subRaw * mult);
         const sub = await sendMetaSubscribe({
           orderId,
-          valueCents: STATIC_CLUB_LTV_CENTS,
+          valueCents: subWeighted,
           email: cust.email ?? null,
           phone: cust.phone ?? null,
-          state: shipAddr.state ?? shipAddr.stateCode ?? null,
+          state: shipState,
           zip: shipAddr.zip ?? shipAddr.postalCode ?? null,
         });
         if (sub.ok) {
           subscribes++;
-          ltvCents += STATIC_CLUB_LTV_CENTS;
+          ltvCents += subWeighted;
         }
+        await logCapiEvent(admin, {
+          orderId,
+          eventName: "Subscribe",
+          eventId: `sub-${orderId}`,
+          weightedValueCents: subWeighted,
+          rawValueCents: subRaw,
+          multiplier: mult,
+          state: shipState,
+          email: cust.email ?? null,
+          ok: sub.ok,
+          error: sub.error ?? null,
+          testMode,
+        });
       }
     }
 

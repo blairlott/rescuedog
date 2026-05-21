@@ -67,3 +67,5 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.seo-autopilot-sweep]
     verify_jwt = false
+  [functions.capi-midfunnel-events]
+    verify_jwt = false

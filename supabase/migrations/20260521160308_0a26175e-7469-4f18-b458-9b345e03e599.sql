@@ -1,0 +1,2 @@
+ALTER TABLE public.ig_boost_config 
+  ADD COLUMN IF NOT EXISTS fb_page_id text NOT NULL DEFAULT '1689217927783203';

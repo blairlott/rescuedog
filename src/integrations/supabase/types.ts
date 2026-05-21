@@ -4784,6 +4784,7 @@ export type Database = {
           default_objective: string
           engagement_rate_threshold: number
           excluded_region_keys: string[]
+          fb_page_id: string
           id: string
           ig_user_id: string
           kill_frequency: number
@@ -4810,6 +4811,7 @@ export type Database = {
           default_objective?: string
           engagement_rate_threshold?: number
           excluded_region_keys?: string[]
+          fb_page_id?: string
           id?: string
           ig_user_id?: string
           kill_frequency?: number
@@ -4836,6 +4838,7 @@ export type Database = {
           default_objective?: string
           engagement_rate_threshold?: number
           excluded_region_keys?: string[]
+          fb_page_id?: string
           id?: string
           ig_user_id?: string
           kill_frequency?: number

@@ -7685,6 +7685,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          must_change_password: boolean
           phone: string | null
           role: string | null
           vinoshipper_customer_id: string | null
@@ -7695,6 +7696,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          must_change_password?: boolean
           phone?: string | null
           role?: string | null
           vinoshipper_customer_id?: string | null
@@ -7705,6 +7707,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          must_change_password?: boolean
           phone?: string | null
           role?: string | null
           vinoshipper_customer_id?: string | null

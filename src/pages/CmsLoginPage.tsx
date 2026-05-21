@@ -39,6 +39,18 @@ const CmsLoginPage = () => {
       return;
     }
 
+    // Force password change for newly-provisioned accounts
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("must_change_password")
+      .eq("id", data.user.id)
+      .maybeSingle();
+    if (profile?.must_change_password) {
+      setLoading(false);
+      navigate("/admin/change-password");
+      return;
+    }
+
     // Check if user has CMS access (editors) OR read-only backend access (viewer/executive).
     const [{ data: isCmsEditor, error: roleError }, { data: roleRows }] = await Promise.all([
       supabase.rpc("is_cms_editor", { _user_id: data.user.id }),

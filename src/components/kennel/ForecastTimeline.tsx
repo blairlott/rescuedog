@@ -64,7 +64,12 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
   const setEnd = setEndProp ?? setEndLocal;
   const today = todayUTC();
   const lookbackDays = Math.max(30, daysBetween(start, today));
-  const horizonDays = Math.max(1, Math.min(1095, daysBetween(today, end > today ? end : today)));
+  // Floor the forecast horizon so it always reaches at least through Dec 31 of
+  // next calendar year — otherwise a short user-selected range hides the Q4
+  // planning uplift (BFCM peak) that the model projects.
+  const yearEndPlanning = new Date(Date.UTC(today.getUTCFullYear() + 1, 11, 31));
+  const effectiveEnd = end > yearEndPlanning ? end : yearEndPlanning;
+  const horizonDays = Math.max(1, Math.min(1095, daysBetween(today, effectiveEnd > today ? effectiveEnd : today)));
 
   const activePlatform = lockPlatform ?? platform;
   const spanDays = Math.max(1, daysBetween(start, end));

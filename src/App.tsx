@@ -200,6 +200,7 @@ function AppContent() {
       <Route path="/admin/ab-results" element={<AdminAbResultsPage />} />
       <Route path="/admin/request-access" element={<RequestAccessPage />} />
       <Route path="/admin/login" element={<Navigate to="/admin" replace />} />
+      <Route path="/admin/change-password" element={<ForcePasswordChangePage />} />
       <Route path="/wholesale" element={<WholesalePage />} />
       <Route path="/trade-and-media" element={<WholesalePage />} />
       <Route path="/about" element={<AboutPage />} />

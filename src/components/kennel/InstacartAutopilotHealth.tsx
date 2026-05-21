@@ -8,7 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MetricCard } from "@/components/kennel/MetricCard";
 import { Switch } from "@/components/ui/switch";
-import { AlertTriangle, Briefcase, Play, Bell, CheckCircle2, Plus, Trash2, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Briefcase, Play, Bell, CheckCircle2, Plus, Trash2, ShieldAlert, Lock, Clock } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 type Evaluation = {
@@ -40,6 +51,9 @@ function dollars(c: number | null | undefined) {
 export function InstacartAutopilotHealth() {
   const qc = useQueryClient();
   const [acknowledging, setAcknowledging] = useState(false);
+  const [reenableOpen, setReenableOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [confirmAck, setConfirmAck] = useState(false);
 
   const { data: settings = [] } = useQuery({
     queryKey: ["instacart-autopilot-settings-ext"],
@@ -61,6 +75,9 @@ export function InstacartAutopilotHealth() {
           "instacart_autopilot_roas_window_days",
           "instacart_autopilot_error_rate_window",
           "instacart_autopilot_min_actions_for_eval",
+          "instacart_autopilot_reenable_cooldown_minutes",
+          "instacart_autopilot_last_reenabled_at",
+          "instacart_autopilot_reenable_history",
         ]);
       return (data as any[]) ?? [];
     },
@@ -86,6 +103,11 @@ export function InstacartAutopilotHealth() {
       roasWindowDays: Number(m.instacart_autopilot_roas_window_days ?? 7),
       errorWindow: Number(m.instacart_autopilot_error_rate_window ?? 50),
       minActions: Number(m.instacart_autopilot_min_actions_for_eval ?? 10),
+      cooldownMinutes: Number(m.instacart_autopilot_reenable_cooldown_minutes ?? 30),
+      lastReenabledAt: (m.instacart_autopilot_last_reenabled_at ?? null) as string | null,
+      reenableHistory: (m.instacart_autopilot_reenable_history ?? []) as Array<{
+        at: string; reason: string | null; actor?: string | null; note?: string | null;
+      }>,
     };
   }, [settings]);
 
@@ -161,14 +183,30 @@ export function InstacartAutopilotHealth() {
   async function acknowledgeAndReenable() {
     setAcknowledging(true);
     try {
-      // Clear the auto-stop markers + flip enabled back on.
+      const nowIso = new Date().toISOString();
+      const { data: au } = await supabase.auth.getUser();
+      const actor = au?.user?.email ?? au?.user?.id ?? null;
+      const entry = {
+        at: nowIso,
+        reason: stopReason,
+        actor,
+        stoppedAt: cfg.stoppedAt,
+        detail: typeof cfg.stoppedReason === "object" ? cfg.stoppedReason : null,
+      };
+      const nextHistory = [entry, ...(cfg.reenableHistory ?? [])].slice(0, 20);
+      // Clear the auto-stop markers + flip enabled back on + log history.
       await supabase.from("app_settings" as any).upsert([
         { key: "instacart_autopilot_enabled", value: true },
         { key: "instacart_autopilot_auto_stopped_at", value: null },
         { key: "instacart_autopilot_auto_stopped_reason", value: null },
-        { key: "instacart_autopilot_last_reenabled_at", value: new Date().toISOString() },
+        { key: "instacart_autopilot_last_reenabled_at", value: nowIso },
+        { key: "instacart_autopilot_reenable_history", value: nextHistory },
+        { key: "instacart_autopilot_snoozed_until", value: null },
       ], { onConflict: "key" });
       toast.success("Autopilot re-enabled");
+      setReenableOpen(false);
+      setConfirmText("");
+      setConfirmAck(false);
       qc.invalidateQueries({ queryKey: ["instacart-autopilot-settings-ext"] });
       qc.invalidateQueries({ queryKey: ["instacart-autopilot-settings"] });
     } catch (e: any) {
@@ -189,6 +227,25 @@ export function InstacartAutopilotHealth() {
   const stopReason = cfg.stoppedReason
     ? (typeof cfg.stoppedReason === "string" ? cfg.stoppedReason : (cfg.stoppedReason.reason ?? "unknown"))
     : null;
+
+  // Cooldown gating: prevent re-enable until N minutes after auto-stop.
+  const cooldown = useMemo(() => {
+    if (!cfg.stoppedAt || cfg.cooldownMinutes <= 0) {
+      return { active: false, remainingMs: 0, readyAt: null as string | null };
+    }
+    const readyAt = new Date(new Date(cfg.stoppedAt).getTime() + cfg.cooldownMinutes * 60_000);
+    const remainingMs = readyAt.getTime() - Date.now();
+    return { active: remainingMs > 0, remainingMs: Math.max(0, remainingMs), readyAt: readyAt.toISOString() };
+  }, [cfg.stoppedAt, cfg.cooldownMinutes]);
+
+  const cooldownLabel = (() => {
+    if (!cooldown.active) return null;
+    const mins = Math.ceil(cooldown.remainingMs / 60_000);
+    return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+  })();
+
+  const confirmPhrase = "RE-ENABLE";
+  const canConfirm = confirmText.trim().toUpperCase() === confirmPhrase && confirmAck && !cooldown.active;
 
   return (
     <div className="space-y-4">
@@ -215,13 +272,93 @@ export function InstacartAutopilotHealth() {
               <Button size="sm" variant="outline" onClick={snooze24h}>
                 <Bell className="h-3 w-3 mr-1" /> Acknowledge · snooze 24h
               </Button>
-              <Button size="sm" onClick={acknowledgeAndReenable} disabled={acknowledging}>
-                <Play className="h-3 w-3 mr-1" /> Acknowledge & Re-enable
+              <Button
+                size="sm"
+                onClick={() => setReenableOpen(true)}
+                disabled={acknowledging}
+              >
+                {cooldown.active ? <Lock className="h-3 w-3 mr-1" /> : <Play className="h-3 w-3 mr-1" />}
+                {cooldown.active ? `Cooldown · ${cooldownLabel}` : "Acknowledge & Re-enable"}
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Guarded re-enable dialog */}
+      <AlertDialog open={reenableOpen} onOpenChange={(o) => {
+        setReenableOpen(o);
+        if (!o) { setConfirmText(""); setConfirmAck(false); }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-destructive" />
+              Re-enable Instacart autopilot
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>
+                  Autopilot was auto-stopped
+                  {cfg.stoppedAt ? ` ${new Date(cfg.stoppedAt).toLocaleString()}` : ""}
+                  {stopReason ? <> for <span className="font-mono">{stopReason}</span></> : null}.
+                  Re-enabling resumes automated bid and budget actions immediately.
+                </p>
+                {cooldown.active && (
+                  <div className="flex items-start gap-2 rounded border border-amber-500/40 bg-amber-500/10 p-2 text-amber-900 dark:text-amber-100">
+                    <Clock className="h-4 w-4 mt-0.5" />
+                    <div>
+                      <p className="font-medium">Cooldown active</p>
+                      <p className="text-xs">
+                        Re-enable will be available in <span className="font-mono">{cooldownLabel}</span>
+                        {cooldown.readyAt ? <> (at {new Date(cooldown.readyAt).toLocaleTimeString()})</> : null}.
+                        Override the cooldown by lowering <span className="font-mono">instacart_autopilot_reenable_cooldown_minutes</span>.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <Label className="text-xs">
+                    Type <span className="font-mono">{confirmPhrase}</span> to confirm
+                  </Label>
+                  <Input
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder={confirmPhrase}
+                    autoFocus
+                  />
+                </div>
+                <label className="flex items-start gap-2 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={confirmAck}
+                    onChange={(e) => setConfirmAck(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    I have reviewed the stop reason, error rate, and trailing ROAS, and accept responsibility for resuming automated actions.
+                  </span>
+                </label>
+                {cfg.lastReenabledAt && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Last re-enabled: {new Date(cfg.lastReenabledAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); if (canConfirm) acknowledgeAndReenable(); }}
+              disabled={!canConfirm || acknowledging}
+            >
+              <Play className="h-3 w-3 mr-1" />
+              {acknowledging ? "Re-enabling…" : "Re-enable autopilot"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Metric tiles */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

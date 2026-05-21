@@ -10,6 +10,9 @@ import type { WineClubTier, JoinClubData } from "@/hooks/useWineClub";
 import { ArrowLeft, Wine, Gift, Percent, ShieldCheck, AlertTriangle } from "lucide-react";
 import { VinoshipperClubHandoff } from "./VinoshipperClubHandoff";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 interface ClubSignupFormProps {
   tier: WineClubTier;
@@ -27,6 +30,9 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
   const [handoffOpen, setHandoffOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [creatingAccount, setCreatingAccount] = useState(false);
   const [form, setForm] = useState({
     shipping_address_line1: "",
     shipping_address_line2: "",
@@ -42,8 +48,52 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
   const update = (key: string, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // No account yet? Create one inline before saving the membership.
+    if (!user) {
+      if (!email || !password || !firstName || !lastName) {
+        toast.error("Please fill in your name, email, and password");
+        return;
+      }
+      if (password.length < 6) {
+        toast.error("Password must be at least 6 characters");
+        return;
+      }
+      setCreatingAccount(true);
+      try {
+        const { data: sd, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/club`,
+            data: { full_name: `${firstName} ${lastName}`.trim() },
+          },
+        });
+        if (error) {
+          toast.error(error.message);
+          setCreatingAccount(false);
+          return;
+        }
+        if (!sd.session) {
+          toast.info(
+            "Check your email to confirm your account, then come back to finish joining.",
+          );
+          setCreatingAccount(false);
+          return;
+        }
+        // Let the auth context propagate before submitting so useJoinClub
+        // sees the new user.
+        await new Promise((r) => setTimeout(r, 400));
+      } catch (err: any) {
+        toast.error(err?.message || "Could not create account");
+        setCreatingAccount(false);
+        return;
+      }
+      setCreatingAccount(false);
+    }
+
     // Persist a local membership draft so we capture gift data, address,
     // etc. Vinoshipper owns card capture + recurring billing, and members
     // customize each release via the link Vinoshipper emails them.
@@ -279,7 +329,7 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
       </div>
 
       {/* Name (used to prefill the Vinoshipper payment step) */}
-      {tier.vinoshipper_join_url && (
+      {(tier.vinoshipper_join_url || !user) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <div>
             <Label htmlFor="first_name">First Name *</Label>
@@ -298,6 +348,54 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
               onChange={(e) => setLastName(e.target.value)}
               required
             />
+          </div>
+        </div>
+      )}
+
+      {/* Inline account creation for guests */}
+      {!user && (
+        <div className="border border-border bg-muted/30 p-5 mb-8 space-y-4">
+          <div>
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-brand">
+              Create your account
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              We'll create your Rescue Dog Wines account as you join — used for
+              order history, shipment customization, and secure payment with our
+              compliance partner Vinoshipper.{" "}
+              <Link
+                to="/login?redirect=/club"
+                className="underline hover:text-foreground"
+              >
+                Already have an account? Sign in
+              </Link>
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="signup_email">Email *</Label>
+              <Input
+                id="signup_email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </div>
+            <div>
+              <Label htmlFor="signup_password">Password *</Label>
+              <Input
+                id="signup_password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                autoComplete="new-password"
+                placeholder="At least 6 characters"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -334,16 +432,20 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
         size="lg"
         disabled={
           isSubmitting ||
+          creatingAccount ||
           !form.shipping_address_line1 ||
           !form.shipping_city ||
           !form.shipping_state ||
           !form.shipping_zip ||
-          (!!tier.vinoshipper_join_url && (!firstName || !lastName)) ||
+          ((!!tier.vinoshipper_join_url || !user) && (!firstName || !lastName)) ||
+          (!user && (!email || !password)) ||
           (form.is_gift && (!form.gift_recipient_name || !form.gift_recipient_email))
         }
         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold py-6"
       >
-        {isSubmitting
+        {creatingAccount
+          ? "Creating your account..."
+          : isSubmitting
           ? "Processing..."
           : tier.vinoshipper_join_url
           ? `Continue to Secure Payment`

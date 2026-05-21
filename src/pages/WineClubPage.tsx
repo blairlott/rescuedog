@@ -8,7 +8,6 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 import { useWineClubTiers, useMyMembership } from "@/hooks/useWineClub";
 import type { WineClubTier } from "@/hooks/useWineClub";
-import { ClubConfigurator } from "@/components/wine-club/ClubConfigurator";
 import { VinoshipperInlineSignup } from "@/components/wine-club/VinoshipperInlineSignup";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
 import { GiftMembershipDialog } from "@/components/wine-club/GiftMembershipDialog";
@@ -42,7 +41,6 @@ const WineClubPage = () => {
   const { content, upsert } = useCmsContent("wine_club");
   const [editSection, setEditSection] = useState<EditSection>(null);
   const [editFaqIdx, setEditFaqIdx] = useState<number | null>(null);
-  const [selectedTier, setSelectedTier] = useState<WineClubTier | null>(null);
   const [giftDialogOpen, setGiftDialogOpen] = useState(false);
 
   const { user } = useCustomerAuth();
@@ -67,10 +65,6 @@ const WineClubPage = () => {
     });
   };
 
-  const handleSelectTier = (tier: WineClubTier) => {
-    setSelectedTier(tier);
-  };
-
   const sectionFields: Record<string, { title: string; fields: CmsField[] }> = {
     hero: {
       title: "Wine Club Hero",
@@ -90,7 +84,23 @@ const WineClubPage = () => {
   };
 
   // If user has an active membership, show their dashboard
-  const showMemberDashboard = membership && !selectedTier;
+  const showMemberDashboard = !!membership;
+
+  // Derive Vinoshipper producer id from any tier's join URL so we can render
+  // the full clubs embed (lists every tier) on the main page — guests pick
+  // their tier once, inside Vinoshipper, instead of choosing twice.
+  const vinoshipperProducerId = (() => {
+    for (const t of tiers ?? []) {
+      const m = t.vinoshipper_join_url?.match(
+        /vinoshipper\.com\/shop\/(\d+)\/club\/(\d+)/i,
+      );
+      if (m) return m[1];
+    }
+    return null;
+  })();
+  const allClubsJoinUrl = vinoshipperProducerId
+    ? `https://vinoshipper.com/shop/${vinoshipperProducerId}/club/0`
+    : null;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -156,30 +166,7 @@ const WineClubPage = () => {
             <section className="py-16 bg-secondary relative" id="tiers">
               <CmsEditButton onClick={() => setEditSection("membership")} scope="wine_club" />
               <div className="container mx-auto px-4">
-                {selectedTier ? (
-                  selectedTier.vinoshipper_join_url ? (
-                    <VinoshipperInlineSignup
-                      joinUrl={selectedTier.vinoshipper_join_url}
-                      tierName={selectedTier.name}
-                      onBack={() => setSelectedTier(null)}
-                    />
-                  ) : (
-                    <div className="max-w-2xl mx-auto text-center border border-border p-8">
-                      <p className="text-sm text-muted-foreground">
-                        This tier isn't connected to our signup partner yet.
-                        Please pick another tier or contact us.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedTier(null)}
-                        className="mt-4 text-sm underline text-foreground"
-                      >
-                        Back to club selection
-                      </button>
-                    </div>
-                  )
-                ) : (
-                  <>
+                <>
                     <div className="text-center mb-10">
                       <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3">Design Your Own Wine Club</h2>
                       <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -194,9 +181,18 @@ const WineClubPage = () => {
                       <div className="flex justify-center py-12">
                         <div className="border border-border p-6 animate-pulse h-40 w-full max-w-2xl bg-muted/30" />
                       </div>
-                    ) : tiers ? (
-                      <ClubConfigurator tiers={tiers} onSelect={handleSelectTier} />
-                    ) : null}
+                    ) : allClubsJoinUrl ? (
+                      <VinoshipperInlineSignup
+                        joinUrl={allClubsJoinUrl}
+                        tierName="Wine Club"
+                        showBack={false}
+                        onBack={() => {}}
+                      />
+                    ) : (
+                      <p className="text-center text-sm text-muted-foreground">
+                        Sign-up isn't available right now — please try again shortly.
+                      </p>
+                    )}
 
                     {!user && (
                       <p className="mt-8 text-center text-xs text-muted-foreground max-w-md mx-auto">
@@ -225,8 +221,7 @@ const WineClubPage = () => {
                         <Gift className="h-4 w-4" /> Gift a Membership
                       </Button>
                     </div>
-                  </>
-                )}
+                </>
               </div>
             </section>
           </>

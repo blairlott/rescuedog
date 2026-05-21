@@ -25,6 +25,7 @@ const NAV = [
   { to: "/kennel/keywords", label: "Keyword Optimizer", icon: Search, end: false, viewerOk: false },
   { to: "/kennel/platform-radar", label: "Platform Radar", icon: Radar, end: false, viewerOk: false },
   { to: "/kennel/autonomy", label: "Autonomy", icon: Bot, end: false, viewerOk: false },
+  { to: "/kennel/z8", label: "Z8 Optimizer", icon: ShieldAlert, end: false, viewerOk: true },
 ];
 
 export function KennelLayout() {

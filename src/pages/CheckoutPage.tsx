@@ -500,15 +500,22 @@ export default function CheckoutPage() {
               <div className="flex justify-between text-xs items-center">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Sparkles className="h-3 w-3 text-primary" />
-                  Wine Club price ({memberPct}% off wine)
+                  Wine Club price
                 </span>
                 <span className="font-mono text-foreground">
                   ${(memberTotalCents / 100).toFixed(2)}
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                You'd save <span className="font-semibold text-primary">${(memberSavingsCents / 100).toFixed(2)}</span> on this order as a member.{" "}
+                Members save an extra <span className="font-semibold text-primary">{memberPct}% on wine</span>
+                {merchCents > 0 ? <> + <span className="font-semibold text-primary">{MEMBER_MERCH_PCT}% on merch</span></> : null}
+                {" — "}that's <span className="font-semibold text-primary">${(memberSavingsCents / 100).toFixed(2)}</span> off this order.{" "}
                 <Link to="/club" className="underline hover:text-primary">Join the Club</Link>
+                {merchCents === 0 && (
+                  <>
+                    {" "}· Add merch to save an extra {MEMBER_MERCH_PCT}% on merch as a member.
+                  </>
+                )}
               </p>
             </div>
           )}

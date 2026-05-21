@@ -134,12 +134,13 @@ export function VinoshipperClubHandoff({
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2 text-base">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            Secure Payment — {tierName}
+            Save Card On File — {tierName}
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
-            Card capture is handled by Vinoshipper, our compliance & shipping
-            partner. Your card is securely vaulted so future club shipments
-            ship automatically. You stay on rescuedogwines.com.
+            You are <strong>not being charged today</strong>. We're saving a
+            card on file with Vinoshipper, our compliance & shipping partner,
+            so future club shipments can ship and bill automatically. You stay
+            on rescuedogwines.com.
           </p>
         </DialogHeader>
 
@@ -169,16 +170,18 @@ export function VinoshipperClubHandoff({
             />
             <div className="px-6 py-4 border-t border-border bg-muted/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <p className="text-xs text-muted-foreground">
-                Finished saving your card with Vinoshipper? Confirm below to
-                activate your membership. Closing this window without saving a
-                card will <strong>not</strong> enroll you.
+                Finished adding your card on file with Vinoshipper? Confirm
+                below to activate your membership. No charge is made today —
+                you'll only be billed when a club shipment goes out. Closing
+                this window without saving a card will <strong>not</strong>{" "}
+                enroll you.
               </p>
               <Button
                 type="button"
                 onClick={handleManualConfirm}
                 className="uppercase tracking-brand text-xs font-bold whitespace-nowrap"
               >
-                I've Saved My Card
+                I've Added My Card On File
               </Button>
             </div>
           </div>

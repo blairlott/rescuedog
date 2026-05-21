@@ -274,20 +274,40 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
 
   // Merge shipping into the main chart series by date-bucket key, so it can be
   // rendered as a stacked-context bar inside the main predictive timeline.
+  // Scenario levers (client-side, applied only to FUTURE rows so users can
+  // explore spend vs return without re-running the model).
+  const [spendLever, setSpendLever] = useState<number>(0);   // -50%..+50%
+  const [roasLever, setRoasLever] = useState<number>(0);     // -25%..+25%
+
   const mergedChartData = useMemo(() => {
     const ship = new Map<string, { shipping: number; ship_pct: number; ship_per_order: number }>();
     for (const r of shipping ?? []) ship.set(r.date, r);
+    const spendMult = 1 + spendLever / 100;
+    const roasMult  = 1 + roasLever / 100;
     return chartData.map((p) => {
       const s = ship.get(p.date);
+      const isFuture = p.date > todayKey;
+      const spend = isFuture ? (Number(p.spend) || 0) * spendMult : Number(p.spend) || 0;
+      // Revenue scales with spend (volume effect) AND the ROAS lever (efficiency effect).
+      const rev = isFuture
+        ? (Number(p.revenue) || 0) * spendMult * roasMult
+        : Number(p.revenue) || 0;
+      const revLo = isFuture ? (Number(p.revenue_lower) || 0) * spendMult * roasMult : Number(p.revenue_lower) || 0;
+      const revHi = isFuture ? (Number(p.revenue_upper) || 0) * spendMult * roasMult : Number(p.revenue_upper) || 0;
       return {
         ...p,
+        spend,
+        revenue: rev,
+        revenue_lower: revLo,
+        revenue_upper: revHi,
+        roas: spend > 0 ? rev / spend : 0,
         shipping: s?.shipping ?? 0,
         ship_pct: s?.ship_pct ?? 0,
         ship_per_order: s?.ship_per_order ?? 0,
-        net_revenue: (Number(p.revenue) || 0) - (Number(p.spend) || 0),
+        net_revenue: rev - spend,
       };
     });
-  }, [chartData, shipping]);
+  }, [chartData, shipping, spendLever, roasLever, todayKey]);
 
   const summary = useMemo(() => {
     if (chartData.length === 0) return null;

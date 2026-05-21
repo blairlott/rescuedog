@@ -561,7 +561,7 @@ export const CartDrawer = () => {
               {/* Free shipping progress bar */}
               <div className="sticky top-0 z-10 -mx-1 px-1 pt-1 pb-3 bg-background/95 backdrop-blur-sm">
                 <FreeShippingBar
-                  totalBottles={totalBottlesEffective}
+                  totalBottles={isMerchRoute ? totalBottlesEffective : caseBottles}
                   cartTotal={totalPrice}
                   mode={isMerchRoute ? "merch" : "wine"}
                 />
@@ -611,7 +611,7 @@ export const CartDrawer = () => {
 
                 {/* Upsell banners */}
                 <div className="mt-4">
-                  <CartUpsellBanner totalBottles={totalBottlesEffective} cartTotal={totalPrice} />
+                  <CartUpsellBanner totalBottles={caseBottles} cartTotal={totalPrice} />
                 </div>
 
                 {/* Product cross-sells — always visible above the fold */}

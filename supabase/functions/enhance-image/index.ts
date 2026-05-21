@@ -18,6 +18,12 @@ const PRESETS: Record<string, string> = {
   hero: "Restyle this image as a premium hero banner for Rescue Dog Wines: cinematic lighting, warm rich tones, slight depth-of-field, editorial composition. Keep the same subject (dog/wine/lifestyle). Wide 16:9 framing.",
   square: "Reframe as a clean 1:1 social square. Center the subject, keep warm editorial tone consistent with a premium wine brand. Do not add text or logos.",
   background: "Replace the background with a clean, brand-appropriate setting (warm natural light, soft bokeh wood/vineyard tones). Keep the subject pixel-identical.",
+  hd_authentic: "Upscale this image to crisp high-definition with photographic realism. Recover fine texture in fur, fabric, glass and skin. Natural color grading, true-to-life skin tones, no plastic smoothing, no over-sharpening. Preserve the exact subject, pose, and composition — do not add, remove, or restyle any element.",
+  scene_vineyard: "Compose a new scene that places the existing subject (dog and/or people) together with a bottle of Rescue Dog Wines in a sunlit vineyard at golden hour. Photorealistic, editorial wine-brand styling, shallow depth of field. Keep the subject's identity, breed, and clothing recognizable. The wine bottle must be intact, label legible-but-not-faked.",
+  scene_picnic: "Place the existing subject (dog and/or people) at a relaxed countryside picnic with a bottle of Rescue Dog Wines and two glasses on a wooden board. Warm natural daylight, soft bokeh, photorealistic. Keep the subject's identity recognizable.",
+  scene_kitchen: "Place the existing subject (dog and/or people) in a warm modern farmhouse kitchen with a bottle of Rescue Dog Wines on the counter. Soft window light, editorial lifestyle photography, photorealistic. Keep the subject's identity recognizable.",
+  scene_fireside: "Place the existing subject (dog and/or people) by a cozy fireplace in the evening with a bottle of Rescue Dog Wines and a poured glass. Warm amber light, photorealistic, cinematic. Keep the subject's identity recognizable.",
+  scene_beach: "Place the existing subject (dog and/or people) at a quiet coastal beach at sunset with a bottle of Rescue Dog Wines in the sand. Golden hour, photorealistic, editorial. Keep the subject's identity recognizable.",
 };
 
 async function fetchAsDataUrl(url: string): Promise<string> {
@@ -131,6 +137,8 @@ Deno.serve(async (req) => {
           preset: preset ?? null,
           model,
           variant_index: i,
+          derivative_kind: preset && preset.startsWith("scene_") ? "scene_variant" : "enhancement",
+          auto: body.auto === true,
         },
       }).select("id").single();
       if (insErr) throw new Error(`insert failed: ${insErr.message}`);

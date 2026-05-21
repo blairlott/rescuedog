@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
   for (const row of rows ?? []) {
     if (!row.ad_id) continue;
     const insUrl = `https://graph.facebook.com/v19.0/${row.ad_id}/insights` +
-      `?fields=spend,actions,cost_per_action_type,frequency,action_values` +
+      `?fields=spend,actions,cost_per_action_type,frequency,action_values,inline_link_clicks,clicks` +
       `&date_preset=lifetime&access_token=${encodeURIComponent(META_TOKEN)}`;
     const res = await fetch(insUrl);
     const body = await res.json().catch(() => ({}));
@@ -54,6 +54,7 @@ Deno.serve(async (req) => {
     const insight = body.data?.[0] ?? {};
     const spend = Number(insight.spend ?? 0);
     const frequency = Number(insight.frequency ?? 0);
+    const link_clicks = Number(insight.inline_link_clicks ?? 0);
     const actions: any[] = insight.actions ?? [];
     const actionValues: any[] = insight.action_values ?? [];
     const cpa: any[] = insight.cost_per_action_type ?? [];
@@ -75,8 +76,10 @@ Deno.serve(async (req) => {
 
     // Kill rules
     const killSpendUsd = cfg.kill_spend_threshold_cents / 100;
+    const killLinkClickSpendUsd = (cfg.kill_link_clicks_spend_cents ?? 1500) / 100;
     let killReason: string | null = null;
     if (frequency >= cfg.kill_frequency) killReason = "frequency_cap";
+    else if (spend >= killLinkClickSpendUsd && link_clicks === 0) killReason = "zero_link_clicks";
     else if (spend >= killSpendUsd && results_count === 0) {
       killReason = row.test_variant === "conversion" ? "zero_purchases" : "zero_subscribes";
     }

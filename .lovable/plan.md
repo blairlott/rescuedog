@@ -1,77 +1,72 @@
-## Instagram Auto-Boost + A/B Test System
+# Pre-Launch Execution Plan (Sections 2–8)
 
-Build a 3-function pipeline inside Kennel that monitors organic Instagram performance, auto-boosts breakout posts as A/B tests (Purchase vs Wine Club Subscribe), and kills/wins them based on hard performance rules.
+Section 1 (DNS) is explicitly post-launch and gated on Blair — excluded from this plan. I'll break the remaining work into discrete, reviewable passes so you can sign off section-by-section rather than receive one giant unreviewable diff.
 
-### Database (one migration)
+## Pass A — Section 2: CMS Dev Toggles (BUILD)
 
-Three new tables in Lovable Cloud:
+New table `dev_toggles` (single-row JSON config or key/value rows) stored in Supabase, exposed via CMS admin under **Settings → Dev Controls**.
 
-- **`ig_post_metrics`** — rolling snapshot of every recent IG post (impressions, reach, likes, comments, shares, saves, derived `engagement_rate` and `save_rate`, `polled_at`).
-- **`ig_boost_log`** — one row per (post, variant). Tracks `test_variant` (`'conversion'` | `'wine_club'`), Meta `campaign_id` / `adset_id` / `ad_id`, `daily_budget_cents`, `status` (`active|paused|killed|winner`), `kill_reason`, spend, purchases, subscribes, `cost_per_result`, `roas`.
-- **`ig_boost_config`** — single-row tuning knobs (thresholds, kill rules, max active boosts, winner thresholds, `default_objective`). Seeded with the defaults you specified.
+**Toggle Group 1 — Account Features** (master + 6 sub, all default OFF; Subscribe & Save locked ON, not rendered as editable)
+- Login/Register, Order History, Wine Club Portal, Loyalty/The Pack, Saved Addresses, Referral Program
 
-RLS: ad_ops / admin / owner read+write; service role full access (cron + edge functions use service role).
+**Toggle Group 2 — Customer Notifications** (master + 7 sub, all default OFF; S&S confirmation locked ON)
+- Order confirmation, Shipping updates, Wine club billing, Abandoned cart, Win-back, Post-purchase, Welcome series
 
-### Edge Function 1 — `ig-engagement-monitor` (every 6h)
+Enforcement:
+- Frontend `useDevToggles()` hook gates route mounts + nav links for account features.
+- Edge functions check toggle state before any Mailchimp/Resend dispatch (helper `isNotificationEnabled(category)` in `_shared/`). S&S confirmation bypasses the check.
+- Admin-only RLS on `dev_toggles` write; public read of effective state.
 
-1. Pulls media + insights for IG_USER_ID `1689217927783203` via Graph API v19.0.
-2. Computes `save_rate` and `engagement_rate`, upserts into `ig_post_metrics`.
-3. Qualifies a post when: `save_rate ≥ 0.03 OR engagement_rate ≥ 0.06`, `reach ≥ 500`, age ≥ 24h, not already in `ig_boost_log`, and fewer than `max_active_boosts` (3) currently active.
-4. Invokes `ig-auto-boost` per qualifying post.
+Deliverables: migration + admin page + hook + shared edge helper + wiring into existing welcome/winback/cart edge functions.
 
-### Edge Function 2 — `ig-auto-boost`
+## Pass B — Section 3: Compliance Audit (REPORT + FIX)
 
-For one post, creates in Meta Ads (account `act_23490172`):
+Crawl every route and component against the 7 compliance rules (age gate, shipping disclosure, "shipping included" language, no quantified impact, access-based loyalty wording, dual-brand logo discipline, brand lock fonts/colors/sharp edges). Output a violations report; fix anything that's a copy/styling change in the same pass. Flag anything structural for explicit approval.
 
-1. Campaign `IGBoost_{post_id}_{YYYY-MM-DD}` — objective `OUTCOME_SALES`.
-2. **Adset A — Purchase**: optimize `OFFSITE_CONVERSIONS` / `custom_event_type: PURCHASE`, $25/day, US targeting with 9 excluded regions (wine-shipping-blocked states by Meta region key), three custom audiences (`6937215635059`, `6937215772659`, `52507005005463`), Advantage+ audience on.
-3. **Adset B — Wine Club**: identical except `custom_event_type: SUBSCRIBE`.
-4. One Ad per adset using `object_story_id: 1689217927783203_{post_id}`.
-5. Writes 2 rows to `ig_boost_log` (`conversion` + `wine_club`) both status `active`.
+## Pass C — Section 4: Conversion Flow Verification (TEST + REPORT)
 
-### Edge Function 3 — `ig-boost-monitor` (every 2h)
+Walk each path in the live preview:
+1. Wine PDP → ATC → Cart → Vinoshipper handoff (UTM + gclid preservation verified by inspecting redirect chain).
+2. Merch PDP → ATC → Shopify checkout.
+3. Subscribe & Save → confirmation email fires.
+4. Sticky ATC + mobile cart close X visibility check on every wine PDP.
 
-For every `status='active'` row:
+Output: pass/fail matrix + screenshots of any broken steps + fixes for in-scope issues.
 
-1. Pulls lifetime insights for the `ad_id` (spend, purchases, subscribes, frequency).
-2. Updates the log row with latest spend/results/ROAS/CPL.
-3. **Kill rules** (PAUSE the ad on Meta, set status `killed` with `kill_reason`):
-   - conversion variant: spend ≥ $30 and 0 purchases → `zero_purchases`
-   - wine_club variant: spend ≥ $30 and 0 subscribes → `zero_subscribes`
-   - any: frequency ≥ 3.5 → `frequency_cap`
-4. **Winner logic** after 7 days OR $50 spend per variant:
-   - Conversion wins if `ROAS ≥ 2.5`.
-   - Wine Club wins if `CPL < $25` AND `400/CPL > 16` (static LTV $400).
-   - If both meet thresholds: keep both, mark `status='winner'`, send Kennel SMS alert to Blair via existing alert channel.
-   - Update `ig_boost_config.default_objective` with winning variant.
+## Pass D — Section 5: Tracking & Analytics Verification (TEST + REPORT)
 
-### Cron
+Network/console inspection of: Meta Pixel + CAPI event_id format `rdw_{txn}_{event}_{ts}`, GTM-5DBQXWP7 load, GCLID capture tag, Purchase (VS webhook), ViewContent, InitiateCheckout, GA4 pageview. Anything missing gets fixed.
 
-Two `pg_cron` jobs scheduled via the insert tool (not migration — they contain project URL + key):
+## Pass E — Section 6: DB & Performance Audit (REPORT + FIX)
 
-- `ig-engagement-monitor` → `0 */6 * * *`
-- `ig-boost-monitor` → `0 */2 * * *`
+1. **DB:** enumerate tables, find unused columns / missing indexes. Add the 5 indexes Lindy named (`vs_transactions.customer_email`, `vs_transactions.state`, `vs_transactions.created_at`, `capi_event_log.event_id`, `gclid_session_log.hashed_email`) if not present.
+2. **Cron:** list `cron.job`, flag duplicates/stale.
+3. **Edge fns:** scan for N+1 patterns and redundant API calls in `vinoshipper-poll`, `kennel-ingest`, `capi-weighted-events`, `boost-dispatch`. Add in-memory cache for `state_margin_tiers`.
+4. **Frontend:** Lighthouse on home / wine PDP / merch PDP / /shop-wine / cart at 390×844. Lazy-load below-fold images, preload hero, strip render-blocking scripts, WebP check.
 
-### Guardrails (enforced in code)
+Deliverable: before/after table per the directive's "Report back" requirement.
 
-- Max 3 simultaneous active boosts (checked in monitor before triggering boost).
-- $25/day per variant, $50/day per post.
-- Posts must be ≥ 24h old.
-- Same `post_id` never boosted twice (unique check in `ig_boost_log`).
-- Kill at $30 + 0 results, or frequency ≥ 3.5.
-- Winner declared at 7 days or $50/variant spend.
-- Winning objective auto-saved to config.
+## Pass F — Section 7: A/B Test Readiness (VERIFY + DOCUMENT)
 
-### Open items before I build
+Confirm Cloudways WP split script doesn't collide with GTM-5DBQXWP7. Verify GA4 stream/UTM separation between legacy and Lovable. Write rollback runbook to `docs/abtest/rollback.md`. Define metric definitions (CVR primary, AOV, bounce, cart abandon, LCP).
 
-1. **Audience swap on June 1**: I'll hardcode `6937215635059` now and leave a clear `TODO(2026-06-01)` comment in `ig-auto-boost` next to the audience array. Or want me to put the ID in `ig_boost_config` as `purchase_audience_id` so you can flip it without a redeploy? (Recommended.)
-2. **SMS alert to Blair on winner**: I'll reuse the existing Kennel alert path (`kennel-alert-health` style) — does that go to your phone today, or should I wire a new Resend email instead?
-3. **No Kennel UI panel in this build** — just the backend + tables. I'll add a simple `/kennel/ig-boost` viewer in a follow-up if you want it.
+## Pass G — Section 8: QA Sign-off Package
 
-### What I will NOT do without confirmation
+Compile a single QA report doc summarizing pass/fail for Sections 2–7 with links to evidence, ready to paste into the Google Doc for Blair / Claude / RDW staff sign-off. No DNS or traffic-split actions taken.
 
-- Run the migration (waiting for your yes).
-- Create the cron jobs (those run after the functions deploy and you say go).
-- Spend any actual Meta ad dollars — first run will create real campaigns the moment cron fires, so I'll suggest seeding cron in a paused state and you flip it on after a dry-run review.
+---
 
-Reply **yes** to proceed (and answer items 1–2 above), or tell me what to change.
+## Execution rules
+
+- One pass per turn. After each pass I'll surface findings + diff summary and wait for your "go" before starting the next pass.
+- Anything that needs a credential I don't have (e.g. Lighthouse against the published URL, Meta Events Manager confirmation) I'll call out explicitly rather than fake-pass it.
+- Memory updates: add a `dev-toggles` memory after Pass A so future sessions respect the locked-ON exceptions.
+
+## Technical notes
+
+- `dev_toggles` schema: `category text`, `key text`, `enabled bool`, `locked bool`, PK `(category, key)`. Locked rows reject UPDATE via RLS check.
+- Notification gate helper lives in `supabase/functions/_shared/devToggles.ts` and is imported by every send-path edge function.
+- Index additions go through a migration; data audits use `supabase--read_query` only.
+- Lighthouse runs via the browser performance profile tool against the preview URL.
+
+Confirm and I'll start Pass A (Section 2 — CMS Dev Toggles).

@@ -68,7 +68,7 @@ const WinesPage = () => {
     <div className="min-h-screen flex flex-col">
       <Seo
         title="Shop Wines"
-        description="Award-winning Lodi wines — Cabernet, Red Blend, Sauvignon Blanc, Chardonnay, Rosé and Sparkling. Shipping included on 6+ bottles."
+        description="Award-winning Lodi wines — Cabernet, Red Blend, Sauvignon Blanc, Chardonnay, Rosé and Sparkling. Flat $9.99 shipping on 6+ bottles, included on 12+."
         path="/wines"
         breadcrumbs={[
           { name: "Home", path: "/" },

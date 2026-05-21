@@ -168,7 +168,7 @@ const Index = () => {
       <InstacartOAuthCatcher />
       <Seo
         title="Award-Winning Sustainable Wines That Help Rescue Dogs"
-        description="Lodi-grown, sustainably crafted wines. 50% of profits support animal rescue. Shipping included on 6+ bottles. Join the Wine Club for 20% off."
+        description="Lodi-grown, sustainably crafted wines. 50% of profits support animal rescue. Flat $9.99 shipping on 6+ bottles, included on 12+. Join the Wine Club for 20% off."
         path="/"
         jsonLd={{
           "@context": "https://schema.org",

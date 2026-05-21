@@ -8,7 +8,7 @@
 - Wine club discounts are applied at **Vinoshipper checkout** — members authenticate on Vinoshipper, NOT on our site. Our PDPs show member pricing as a passive teaser to all wine viewers.
 - Shipping included on cadence shipments only — NOT on à la carte.
 - PRE-LAUNCH: Rewards Program + Referral Program are disabled via `dev_toggles` (`account_features.rewards_program`, `account_features.referral_program`). Re-enable post-launch via CMS → Dev Controls.
-- Mission framing: "helping dogs find their forever home." Qualitative only — NEVER show counters, totals, or quantified impact.
+- Mission framing: "helping dogs find their forever home." Qualitative only — NEVER show counters, totals, or quantified impact, EXCEPT the approved claim "Partnered with 225 rescue organizations" (homepage + mission page).
 - Dual brand: high-def Rescue Dog logo/merch-only on /merch; Black RDW logo on wine site.
 - Colors: Red #c30017, Black, Grey. Fonts: Nunito Sans, Avenir Next. Flat/sharp edges (border-radius: 0).
 - Age gate required for wine routes; bypassed for /merch, /crm, /cms.

@@ -265,6 +265,9 @@ const Index = () => {
               <p className="text-foreground mb-6">
                 <T>{getVal("mission", "paragraph2", "Rescue Dog™ ships to most of the US from our online store!")}</T>
               </p>
+              <p className="text-sm tracking-brand uppercase text-primary font-bold mb-6">
+                <T>Partnered with 225 rescue organizations</T>
+              </p>
               <div className="flex flex-wrap gap-4">
                 <Button
                   asChild

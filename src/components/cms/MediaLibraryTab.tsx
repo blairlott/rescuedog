@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, X, RefreshCw, Image as ImageIcon, Sparkles, Maximize2, ChevronDown, ChevronRight, Globe, Instagram, Wand2 } from "lucide-react";
+import { Star } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,9 @@ type MediaAsset = {
   ai_subject: string | null;
   status: "pending" | "approved" | "rejected" | "archived";
   created_at: string;
+  hero_eligible?: boolean;
+  width?: number | null;
+  height?: number | null;
 };
 
 type HarvestJob = {
@@ -46,6 +50,8 @@ export default function MediaLibraryTab() {
   const [enhancing, setEnhancing] = useState(false);
   const [lightbox, setLightbox] = useState<MediaAsset | null>(null);
   const [jobsOpen, setJobsOpen] = useState(false);
+  const [syncingHero, setSyncingHero] = useState(false);
+  const [heroResult, setHeroResult] = useState<{ eligible_count: number; status: string; hint?: string | null; skipped?: { reason: string }[] } | null>(null);
 
   const assetsQuery = useQuery({
     queryKey: ["cms-media-assets", filter],
@@ -114,6 +120,36 @@ export default function MediaLibraryTab() {
     }
     qc.invalidateQueries({ queryKey: ["cms-media-assets"] });
     qc.invalidateQueries({ queryKey: ["cms-media-counts"] });
+  }
+
+  async function toggleHero(asset: MediaAsset) {
+    const next = !asset.hero_eligible;
+    const { error } = await supabase
+      .from("media_assets")
+      .update({ hero_eligible: next })
+      .eq("id", asset.id);
+    if (error) {
+      toast({ title: "Hero pool update failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: next ? "Added to hero rotation" : "Removed from hero rotation", description: next ? "Click ‘Sync hero pool’ to publish." : undefined });
+    qc.invalidateQueries({ queryKey: ["cms-media-assets"] });
+  }
+
+  async function syncHeroPool() {
+    setSyncingHero(true);
+    setHeroResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-hero-pool", { body: {} });
+      if (error) throw error;
+      setHeroResult(data as typeof heroResult);
+      toast({ title: "Hero pool synced", description: `${(data as { eligible_count: number }).eligible_count} image(s) now in rotation.` });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast({ title: "Sync failed", description: msg, variant: "destructive" });
+    } finally {
+      setSyncingHero(false);
+    }
   }
 
   async function runEnhance() {
@@ -222,6 +258,33 @@ export default function MediaLibraryTab() {
         </CardContent>
       </Card>
 
+      {/* Hero rotation control */}
+      <Card>
+        <CardContent className="pt-6 space-y-3">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h3 className="font-semibold text-sm flex items-center gap-2"><Star className="h-4 w-4" /> Homepage hero rotation</h3>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+                Star approved images to add them to the homepage hero pool. We auto-filter to landscape ≥1280w and run a bandit that rotates them — frequently at first, then settling on the highest converters (Shop Wines + Wine Club CTAs).
+              </p>
+            </div>
+            <Button onClick={syncHeroPool} disabled={syncingHero} size="sm">
+              {syncingHero ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Sync hero pool
+            </Button>
+          </div>
+          {heroResult && (
+            <div className="text-xs text-muted-foreground border-t pt-3 space-y-1">
+              <div><strong>{heroResult.eligible_count}</strong> in rotation · experiment <strong>{heroResult.status}</strong></div>
+              {heroResult.hint && <div className="text-amber-700">{heroResult.hint}</div>}
+              {heroResult.skipped && heroResult.skipped.length > 0 && (
+                <div>Skipped {heroResult.skipped.length}: {Array.from(new Set(heroResult.skipped.map((s) => s.reason))).join(", ")}</div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Step 2: Review */}
       <div>
         <h3 className="font-semibold text-sm mb-2">2. Review & approve</h3>
@@ -299,6 +362,15 @@ export default function MediaLibraryTab() {
                     <div className="flex gap-1">
                       <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => { setEnhanceFor(a); setEnhanceVibes([]); setEnhancePreset("enhance"); setEnhanceVariants(1); }}>
                         <Sparkles className="h-3 w-3 mr-1" /> Enhance
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={a.hero_eligible ? "default" : "outline"}
+                        className="h-7 text-xs px-2"
+                        onClick={() => toggleHero(a)}
+                        title={a.hero_eligible ? "In hero rotation — click to remove" : "Add to homepage hero rotation"}
+                      >
+                        <Star className={`h-3 w-3 ${a.hero_eligible ? "fill-current" : ""}`} />
                       </Button>
                       <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setStatus(a.id, "archived")} title="Archive">
                         <X className="h-3 w-3" />

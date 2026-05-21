@@ -6510,6 +6510,9 @@ export type Database = {
           caption: string | null
           created_at: string
           height: number | null
+          hero_added_at: string | null
+          hero_eligible: boolean
+          hero_synced_at: string | null
           id: string
           image_url: string
           metadata: Json
@@ -6532,6 +6535,9 @@ export type Database = {
           caption?: string | null
           created_at?: string
           height?: number | null
+          hero_added_at?: string | null
+          hero_eligible?: boolean
+          hero_synced_at?: string | null
           id?: string
           image_url: string
           metadata?: Json
@@ -6554,6 +6560,9 @@ export type Database = {
           caption?: string | null
           created_at?: string
           height?: number | null
+          hero_added_at?: string | null
+          hero_eligible?: boolean
+          hero_synced_at?: string | null
           id?: string
           image_url?: string
           metadata?: Json

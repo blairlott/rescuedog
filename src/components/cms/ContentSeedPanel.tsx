@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Upload, Trash2, Loader2, ImagePlus, Copy, ImageIcon, Wand2 } from "lucide-react";
+import { Upload, Trash2, Loader2, ImagePlus, Copy, ImageIcon, Wand2, Instagram } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
@@ -44,6 +44,7 @@ export function ContentSeedPanel() {
   const [filter, setFilter] = useState<"all" | "wine" | "merch" | "shared">("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [refiningId, setRefiningId] = useState<string | null>(null);
+  const [importingIG, setImportingIG] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -147,6 +148,27 @@ export function ContentSeedPanel() {
     }
   }
 
+  async function importInstagram() {
+    const handle = window.prompt("Instagram handle to import (without @):", "rescuedogwines");
+    if (!handle) return;
+    setImportingIG(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("capi-instagram-import", {
+        body: { handle: handle.trim(), limit: 12, brand_lockup: brand },
+      });
+      if (error) throw error;
+      toast({
+        title: `Imported ${data?.imported ?? 0} from @${handle}`,
+        description: data?.skipped ? `${data.skipped} skipped (already imported or failed).` : "Ready to refine.",
+      });
+      load();
+    } catch (e: any) {
+      toast({ title: "Instagram import failed", description: e.message, variant: "destructive" });
+    } finally {
+      setImportingIG(false);
+    }
+  }
+
   const filtered = rows.filter((r) => filter === "all" ? true : r.brand_lockup === filter);
 
   return (
@@ -157,6 +179,16 @@ export function ContentSeedPanel() {
         <span className="text-xs text-muted-foreground">
           — reference images for generation briefs ({rows.length})
         </span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-none ml-auto"
+          onClick={importInstagram}
+          disabled={importingIG}
+        >
+          {importingIG ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <Instagram className="h-3 w-3 mr-2" />}
+          Import from Instagram
+        </Button>
       </div>
 
       {/* Upload row */}

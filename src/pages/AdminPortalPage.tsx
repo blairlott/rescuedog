@@ -59,6 +59,15 @@ const AdminPortalPage = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!mounted) return;
       if (session?.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("must_change_password")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        if (profile?.must_change_password) {
+          navigate("/admin/change-password", { replace: true });
+          return;
+        }
         const userRoles = await loadRoles(session.user.id);
         setRoles(userRoles);
         await loadPendingRequests(userRoles);

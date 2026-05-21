@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,10 @@ import { useEffect } from "react";
 const CustomerSignupPage = () => {
   const { user } = useCustomerAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get("next");
+  const nextPath = nextParam && nextParam.startsWith("/") ? nextParam : "/account";
+  const nextQs = nextParam ? `?next=${encodeURIComponent(nextParam)}` : "";
   const { referralsEnabled } = useLaunchFeatures();
   const [formData, setFormData] = useState({
     firstName: "",
@@ -40,8 +44,8 @@ const CustomerSignupPage = () => {
   }, [referralsEnabled]);
 
   useEffect(() => {
-    if (user) navigate("/account");
-  }, [user, navigate]);
+    if (user) navigate(nextPath);
+  }, [user, navigate, nextPath]);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +63,7 @@ const CustomerSignupPage = () => {
             full_name: `${formData.firstName} ${formData.lastName}`,
             referred_by: formData.referralCode || undefined,
           },
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: `${window.location.origin}${nextPath}`,
         },
       });
       if (error) throw error;
@@ -94,7 +98,7 @@ const CustomerSignupPage = () => {
         }
       }
       toast.success("Check your email to verify your account!");
-      navigate("/login");
+      navigate(`/login${nextQs}`);
     } catch (err: any) {
       toast.error(err.message || "Signup failed");
     } finally {
@@ -110,7 +114,7 @@ const CustomerSignupPage = () => {
     setIsGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}${nextPath}`,
       });
       if (result.error) throw result.error;
     } catch (err: any) {
@@ -127,7 +131,7 @@ const CustomerSignupPage = () => {
     setIsAppleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}${nextPath}`,
       });
       if (result.error) throw result.error;
     } catch (err: any) {
@@ -213,7 +217,7 @@ const CustomerSignupPage = () => {
 
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="text-primary font-semibold hover:underline">Sign in</Link>
+            <Link to={`/login${nextQs}`} className="text-primary font-semibold hover:underline">Sign in</Link>
           </p>
         </div>
       </main>

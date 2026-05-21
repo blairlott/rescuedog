@@ -16,6 +16,7 @@ const DEFAULT_LIMIT = 12;
 
 type ExtractedPost = {
   image_url?: string;
+  video_url?: string;
   caption?: string;
   permalink?: string;
 };
@@ -34,7 +35,7 @@ async function firecrawlExtract(targetUrl: string, limit: number): Promise<Extra
       formats: [
         {
           type: "json",
-          prompt: `Extract up to ${limit} most recent Instagram posts from this profile page. For each, return the direct image_url (the .jpg/.jpeg/.png/.webp asset URL — NOT a thumbnail data URI), the caption text if visible, and the permalink (https://www.instagram.com/p/SHORTCODE/). Return only items that have an image_url. Return as JSON: { "posts": [...] }.`,
+          prompt: `Extract up to ${limit} most recent Instagram posts and reels from this profile page. For each, return: image_url (direct .jpg/.jpeg/.png/.webp asset URL — NOT a thumbnail data URI, used as poster for videos too), video_url (direct .mp4 asset URL if this is a Reel or video post, otherwise null), caption text if visible, and permalink (https://www.instagram.com/p/SHORTCODE/ or /reel/SHORTCODE/). Return items that have at least an image_url or video_url. JSON: { "posts": [...] }.`,
         },
         "links",
       ],
@@ -48,27 +49,35 @@ async function firecrawlExtract(targetUrl: string, limit: number): Promise<Extra
   const json = data?.data?.json ?? data?.json ?? {};
   const posts: ExtractedPost[] = Array.isArray(json?.posts) ? json.posts : [];
 
-  // Fallback: if extraction missed, mine links for .jpg/.webp from instagram CDN
+  // Fallback: if extraction missed, mine links for image + video assets from instagram CDN
   if (posts.length === 0) {
     const links: string[] = data?.data?.links ?? data?.links ?? [];
+    const cdn = (l: unknown) => typeof l === "string" && /cdninstagram|fbcdn/.test(l as string);
     const imgLinks = links.filter(
       (l) => typeof l === "string" && /cdninstagram|fbcdn/.test(l) && /\.(jpg|jpeg|png|webp)/i.test(l),
     );
-    return imgLinks.slice(0, limit).map((u) => ({ image_url: u }));
+    const vidLinks = links.filter((l) => cdn(l) && /\.mp4/i.test(l as string)) as string[];
+    const out: ExtractedPost[] = [];
+    for (const u of vidLinks.slice(0, limit)) out.push({ video_url: u });
+    for (const u of imgLinks.slice(0, Math.max(0, limit - out.length))) out.push({ image_url: u });
+    return out;
   }
-  return posts.slice(0, limit).filter((p) => !!p.image_url);
+  return posts.slice(0, limit).filter((p) => !!(p.image_url || p.video_url));
 }
 
-async function downloadImage(url: string): Promise<{ bytes: Uint8Array; mime: string }> {
+async function downloadAsset(url: string, kind: "image" | "video"): Promise<{ bytes: Uint8Array; mime: string }> {
   const r = await fetch(url, {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-      "Accept": "image/avif,image/webp,image/jpeg,image/png,*/*",
+      "Accept": kind === "video"
+        ? "video/mp4,video/*;q=0.9,*/*;q=0.8"
+        : "image/avif,image/webp,image/jpeg,image/png,*/*",
     },
   });
   if (!r.ok) throw new Error(`download ${r.status}`);
-  const mime = r.headers.get("content-type") || "image/jpeg";
+  const fallback = kind === "video" ? "video/mp4" : "image/jpeg";
+  const mime = r.headers.get("content-type") || fallback;
   const bytes = new Uint8Array(await r.arrayBuffer());
   return { bytes, mime };
 }
@@ -143,13 +152,16 @@ Deno.serve(async (req) => {
     const errors: string[] = [];
 
     for (const post of posts) {
-      if (!post.image_url) { skipped++; continue; }
+      const isVideo = !!post.video_url;
+      const sourceUrl = post.video_url || post.image_url;
+      if (!sourceUrl) { skipped++; continue; }
       if (post.permalink && seen.has(post.permalink)) { skipped++; continue; }
       try {
-        const { bytes, mime } = await downloadImage(post.image_url);
-        const ext = (mime.split("/")[1] || "jpg").split("+")[0];
+        const { bytes, mime } = await downloadAsset(sourceUrl, isVideo ? "video" : "image");
+        const ext = (mime.split("/")[1] || (isVideo ? "mp4" : "jpg")).split("+")[0];
         const folder = userId ?? "instagram-auto";
-        const path = `${folder}/ig-${handle}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const prefix = isVideo ? "ig-video" : "ig";
+        const path = `${folder}/${prefix}-${handle}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
         const { error: upErr } = await admin.storage
           .from("creative-seeds")
@@ -159,15 +171,15 @@ Deno.serve(async (req) => {
         const { data: pub } = admin.storage.from("creative-seeds").getPublicUrl(path);
 
         const caption = (post.caption || "").slice(0, 280);
-        const tags = ["instagram", `ig:${handle}`];
+        const tags = ["instagram", `ig:${handle}`, isVideo ? "video" : "image"];
 
         const { error: insErr } = await admin.from("creative_seed_assets").insert({
           storage_path: path,
           public_url: pub.publicUrl,
-          file_name: `instagram-${handle}-${imported + 1}.${ext}`,
+          file_name: `instagram-${handle}-${isVideo ? "reel" : "post"}-${imported + 1}.${ext}`,
           mime_type: mime,
           size_bytes: bytes.length,
-          label: caption || `Instagram • @${handle}`,
+          label: caption || `Instagram ${isVideo ? "Reel" : "Post"} • @${handle}`,
           tags,
           brand_lockup: brand,
           uploaded_by: userId,
@@ -178,7 +190,7 @@ Deno.serve(async (req) => {
         imported++;
       } catch (e: any) {
         skipped++;
-        errors.push(`${post.permalink ?? post.image_url}: ${e.message ?? e}`);
+        errors.push(`${post.permalink ?? sourceUrl}: ${e.message ?? e}`);
       }
     }
 

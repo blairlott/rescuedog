@@ -149,4 +149,15 @@ Phase 5 — Close the loop
   - `event-reminder-sweep` — new daily cron `event-reminder-sweep-daily` (15:00 UTC). Finds published events starting 20-36h from now and emails every RSVP a "see you tomorrow" reminder. Kill switch: `event_reminder_enabled`.
   - Dedup table `event_rsvp_email_log` with UNIQUE `(rsvp_id, kind)` so confirmations and reminders fire at most once per RSVP. Admin/ambassador-manager read-only.
 
-**Next up:** Phase 4 — Autonomous marketing (audience builder #20, lookalike triggers #21, dynamic product ads feed #22, auto-pause underperforming campaigns #23).
+## Phase 4 — SHIPPED (#20-#25)
+
+- **#20 Audience builder** — already-present `meta-audience-segments` + `meta-audience-sync`; surfaced read-only in /kennel/autonomy → Lookalikes tab.
+- **#21 Lookalike triggers** — `meta-lookalike-trigger` edge function, daily 02:30 UTC. Auto-creates 1% LAL via Graph API when seed >= `lookalike_min_seed_size` (default 100). Kill: `lookalike_autocreate_enabled`.
+- **#22 DPA feed** — `product-feed-meta` serves Meta Catalog CSV at `/functions/v1/product-feed-meta?rail=wine|merch|all`. Wines from Supabase, merch from headless Shopify. Kill: `product_feed_meta_enabled`.
+- **#23 Auto-pause** — `auto-pause-sweep` runs every 6h. Rules in `auto_pause_rules` (metric ROAS/CPA/CTR/spend_no_conv × comparator × threshold × window × min_spend × dry_run). Events logged to `auto_pause_events`. Kill: `auto_pause_enabled`. Meta wired; Google/Instacart land in skipped queue until wired.
+- **#24 AI creatives** — `ai-creative-variants` daily 03:15 UTC. Calls Lovable AI gateway (gemini-2.5-flash, JSON mode) to draft 3 ad copy variants per top SKU. Drafts queued in `ai_creative_variants` with status=pending; CRM tab approves/rejects.
+- **#25 SEO autopilot** — `seo-autopilot-sweep` weekly Mondays 04:00 UTC. Fetches default route list, scrapes title/meta, asks AI for `suggested_title`/`suggested_meta_desc`/`suggested_h1`/`suggested_schema`/reason. Queued in `seo_page_recommendations`. Kill: `seo_autopilot_enabled`.
+
+New CRM page: `/kennel/autonomy` (single tabbed surface for all five).
+
+**Next up:** Phase 5 — close the loop (welcome series activation, cancellation analytics, A/B framework dashboard).

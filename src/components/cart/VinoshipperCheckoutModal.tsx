@@ -26,7 +26,7 @@ import {
   VS_SIMULATION,
   memberDiscountPercent,
 } from "@/lib/vinoshipperConfig";
-import { effectiveBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
+import { effectiveBottleCount, caseEligibleBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
 import { useCartSettings } from "@/hooks/useCartSettings";
 import { getSignupPromo, markSignupPromoUsed } from "@/lib/signupPromo";
 import { WineShippingPolicy } from "@/components/cart/WineShippingPolicy";
@@ -131,6 +131,9 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
 
   // Bundles count as 6 bottles toward the shipping-included threshold.
   const totalBottles = effectiveBottleCount(items as any);
+  // Sampler / bundle SKUs are excluded from the full-case discount,
+  // so qualification uses only standalone wine bottles.
+  const caseBottles = caseEligibleBottleCount(items as any);
   const subtotal = items.reduce(
     (s, i) => s + parseFloat(i.price.amount) * i.quantity,
     0,
@@ -146,7 +149,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   // them in the member customer-group yet at the time this order is charged.
   const signupPromo = !isMember ? getSignupPromo() : null;
   const caseEligible =
-    !isMember && totalBottles >= fullCaseCount && caseDiscountCode;
+    !isMember && caseBottles >= fullCaseCount && caseDiscountCode;
   const activePromoCode = caseEligible
     ? caseDiscountCode
     : signupPromo?.code ?? null;

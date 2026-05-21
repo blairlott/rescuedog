@@ -615,6 +615,10 @@ export default function KennelInstacartAdsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="rpm">
+          <InstacartPartnershipPlanner />
+        </TabsContent>
       </Tabs>
     </div>
   );

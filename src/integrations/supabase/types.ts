@@ -83,6 +83,60 @@ export type Database = {
         }
         Relationships: []
       }
+      abandoned_carts: {
+        Row: {
+          created_at: string
+          email: string
+          fbc: string | null
+          fbp: string | null
+          gclid: string | null
+          id: string
+          item_count: number
+          items: Json
+          last_activity_at: string
+          recovered_at: string | null
+          shopify_cart_id: string | null
+          shopify_checkout_url: string | null
+          subtotal_cents: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          fbc?: string | null
+          fbp?: string | null
+          gclid?: string | null
+          id?: string
+          item_count?: number
+          items?: Json
+          last_activity_at?: string
+          recovered_at?: string | null
+          shopify_cart_id?: string | null
+          shopify_checkout_url?: string | null
+          subtotal_cents?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          fbc?: string | null
+          fbp?: string | null
+          gclid?: string | null
+          id?: string
+          item_count?: number
+          items?: Json
+          last_activity_at?: string
+          recovered_at?: string | null
+          shopify_cart_id?: string | null
+          shopify_checkout_url?: string | null
+          subtotal_cents?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       access_requests: {
         Row: {
           created_at: string

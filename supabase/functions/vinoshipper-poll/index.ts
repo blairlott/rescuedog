@@ -324,50 +324,82 @@ Deno.serve(async (req) => {
 
     // Fire CAPI conversions for each new order
     let purchases = 0, subscribes = 0, ltvCents = 0;
+    const multipliers = await loadStateMultipliers(admin);
     for (const o of newOrders) {
       const orderId = String(o.id ?? o.orderId ?? o.invoice);
       const orderTotal = pickNum(o.orderTotal, o.total, o.grandTotal) ?? 0;
-      const valueCents = Math.round(orderTotal * 100);
-      if (valueCents <= 0) continue;
+      const rawCents = Math.round(orderTotal * 100);
+      if (rawCents <= 0) continue;
 
       const cust = o.customer ?? {};
       const ship = o.shipTo ?? cust;
       const shipAddr = ship?.address ?? cust?.address ?? {};
       const club = o.club ?? o.subscription ?? null;
       const isClub = !!club || /club|member/i.test(String(o.cartType ?? o.orderType ?? ""));
+      const shipState = shipAddr.state ?? shipAddr.stateCode ?? null;
+      const mult = resolveMultiplier(multipliers, shipState);
+      const weightedCents = Math.round(rawCents * mult);
 
       // Purchase event (always)
       const conv = await forwardPurchaseConversion({
         orderId,
-        valueCents,
+        valueCents: weightedCents,
         currency: "USD",
         email: cust.email ?? null,
         phone: cust.phone ?? null,
         firstName: cust.firstName ?? null,
         lastName: cust.lastName ?? null,
         city: shipAddr.city ?? null,
-        state: shipAddr.state ?? shipAddr.stateCode ?? null,
+        state: shipState,
         zip: shipAddr.zip ?? shipAddr.postalCode ?? null,
         country: "US",
         debug: testMode,
       });
       if (conv.meta?.ok) purchases++;
-      ltvCents += valueCents;
+      ltvCents += weightedCents;
+      await logCapiEvent(admin, {
+        orderId,
+        eventName: "Purchase",
+        eventId: orderId,
+        weightedValueCents: weightedCents,
+        rawValueCents: rawCents,
+        multiplier: mult,
+        state: shipState,
+        email: cust.email ?? null,
+        ok: !!conv.meta?.ok,
+        error: conv.meta?.error ?? null,
+        testMode,
+      });
 
       // Subscribe event with projected $400 LTV — wine club signups only
       if (isClub && !testMode) {
+        const subRaw = STATIC_CLUB_LTV_CENTS;
+        const subWeighted = Math.round(subRaw * mult);
         const sub = await sendMetaSubscribe({
           orderId,
-          valueCents: STATIC_CLUB_LTV_CENTS,
+          valueCents: subWeighted,
           email: cust.email ?? null,
           phone: cust.phone ?? null,
-          state: shipAddr.state ?? shipAddr.stateCode ?? null,
+          state: shipState,
           zip: shipAddr.zip ?? shipAddr.postalCode ?? null,
         });
         if (sub.ok) {
           subscribes++;
-          ltvCents += STATIC_CLUB_LTV_CENTS;
+          ltvCents += subWeighted;
         }
+        await logCapiEvent(admin, {
+          orderId,
+          eventName: "Subscribe",
+          eventId: `sub-${orderId}`,
+          weightedValueCents: subWeighted,
+          rawValueCents: subRaw,
+          multiplier: mult,
+          state: shipState,
+          email: cust.email ?? null,
+          ok: sub.ok,
+          error: sub.error ?? null,
+          testMode,
+        });
       }
     }
 

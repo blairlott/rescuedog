@@ -397,6 +397,14 @@ const CmsDashboard = () => {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => navigate("/admin")}
+              className="gap-1 text-muted-foreground"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Admin Hub
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigate("/crm")}
               className="gap-1 text-muted-foreground"
             >

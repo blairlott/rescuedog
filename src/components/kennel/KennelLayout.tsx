@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History, Activity, Sparkles, ShoppingBag, ShoppingCart, Search, Radar, Bot, Flame } from "lucide-react";
+import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History, Activity, Sparkles, ShoppingBag, ShoppingCart, Search, Radar, Bot, Flame, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -150,6 +150,13 @@ export function KennelLayout() {
             <div className="text-[10px] text-muted-foreground">Every dollar finds its pack</div>
           </div>
         </Link>
+        <Link
+          to="/admin"
+          className="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-brand text-muted-foreground hover:text-foreground hover:bg-muted border-b border-border"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Admin Hub
+        </Link>
         <nav className="flex-1 p-2 space-y-1">
           {NAV.filter((item) => item.viewerOk || roleInfo?.isAdOps).map((item) => (
             <NavLink
@@ -218,7 +225,15 @@ export function KennelLayout() {
             aria-label="Breadcrumb"
             className="flex items-center gap-1 text-xs px-4 md:px-6 py-2 border-b border-border bg-card/50 overflow-x-auto whitespace-nowrap"
           >
-            <Home className="h-3 w-3 text-muted-foreground" />
+            <Link
+              to="/admin"
+              aria-label="Admin home"
+              className="flex items-center gap-1 text-muted-foreground hover:text-foreground uppercase tracking-brand"
+            >
+              <Home className="h-3 w-3" />
+              <span>Admin</span>
+            </Link>
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
             {crumbs.map((c, i) => (
               <span key={c.to} className="flex items-center gap-1">
                 {i > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground" />}

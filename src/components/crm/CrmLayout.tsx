@@ -3,7 +3,7 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook, TrendingDown, FlaskConical, Headphones } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook, TrendingDown, FlaskConical, Headphones, ArrowLeft } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
 import { CrmBreadcrumbs } from "@/components/crm/CrmBreadcrumbs";
@@ -83,6 +83,13 @@ export default function CrmLayout() {
             <p className="text-xs text-primary mt-0.5 capitalize">{roleInfo.roles[0]}</p>
           )}
         </div>
+        <Link
+          to="/admin"
+          className="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-brand text-muted-foreground hover:text-foreground hover:bg-muted border-b border-border"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Admin Hub
+        </Link>
         <nav className="flex-1 p-2 space-y-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;

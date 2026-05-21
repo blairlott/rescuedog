@@ -298,6 +298,18 @@ export const CartDrawer = () => {
     const popup =
       preOpenedPopup ??
       (typeof window !== "undefined" ? window.open("about:blank", "_blank") : null);
+
+    // Fire mid-funnel InitiateCheckout to Meta CAPI (state-weighted server-side)
+    try {
+      const { trackMidfunnelCapi } = await import("@/lib/metaPixel");
+      const { data: { user: authUser } = { user: null } } = await supabase.auth.getUser();
+      void trackMidfunnelCapi({
+        eventName: "InitiateCheckout",
+        valueCents: Math.round(wineTotal * 100),
+        email: authUser?.email ?? null,
+      });
+    } catch { /* non-blocking */ }
+
     // Snapshot for "re-order last shipment"
     try { localStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ items, savedAt: new Date().toISOString() })); } catch {}
 

@@ -168,7 +168,9 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   const discountable = useMemo(() => discountEligibleSubtotal(items as any), [items]);
   // Members get 25% on full cases (12+ bottles), 20% otherwise — VS applies
   // the higher rate automatically via a non-stackable customer-group rule.
-  const memberPct = memberDiscountPercent(totalBottles);
+  // Member tier upgrade (25% on 12+ bottle cases) also uses the
+  // case-eligible count so a sampler can't trigger the higher rate.
+  const memberPct = memberDiscountPercent(caseBottles);
   const memberDiscount = useMemo(
     () => (discountActive ? discountable * (memberPct / 100) : 0),
     [discountActive, discountable, memberPct],

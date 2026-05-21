@@ -418,22 +418,40 @@ export function ForecastTimeline({ lockPlatform, start: startProp, end: endProp,
             </div>
           )}
           {hidePicker ? (
-            <Button size="sm" variant="outline" onClick={generate} disabled={busy}
-              style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7 px-2 ml-1"
-            >
-              <RefreshCw className={`h-3 w-3 mr-1 ${busy ? "animate-spin" : ""}`} />
-              {busy ? "Modeling…" : "Regenerate"}
-            </Button>
+            <>
+              <Button size="sm" variant="outline" onClick={downloadCsv} disabled={mergedChartData.length === 0}
+                style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7 px-2 ml-1"
+                title="Download monthly pro-forma CSV (historical + forecast) for the selected range"
+              >
+                <Download className="h-3 w-3 mr-1" />
+                CSV
+              </Button>
+              <Button size="sm" variant="outline" onClick={generate} disabled={busy}
+                style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7 px-2 ml-1"
+              >
+                <RefreshCw className={`h-3 w-3 mr-1 ${busy ? "animate-spin" : ""}`} />
+                {busy ? "Modeling…" : "Regenerate"}
+              </Button>
+            </>
           ) : (
             <DateRangeControls
               start={start} end={end} setStart={setStart} setEnd={setEnd}
               extraSlot={
-                <Button size="sm" variant="outline" onClick={generate} disabled={busy}
-                  style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7 px-2 ml-1"
-                >
-                  <RefreshCw className={`h-3 w-3 mr-1 ${busy ? "animate-spin" : ""}`} />
-                  {busy ? "Modeling…" : "Regenerate"}
-                </Button>
+                <>
+                  <Button size="sm" variant="outline" onClick={downloadCsv} disabled={mergedChartData.length === 0}
+                    style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7 px-2 ml-1"
+                    title="Download monthly pro-forma CSV (historical + forecast) for the selected range"
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    CSV
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={generate} disabled={busy}
+                    style={{ borderRadius: 0 }} className="uppercase tracking-brand text-[10px] h-7 px-2 ml-1"
+                  >
+                    <RefreshCw className={`h-3 w-3 mr-1 ${busy ? "animate-spin" : ""}`} />
+                    {busy ? "Modeling…" : "Regenerate"}
+                  </Button>
+                </>
               }
             />
           )}

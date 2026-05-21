@@ -31,10 +31,29 @@ interface DecisionInsert {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  // Allow cron (with secret) or admin (via service role-backed call).
+  // Auth: cron passes x-ingest-secret; admin UI passes its user JWT.
   const url = new URL(req.url);
   const provided = req.headers.get("x-ingest-secret") || url.searchParams.get("secret");
-  if (provided !== INGEST_SECRET) {
+  let authed = provided === INGEST_SECRET;
+  if (!authed) {
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (token) {
+      try {
+        const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+          global: { headers: { Authorization: `Bearer ${token}` } },
+          auth: { persistSession: false },
+        });
+        const { data: userRes } = await userClient.auth.getUser();
+        if (userRes?.user) {
+          const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+          const { data: isAdmin } = await adminClient.rpc("is_admin_or_owner", { _user_id: userRes.user.id });
+          authed = !!isAdmin;
+        }
+      } catch { /* ignore, fall through to 401 */ }
+    }
+  }
+  if (!authed) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

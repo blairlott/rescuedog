@@ -54,6 +54,11 @@ Deno.serve(async (req) => {
         "instacart_autopilot_daily_action_cap",
         "instacart_autopilot_allowed_actions",
         "instacart_autopilot_negative_category_allowlist",
+        "instacart_autopilot_max_error_rate_pct",
+        "instacart_autopilot_error_rate_window",
+        "instacart_autopilot_min_roas",
+        "instacart_autopilot_roas_window_days",
+        "instacart_autopilot_min_actions_for_eval",
       ]);
     const cfg: Record<string, any> = {};
     (settings ?? []).forEach((r: any) => { cfg[r.key] = r.value; });
@@ -68,9 +73,68 @@ Deno.serve(async (req) => {
     const negativeAllowlist: string[] = (Array.isArray(cfg.instacart_autopilot_negative_category_allowlist)
       ? cfg.instacart_autopilot_negative_category_allowlist
       : []).map((s: any) => String(s).toLowerCase().trim()).filter(Boolean);
+    const maxErrorRatePct = getNum(cfg.instacart_autopilot_max_error_rate_pct, 25);
+    const errorWindow = Math.max(5, getNum(cfg.instacart_autopilot_error_rate_window, 50));
+    const minRoas = getNum(cfg.instacart_autopilot_min_roas, 1.5);
+    const roasWindowDays = Math.max(1, getNum(cfg.instacart_autopilot_roas_window_days, 7));
+    const minActionsForEval = Math.max(1, getNum(cfg.instacart_autopilot_min_actions_for_eval, 10));
 
     if (!enabled) {
       return J(200, { ok: true, skipped: "autopilot_disabled" });
+    }
+
+    // Helper: trip the kill switch and record reason.
+    const autoStop = async (reason: string, detail: Record<string, unknown>) => {
+      await admin.from("app_settings").upsert([
+        { key: "instacart_autopilot_enabled", value: false },
+        { key: "instacart_autopilot_auto_stopped_at", value: new Date().toISOString() },
+        { key: "instacart_autopilot_auto_stopped_reason", value: { reason, ...detail } },
+      ], { onConflict: "key" });
+      console.warn("instacart-autopilot auto-stop", reason, detail);
+    };
+
+    // Auto-stop #1: error rate over the last N autopilot actions.
+    const { data: recentExec } = await admin.from("ad_execution_log")
+      .select("success")
+      .eq("platform", "instacart")
+      .eq("executor", "autopilot")
+      .order("created_at", { ascending: false })
+      .limit(errorWindow);
+    const sample = recentExec ?? [];
+    if (sample.length >= minActionsForEval) {
+      const failures = sample.filter((r: any) => r.success === false).length;
+      const errPct = (failures / sample.length) * 100;
+      if (errPct > maxErrorRatePct) {
+        await autoStop("error_rate_exceeded", {
+          error_pct: Number(errPct.toFixed(2)),
+          threshold_pct: maxErrorRatePct,
+          window: sample.length,
+          failures,
+        });
+        return J(200, { ok: true, auto_stopped: "error_rate_exceeded", error_pct: errPct, failures, window: sample.length });
+      }
+    }
+
+    // Auto-stop #2: ROAS over the trailing window dropped below threshold.
+    const sinceRoas = new Date(Date.now() - roasWindowDays * 86400_000).toISOString();
+    const { data: campMetrics } = await admin.from("ad_campaigns")
+      .select("spend_mtd_cents,sales_mtd_cents,last_synced_at")
+      .eq("platform_slug", "instacart")
+      .gte("last_synced_at", sinceRoas);
+    const spend = (campMetrics ?? []).reduce((s: number, r: any) => s + (Number(r.spend_mtd_cents) || 0), 0);
+    const sales = (campMetrics ?? []).reduce((s: number, r: any) => s + (Number(r.sales_mtd_cents) || 0), 0);
+    if (spend >= 10_000) { // require $100+ trailing spend before evaluating
+      const roas = sales / spend;
+      if (roas < minRoas) {
+        await autoStop("roas_below_threshold", {
+          roas: Number(roas.toFixed(3)),
+          min_roas: minRoas,
+          window_days: roasWindowDays,
+          spend_cents: spend,
+          sales_cents: sales,
+        });
+        return J(200, { ok: true, auto_stopped: "roas_below_threshold", roas, min_roas: minRoas, spend_cents: spend, sales_cents: sales });
+      }
     }
 
     // Daily cap check.

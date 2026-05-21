@@ -167,6 +167,8 @@ export function SommelierChat() {
         onClick={() => setOpen(true)}
         aria-label="Ask the sommelier"
         className={`fixed z-40 right-4 bottom-24 md:right-6 md:bottom-6 bg-primary text-primary-foreground shadow-lg flex items-center gap-2 px-4 py-3 hover:bg-primary/90 transition-all ${open ? "opacity-0 pointer-events-none" : ""}`}
+
+
       >
         <Wine className="h-4 w-4" />
         <span className="text-sm font-bold">Ask the Sommelier</span>

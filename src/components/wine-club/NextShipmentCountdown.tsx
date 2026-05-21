@@ -1,9 +1,13 @@
 import { Calendar, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getNextShipmentDateForFrequency } from "@/lib/wineClubSchedule";
 
 interface Props {
   /** ISO date string */
   nextShipmentDate: string | null;
+  /** Tier frequency (monthly/quarterly/bi-annual/yearly) — used to recompute
+   *  the next ship date when the stored date is stale or in the past. */
+  tierFrequency?: string | null;
 }
 
 /**
@@ -11,7 +15,7 @@ interface Props {
  * anticipation and gives them a clear window to customize before it ships.
  * Renders nothing when no date is set or the date is in the past.
  */
-export function NextShipmentCountdown({ nextShipmentDate }: Props) {
+export function NextShipmentCountdown({ nextShipmentDate, tierFrequency }: Props) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -19,8 +23,19 @@ export function NextShipmentCountdown({ nextShipmentDate }: Props) {
     return () => clearInterval(t);
   }, []);
 
-  if (!nextShipmentDate) return null;
-  const target = new Date(nextShipmentDate).getTime();
+  // Prefer the stored date, but fall back to (or override with) the tier's
+  // published cadence if the stored value is missing or already in the past.
+  let effectiveDate = nextShipmentDate;
+  const storedTs = effectiveDate ? new Date(effectiveDate).getTime() : NaN;
+  if (!effectiveDate || !Number.isFinite(storedTs) || storedTs - now <= 0) {
+    if (tierFrequency) {
+      effectiveDate = getNextShipmentDateForFrequency(tierFrequency);
+    } else {
+      return null;
+    }
+  }
+
+  const target = new Date(effectiveDate!).getTime();
   if (!Number.isFinite(target)) return null;
   const diffMs = target - now;
   if (diffMs <= 0) return null;
@@ -29,7 +44,7 @@ export function NextShipmentCountdown({ nextShipmentDate }: Props) {
   const days = Math.floor(totalMinutes / (60 * 24));
   const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
 
-  const formatted = new Date(nextShipmentDate).toLocaleDateString("en-US", {
+  const formatted = new Date(effectiveDate!).toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",

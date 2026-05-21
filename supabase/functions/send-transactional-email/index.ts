@@ -172,6 +172,71 @@ Deno.serve(async (req) => {
   // Create Supabase client with service role (bypasses RLS)
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // ========================================================================
+  // PRE-LAUNCH TEST MODE
+  // Reroutes all transactional sends to the configured test recipients
+  // (default: Blair + Lindy). Configured in app_settings['email_test_mode'].
+  // S&S templates (and any template listed in exempt_templates) are NOT
+  // affected and follow normal routing. Disable before launch.
+  // ========================================================================
+  try {
+    const { data: tmRow } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'email_test_mode')
+      .maybeSingle()
+    const tm = (tmRow?.value || {}) as {
+      enabled?: boolean
+      recipients?: string[]
+      exempt_templates?: string[]
+    }
+    const exempt = new Set((tm.exempt_templates || []).map((t) => t.toLowerCase()))
+    const testRecipients = (tm.recipients || []).filter(Boolean)
+    if (tm.enabled && testRecipients.length > 0 && !exempt.has(templateName.toLowerCase())) {
+      console.log('[email_test_mode] Rerouting', {
+        templateName,
+        originalRecipient: effectiveRecipient,
+        testRecipients,
+      })
+      // Fan out to all test recipients; first one uses the original
+      // idempotency key, subsequent get a suffix to remain unique.
+      const results = await Promise.allSettled(
+        testRecipients.map((to, i) =>
+          supabase.functions.invoke('send-transactional-email', {
+            body: {
+              templateName,
+              recipientEmail: to,
+              idempotencyKey: `${idempotencyKey}:tm:${i}`,
+              templateData: {
+                ...templateData,
+                __testModeOriginalRecipient: effectiveRecipient,
+              },
+            },
+          })
+        )
+      )
+      // Mark the original send as suppressed-by-test-mode for audit
+      await supabase.from('email_send_log').insert({
+        message_id: messageId,
+        template_name: templateName,
+        recipient_email: effectiveRecipient,
+        status: 'suppressed',
+        error_message: 'rerouted by email_test_mode',
+      })
+      return new Response(
+        JSON.stringify({
+          success: true,
+          test_mode: true,
+          rerouted_to: testRecipients,
+          fanout: results.map((r) => r.status),
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+  } catch (e) {
+    console.warn('[email_test_mode] lookup failed, proceeding with normal routing', e)
+  }
+
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase
     .from('suppressed_emails')
@@ -431,7 +496,10 @@ Deno.serve(async (req) => {
   // 6. BCC fallback: the Lovable email SDK does not support a `bcc` field, so
   // we enqueue a second copy to info@ for customer-facing sends. Skip if the
   // primary recipient is already info@ to avoid duplicate sends.
-  if (isCustomerFacing && effectiveRecipient.toLowerCase() !== BCC_EMAIL.toLowerCase()) {
+  // Also skip when this send is itself a test-mode reroute (templateData carries
+  // `__testModeOriginalRecipient`) — we don't want to BCC info@ during testing.
+  const isTestModeReroute = Boolean(templateData && (templateData as any).__testModeOriginalRecipient)
+  if (isCustomerFacing && !isTestModeReroute && effectiveRecipient.toLowerCase() !== BCC_EMAIL.toLowerCase()) {
     const bccMessageId = crypto.randomUUID()
     const bccSubject = `[BCC: ${effectiveRecipient}] ${resolvedSubject}`
 

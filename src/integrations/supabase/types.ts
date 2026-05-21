@@ -4578,6 +4578,54 @@ export type Database = {
         }
         Relationships: []
       }
+      form_email_inventory: {
+        Row: {
+          active: boolean
+          audience: string
+          created_at: string
+          form_name: string
+          id: string
+          notes: string | null
+          page_path: string | null
+          recipient: string
+          sort_order: number
+          template_name: string | null
+          test_mode_exempt: boolean
+          trigger_event: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          audience: string
+          created_at?: string
+          form_name: string
+          id?: string
+          notes?: string | null
+          page_path?: string | null
+          recipient: string
+          sort_order?: number
+          template_name?: string | null
+          test_mode_exempt?: boolean
+          trigger_event: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          audience?: string
+          created_at?: string
+          form_name?: string
+          id?: string
+          notes?: string | null
+          page_path?: string | null
+          recipient?: string
+          sort_order?: number
+          template_name?: string | null
+          test_mode_exempt?: boolean
+          trigger_event?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       frequency_cap_status: {
         Row: {
           capped: boolean

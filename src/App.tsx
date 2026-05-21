@@ -68,6 +68,7 @@ const CmsDashboard = lazy(() => import("./pages/CmsDashboard"));
 const CmsExperimentsPage = lazy(() => import("./pages/CmsExperimentsPage"));
 const CmsDiscountsPage = lazy(() => import("./pages/CmsDiscountsPage"));
 const CmsEmailsPage = lazy(() => import("./pages/CmsEmailsPage"));
+const CmsFormsPage = lazy(() => import("./pages/CmsFormsPage"));
 const CmsMediaPage = lazy(() => import("./pages/CmsMediaPage"));
 const WineClubAdminPage = lazy(() => import("./pages/WineClubAdminPage"));
 const WineClubLoginPage = lazy(() => import("./pages/WineClubLoginPage"));
@@ -260,6 +261,7 @@ function AppContent() {
       <Route path="/cms/experiments" element={<CmsExperimentsPage />} />
       <Route path="/cms/discounts" element={<CmsDiscountsPage />} />
       <Route path="/cms/emails" element={<CmsEmailsPage />} />
+      <Route path="/cms/forms" element={<CmsFormsPage />} />
       <Route path="/cms/media" element={<CmsMediaPage />} />
       <Route path="/crm" element={<CrmLayout />}>
         <Route index element={<CrmDashboard />} />

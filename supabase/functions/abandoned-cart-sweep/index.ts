@@ -6,6 +6,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sendCapiEventSafe } from "../_shared/metaCapiEvent.ts";
+import { isNotificationEnabled } from "../_shared/devToggles.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

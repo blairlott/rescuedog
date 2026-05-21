@@ -6,6 +6,7 @@ import { Loader2, ExternalLink, Users, AlertTriangle, Link2Off, CalendarDays, Ch
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ImpactHealthCard } from "@/components/admin/ImpactHealthCard";
+import { AmbassadorPerformanceTable } from "@/components/crm/AmbassadorPerformanceTable";
 
 function StatTile({ icon: Icon, label, value, sub, tone = "default" }: { icon: any; label: string; value: number | string; sub?: string; tone?: "default" | "warn" | "success" }) {
   const toneClass = tone === "warn" ? "border-destructive/40 bg-destructive/5" : tone === "success" ? "border-emerald-500/40 bg-emerald-500/5" : "border-border bg-card";
@@ -79,6 +80,8 @@ export default function CrmAmbassadorsPage() {
       </div>
 
       <ImpactHealthCard />
+
+      <AmbassadorPerformanceTable />
 
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h2 className="text-lg font-bold uppercase">Applications & Roster</h2>

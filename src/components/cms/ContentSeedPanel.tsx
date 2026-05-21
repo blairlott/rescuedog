@@ -6,7 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Upload, Trash2, Loader2, ImagePlus, Copy, ImageIcon } from "lucide-react";
+import { Upload, Trash2, Loader2, ImagePlus, Copy, ImageIcon, Wand2 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 type SeedRow = {
   id: string;
@@ -20,6 +23,8 @@ type SeedRow = {
   brand_lockup: string | null;
   uploaded_by: string | null;
   created_at: string;
+  refined?: boolean;
+  parent_seed_id?: string | null;
 };
 
 const BUCKET = "creative-seeds";
@@ -38,6 +43,7 @@ export function ContentSeedPanel() {
   const [tagsInput, setTagsInput] = useState("");
   const [filter, setFilter] = useState<"all" | "wine" | "merch" | "shared">("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [refiningId, setRefiningId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -123,6 +129,22 @@ export function ContentSeedPanel() {
   async function copyUrl(url: string) {
     await navigator.clipboard.writeText(url);
     toast({ title: "URL copied", description: "Paste into a generation brief as reference." });
+  }
+
+  async function refine(row: SeedRow, mode: string) {
+    setRefiningId(row.id);
+    try {
+      const { error } = await supabase.functions.invoke("capi-creative-refine", {
+        body: { seed_id: row.id, mode },
+      });
+      if (error) throw error;
+      toast({ title: "Refined", description: "New variant added to the library." });
+      load();
+    } catch (e: any) {
+      toast({ title: "Refine failed", description: e.message, variant: "destructive" });
+    } finally {
+      setRefiningId(null);
+    }
   }
 
   const filtered = rows.filter((r) => filter === "all" ? true : r.brand_lockup === filter);
@@ -219,6 +241,26 @@ export function ContentSeedPanel() {
                   <Button size="sm" variant="outline" className="flex-1 rounded-none h-7 px-2" onClick={() => copyUrl(r.public_url)}>
                     <Copy className="h-3 w-3" />
                   </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-none h-7 px-2"
+                        disabled={refiningId === r.id}
+                        title="AI refine / reframe"
+                      >
+                        {refiningId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="rounded-none">
+                      <DropdownMenuItem onClick={() => refine(r, "enhance")}>Enhance for impact</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => refine(r, "cinematic")}>Cinematic recolor</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => refine(r, "reframe_hero")}>Reframe → Hero 16:9</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => refine(r, "reframe_pdp")}>Reframe → PDP 4:5</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => refine(r, "reframe_square")}>Reframe → Square 1:1</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   {canDelete && (
                     <Button size="sm" variant="outline" className="rounded-none h-7 px-2" onClick={() => remove(r)}>
                       <Trash2 className="h-3 w-3" />

@@ -1254,6 +1254,39 @@ export type Database = {
           },
         ]
       }
+      ad_reserves: {
+        Row: {
+          ad_id: string
+          ad_name: string | null
+          adset_id: string
+          created_at: string
+          id: string
+          platform: string
+          rotation_order: number
+          used_at: string | null
+        }
+        Insert: {
+          ad_id: string
+          ad_name?: string | null
+          adset_id: string
+          created_at?: string
+          id?: string
+          platform?: string
+          rotation_order?: number
+          used_at?: string | null
+        }
+        Update: {
+          ad_id?: string
+          ad_name?: string | null
+          adset_id?: string
+          created_at?: string
+          id?: string
+          platform?: string
+          rotation_order?: number
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       ad_saturation_curves: {
         Row: {
           channel_id: string | null
@@ -10303,6 +10336,146 @@ export type Database = {
           started_at?: string
           started_by?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      z8_handoff_probes: {
+        Row: {
+          ad_id: string | null
+          ad_name: string | null
+          created_at: string
+          desktop_status: number | null
+          final_url: string | null
+          id: string
+          landing_url: string | null
+          mobile_status: number | null
+          notes: string | null
+          reached_vinoshipper: boolean | null
+          run_id: string | null
+        }
+        Insert: {
+          ad_id?: string | null
+          ad_name?: string | null
+          created_at?: string
+          desktop_status?: number | null
+          final_url?: string | null
+          id?: string
+          landing_url?: string | null
+          mobile_status?: number | null
+          notes?: string | null
+          reached_vinoshipper?: boolean | null
+          run_id?: string | null
+        }
+        Update: {
+          ad_id?: string | null
+          ad_name?: string | null
+          created_at?: string
+          desktop_status?: number | null
+          final_url?: string | null
+          id?: string
+          landing_url?: string | null
+          mobile_status?: number | null
+          notes?: string | null
+          reached_vinoshipper?: boolean | null
+          run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "z8_handoff_probes_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "z8_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      z8_kill_switch: {
+        Row: {
+          enabled: boolean
+          id: number
+          paused_at: string | null
+          paused_by: string | null
+          paused_reason: string | null
+          resumed_at: string | null
+          resumed_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          id?: number
+          paused_at?: string | null
+          paused_by?: string | null
+          paused_reason?: string | null
+          resumed_at?: string | null
+          resumed_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          id?: number
+          paused_at?: string | null
+          paused_by?: string | null
+          paused_reason?: string | null
+          resumed_at?: string | null
+          resumed_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      z8_runs: {
+        Row: {
+          checkout_dropoffs_flagged: number
+          daily_budget_freed_cents: number
+          dry_run: boolean
+          error_message: string | null
+          errors: number
+          finished_at: string | null
+          id: string
+          kill_switch_enabled: boolean
+          kills_executed: number
+          retargeting_kills_executed: number
+          rollbacks_executed: number
+          rotations_executed: number
+          scales_executed: number
+          started_at: string
+          status: string
+          summary: Json
+        }
+        Insert: {
+          checkout_dropoffs_flagged?: number
+          daily_budget_freed_cents?: number
+          dry_run?: boolean
+          error_message?: string | null
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          kill_switch_enabled?: boolean
+          kills_executed?: number
+          retargeting_kills_executed?: number
+          rollbacks_executed?: number
+          rotations_executed?: number
+          scales_executed?: number
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Update: {
+          checkout_dropoffs_flagged?: number
+          daily_budget_freed_cents?: number
+          dry_run?: boolean
+          error_message?: string | null
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          kill_switch_enabled?: boolean
+          kills_executed?: number
+          retargeting_kills_executed?: number
+          rollbacks_executed?: number
+          rotations_executed?: number
+          scales_executed?: number
+          started_at?: string
+          status?: string
+          summary?: Json
         }
         Relationships: []
       }

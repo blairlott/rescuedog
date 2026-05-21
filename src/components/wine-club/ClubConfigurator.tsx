@@ -177,7 +177,7 @@ export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
             </div>
             <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-sm uppercase tracking-brand flex-shrink-0">
               <Percent className="h-3 w-3" />
-              {matchedTier.discount_percent}% Off
+              {(matchedTier.shipment_discount_percent ?? matchedTier.discount_percent)}% Off Shipments
             </span>
           </div>
 
@@ -186,7 +186,7 @@ export function ClubConfigurator({ tiers, onSelect }: ClubConfiguratorProps) {
               <Check className="h-4 w-4 text-primary flex-shrink-0" /> Free to join
             </li>
             <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary flex-shrink-0" /> {matchedTier.discount_percent}% off à la carte orders
+              <Check className="h-4 w-4 text-primary flex-shrink-0" /> 20% off à la carte (25% on full cases)
             </li>
             <li className="flex items-center gap-2">
               <Check className="h-4 w-4 text-primary flex-shrink-0" /> Shipping included on club shipments

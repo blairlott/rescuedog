@@ -208,19 +208,6 @@ const WineClubPage = () => {
                       </p>
                     )}
 
-                    <div className="mt-10 pt-8 border-t border-border text-center">
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Looking to gift a membership instead?
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setGiftDialogOpen(true)}
-                        className="gap-2 uppercase tracking-brand text-xs font-bold"
-                      >
-                        <Gift className="h-4 w-4" /> Gift a Membership
-                      </Button>
-                    </div>
                 </>
               </div>
             </section>

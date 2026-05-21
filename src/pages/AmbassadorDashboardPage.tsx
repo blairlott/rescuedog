@@ -57,7 +57,7 @@ export default function AmbassadorDashboardPage() {
   }, [user, loading, navigate]);
 
   if (loading || loadingData || !profile) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+    return <div className="min-h-dvh flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   }
 
   const onSaveProfile = async () => {
@@ -77,7 +77,7 @@ export default function AmbassadorDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 max-w-5xl mx-auto py-10 px-4 w-full">
         <div className="flex items-center justify-between mb-8 flex-wrap gap-3">

@@ -65,7 +65,7 @@ const WinesPage = () => {
   }, [products, activeCategory]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Seo
         title="Shop Wines"
         description="Award-winning Lodi wines — Cabernet, Red Blend, Sauvignon Blanc, Chardonnay, Rosé and Sparkling. Flat $9.99 shipping on 6+ bottles, included on 12+."

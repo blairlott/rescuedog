@@ -96,7 +96,7 @@ const CmsLoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-secondary px-4">
+    <div className="min-h-dvh flex items-center justify-center bg-secondary px-4">
       <div className="w-full max-w-md">
         <div className="bg-background border border-border p-8 shadow-sm">
           <div className="text-center mb-8">

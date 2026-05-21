@@ -123,7 +123,7 @@ export default function StoreLocatorPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1">
         {/* Hero */}

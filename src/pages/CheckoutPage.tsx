@@ -235,7 +235,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0 && !intent) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="min-h-dvh flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
           <h1 className="text-2xl font-bold">Your cart is empty</h1>
           <p className="text-muted-foreground">Add some wine or merch before checking out.</p>
@@ -321,14 +321,14 @@ export default function CheckoutPage() {
 
   if (!stripePromise) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="min-h-dvh flex items-center justify-center p-6">
         <p className="text-destructive">Payments are not configured. Please contact support.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8">
         {/* LEFT: form / payment */}
         <div className="space-y-6">

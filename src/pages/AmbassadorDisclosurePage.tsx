@@ -3,7 +3,7 @@ import { Footer } from "@/components/Footer";
 
 export default function AmbassadorDisclosurePage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 max-w-3xl mx-auto py-12 px-4">
         <h1 className="text-3xl font-bold uppercase mb-6">Ambassador Disclosure & Guidelines</h1>

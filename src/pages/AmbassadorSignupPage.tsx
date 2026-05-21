@@ -66,7 +66,7 @@ export default function AmbassadorSignupPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-dvh flex flex-col">
         <Header />
         <main className="flex-1 max-w-md mx-auto py-16 px-4 text-center">
           <h1 className="text-2xl font-bold uppercase mb-4">Sign In to Apply</h1>
@@ -125,7 +125,7 @@ export default function AmbassadorSignupPage() {
   if (hasProfile) return null;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 max-w-2xl mx-auto py-12 px-4">
         <h1 className="text-3xl font-bold uppercase mb-2">Ambassador Application</h1>

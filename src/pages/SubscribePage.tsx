@@ -90,7 +90,7 @@ const SubscribePage = () => {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-dvh flex flex-col">
         <Header />
         <main className="flex-1 flex items-center justify-center py-16">
           <div className="text-center max-w-md mx-auto px-4">
@@ -119,7 +119,7 @@ const SubscribePage = () => {
   const selectedTierData = tiers.find(t => t.id === selectedTier)!;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1">
         {/* Hero */}

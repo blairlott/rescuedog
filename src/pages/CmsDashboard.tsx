@@ -348,7 +348,7 @@ const CmsDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-secondary">
+      <div className="min-h-dvh flex items-center justify-center bg-secondary">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
@@ -378,7 +378,7 @@ const CmsDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-secondary">
+    <div className="min-h-dvh bg-secondary">
       {/* Header */}
       <header className="bg-background border-b border-border">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">

@@ -101,7 +101,7 @@ const WineClubPage = () => {
     : null;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Seo
         title="Wine Club"
         description="Join the Rescue Dog Wines club — free to join, 20% off (25% on full cases), shipping included on club shipments, cancel anytime. Every shipment supports rescue dogs."

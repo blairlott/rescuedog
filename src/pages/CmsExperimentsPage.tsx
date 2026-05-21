@@ -304,12 +304,12 @@ export default function CmsExperimentsPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    return <div className="flex items-center justify-center min-h-dvh"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
   if (!isCmsEditor) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">

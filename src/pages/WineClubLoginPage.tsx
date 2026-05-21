@@ -48,7 +48,7 @@ export default function WineClubLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-3">
           <Wine className="h-12 w-12 text-primary mx-auto" />

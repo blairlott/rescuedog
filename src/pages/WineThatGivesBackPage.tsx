@@ -40,7 +40,7 @@ const FAQS = [
 
 export default function WineThatGivesBackPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Seo
         title="Wine That Gives Back — Charity Wine That Helps Rescue Dogs"
         description="Charity wine done right. 50% of profits from every bottle support 501(c)(3) dog-rescue partners. Award-winning, sustainable Lodi wines that compete on quality — not just cause."

@@ -133,7 +133,7 @@ export default function CmsMediaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-dvh bg-background p-6">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

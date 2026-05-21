@@ -119,7 +119,7 @@ const WholesalePage = () => {
   const selectedRegion = regions.find(r => r.value === formData.region);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1">
         <PageHero

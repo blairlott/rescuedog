@@ -9,7 +9,7 @@ const BlogPage = () => {
   const { data: posts, isLoading } = useWpPosts(20);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 max-w-3xl">

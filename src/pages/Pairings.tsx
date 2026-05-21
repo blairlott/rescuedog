@@ -17,7 +17,7 @@ export default function Pairings() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-12 md:py-20">

@@ -27,11 +27,11 @@ export default function PairingDetail() {
   const { data: product } = useProductByHandle(recipe?.recommended_product_handle || "");
 
   if (recipe === undefined) {
-    return <div className="min-h-screen flex flex-col"><Header /><div className="flex-1 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div></div>;
+    return <div className="min-h-dvh flex flex-col"><Header /><div className="flex-1 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div></div>;
   }
   if (recipe === null) {
     return (
-      <div className="min-h-screen flex flex-col"><Header />
+      <div className="min-h-dvh flex flex-col"><Header />
         <div className="flex-1 flex items-center justify-center text-center">
           <div>
             <h1 className="font-display text-2xl font-bold mb-3">Pairing not found</h1>
@@ -43,7 +43,7 @@ export default function PairingDetail() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1">
         <article className="container mx-auto px-4 py-10 md:py-16 max-w-3xl">

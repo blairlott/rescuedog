@@ -12,7 +12,7 @@ const ShopPage = () => {
   const { data: products, isLoading } = useProducts(50);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
 
       <PageHero

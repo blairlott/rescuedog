@@ -28,11 +28,11 @@ const GiftCertificatePrintPage = () => {
     if (gift) setTimeout(() => window.print(), 400);
   }, [gift]);
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
-  if (!gift) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Gift not found.</div>;
+  if (isLoading) return <div className="min-h-dvh flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+  if (!gift) return <div className="min-h-dvh flex items-center justify-center text-muted-foreground">Gift not found.</div>;
 
   return (
-    <div className="min-h-screen bg-background p-8 print:p-0">
+    <div className="min-h-dvh bg-background p-8 print:p-0">
       <div className="no-print max-w-2xl mx-auto mb-4 flex justify-end">
         <Button onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" />Print Again</Button>
       </div>

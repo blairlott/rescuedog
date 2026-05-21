@@ -219,7 +219,10 @@ export default function CheckoutPage() {
     })),
   );
   const memberPct = memberDiscountPercent(caseBottles);
-  const memberSavingsCents = Math.round(eligibleWineSubtotal * 100 * (memberPct / 100));
+  const memberWineSavingsCents = Math.round(eligibleWineSubtotal * 100 * (memberPct / 100));
+  const MEMBER_MERCH_PCT = 10;
+  const memberMerchSavingsCents = Math.round(merchCents * (MEMBER_MERCH_PCT / 100));
+  const memberSavingsCents = memberWineSavingsCents + memberMerchSavingsCents;
   const memberTotalCents = subtotalCents - memberSavingsCents;
 
   const canSubmit = useMemo(() => {

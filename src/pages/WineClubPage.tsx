@@ -44,6 +44,7 @@ const WineClubPage = () => {
   const [editFaqIdx, setEditFaqIdx] = useState<number | null>(null);
   const [selectedTier, setSelectedTier] = useState<WineClubTier | null>(null);
   const [giftDialogOpen, setGiftDialogOpen] = useState(false);
+  const [giftMode, setGiftMode] = useState(false);
 
   const { user } = useCustomerAuth();
   const navigate = useNavigate();
@@ -169,6 +170,8 @@ const WineClubPage = () => {
                     onBack={() => setSelectedTier(null)}
                     onSubmit={handleJoin}
                     isSubmitting={joinClub.isPending}
+                    lockGift={giftMode}
+                    backLabel={giftMode ? "Back to gift selection" : undefined}
                   />
                 ) : (
                   <>
@@ -187,7 +190,12 @@ const WineClubPage = () => {
                         <div className="border border-border p-6 animate-pulse h-40 w-full max-w-2xl bg-muted/30" />
                       </div>
                     ) : tiers ? (
-                      <ClubConfigurator tiers={tiers} onSelect={handleSelectTier} />
+                      <ClubConfigurator
+                        tiers={tiers}
+                        onSelect={handleSelectTier}
+                        isGift={giftMode}
+                        onGiftChange={setGiftMode}
+                      />
                     ) : null}
 
                     {!user && (

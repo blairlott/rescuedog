@@ -26,7 +26,7 @@ interface ClubSignupFormProps {
 }
 
 export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift = false, backLabel }: ClubSignupFormProps) {
-  const { user } = useCustomerAuth();
+  const { user, loading: authLoading } = useCustomerAuth();
   const [handoffOpen, setHandoffOpen] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState<JoinClubData | null>(null);
   const [firstName, setFirstName] = useState("");
@@ -52,6 +52,14 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Wait for the auth session to resolve before deciding whether to
+    // create an account — otherwise a signed-in member could be briefly
+    // treated as a guest and prompted for credentials.
+    if (authLoading) {
+      toast.info("Just a sec — checking your session…");
+      return;
+    }
 
     // No account yet? Create one inline before saving the membership.
     if (!user) {
@@ -379,8 +387,10 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
           For gifts we still want the recipient's name (captured above) but the
           giver's name is optional and Vinoshipper will prompt for it. */}
 
-      {/* Inline account creation for guests */}
-      {!user && (
+      {/* Inline account creation for guests only — never shown to signed-in users.
+          Hidden while auth is still resolving so members aren't briefly asked to
+          "sign in to rejoin" before their session loads. */}
+      {!user && !authLoading && (
         <div className="border border-border bg-muted/30 p-5 mb-8 space-y-4">
           <div>
             <div className="flex items-center justify-between gap-3 flex-wrap">

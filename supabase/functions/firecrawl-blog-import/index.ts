@@ -98,24 +98,35 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const authHeader = req.headers.get("Authorization") ?? "";
+  // Service-role client — do NOT forward the request's Authorization header,
+  // it may be a shared-secret bearer (not a JWT) which postgrest rejects.
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
   );
 
   // Admin gate
-  const userClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
-  const { data: { user } } = await userClient.auth.getUser();
-  if (!user) return new Response(JSON.stringify({ error: "auth required" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-  const { data: isOwner } = await supabase.rpc("has_role", { _user_id: user.id, _role: "owner" });
-  if (!isAdmin && !isOwner) {
-    return new Response(JSON.stringify({ error: "admin required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  // Allow service-role bearer, shared ingest-secret bearer (server-to-server
+  // / scheduled runs), or admin/owner JWT.
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const sharedSecret = Deno.env.get("KENNEL_INGEST_SECRET") ?? "";
+  const presented = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const isServerToServer =
+    (serviceKey && presented === serviceKey) ||
+    (sharedSecret && presented === sharedSecret);
+  if (!isServerToServer) {
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) return new Response(JSON.stringify({ error: "auth required" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+    const { data: isOwner } = await supabase.rpc("has_role", { _user_id: user.id, _role: "owner" });
+    if (!isAdmin && !isOwner) {
+      return new Response(JSON.stringify({ error: "admin required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
   }
 
   let body: any = {};
@@ -126,12 +137,41 @@ Deno.serve(async (req) => {
   // 1. Scrape index, collect candidate post URLs
   const index = await fcScrape(indexUrl, { formats: ["links"], onlyMainContent: false, waitFor: 3000 });
   const links: string[] = Array.isArray(index?.links) ? index.links : [];
+  // Reserved top-level section paths that should never be treated as a blog post.
+  const RESERVED = new Set([
+    "shop", "shop-wine", "wines", "wine", "club", "wine-club", "store-locator",
+    "about", "events", "news", "vineyard", "trade-and-media", "contact",
+    "mission", "donation", "media-marketing", "affiliates", "policies",
+    "blog", "stories", "post", "product", "event", "category", "tag", "author",
+    "page", "cart", "checkout", "account", "login", "signup", "the-pack",
+    "wp-content", "wp-admin", "wp-json", "feed",
+  ]);
   const postUrls = Array.from(new Set(
     links
       .filter((u) => typeof u === "string")
-      .filter((u) => /rescuedogwines\.com\/(news|blog|stories|post)\//i.test(u))
-      .filter((u) => slugFromUrl(u).length > 3)
+      .filter((u) => {
+        try {
+          const x = new URL(u);
+          if (!/(^|\.)rescuedogwines\.com$/i.test(x.hostname)) return false;
+          const parts = x.pathname.split("/").filter(Boolean);
+          if (parts.length === 0) return false;
+          // Allow either /news/<slug>, /blog/<slug>, or root-level <slug>.
+          if (parts.length === 1) {
+            const slug = parts[0].toLowerCase();
+            if (RESERVED.has(slug)) return false;
+            // Require a slug-like shape (contains a dash) so we skip pages
+            // like /about, /shop, etc.
+            if (!/[-%]/.test(slug)) return false;
+            return slug.length > 3;
+          }
+          if (["news", "blog", "stories", "post"].includes(parts[0].toLowerCase())) {
+            return parts[1] && parts[1].length > 3;
+          }
+          return false;
+        } catch { return false; }
+      })
       .filter((u) => !/\/page\/\d+/i.test(u))
+      .filter((u) => !/\.(jpg|jpeg|png|gif|webp|mp4|webm|pdf|svg)(\?|$)/i.test(u))
   )).slice(0, limit);
 
   const results: any[] = [];

@@ -29,8 +29,8 @@ const DEFAULTS: CartSettings = {
   merchFreeShippingThreshold: 150,
   halfCaseCount: 6,
   fullCaseCount: 12,
-  fullCaseDiscount: 10,
-  clubDiscount: 20,
+  fullCaseDiscount: 20,
+  clubDiscount: 25,
   caseDiscountCode: "",
   memberGroupId: "",
 };

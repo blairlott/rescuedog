@@ -230,55 +230,77 @@ Deno.serve(async (req) => {
 
     const series: any[] = [];
     let cumSpend = 0, cumRev = 0;
-    // ---- Q4 historical anchor ---------------------------------------------
-    // OND 2026 forecast must reflect prior Q4 peaks (BFCM/holiday), not the
-    // currently-paused budget baseline. Find the best historical Oct/Nov/Dec
-    // monthly revenue+spend from the 24-month seasonal window and project
-    // forward at 100%+ YoY growth (DTC norm: EoY typically doubles).
-    const q4History = new Map<string, { spend: number; revenue: number }>(); // ym -> totals
+    // ---- Q4 historical anchor (data-derived, no hardcoded uplift) ---------
+    // Wine + gifting are heavily seasonal — Q4 (OND) needs to be anchored to
+    // prior-Q4 actuals, not a depressed off-season baseline. We compute YoY
+    // growth from year-over-year Q4 deltas (apples-to-apples) instead of
+    // assuming a fixed growth rate.
+    type Q4Totals = { spend: number; revenue: number };
+    const q4ByYearMonth = new Map<string, Q4Totals>(); // YYYY-MM -> totals
     for (const d of seasonDates) {
       const m = Number(d.slice(5, 7));
       if (m !== 10 && m !== 11 && m !== 12) continue;
       const ym = d.slice(0, 7);
-      const cur = q4History.get(ym) ?? { spend: 0, revenue: 0 };
+      const cur = q4ByYearMonth.get(ym) ?? { spend: 0, revenue: 0 };
       const day = seasonByDate.get(d)!;
       cur.spend += day.spend; cur.revenue += day.revenue;
-      q4History.set(ym, cur);
+      q4ByYearMonth.set(ym, cur);
     }
-    const q4PeakByMonth: Record<number, { spend: number; revenue: number; year: number }> = {};
-    for (const [ym, v] of q4History.entries()) {
-      const m = Number(ym.slice(5, 7));
+    // Per-year Q4 totals (revenue + spend) for years that have all 3 OND months.
+    const q4ByYear = new Map<number, Q4Totals & { monthsPresent: number }>();
+    for (const [ym, v] of q4ByYearMonth.entries()) {
       const y = Number(ym.slice(0, 4));
-      const cur = q4PeakByMonth[m];
-      if (!cur || v.revenue > cur.revenue) q4PeakByMonth[m] = { ...v, year: y };
+      const cur = q4ByYear.get(y) ?? { spend: 0, revenue: 0, monthsPresent: 0 };
+      cur.spend += v.spend; cur.revenue += v.revenue; cur.monthsPresent += 1;
+      q4ByYear.set(y, cur);
     }
-    // Project forward at YoY growth per year since the peak.
-    const yoyGrowth = 1.0; // +100% YoY (user-stated DTC EoY norm)
-    const q4FloorMonthly = (year: number, monthIdx0: number) => {
-      const monthNum = monthIdx0 + 1; // 1-indexed
-      const peak = q4PeakByMonth[monthNum];
-      if (!peak) return null;
-      const yearsAhead = Math.max(0, year - peak.year);
-      const growthMult = Math.pow(1 + yoyGrowth, yearsAhead);
-      return {
-        spendDay: (peak.spend * growthMult) / 30,
-        revDay:   (peak.revenue * growthMult) / 30,
-      };
-    };
-    // Planning uplift: restored budgets + improved ROAS in OND 2026 (Q4 push).
-    // Spend and ROAS multipliers applied on top of seasonality, peaking in Nov.
-    // DTC EoY pattern: Q4 revenue typically runs 2x+ baseline. Uplift compounds
-    // restored budgets with improved ROAS, peaking Nov (BFCM + Giving Tuesday).
-    const ondUplift = (d: Date): { spend: number; roas: number } => {
-      const y = d.getUTCFullYear();
-      const m = d.getUTCMonth(); // 0-indexed
-      if (y >= 2026 && (m === 9 || m === 10 || m === 11)) {
-        // Per-month relative weight against the Q4 floor; Nov peaks.
-        if (m === 9)  return { spend: 0.85, roas: 1.20 };
-        if (m === 10) return { spend: 1.15, roas: 1.35 }; // Nov peak
-        if (m === 11) return { spend: 1.00, roas: 1.25 };
+    // Measure YoY growth from CONSECUTIVE prior Q4s with complete data.
+    // Geometric mean = apples-to-apples compounding rate. Clamp to a sane
+    // range so a single anomalous year can't blow up multi-year projections.
+    const sortedYears = Array.from(q4ByYear.keys())
+      .filter((y) => (q4ByYear.get(y)!.monthsPresent >= 2) && q4ByYear.get(y)!.revenue > 0)
+      .sort((a, b) => a - b);
+    const yoyDeltas: number[] = [];
+    for (let i = 1; i < sortedYears.length; i++) {
+      const cur = q4ByYear.get(sortedYears[i])!.revenue;
+      const prev = q4ByYear.get(sortedYears[i - 1])!.revenue;
+      if (prev > 0 && cur > 0 && sortedYears[i] - sortedYears[i - 1] === 1) {
+        yoyDeltas.push(cur / prev);
       }
-      return { spend: 1, roas: 1 };
+    }
+    const measuredYoy = yoyDeltas.length > 0
+      ? Math.pow(yoyDeltas.reduce((a, b) => a * b, 1), 1 / yoyDeltas.length) - 1
+      : 0;
+    // Clamp: a single Q4 can be very volatile; cap at +75%/-25% YoY for
+    // multi-year planning. (Wine/gift seasonal brands rarely sustain >75% YoY.)
+    const q4YoyGrowth = Math.max(-0.25, Math.min(0.75, measuredYoy));
+    // Reference Q4: average of the last 2 years (or whatever exists). Averaging
+    // smooths anomalies; using a single peak overstates the floor.
+    const refYears = sortedYears.slice(-2);
+    const refMonth: Record<number, { spend: number; revenue: number; year: number; n: number }> = {};
+    for (const y of refYears) {
+      for (const m of [10, 11, 12]) {
+        const ym = `${y}-${String(m).padStart(2, "0")}`;
+        const v = q4ByYearMonth.get(ym);
+        if (!v) continue;
+        const cur = refMonth[m] ?? { spend: 0, revenue: 0, year: y, n: 0 };
+        cur.spend += v.spend; cur.revenue += v.revenue; cur.n += 1;
+        cur.year = Math.max(cur.year, y);
+        refMonth[m] = cur;
+      }
+    }
+    const q4FloorMonthly = (year: number, monthIdx0: number) => {
+      const monthNum = monthIdx0 + 1;
+      const ref = refMonth[monthNum];
+      if (!ref || ref.n === 0) return null;
+      const yearsAhead = Math.max(0, year - ref.year);
+      const growthMult = Math.pow(1 + q4YoyGrowth, yearsAhead);
+      const avgSpend = ref.spend / ref.n;
+      const avgRev   = ref.revenue / ref.n;
+      return {
+        spendDay: (avgSpend * growthMult) / 30,
+        revDay:   (avgRev * growthMult) / 30,
+      };
     };
     for (let h = 1; h <= horizon; h++) {
       const futureDate = new Date(lastDate.getTime() + h * 86400000);

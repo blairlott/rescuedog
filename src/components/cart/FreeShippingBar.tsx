@@ -11,7 +11,7 @@ interface FreeShippingBarProps {
 }
 
 export function FreeShippingBar({ totalBottles, cartTotal = 0, mode = "wine" }: FreeShippingBarProps) {
-  const { freeShippingBottleCount, merchFreeShippingThreshold, fullCaseCount, fullCaseDiscount } = useCartSettings();
+  const { merchFreeShippingThreshold, fullCaseCount, fullCaseDiscount } = useCartSettings();
   const { isMember, discountPercent } = useIsMember();
   const isMerch = mode === "merch";
 

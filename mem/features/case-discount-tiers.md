@@ -1,12 +1,12 @@
 ---
 name: Case Discount Tiers
-description: Public 10% case discount, Wine Club members get 20% — protects margin and makes membership valuable
+description: Public 20% case discount (shipping included), Wine Club members get 25% on full case
 type: feature
 ---
 
 ## Rule
-- **Guests / non-members:** 10% off at full case (12 bottles). Stored in `cart_settings.thresholds.full_case_discount`.
-- **Wine Club members:** 20% off at full case (and on all wine — comes from `wine_club_tiers.discount_percent`). Stored in `cart_settings.thresholds.club_discount` as the default fallback.
+- **Guests / non-members:** 20% off at full case (12 bottles), shipping included. Stored in `cart_settings.thresholds.full_case_discount`.
+- **Wine Club members:** 25% off at full case (12 bottles). Stored in `cart_settings.thresholds.club_discount` as the default fallback. Members still get 20% off on all wine below case quantities via `wine_club_tiers.discount_percent`.
 
 ## Why
 - DTC case-discount elasticity is low (~-0.3 to -0.5); 10% public rate keeps margin without meaningfully hurting velocity.

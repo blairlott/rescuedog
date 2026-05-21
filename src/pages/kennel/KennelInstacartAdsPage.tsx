@@ -16,6 +16,7 @@ import { Slider } from "@/components/ui/slider";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { InstacartPartnershipPlanner } from "@/components/kennel/InstacartPartnershipPlanner";
 
 const PLATFORM = "instacart";
 
@@ -335,6 +336,7 @@ export default function KennelInstacartAdsPage() {
           <TabsTrigger value="recs">Recommendations ({recs.length})</TabsTrigger>
           <TabsTrigger value="log">Action log</TabsTrigger>
           <TabsTrigger value="ingest">Ingest CSV</TabsTrigger>
+          <TabsTrigger value="rpm">RPM & Partnerships</TabsTrigger>
         </TabsList>
 
         <TabsContent value="campaigns">
@@ -612,6 +614,10 @@ export default function KennelInstacartAdsPage() {
               </p>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="rpm">
+          <InstacartPartnershipPlanner />
         </TabsContent>
       </Tabs>
     </div>

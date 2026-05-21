@@ -1,72 +1,69 @@
-# Pre-Launch Execution Plan (Sections 2–8)
+## Z8 Nightly Optimizer — Auto-Kill + Auto-Scale Build Plan
 
-Section 1 (DNS) is explicitly post-launch and gated on Blair — excluded from this plan. I'll break the remaining work into discrete, reviewable passes so you can sign off section-by-section rather than receive one giant unreviewable diff.
+### Scope summary
+Z8 does not exist in the codebase today. The existing **meta-autopilot** function executes pre-approved recommendations from `ad_recommendations` (a queue produced elsewhere). Z8 is a separate nightly **ad-level** decision engine that runs at 04:00 ET, makes its own kill/scale calls directly against the Meta Marketing API, and logs to `ad_execution_log` with `actor='z8_auto'`.
 
-## Pass A — Section 2: CMS Dev Toggles (BUILD)
+### What I'll build
 
-New table `dev_toggles` (single-row JSON config or key/value rows) stored in Supabase, exposed via CMS admin under **Settings → Dev Controls**.
+1. **New edge function `z8-nightly-optimizer`** (`supabase/functions/z8-nightly-optimizer/index.ts`)
+   - Cron-callable via `x-cron-secret = KENNEL_INGEST_SECRET`, plus admin/ad-ops manual trigger.
+   - Pulls 14-day ad-level + adset-level insights from Meta Graph API v19.0 (`META_ADS_ACCOUNT_ID`, `META_ADS_ACCESS_TOKEN`).
+   - Fields: `ad_id, ad_name, adset_id, adset_name, status, daily_budget, spend, frequency, actions{omni_purchase, add_to_cart, initiate_checkout}, created_time`.
+   - Evaluates the 5 rule families in order: kill switch check → checkout-dropoff flag → kill → rotate → scale → retargeting freq kill.
+   - Posts to Meta (`POST /v19.0/{id}` with `status` or `daily_budget`) and logs every action.
+   - Sends SMS via existing `kennel-alert-dispatch`.
 
-**Toggle Group 1 — Account Features** (master + 6 sub, all default OFF; Subscribe & Save locked ON, not rendered as editable)
-- Login/Register, Order History, Wine Club Portal, Loyalty/The Pack, Saved Addresses, Referral Program
+2. **Rule logic (exact thresholds from the prompt)**
+   - **Kill**: spend ≥ $25, omni_purchase = 0, ad age ≥ 48h, name does NOT start with `WC-`. Cap: 5 per night (highest spend first).
+   - **Checkout drop-off** (evaluated *before* kill, supersedes it): `add_to_cart ≥ 10 AND initiate_checkout ≥ 2 AND purchases = 0` → log `checkout_dropoff_suspected`, **no kill, no rotate**, dedicated SMS.
+   - **Retargeting kill**: spend ≥ $25 AND frequency ≥ 3.0 AND purchases = 0, only for adsets tagged retargeting (via `adset_name` regex `/RTG|retarget|RMK/i` — confirm pattern).
+   - **Scale**: purchases ≥ 2 AND ROAS ≥ 3.0x AND current daily_budget < $150 → +20%, capped at $150 cents per adset, max 1 per 48h, max 3 per night.
+   - **Rotate**: after a kill, look up `ad_reserves` table for next paused reserve in same adset → activate.
+   - **Auto-rollback**: at start of each run, check scale actions from last 48h; if ROAS dropped >30% vs baseline at-time, revert budget.
 
-**Toggle Group 2 — Customer Notifications** (master + 7 sub, all default OFF; S&S confirmation locked ON)
-- Order confirmation, Shipping updates, Wine club billing, Abandoned cart, Win-back, Post-purchase, Welcome series
+3. **New tables** (migration)
+   - `ad_reserves(adset_id, ad_id, rotation_order, status)` — for creative rotation lookup.
+   - `z8_kill_switch(enabled boolean, paused_at, resumed_at)` — Blair's "pause" / "resume" SMS reply target. Single-row config.
+   - Extend `ad_execution_log` only if missing columns: `actor`, `action_type`, `reason`, `roas_at_time`, `spend_at_time` — I'll check and ALTER if needed.
 
-Enforcement:
-- Frontend `useDevToggles()` hook gates route mounts + nav links for account features.
-- Edge functions check toggle state before any Mailchimp/Resend dispatch (helper `isNotificationEnabled(category)` in `_shared/`). S&S confirmation bypasses the check.
-- Admin-only RLS on `dev_toggles` write; public read of effective state.
+4. **Cron job** (pg_cron, scheduled via `insert` tool since it contains the project ref + key)
+   - `0 8 * * *` UTC = 04:00 EDT (note: ET drifts; user said "4am ET" — I'll use 09:00 UTC for EST and document).
 
-Deliverables: migration + admin page + hook + shared edge helper + wiring into existing welcome/winback/cart edge functions.
+5. **Vinoshipper handoff check (one-time, EV26-D)**
+   - Script run inline: fetch the EV26-D ad's landing URL via Meta API, follow redirects, verify it reaches `vinoshipper.com` and renders on mobile-UA. Report finding in run output and SMS Blair if broken.
 
-## Pass B — Section 3: Compliance Audit (REPORT + FIX)
+### Open questions (need confirmation before I build)
 
-Crawl every route and component against the 7 compliance rules (age gate, shipping disclosure, "shipping included" language, no quantified impact, access-based loyalty wording, dual-brand logo discipline, brand lock fonts/colors/sharp edges). Output a violations report; fix anything that's a copy/styling change in the same pass. Flag anything structural for explicit approval.
+1. **Reserve ad source of truth**: The prompt mentions `ad_reserves` — that table doesn't exist. Do you want me to:
+   (a) create an empty `ad_reserves` table you'll populate manually,
+   (b) auto-detect reserves as paused ads in the same adset (no table needed), or
+   (c) use a naming convention (e.g. `-R1`, `-R2` suffix)?
 
-## Pass C — Section 4: Conversion Flow Verification (TEST + REPORT)
+2. **Retargeting adset identification**: How is a retargeting adset identified today? Naming convention (`RTG-`, `RMK-`), Meta `targeting_type`, or a tag in the campaign metadata?
 
-Walk each path in the live preview:
-1. Wine PDP → ATC → Cart → Vinoshipper handoff (UTM + gclid preservation verified by inspecting redirect chain).
-2. Merch PDP → ATC → Shopify checkout.
-3. Subscribe & Save → confirmation email fires.
-4. Sticky ATC + mobile cart close X visibility check on every wine PDP.
+3. **SMS pause/resume inbound**: `kennel-alert-dispatch` sends outbound. There's no inbound SMS webhook today. Should I:
+   (a) skip the inbound reply mechanism for now and just expose a `/kennel/z8` toggle in the admin UI for the kill switch, or
+   (b) build a Twilio inbound webhook that parses "pause"/"resume" replies?
 
-Output: pass/fail matrix + screenshots of any broken steps + fixes for in-scope issues.
+4. **Auto-rollback baseline**: To detect "ROAS dropped >30% within 48h of scale," I need a baseline ROAS snapshot at scale time. I'll store `roas_at_time` on the scale log and compare against current trailing-2-day ROAS for that adset. Confirm OK.
 
-## Pass D — Section 5: Tracking & Analytics Verification (TEST + REPORT)
+5. **Cron schedule**: "4am ET" — should I use 09:00 UTC year-round (EST winter, off-by-1h in EDT summer), or wire DST-aware scheduling via two cron entries?
 
-Network/console inspection of: Meta Pixel + CAPI event_id format `rdw_{txn}_{event}_{ts}`, GTM-5DBQXWP7 load, GCLID capture tag, Purchase (VS webhook), ViewContent, InitiateCheckout, GA4 pageview. Anything missing gets fixed.
+6. **Meta API version**: prompt says v19.0; current ingest functions use v20.0+. Stick with v19.0 as specified, or use whatever the rest of the codebase uses?
 
-## Pass E — Section 6: DB & Performance Audit (REPORT + FIX)
+### What I will NOT build (per "approval required" list)
+- No budget increase above $150/adset
+- No cross-campaign reallocation
+- No adset-level pause (only ad-level)
+- No new campaign/adset launch
+- No bid-strategy changes
+These will remain manual / require Blair "execute [N]".
 
-1. **DB:** enumerate tables, find unused columns / missing indexes. Add the 5 indexes Lindy named (`vs_transactions.customer_email`, `vs_transactions.state`, `vs_transactions.created_at`, `capi_event_log.event_id`, `gclid_session_log.hashed_email`) if not present.
-2. **Cron:** list `cron.job`, flag duplicates/stale.
-3. **Edge fns:** scan for N+1 patterns and redundant API calls in `vinoshipper-poll`, `kennel-ingest`, `capi-weighted-events`, `boost-dispatch`. Add in-memory cache for `state_margin_tiers`.
-4. **Frontend:** Lighthouse on home / wine PDP / merch PDP / /shop-wine / cart at 390×844. Lazy-load below-fold images, preload hero, strip render-blocking scripts, WebP check.
+### Files I'll create / modify
+- `supabase/functions/z8-nightly-optimizer/index.ts` (new, ~500 lines)
+- `supabase/functions/_shared/meta-graph.ts` (small helper if not already shared)
+- `supabase/migrations/<timestamp>_z8.sql` (new tables + log columns)
+- pg_cron entry (via insert tool)
+- `src/pages/kennel/KennelZ8Page.tsx` (small admin UI: kill-switch toggle, recent run log, manual "run now" button) — only if you want UI; otherwise skip.
 
-Deliverable: before/after table per the directive's "Report back" requirement.
-
-## Pass F — Section 7: A/B Test Readiness (VERIFY + DOCUMENT)
-
-Confirm Cloudways WP split script doesn't collide with GTM-5DBQXWP7. Verify GA4 stream/UTM separation between legacy and Lovable. Write rollback runbook to `docs/abtest/rollback.md`. Define metric definitions (CVR primary, AOV, bounce, cart abandon, LCP).
-
-## Pass G — Section 8: QA Sign-off Package
-
-Compile a single QA report doc summarizing pass/fail for Sections 2–7 with links to evidence, ready to paste into the Google Doc for Blair / Claude / RDW staff sign-off. No DNS or traffic-split actions taken.
-
----
-
-## Execution rules
-
-- One pass per turn. After each pass I'll surface findings + diff summary and wait for your "go" before starting the next pass.
-- Anything that needs a credential I don't have (e.g. Lighthouse against the published URL, Meta Events Manager confirmation) I'll call out explicitly rather than fake-pass it.
-- Memory updates: add a `dev-toggles` memory after Pass A so future sessions respect the locked-ON exceptions.
-
-## Technical notes
-
-- `dev_toggles` schema: `category text`, `key text`, `enabled bool`, `locked bool`, PK `(category, key)`. Locked rows reject UPDATE via RLS check.
-- Notification gate helper lives in `supabase/functions/_shared/devToggles.ts` and is imported by every send-path edge function.
-- Index additions go through a migration; data audits use `supabase--read_query` only.
-- Lighthouse runs via the browser performance profile tool against the preview URL.
-
-Confirm and I'll start Pass A (Section 2 — CMS Dev Toggles).
+**Please answer the 6 open questions (or say "your call on all") and I'll build.**

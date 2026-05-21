@@ -229,6 +229,41 @@ Deno.serve(async (req) => {
 
     const series: any[] = [];
     let cumSpend = 0, cumRev = 0;
+    // ---- Q4 historical anchor ---------------------------------------------
+    // OND 2026 forecast must reflect prior Q4 peaks (BFCM/holiday), not the
+    // currently-paused budget baseline. Find the best historical Oct/Nov/Dec
+    // monthly revenue+spend from the 24-month seasonal window and project
+    // forward at 100%+ YoY growth (DTC norm: EoY typically doubles).
+    const q4History = new Map<string, { spend: number; revenue: number }>(); // ym -> totals
+    for (const d of seasonDates) {
+      const m = Number(d.slice(5, 7));
+      if (m !== 10 && m !== 11 && m !== 12) continue;
+      const ym = d.slice(0, 7);
+      const cur = q4History.get(ym) ?? { spend: 0, revenue: 0 };
+      const day = seasonByDate.get(d)!;
+      cur.spend += day.spend; cur.revenue += day.revenue;
+      q4History.set(ym, cur);
+    }
+    const q4PeakByMonth: Record<number, { spend: number; revenue: number; year: number }> = {};
+    for (const [ym, v] of q4History.entries()) {
+      const m = Number(ym.slice(5, 7));
+      const y = Number(ym.slice(0, 4));
+      const cur = q4PeakByMonth[m];
+      if (!cur || v.revenue > cur.revenue) q4PeakByMonth[m] = { ...v, year: y };
+    }
+    // Project forward at YoY growth per year since the peak.
+    const yoyGrowth = 1.0; // +100% YoY (user-stated DTC EoY norm)
+    const q4FloorMonthly = (year: number, monthIdx0: number) => {
+      const monthNum = monthIdx0 + 1; // 1-indexed
+      const peak = q4PeakByMonth[monthNum];
+      if (!peak) return null;
+      const yearsAhead = Math.max(0, year - peak.year);
+      const growthMult = Math.pow(1 + yoyGrowth, yearsAhead);
+      return {
+        spendDay: (peak.spend * growthMult) / 30,
+        revDay:   (peak.revenue * growthMult) / 30,
+      };
+    };
     // Planning uplift: restored budgets + improved ROAS in OND 2026 (Q4 push).
     // Spend and ROAS multipliers applied on top of seasonality, peaking in Nov.
     // DTC EoY pattern: Q4 revenue typically runs 2x+ baseline. Uplift compounds
@@ -236,9 +271,12 @@ Deno.serve(async (req) => {
     const ondUplift = (d: Date): { spend: number; roas: number } => {
       const y = d.getUTCFullYear();
       const m = d.getUTCMonth(); // 0-indexed
-      if (y === 2026 && m === 9)  return { spend: 1.70, roas: 1.25 }; // Oct  ~2.1x rev
-      if (y === 2026 && m === 10) return { spend: 2.10, roas: 1.40 }; // Nov  ~2.9x rev (peak)
-      if (y === 2026 && m === 11) return { spend: 1.85, roas: 1.30 }; // Dec  ~2.4x rev
+      if (y >= 2026 && (m === 9 || m === 10 || m === 11)) {
+        // Per-month relative weight against the Q4 floor; Nov peaks.
+        if (m === 9)  return { spend: 0.85, roas: 1.20 };
+        if (m === 10) return { spend: 1.15, roas: 1.35 }; // Nov peak
+        if (m === 11) return { spend: 1.00, roas: 1.25 };
+      }
       return { spend: 1, roas: 1 };
     };
     for (let h = 1; h <= horizon; h++) {
@@ -250,9 +288,18 @@ Deno.serve(async (req) => {
       const growthSpend = Math.pow(spendDaily, h);
       const growthRev   = Math.pow(revDaily,   h);
       const rawSpend = Math.max(spendFloor, baselineSpend * growthSpend) * spendSeason[dow] * spendMonthSeason[moy] * spendTilt * uplift.spend;
-      const trendSpend = rawSpend;
+      let trendSpend = rawSpend;
       const rawRev   = baselineRev * growthRev * revSeason[dow] * revMonthSeason[moy] * revenueTilt;
       let trendRev   = rawRev;
+      // Apply Q4 historical floor (with YoY growth) so OND projections never
+      // fall below the prior peak compounded at +100%/yr.
+      const floor = q4FloorMonthly(futureDate.getUTCFullYear(), moy);
+      if (floor) {
+        const dowSpendIdx = spendSeason[dow];
+        const dowRevIdx   = revSeason[dow];
+        trendSpend = Math.max(trendSpend, floor.spendDay * dowSpendIdx * uplift.spend);
+        trendRev   = Math.max(trendRev,   floor.revDay   * dowRevIdx);
+      }
       if (trendSpend > 0 && baselineRoas > 0) {
         const implied = trendRev / trendSpend;
         const targetRoas = Math.min(roasCeiling, Math.max(roasFloor, implied)) * roasTilt * uplift.roas;

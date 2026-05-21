@@ -11,6 +11,7 @@ import type { WineClubTier, JoinClubData } from "@/hooks/useWineClub";
 import { ClubConfigurator } from "@/components/wine-club/ClubConfigurator";
 import { ClubSignupForm } from "@/components/wine-club/ClubSignupForm";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
+import { GiftMembershipDialog } from "@/components/wine-club/GiftMembershipDialog";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { Link, useNavigate } from "react-router-dom";
 import { Seo } from "@/components/Seo";
@@ -41,6 +42,7 @@ const WineClubPage = () => {
   const [editSection, setEditSection] = useState<EditSection>(null);
   const [editFaqIdx, setEditFaqIdx] = useState<number | null>(null);
   const [selectedTier, setSelectedTier] = useState<WineClubTier | null>(null);
+  const [giftDialogOpen, setGiftDialogOpen] = useState(false);
 
   const { user } = useCustomerAuth();
   const navigate = useNavigate();
@@ -200,6 +202,20 @@ const WineClubPage = () => {
                         — otherwise pick a club and we'll set up your account as you join.
                       </p>
                     )}
+
+                    <div className="mt-10 pt-8 border-t border-border text-center">
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Looking to gift a membership instead?
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setGiftDialogOpen(true)}
+                        className="gap-2 uppercase tracking-brand text-xs font-bold"
+                      >
+                        <Gift className="h-4 w-4" /> Gift a Membership
+                      </Button>
+                    </div>
                   </>
                 )}
               </div>
@@ -235,6 +251,8 @@ const WineClubPage = () => {
         </section>
       </main>
       <Footer />
+
+      <GiftMembershipDialog open={giftDialogOpen} onOpenChange={setGiftDialogOpen} />
 
       {/* CMS Edit Dialogs */}
       {editSection && sectionFields[editSection] && (

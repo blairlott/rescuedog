@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Plus, Minus, Trash2, ShoppingBag, AlertTriangle, CheckCircle2, SkipForward } from "lucide-react";
 import { toast } from "sonner";
 import type { WineClubMembership, WineClubTier } from "@/hooks/useWineClub";
+import { getNextShipmentDateForFrequency, describeShipmentCadence } from "@/lib/wineClubSchedule";
 
 interface ShipmentItem {
   id?: string;
@@ -192,16 +193,20 @@ export function NextShipmentCustomizer({ membership }: Props) {
   }
 
   if (!shipment) {
+    // No DB shipment row yet — fall back to the tier's published cadence
+    // so the box reflects when *this* club actually ships.
+    const cadenceLabel = describeShipmentCadence(tier?.frequency);
+    const nextDate = membership?.next_shipment_date
+      ?? getNextShipmentDateForFrequency(tier?.frequency);
+    const niceDate = new Date(nextDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     return (
       <div className="border border-border p-8 text-center mb-8">
         <ShoppingBag className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-        <h3 className="text-lg font-bold text-foreground mb-2">
-          {membership?.next_shipment_date ? "Customization opens soon" : "No upcoming shipment yet"}
-        </h3>
+        <h3 className="text-lg font-bold text-foreground mb-2">Customization opens soon</h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          {membership?.next_shipment_date
-            ? `Your next shipment is scheduled for ${new Date(membership.next_shipment_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. You'll be able to customize it closer to the ship date — we'll email you when it opens.`
-            : "We'll email you as soon as your next shipment opens for customization."}
+          {cadenceLabel}. Your next shipment is targeted for{" "}
+          <span className="text-foreground font-semibold">{niceDate}</span>.
+          You'll be able to customize it closer to the ship date — we'll email you when it opens.
         </p>
       </div>
     );

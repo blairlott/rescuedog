@@ -463,6 +463,9 @@ const CmsDashboard = () => {
             <TabsTrigger value="integrations" className="gap-1.5">
               <Plug className="h-3.5 w-3.5" /> Integrations
             </TabsTrigger>
+            <TabsTrigger value="dev-controls" className="gap-1.5">
+              <SlidersHorizontal className="h-3.5 w-3.5" /> Dev Controls
+            </TabsTrigger>
           </TabsList>
 
           {/* ── Content Tab ───────────────────────────────── */}

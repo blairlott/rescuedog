@@ -4,10 +4,16 @@ import { Footer } from "@/components/Footer";
 import { useWpPost } from "@/hooks/useWordpress";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import DOMPurify from "dompurify";
+import { Helmet } from "react-helmet-async";
 
 const BlogPostPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: post, isLoading } = useWpPost(slug);
+
+  const canonical = slug ? `https://rescuedog.lovable.app/blog/${slug}` : undefined;
+  const plainTitle = post?.title?.rendered?.replace(/<[^>]+>/g, "") ?? "";
+  const plainExcerpt = post?.excerpt?.rendered?.replace(/<[^>]+>/g, "").slice(0, 160) ?? "";
+  const ogImage = (post as any)?._embedded?.["wp:featuredmedia"]?.[0]?.source_url;
 
   if (isLoading) {
     return (
@@ -35,6 +41,27 @@ const BlogPostPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {post && (
+        <Helmet>
+          <title>{`${plainTitle} | Rescue Dog Wines`}</title>
+          <meta name="description" content={plainExcerpt} />
+          <link rel="canonical" href={canonical!} />
+          <meta property="og:title" content={plainTitle} />
+          <meta property="og:description" content={plainExcerpt} />
+          <meta property="og:url" content={canonical!} />
+          <meta property="og:type" content="article" />
+          {ogImage && <meta property="og:image" content={ogImage} />}
+          <script type="application/ld+json">{JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: plainTitle,
+            datePublished: post.date,
+            author: { "@type": "Organization", name: "Rescue Dog Wines" },
+            mainEntityOfPage: canonical,
+            ...(ogImage ? { image: ogImage } : {}),
+          })}</script>
+        </Helmet>
+      )}
       <Header />
       <main className="flex-1 py-12">
         <article className="container mx-auto px-4 max-w-2xl">

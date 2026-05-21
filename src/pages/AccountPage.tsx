@@ -22,6 +22,7 @@ import { SubscribeAndSaveTab } from "@/components/account/SubscribeAndSaveTab";
 import { GiftCertificatesTab } from "@/components/account/GiftCertificatesTab";
 import { PaymentMethodsTab } from "@/components/account/PaymentMethodsTab";
 import { RescueRewardsDashboard } from "@/components/account/RescueRewardsDashboard";
+import { useLaunchFeatures } from "@/hooks/useLaunchFeatures";
 import { OrdersTab } from "@/components/account/OrdersTab";
 
 const AccountPage = () => {

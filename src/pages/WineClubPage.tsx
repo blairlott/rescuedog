@@ -6,10 +6,10 @@ import { useState } from "react";
 import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
 import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
-import { useWineClubTiers, useMyMembership, useJoinClub } from "@/hooks/useWineClub";
-import type { WineClubTier, JoinClubData } from "@/hooks/useWineClub";
+import { useWineClubTiers, useMyMembership } from "@/hooks/useWineClub";
+import type { WineClubTier } from "@/hooks/useWineClub";
 import { ClubConfigurator } from "@/components/wine-club/ClubConfigurator";
-import { ClubSignupForm } from "@/components/wine-club/ClubSignupForm";
+import { VinoshipperInlineSignup } from "@/components/wine-club/VinoshipperInlineSignup";
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
 import { GiftMembershipDialog } from "@/components/wine-club/GiftMembershipDialog";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
@@ -44,13 +44,11 @@ const WineClubPage = () => {
   const [editFaqIdx, setEditFaqIdx] = useState<number | null>(null);
   const [selectedTier, setSelectedTier] = useState<WineClubTier | null>(null);
   const [giftDialogOpen, setGiftDialogOpen] = useState(false);
-  const [giftMode, setGiftMode] = useState(false);
 
   const { user } = useCustomerAuth();
   const navigate = useNavigate();
   const { data: tiers, isLoading: tiersLoading } = useWineClubTiers();
-  const { data: membership, isLoading: memberLoading } = useMyMembership();
-  const joinClub = useJoinClub();
+  const { data: membership } = useMyMembership();
 
   const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
   const faqs = content.faqs?.items || defaultFaqs;
@@ -71,12 +69,6 @@ const WineClubPage = () => {
 
   const handleSelectTier = (tier: WineClubTier) => {
     setSelectedTier(tier);
-  };
-
-  const handleJoin = (data: JoinClubData) => {
-    joinClub.mutate(data, {
-      onSuccess: () => setSelectedTier(null),
-    });
   };
 
   const sectionFields: Record<string, { title: string; fields: CmsField[] }> = {
@@ -165,14 +157,27 @@ const WineClubPage = () => {
               <CmsEditButton onClick={() => setEditSection("membership")} scope="wine_club" />
               <div className="container mx-auto px-4">
                 {selectedTier ? (
-                  <ClubSignupForm
-                    tier={selectedTier}
-                    onBack={() => setSelectedTier(null)}
-                    onSubmit={handleJoin}
-                    isSubmitting={joinClub.isPending}
-                    lockGift={giftMode}
-                    backLabel={giftMode ? "Back to gift selection" : undefined}
-                  />
+                  selectedTier.vinoshipper_join_url ? (
+                    <VinoshipperInlineSignup
+                      joinUrl={selectedTier.vinoshipper_join_url}
+                      tierName={selectedTier.name}
+                      onBack={() => setSelectedTier(null)}
+                    />
+                  ) : (
+                    <div className="max-w-2xl mx-auto text-center border border-border p-8">
+                      <p className="text-sm text-muted-foreground">
+                        This tier isn't connected to our signup partner yet.
+                        Please pick another tier or contact us.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTier(null)}
+                        className="mt-4 text-sm underline text-foreground"
+                      >
+                        Back to club selection
+                      </button>
+                    </div>
+                  )
                 ) : (
                   <>
                     <div className="text-center mb-10">
@@ -190,12 +195,7 @@ const WineClubPage = () => {
                         <div className="border border-border p-6 animate-pulse h-40 w-full max-w-2xl bg-muted/30" />
                       </div>
                     ) : tiers ? (
-                      <ClubConfigurator
-                        tiers={tiers}
-                        onSelect={handleSelectTier}
-                        isGift={giftMode}
-                        onGiftChange={setGiftMode}
-                      />
+                      <ClubConfigurator tiers={tiers} onSelect={handleSelectTier} />
                     ) : null}
 
                     {!user && (

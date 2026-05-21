@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Loader2, Sparkles, Check, X, ImageIcon, RefreshCw } from "lucide-react";
+import { ContentSeedPanel } from "@/components/cms/ContentSeedPanel";
 
 type AssetType = "hero" | "pdp" | "banner" | "ad_creative";
 type BrandLockup = "wine" | "merch";
@@ -174,6 +175,9 @@ export function CreativeQueuePanel() {
 
   return (
     <div className="space-y-8">
+      {/* Content seed library — reference uploads */}
+      <ContentSeedPanel />
+
       {/* Generator */}
       <Card className="p-6 border border-border rounded-none">
         <div className="flex items-center gap-2 mb-4">

@@ -2826,6 +2826,48 @@ export type Database = {
           },
         ]
       }
+      creative_seed_assets: {
+        Row: {
+          brand_lockup: string | null
+          created_at: string
+          file_name: string
+          id: string
+          label: string | null
+          mime_type: string | null
+          public_url: string
+          size_bytes: number | null
+          storage_path: string
+          tags: string[] | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          brand_lockup?: string | null
+          created_at?: string
+          file_name: string
+          id?: string
+          label?: string | null
+          mime_type?: string | null
+          public_url: string
+          size_bytes?: number | null
+          storage_path: string
+          tags?: string[] | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          brand_lockup?: string | null
+          created_at?: string
+          file_name?: string
+          id?: string
+          label?: string | null
+          mime_type?: string | null
+          public_url?: string
+          size_bytes?: number | null
+          storage_path?: string
+          tags?: string[] | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       customer_cohorts: {
         Row: {
           acquisition_month: string | null

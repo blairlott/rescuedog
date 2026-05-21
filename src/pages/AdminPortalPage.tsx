@@ -137,13 +137,13 @@ const AdminPortalPage = () => {
   };
 
   if (checking) {
-    return <div className="min-h-screen flex items-center justify-center bg-secondary text-muted-foreground text-sm">Loading…</div>;
+    return <div className="min-h-dvh flex items-center justify-center bg-secondary text-muted-foreground text-sm">Loading…</div>;
   }
 
   // Logged out → unified login
   if (!roles) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-secondary px-4">
+      <div className="min-h-dvh flex items-center justify-center bg-secondary px-4">
         <div className="w-full max-w-md">
           <div className="bg-background border border-border p-8 shadow-sm">
             <div className="text-center mb-8">
@@ -177,7 +177,7 @@ const AdminPortalPage = () => {
 
   // Logged in → portal landing
   return (
-    <div className="min-h-screen bg-secondary">
+    <div className="min-h-dvh bg-secondary">
       <AdminTopNav roles={roles} />
       <main className="container mx-auto px-4 py-12 max-w-4xl">
         {pendingRequests.length > 0 && (

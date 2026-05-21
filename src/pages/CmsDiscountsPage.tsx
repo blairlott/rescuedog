@@ -138,7 +138,7 @@ export default function CmsDiscountsPage() {
   if (loading) return <div className="p-10">Loading…</div>;
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-10">
+    <div className="min-h-dvh bg-background p-6 md:p-10">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">

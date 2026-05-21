@@ -164,7 +164,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <InstacartOAuthCatcher />
       <Seo
         title="Award-Winning Sustainable Wines That Help Rescue Dogs"

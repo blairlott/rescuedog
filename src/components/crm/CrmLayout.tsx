@@ -52,14 +52,14 @@ export default function CrmLayout() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  if (loading || roleLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+  if (loading || roleLoading) return <div className="min-h-dvh flex items-center justify-center text-muted-foreground">Loading...</div>;
   if (!user) return null;
 
   // Block unapproved users (except admins/owners who are always approved)
   const isApproved = roleInfo?.profile && (roleInfo.profile as any).approved;
   if (!isApproved && !roleInfo?.isAdminOrOwner && !roleInfo?.isAmbassadorManager && !roleInfo?.canViewBackend) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-md">
           <h1 className="text-2xl font-bold text-foreground">Account Pending Approval</h1>
           <p className="text-muted-foreground">
@@ -74,7 +74,7 @@ export default function CrmLayout() {
   }
 
   return (
-    <div className="h-screen bg-background flex overflow-hidden">
+    <div className="h-dvh bg-background flex overflow-hidden">
       <aside className="w-56 border-r border-border bg-card flex flex-col shrink-0">
         <div className="p-4 border-b border-border">
           <h2 className="font-bold text-foreground text-sm tracking-brand uppercase">Sales CRM</h2>

@@ -259,7 +259,7 @@ const WineClubAdminPage = () => {
 
   if (authLoading || accessLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-dvh flex items-center justify-center">
         <Wine className="h-8 w-8 animate-pulse text-primary" />
       </div>
     );
@@ -303,7 +303,7 @@ const WineClubAdminPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">

@@ -41,7 +41,7 @@ const AMBASSADOR_FAQS = [
 
 export default function AmbassadorsLandingPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Seo
         title="Rescue Ambassadors"
         description="Earn 12% commission helping dogs find their forever home. Free single-tier affiliate program for nonprofits, enthusiasts, and influencers — tracked and paid through impact.com."

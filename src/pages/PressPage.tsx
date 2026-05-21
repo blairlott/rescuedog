@@ -22,7 +22,7 @@ const QUOTES = [
 
 export default function PressPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Seo
         title="Press & Media — Rescue Dog Wines"
         description="Press kit, founder bios, brand assets, and high-resolution imagery for journalists covering Rescue Dog Wines — the Lodi winery donating 50% of profits to dog rescue."

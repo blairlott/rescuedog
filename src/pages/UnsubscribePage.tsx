@@ -39,7 +39,7 @@ export default function UnsubscribePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 max-w-md mx-auto py-20 px-4 text-center">
         <h1 className="text-2xl font-bold uppercase mb-6">Email Preferences</h1>

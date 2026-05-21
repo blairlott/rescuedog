@@ -65,7 +65,7 @@ export default function MixSixPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Seo
         title="Build a Mix Six"
         description="Mix and match any 6, 12, or 24 bottles — unlock 5–15% off plus shipping included."

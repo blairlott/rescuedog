@@ -112,7 +112,7 @@ export default function RequestAccessPage() {
   };
 
   return (
-    <div className="min-h-screen bg-secondary">
+    <div className="min-h-dvh bg-secondary">
       <AdminTopNav roles={roles} />
       <main className="container mx-auto px-4 py-12 max-w-xl">
         <Link to="/admin" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">

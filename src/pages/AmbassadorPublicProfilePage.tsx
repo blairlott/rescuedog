@@ -32,10 +32,10 @@ export default function AmbassadorPublicProfilePage() {
     })();
   }, [handle]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+  if (loading) return <div className="min-h-dvh flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   if (!profile) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-dvh flex flex-col">
         <Header />
         <main className="flex-1 max-w-md mx-auto py-20 px-4 text-center">
           <h1 className="text-2xl font-bold uppercase mb-2">Ambassador Not Found</h1>
@@ -83,7 +83,7 @@ export default function AmbassadorPublicProfilePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Helmet>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />

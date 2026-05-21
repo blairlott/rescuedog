@@ -17,7 +17,7 @@ const BlogPostPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-dvh flex flex-col">
         <Header />
         <div className="flex-1 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       </div>
@@ -26,7 +26,7 @@ const BlogPostPage = () => {
 
   if (!post) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-dvh flex flex-col">
         <Header />
         <div className="flex-1 flex items-center justify-center text-center px-4">
           <div>
@@ -40,7 +40,7 @@ const BlogPostPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       {post && (
         <Helmet>
           <title>{`${plainTitle} | Rescue Dog Wines`}</title>

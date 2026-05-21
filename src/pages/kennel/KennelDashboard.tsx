@@ -644,7 +644,7 @@ export default function KennelDashboard() {
 
           <Dialog open={optimizationOpen} onOpenChange={setOptimizationOpen}>
             <DialogContent
-              className="max-w-none w-screen h-screen sm:rounded-none p-0 gap-0 border-0 flex flex-col"
+              className="max-w-none w-screen h-dvh sm:rounded-none p-0 gap-0 border-0 flex flex-col"
               style={{ borderRadius: 0 }}
             >
               <DialogHeader className="border-b-2 border-foreground p-4 shrink-0">

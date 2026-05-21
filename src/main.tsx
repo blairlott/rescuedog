@@ -39,7 +39,7 @@ class ModuleErrorBoundary extends Component<{ children: ReactNode }, { hasError:
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground">
+        <div className="min-h-dvh flex flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground">
           <p className="text-sm uppercase tracking-brand text-muted-foreground">A new version is available</p>
           <button className="border border-border px-5 py-3 text-sm font-bold uppercase tracking-brand" onClick={() => window.location.reload()}>
             Reload Rescue Dog Wines

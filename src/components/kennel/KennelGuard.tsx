@@ -21,7 +21,7 @@ export function KennelGuard({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!authChecked || isLoading) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+    return <div className="min-h-dvh flex items-center justify-center text-muted-foreground">Loading…</div>;
   }
   if (!hasSession) return <Navigate to="/admin" replace />;
   if (!roleInfo?.canViewKennel) return <Navigate to="/admin/request-access?area=kennel" replace />;

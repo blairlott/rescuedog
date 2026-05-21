@@ -22,7 +22,7 @@ export default function AmbassadorDirectoryPage() {
     : list;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 max-w-5xl mx-auto py-12 px-4 w-full">
         <div className="flex items-center justify-between flex-wrap gap-4 mb-8">

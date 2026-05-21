@@ -60,7 +60,7 @@ export default function ThankYouPage() {
   const dogsHelped = Math.max(1, Math.floor(bottles / 4));
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Seo title="Thank You" path="/thank-you" noindex description="Order confirmed — thanks for helping rescue dogs." />
       <Header />
       <main className="flex-1 py-12">

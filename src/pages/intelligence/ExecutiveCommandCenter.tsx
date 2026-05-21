@@ -132,7 +132,7 @@ export default function ExecutiveCommandCenter() {
   }, [data]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       <div className="max-w-[1400px] mx-auto p-6 space-y-6">
         <header className="flex items-end justify-between flex-wrap gap-3 border-b border-border pb-4">
           <div>

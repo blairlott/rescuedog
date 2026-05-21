@@ -7,7 +7,7 @@ import { BRAND_COMPARISONS } from "@/data/brandComparisons";
 
 export default function CompareHubPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Seo
         title="Compare Rescue Dog Wines — Meiomi, Justin, Barefoot Alternatives"
         description="Side-by-side comparisons of Rescue Dog Wines vs premium California brands. Same shelf price, small-batch craft, 50% of profits to 501(c)(3) dog rescue."

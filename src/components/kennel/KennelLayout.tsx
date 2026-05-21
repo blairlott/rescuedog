@@ -108,7 +108,7 @@ export function KennelLayout() {
   });
 
   return (
-    <div className="min-h-screen flex bg-background font-sans" style={{ fontFamily: '"Nunito Sans", system-ui, sans-serif' }}>
+    <div className="min-h-dvh flex bg-background font-sans" style={{ fontFamily: '"Nunito Sans", system-ui, sans-serif' }}>
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between px-3 py-2 border-b border-border bg-card">
         <button

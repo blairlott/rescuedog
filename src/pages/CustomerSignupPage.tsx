@@ -137,7 +137,7 @@ const CustomerSignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 flex items-center justify-center py-12 px-4">
         <div className="w-full max-w-md space-y-8">

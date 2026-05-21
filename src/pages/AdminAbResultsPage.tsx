@@ -68,7 +68,7 @@ export default function AdminAbResultsPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+      <div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">
         Checking access…
       </div>
     );
@@ -109,7 +109,7 @@ export default function AdminAbResultsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-secondary">
+    <div className="min-h-dvh bg-secondary">
       <div className="border-b border-border bg-background">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">

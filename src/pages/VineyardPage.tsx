@@ -59,7 +59,7 @@ const VineyardPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Seo
         title="Our Vineyard"
         description="Lodi, California estate — sustainably farmed under Lodi Rules. Meet the vines behind every bottle of Rescue Dog Wines."

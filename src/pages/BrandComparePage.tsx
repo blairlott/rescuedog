@@ -13,7 +13,7 @@ export default function BrandComparePage() {
   if (!data) return <Navigate to="/compare" replace />;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Seo
         title={data.seoTitle}
         description={data.seoDescription}

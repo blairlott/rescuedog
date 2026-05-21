@@ -87,7 +87,7 @@ export default function CmsEmailsPage() {
   const visibleLogs = (data?.logs ?? []).filter(r => new Date(r.created_at).getTime() >= cutoff);
 
   return (
-    <div className="min-h-screen bg-background p-6 max-w-7xl mx-auto">
+    <div className="min-h-dvh bg-background p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link to="/cms" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mb-2">

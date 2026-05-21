@@ -228,7 +228,7 @@ const AccountPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-dvh flex flex-col">
         <Header />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -240,7 +240,7 @@ const AccountPage = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-4xl">

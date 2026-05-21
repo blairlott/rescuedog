@@ -501,6 +501,76 @@ export function InstacartAutopilotHealth() {
         setSetting={setSetting}
       />
 
+      {/* Re-enable guardrails */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm uppercase tracking-brand flex items-center gap-2">
+            <Lock className="h-4 w-4" /> Re-enable Guardrails
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            After an auto-stop, the re-enable button requires typing <span className="font-mono">RE-ENABLE</span> and acknowledging review.
+            Set a cooldown to enforce a waiting period before re-enable is permitted.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Cooldown (minutes after auto-stop)
+              </label>
+              <Input
+                type="number" min={0} max={1440} value={cfg.cooldownMinutes}
+                onChange={(e) => setSetting("instacart_autopilot_reenable_cooldown_minutes", Math.max(0, Number(e.target.value)))}
+                className="h-8 text-xs"
+              />
+              <p className="text-[10px] text-muted-foreground">0 disables the cooldown.</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Last re-enabled</label>
+              <p className="text-xs h-8 flex items-center">
+                {cfg.lastReenabledAt ? new Date(cfg.lastReenabledAt).toLocaleString() : "—"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Cooldown status</label>
+              <div className="h-8 flex items-center">
+                {cooldown.active
+                  ? <Badge className="bg-amber-500 hover:bg-amber-500/90 text-white text-[10px]">WAITING · {cooldownLabel}</Badge>
+                  : cfg.stoppedAt
+                    ? <Badge variant="default" className="text-[10px]">READY</Badge>
+                    : <Badge variant="secondary" className="text-[10px]">N/A</Badge>}
+              </div>
+            </div>
+          </div>
+
+          {cfg.reenableHistory && cfg.reenableHistory.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Recent re-enables</p>
+              <div className="border border-border rounded overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted">
+                    <tr className="text-left">
+                      <th className="p-2">Re-enabled at</th>
+                      <th className="p-2">Prior stop reason</th>
+                      <th className="p-2">Actor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cfg.reenableHistory.slice(0, 10).map((h, i) => (
+                      <tr key={`${h.at}-${i}`} className="border-t border-border">
+                        <td className="p-2 whitespace-nowrap">{new Date(h.at).toLocaleString()}</td>
+                        <td className="p-2 font-mono text-muted-foreground">{h.reason ?? "—"}</td>
+                        <td className="p-2 text-muted-foreground">{h.actor ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Evaluation log */}
       <Card>
         <CardHeader className="pb-2">

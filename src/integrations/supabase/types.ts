@@ -2638,6 +2638,66 @@ export type Database = {
         }
         Relationships: []
       }
+      creative_asset_queue: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          aspect_ratio: string
+          asset_type: string
+          brand_lockup: string
+          created_at: string
+          error: string | null
+          generated_url: string | null
+          id: string
+          metadata: Json
+          notes: string | null
+          prompt: string
+          requested_by: string | null
+          status: string
+          storage_path: string | null
+          target_slot: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          aspect_ratio?: string
+          asset_type: string
+          brand_lockup?: string
+          created_at?: string
+          error?: string | null
+          generated_url?: string | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          prompt: string
+          requested_by?: string | null
+          status?: string
+          storage_path?: string | null
+          target_slot?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          aspect_ratio?: string
+          asset_type?: string
+          brand_lockup?: string
+          created_at?: string
+          error?: string | null
+          generated_url?: string | null
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          prompt?: string
+          requested_by?: string | null
+          status?: string
+          storage_path?: string | null
+          target_slot?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       creative_fatigue: {
         Row: {
           channel: string

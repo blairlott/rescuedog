@@ -6,6 +6,7 @@ interface VinoshipperInlineSignupProps {
   tierName: string;
   onBack: () => void;
   backLabel?: string;
+  showBack?: boolean;
 }
 
 /**
@@ -19,6 +20,7 @@ export function VinoshipperInlineSignup({
   tierName,
   onBack,
   backLabel = "Back to club selection",
+  showBack = true,
 }: VinoshipperInlineSignupProps) {
   const { user } = useCustomerAuth();
 
@@ -39,13 +41,15 @@ export function VinoshipperInlineSignup({
 
   return (
     <div className="max-w-3xl mx-auto">
-      <button
-        type="button"
-        onClick={onBack}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" /> {backLabel}
-      </button>
+      {showBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" /> {backLabel}
+        </button>
+      )}
 
       <div className="border border-border bg-muted/30 p-4 mb-6 text-sm flex gap-3">
         <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />

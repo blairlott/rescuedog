@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,9 @@ import { useEffect } from "react";
 const CustomerLoginPage = () => {
   const { user } = useCustomerAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get("next");
+  const nextPath = nextParam && nextParam.startsWith("/") ? nextParam : "/account";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -23,8 +26,8 @@ const CustomerLoginPage = () => {
   const [isAppleLoading, setIsAppleLoading] = useState(false);
 
   useEffect(() => {
-    if (user) navigate("/account");
-  }, [user, navigate]);
+    if (user) navigate(nextPath);
+  }, [user, navigate, nextPath]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +36,7 @@ const CustomerLoginPage = () => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       toast.success("Welcome back!");
-      navigate("/account");
+      navigate(nextPath);
     } catch (err: any) {
       toast.error(err.message || "Login failed");
     } finally {

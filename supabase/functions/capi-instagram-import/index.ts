@@ -8,11 +8,14 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY")!;
+const META_PAGE_ACCESS_TOKEN = Deno.env.get("META_PAGE_ACCESS_TOKEN");
+const META_SYSTEM_USER_TOKEN = Deno.env.get("META_SYSTEM_USER_TOKEN");
+const IG_BUSINESS_ACCOUNT_ID = Deno.env.get("IG_BUSINESS_ACCOUNT_ID"); // optional cache
 const KENNEL_SECRET = Deno.env.get("KENNEL_EXTERNAL_SIGNAL_SECRET");
 
 const DEFAULT_HANDLE = "rescuedogwines";
 const DEFAULT_LIMIT = 12;
+const GRAPH = "https://graph.facebook.com/v21.0";
 
 type ExtractedPost = {
   image_url?: string;
@@ -21,55 +24,94 @@ type ExtractedPost = {
   permalink?: string;
 };
 
-class UnsupportedSiteError extends Error {
-  constructor(message: string) { super(message); this.name = "UnsupportedSiteError"; }
+class MetaConfigError extends Error {
+  constructor(message: string) { super(message); this.name = "MetaConfigError"; }
 }
 
-async function firecrawlExtract(targetUrl: string, limit: number): Promise<ExtractedPost[]> {
-  const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${FIRECRAWL_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      url: targetUrl,
-      onlyMainContent: false,
-      waitFor: 3500,
-      formats: [
-        {
-          type: "json",
-          prompt: `Extract up to ${limit} most recent Instagram posts and reels from this profile page. For each, return: image_url (direct .jpg/.jpeg/.png/.webp asset URL — NOT a thumbnail data URI, used as poster for videos too), video_url (direct .mp4 asset URL if this is a Reel or video post, otherwise null), caption text if visible, and permalink (https://www.instagram.com/p/SHORTCODE/ or /reel/SHORTCODE/). Return items that have at least an image_url or video_url. JSON: { "posts": [...] }.`,
-        },
-        "links",
-      ],
-    }),
-  });
+async function graphGet(path: string, token: string, params: Record<string, string> = {}) {
+  const url = new URL(`${GRAPH}${path}`);
+  url.searchParams.set("access_token", token);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  const r = await fetch(url.toString());
+  const data = await r.json().catch(() => ({}));
   if (!r.ok) {
-    const text = await r.text();
-    if (r.status === 403) {
-      throw new UnsupportedSiteError(`Firecrawl cannot access Instagram directly: ${text.slice(0, 200)}`);
-    }
-    throw new Error(`firecrawl ${r.status}: ${text.slice(0, 400)}`);
+    throw new Error(`Graph ${path} ${r.status}: ${JSON.stringify(data?.error ?? data).slice(0, 400)}`);
   }
-  const data = await r.json();
-  const json = data?.data?.json ?? data?.json ?? {};
-  const posts: ExtractedPost[] = Array.isArray(json?.posts) ? json.posts : [];
+  return data;
+}
 
-  // Fallback: if extraction missed, mine links for image + video assets from instagram CDN
-  if (posts.length === 0) {
-    const links: string[] = data?.data?.links ?? data?.links ?? [];
-    const cdn = (l: unknown) => typeof l === "string" && /cdninstagram|fbcdn/.test(l as string);
-    const imgLinks = links.filter(
-      (l) => typeof l === "string" && /cdninstagram|fbcdn/.test(l) && /\.(jpg|jpeg|png|webp)/i.test(l),
+async function resolveIgUserId(token: string): Promise<string> {
+  if (IG_BUSINESS_ACCOUNT_ID) return IG_BUSINESS_ACCOUNT_ID;
+  // Discover via the page tied to this token.
+  // Try /me?fields=instagram_business_account first (works if token IS a page token).
+  try {
+    const me = await graphGet("/me", token, { fields: "instagram_business_account" });
+    const id = me?.instagram_business_account?.id;
+    if (id) return id;
+  } catch (_) { /* fall through */ }
+  // Fall back: list pages this user manages and pick the first with an IG business account.
+  const accounts = await graphGet("/me/accounts", token, { fields: "id,name,instagram_business_account" });
+  const page = (accounts?.data ?? []).find((p: any) => p?.instagram_business_account?.id);
+  if (!page) {
+    throw new MetaConfigError(
+      "No Instagram Business Account is linked to the Meta Page this token belongs to. " +
+      "In Meta Business Suite, link the IG account to the Page, or set IG_BUSINESS_ACCOUNT_ID secret directly.",
     );
-    const vidLinks = links.filter((l) => cdn(l) && /\.mp4/i.test(l as string)) as string[];
-    const out: ExtractedPost[] = [];
-    for (const u of vidLinks.slice(0, limit)) out.push({ video_url: u });
-    for (const u of imgLinks.slice(0, Math.max(0, limit - out.length))) out.push({ image_url: u });
-    return out;
   }
-  return posts.slice(0, limit).filter((p) => !!(p.image_url || p.video_url));
+  return page.instagram_business_account.id;
+}
+
+async function fetchInstagramPosts(handle: string, limit: number): Promise<ExtractedPost[]> {
+  const token = META_PAGE_ACCESS_TOKEN || META_SYSTEM_USER_TOKEN;
+  if (!token) {
+    throw new MetaConfigError("META_PAGE_ACCESS_TOKEN (or META_SYSTEM_USER_TOKEN) not configured.");
+  }
+  const igUserId = await resolveIgUserId(token);
+
+  // If a specific handle was passed and it's NOT the owned account, use Business Discovery.
+  // Otherwise pull own media directly (richer fields).
+  let ownUsername = "";
+  try {
+    const me = await graphGet(`/${igUserId}`, token, { fields: "username" });
+    ownUsername = (me?.username || "").toLowerCase();
+  } catch (_) { /* ignore */ }
+
+  if (handle && ownUsername && handle.toLowerCase() !== ownUsername) {
+    // Business Discovery (read-only, public IG business/creator accounts)
+    const fields = `business_discovery.username(${handle}){media.limit(${limit}){id,caption,media_type,media_url,thumbnail_url,permalink,timestamp}}`;
+    const data = await graphGet(`/${igUserId}`, token, { fields });
+    const edges = data?.business_discovery?.media?.data ?? [];
+    return edges.map(mapMedia).filter(Boolean) as ExtractedPost[];
+  }
+
+  // Own account media
+  const data = await graphGet(`/${igUserId}/media`, token, {
+    fields: "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp",
+    limit: String(limit),
+  });
+  const edges = data?.data ?? [];
+  return edges.map(mapMedia).filter(Boolean) as ExtractedPost[];
+}
+
+function mapMedia(m: any): ExtractedPost | null {
+  if (!m) return null;
+  const type = (m.media_type || "").toUpperCase();
+  if (type === "VIDEO") {
+    return {
+      video_url: m.media_url,
+      image_url: m.thumbnail_url,
+      caption: m.caption,
+      permalink: m.permalink,
+    };
+  }
+  if (type === "IMAGE" || type === "CAROUSEL_ALBUM") {
+    return {
+      image_url: m.media_url || m.thumbnail_url,
+      caption: m.caption,
+      permalink: m.permalink,
+    };
+  }
+  return null;
 }
 
 async function downloadAsset(url: string, kind: "image" | "video"): Promise<{ bytes: Uint8Array; mime: string }> {
@@ -131,14 +173,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (!FIRECRAWL_API_KEY) {
-      return new Response(JSON.stringify({ error: "FIRECRAWL_API_KEY not configured" }), {
+    if (!META_PAGE_ACCESS_TOKEN && !META_SYSTEM_USER_TOKEN) {
+      return new Response(JSON.stringify({ error: "META_PAGE_ACCESS_TOKEN not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const profileUrl = `https://www.instagram.com/${handle}/`;
-    const posts = await firecrawlExtract(profileUrl, limit);
+    const posts = await fetchInstagramPosts(handle, limit);
 
     if (posts.length === 0) {
       return new Response(JSON.stringify({ ok: true, imported: 0, skipped: 0, note: "No posts found." }), {
@@ -221,13 +262,13 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    if (e instanceof UnsupportedSiteError) {
+    if (e instanceof MetaConfigError) {
       return new Response(JSON.stringify({
         ok: false,
         imported: 0,
         skipped: 0,
-        error: "UNSUPPORTED_SITE",
-        message: "Firecrawl does not support scraping Instagram directly. Use the Instagram Graph API, an oEmbed feed, or upload assets manually to the seed library.",
+        error: "META_CONFIG",
+        message: e.message,
         fallback: true,
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }

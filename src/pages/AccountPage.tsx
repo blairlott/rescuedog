@@ -22,6 +22,7 @@ import { SubscribeAndSaveTab } from "@/components/account/SubscribeAndSaveTab";
 import { GiftCertificatesTab } from "@/components/account/GiftCertificatesTab";
 import { PaymentMethodsTab } from "@/components/account/PaymentMethodsTab";
 import { RescueRewardsDashboard } from "@/components/account/RescueRewardsDashboard";
+import { useLaunchFeatures } from "@/hooks/useLaunchFeatures";
 import { OrdersTab } from "@/components/account/OrdersTab";
 
 const AccountPage = () => {
@@ -87,7 +88,9 @@ const AccountPage = () => {
     enabled: !!user?.email,
   });
 
-  // Referral rewards
+  const { rewardsEnabled, referralsEnabled } = useLaunchFeatures();
+
+  // Referral rewards (only when the referral program is enabled at launch)
   const { data: referralRewards = [] } = useQuery({
     queryKey: ["referral-rewards", user?.id],
     queryFn: async () => {
@@ -99,7 +102,7 @@ const AccountPage = () => {
       if (error) throw error;
       return data as any[];
     },
-    enabled: !!user,
+    enabled: !!user && referralsEnabled,
   });
 
   const totalPoints = referralRewards
@@ -246,7 +249,7 @@ const AccountPage = () => {
             <div>
               <h1 className="text-3xl font-bold text-foreground">My Account</h1>
               <p className="text-muted-foreground">{user.email}</p>
-              {profile?.referral_code && (
+              {profile?.referral_code && referralsEnabled && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Your referral code: <strong className="text-foreground">{profile.referral_code}</strong>
                 </p>
@@ -283,12 +286,16 @@ const AccountPage = () => {
               <TabsTrigger value="payment" className="gap-1.5">
                 <CreditCard className="h-3.5 w-3.5" /> Payment
               </TabsTrigger>
-              <TabsTrigger value="referrals" className="gap-1.5">
-                <Gift className="h-3.5 w-3.5" /> Referrals
-              </TabsTrigger>
-              <TabsTrigger value="rewards" className="gap-1.5">
-                <Trophy className="h-3.5 w-3.5" /> Rewards
-              </TabsTrigger>
+              {referralsEnabled && (
+                <TabsTrigger value="referrals" className="gap-1.5">
+                  <Gift className="h-3.5 w-3.5" /> Referrals
+                </TabsTrigger>
+              )}
+              {rewardsEnabled && (
+                <TabsTrigger value="rewards" className="gap-1.5">
+                  <Trophy className="h-3.5 w-3.5" /> Rewards
+                </TabsTrigger>
+              )}
               <TabsTrigger value="my-rescue" className="gap-1.5">
                 <PawPrint className="h-3.5 w-3.5" /> My Rescue
               </TabsTrigger>
@@ -436,6 +443,7 @@ const AccountPage = () => {
             </TabsContent>
 
             {/* Referrals Tab */}
+            {referralsEnabled && (
             <TabsContent value="referrals">
               <div className="space-y-6">
                 {/* Points Balance */}
@@ -528,6 +536,7 @@ const AccountPage = () => {
                 )}
               </div>
             </TabsContent>
+            )}
 
             {/* My Rescue Tab */}
             <TabsContent value="my-rescue">
@@ -535,9 +544,11 @@ const AccountPage = () => {
             </TabsContent>
 
             {/* Rewards Tab */}
-            <TabsContent value="rewards">
-              <RescueRewardsDashboard />
-            </TabsContent>
+            {rewardsEnabled && (
+              <TabsContent value="rewards">
+                <RescueRewardsDashboard />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </main>

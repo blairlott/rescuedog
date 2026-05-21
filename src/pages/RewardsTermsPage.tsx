@@ -1,9 +1,13 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { REWARDS_BLOCKED_STATES, REWARDS_RULES } from "@/lib/rewardsCompliance";
+import { useLaunchFeatures } from "@/hooks/useLaunchFeatures";
 
 export default function RewardsTermsPage() {
+  const { rewardsEnabled, isLoading } = useLaunchFeatures();
+  if (isLoading) return null;
+  if (!rewardsEnabled) return <Navigate to="/account" replace />;
   return (
     <>
       <Header />

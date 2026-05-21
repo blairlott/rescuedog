@@ -59,6 +59,11 @@ Deno.serve(async (req) => {
   if (!TOKEN || !ACCOUNT) return J(400, { error: "META_ADS_ACCESS_TOKEN or META_ADS_ACCOUNT_ID missing" });
 
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+  // Fast short-circuit for self-health probes — avoids hitting Meta API and
+  // blowing the probe's 20s timeout.
+  if (body?.dry_run === true || body?.probe === true) {
+    return J(200, { ok: true, dry_run: true, function: "kennel-ingest-meta" });
+  }
   const days = Number(body.days ?? 30);
 
   const channel_id = await ensureChannel(sb, "meta");

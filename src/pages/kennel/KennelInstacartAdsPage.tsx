@@ -17,6 +17,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { InstacartPartnershipPlanner } from "@/components/kennel/InstacartPartnershipPlanner";
+import { InstacartCapabilitiesOutline } from "@/components/kennel/InstacartCapabilitiesOutline";
 
 const PLATFORM = "instacart";
 
@@ -267,6 +268,8 @@ export default function KennelInstacartAdsPage() {
           </Button>
         </div>
       </div>
+
+      <InstacartCapabilitiesOutline />
 
       {/* Autopilot Command & Control */}
       <Card className="border-2 border-primary/30">

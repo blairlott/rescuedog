@@ -3634,6 +3634,47 @@ export type Database = {
         }
         Relationships: []
       }
+      event_rsvp_email_log: {
+        Row: {
+          created_at: string
+          email: string
+          error: string | null
+          event_id: string
+          id: string
+          kind: string
+          rsvp_id: string
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          error?: string | null
+          event_id: string
+          id?: string
+          kind: string
+          rsvp_id: string
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          error?: string | null
+          event_id?: string
+          id?: string
+          kind?: string
+          rsvp_id?: string
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rsvp_email_log_rsvp_id_fkey"
+            columns: ["rsvp_id"]
+            isOneToOne: false
+            referencedRelation: "ambassador_event_rsvps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       executive_decisions: {
         Row: {
           action_kind: string

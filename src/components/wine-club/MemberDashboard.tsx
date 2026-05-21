@@ -79,7 +79,10 @@ export function MemberDashboard({ membership }: MemberDashboardProps) {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Members-first countdown — drives anticipation for the next release */}
-      <NextShipmentCountdown nextShipmentDate={membership.next_shipment_date} />
+      <NextShipmentCountdown
+        nextShipmentDate={membership.next_shipment_date}
+        tierFrequency={tier?.frequency}
+      />
       {/* Your Pack — lifetime stats */}
       <YourPackStats membershipId={membership.id} userId={(membership as any).user_id} />
       {/* Status Banner */}

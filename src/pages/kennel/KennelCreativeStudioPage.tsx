@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Upload, Sparkles, Image as ImageIcon, Film, Type, KeyRound, ExternalLink, Download, Instagram } from "lucide-react";
+import { ContentSeedPanel } from "@/components/cms/ContentSeedPanel";
 
 const RATIOS: { id: string; label: string; group: string }[] = [
   { id: "1:1", label: "Meta Feed / Carrot / Instacart (1:1)", group: "Social" },
@@ -272,7 +273,7 @@ export default function KennelCreativeStudioPage() {
               });
               if (error) throw error;
               toast.success(
-                `Imported ${data?.imported ?? 0} seeds from @${handle}. Open the CMS → Creative tab → Seed Library to refine or push into a job.`,
+                `Imported ${data?.imported ?? 0} seeds from @${handle}. Scroll down to the Seed Library below to refine or push into a job.`,
               );
             } catch (e: any) {
               toast.error("Instagram import failed: " + e.message);
@@ -282,6 +283,9 @@ export default function KennelCreativeStudioPage() {
           <Instagram className="h-4 w-4 mr-2" /> Pull from Instagram
         </Button>
       </div>
+
+      {/* Content Seed Library — moved here from CMS → Creative Queue */}
+      <ContentSeedPanel />
 
       {setupChecked && !creatomateReady && (
         <Card className="p-4 border-dashed">

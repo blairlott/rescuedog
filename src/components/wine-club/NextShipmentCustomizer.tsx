@@ -227,6 +227,9 @@ export function NextShipmentCustomizer({ membership }: Props) {
             Ships {shipment.shipment_date ? new Date(shipment.shipment_date).toLocaleDateString() : "TBD"}
             {shipment.cutoff_at && ` · Locks ${new Date(shipment.cutoff_at).toLocaleDateString()}`}
           </p>
+          {tier?.frequency && (
+            <p className="text-[11px] text-muted-foreground mt-1 italic">{describeShipmentCadence(tier.frequency)}</p>
+          )}
         </div>
         <span className="text-[11px] uppercase tracking-brand font-bold px-2 py-1 bg-muted">{shipment.status.replace(/_/g, " ")}</span>
       </div>

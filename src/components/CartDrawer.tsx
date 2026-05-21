@@ -513,9 +513,9 @@ export const CartDrawer = () => {
       <SheetContent className="w-full sm:max-w-lg flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden p-4 sm:p-6">
         {/* Diagonal corner ribbon — communicates shipping threshold for both wine & merch */}
         {totalItems > 0 && (
-          <div className="pointer-events-none absolute top-0 right-0 h-24 w-24 overflow-hidden z-20">
+          <div className="pointer-events-none absolute top-0 left-0 h-20 w-20 overflow-hidden z-20">
             <div
-              className={`absolute top-[22px] right-[-42px] w-[150px] rotate-45 text-center py-1 text-[9px] font-bold uppercase tracking-brand shadow-md ${
+              className={`absolute top-[18px] left-[-42px] w-[140px] -rotate-45 text-center py-1 text-[9px] font-bold uppercase tracking-brand shadow-md ${
                 shippingIncluded
                   ? "bg-green-600 text-white"
                   : "bg-primary text-primary-foreground"
@@ -587,7 +587,7 @@ export const CartDrawer = () => {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm truncate">{item.product.node.title}</h4>
+                         <h4 className="font-medium text-sm leading-tight line-clamp-2">{item.product.node.title}</h4>
                           <p className="text-xs text-muted-foreground">{item.selectedOptions.map(o => o.value).join(' • ')}</p>
                           <CartLineSizePicker item={item} />
                           <p className="font-semibold text-sm mt-1">${parseFloat(item.price.amount).toFixed(2)}</p>

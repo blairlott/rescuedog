@@ -35,7 +35,7 @@ export const InlineBannerEditor = ({ value, onSave, isSaving, ariaLabel = "Banne
   };
 
   if (!editable) {
-    return <p className="text-sm tracking-wide">{value}</p>;
+    return <p className="text-[11px] sm:text-sm tracking-wide leading-tight px-6 sm:px-0">{value}</p>;
   }
 
   if (editing) {

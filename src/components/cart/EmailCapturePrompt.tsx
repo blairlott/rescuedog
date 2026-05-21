@@ -29,6 +29,18 @@ export function EmailCapturePrompt() {
     return () => clearTimeout(t);
   }, [items.length, user]);
 
+  // Hide while any Radix Dialog/Sheet (cart drawer, modals) is open so we don't
+  // cover the underlying UI on mobile.
+  const [overlayOpen, setOverlayOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const check = () => setOverlayOpen(document.body.hasAttribute("data-scroll-locked"));
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.body, { attributes: true, attributeFilter: ["data-scroll-locked", "style"] });
+    return () => obs.disconnect();
+  }, [open]);
+
   const dismiss = () => {
     try { localStorage.setItem(KEY, JSON.stringify({ dismissed: true, at: Date.now() })); } catch {}
     setOpen(false);
@@ -66,10 +78,10 @@ export function EmailCapturePrompt() {
     }
   };
 
-  if (!open) return null;
+  if (!open || overlayOpen) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:max-w-sm z-[60] bg-background border border-foreground shadow-lg p-4 pr-10 relative">
+    <div className="fixed bottom-24 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:max-w-sm z-[60] bg-background border border-foreground shadow-lg p-4 pr-10">
       <button type="button" onClick={dismiss} aria-label="Close" className="absolute top-2 right-2 p-2 text-muted-foreground hover:text-foreground z-20 cursor-pointer">
         <X className="h-4 w-4" />
       </button>

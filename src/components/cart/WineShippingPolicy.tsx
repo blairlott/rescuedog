@@ -31,6 +31,12 @@ export function WineShippingPolicy({ variant = "full", className = "" }: WineShi
             Not home? Pick a nearby <strong className="text-foreground">UPS Access Point</strong> at checkout for pickup on your schedule.
           </span>
         </p>
+        <p className="flex items-start gap-1.5">
+          <AlertTriangle className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+          <span>
+            <strong className="text-foreground">UPS no longer reattempts wine deliveries.</strong> After one missed delivery, your shipment is diverted to the nearest UPS Access Point for customer pickup.
+          </span>
+        </p>
         <p>
           See full{" "}
           <Link to="/policies#shipping" className="underline hover:text-foreground">
@@ -64,6 +70,17 @@ export function WineShippingPolicy({ variant = "full", className = "" }: WineShi
           Won't be home? No problem — simply select a nearby{" "}
           <strong className="text-foreground">UPS Access Point</strong> at checkout for
           convenient pickup on your schedule.
+        </span>
+      </p>
+
+      <p className="flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+        <span>
+          <strong className="text-foreground">New UPS policy:</strong> UPS will no longer
+          reattempt wine deliveries. After a single missed delivery, your shipment will be
+          automatically diverted to the nearest{" "}
+          <strong className="text-foreground">UPS Access Point</strong>, and you'll be
+          responsible for picking it up there — UPS will not redeliver to your address.
         </span>
       </p>
 

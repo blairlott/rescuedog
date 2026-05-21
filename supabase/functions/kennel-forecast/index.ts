@@ -93,9 +93,10 @@ Deno.serve(async (req) => {
 
   // Lookback window
   const since = new Date(Date.now() - lookback * 86400000).toISOString().slice(0, 10);
-  // Always pull a deeper window (up to 24 months) for seasonal-index estimation,
-  // independent of the user-selected lookback used for trend/CAGR.
-  const seasonalSince = new Date(Date.now() - 730 * 86400000).toISOString().slice(0, 10);
+  // Always pull a deep window (up to 4 years) for seasonal-index + Q4 YoY
+  // estimation, independent of the user-selected lookback used for trend/CAGR.
+  // We need ≥3 prior Q4s to compute a reliable apples-to-apples YoY growth.
+  const seasonalSince = new Date(Date.now() - 1460 * 86400000).toISOString().slice(0, 10);
   const { data: channels } = await admin.from("ad_channels").select("id, platform");
   const chById = new Map<string, string>((channels ?? []).map((c: any) => [c.id, c.platform]));
   // Page through to get full history (Supabase caps at 1000/page).
@@ -229,83 +230,105 @@ Deno.serve(async (req) => {
 
     const series: any[] = [];
     let cumSpend = 0, cumRev = 0;
-    // ---- Q4 historical anchor ---------------------------------------------
-    // OND 2026 forecast must reflect prior Q4 peaks (BFCM/holiday), not the
-    // currently-paused budget baseline. Find the best historical Oct/Nov/Dec
-    // monthly revenue+spend from the 24-month seasonal window and project
-    // forward at 100%+ YoY growth (DTC norm: EoY typically doubles).
-    const q4History = new Map<string, { spend: number; revenue: number }>(); // ym -> totals
+    // ---- Q4 historical anchor (data-derived, no hardcoded uplift) ---------
+    // Wine + gifting are heavily seasonal — Q4 (OND) needs to be anchored to
+    // prior-Q4 actuals, not a depressed off-season baseline. We compute YoY
+    // growth from year-over-year Q4 deltas (apples-to-apples) instead of
+    // assuming a fixed growth rate.
+    type Q4Totals = { spend: number; revenue: number };
+    const q4ByYearMonth = new Map<string, Q4Totals>(); // YYYY-MM -> totals
     for (const d of seasonDates) {
       const m = Number(d.slice(5, 7));
       if (m !== 10 && m !== 11 && m !== 12) continue;
       const ym = d.slice(0, 7);
-      const cur = q4History.get(ym) ?? { spend: 0, revenue: 0 };
+      const cur = q4ByYearMonth.get(ym) ?? { spend: 0, revenue: 0 };
       const day = seasonByDate.get(d)!;
       cur.spend += day.spend; cur.revenue += day.revenue;
-      q4History.set(ym, cur);
+      q4ByYearMonth.set(ym, cur);
     }
-    const q4PeakByMonth: Record<number, { spend: number; revenue: number; year: number }> = {};
-    for (const [ym, v] of q4History.entries()) {
-      const m = Number(ym.slice(5, 7));
+    // Per-year Q4 totals (revenue + spend) for years that have all 3 OND months.
+    const q4ByYear = new Map<number, Q4Totals & { monthsPresent: number }>();
+    for (const [ym, v] of q4ByYearMonth.entries()) {
       const y = Number(ym.slice(0, 4));
-      const cur = q4PeakByMonth[m];
-      if (!cur || v.revenue > cur.revenue) q4PeakByMonth[m] = { ...v, year: y };
+      const cur = q4ByYear.get(y) ?? { spend: 0, revenue: 0, monthsPresent: 0 };
+      cur.spend += v.spend; cur.revenue += v.revenue; cur.monthsPresent += 1;
+      q4ByYear.set(y, cur);
     }
-    // Project forward at YoY growth per year since the peak.
-    const yoyGrowth = 1.0; // +100% YoY (user-stated DTC EoY norm)
-    const q4FloorMonthly = (year: number, monthIdx0: number) => {
-      const monthNum = monthIdx0 + 1; // 1-indexed
-      const peak = q4PeakByMonth[monthNum];
-      if (!peak) return null;
-      const yearsAhead = Math.max(0, year - peak.year);
-      const growthMult = Math.pow(1 + yoyGrowth, yearsAhead);
-      return {
-        spendDay: (peak.spend * growthMult) / 30,
-        revDay:   (peak.revenue * growthMult) / 30,
-      };
-    };
-    // Planning uplift: restored budgets + improved ROAS in OND 2026 (Q4 push).
-    // Spend and ROAS multipliers applied on top of seasonality, peaking in Nov.
-    // DTC EoY pattern: Q4 revenue typically runs 2x+ baseline. Uplift compounds
-    // restored budgets with improved ROAS, peaking Nov (BFCM + Giving Tuesday).
-    const ondUplift = (d: Date): { spend: number; roas: number } => {
-      const y = d.getUTCFullYear();
-      const m = d.getUTCMonth(); // 0-indexed
-      if (y >= 2026 && (m === 9 || m === 10 || m === 11)) {
-        // Per-month relative weight against the Q4 floor; Nov peaks.
-        if (m === 9)  return { spend: 0.85, roas: 1.20 };
-        if (m === 10) return { spend: 1.15, roas: 1.35 }; // Nov peak
-        if (m === 11) return { spend: 1.00, roas: 1.25 };
+    // Measure YoY growth from CONSECUTIVE prior Q4s with complete data.
+    // Geometric mean = apples-to-apples compounding rate. Clamp to a sane
+    // range so a single anomalous year can't blow up multi-year projections.
+    const sortedYears = Array.from(q4ByYear.keys())
+      .filter((y) => (q4ByYear.get(y)!.monthsPresent >= 2) && q4ByYear.get(y)!.revenue > 0)
+      .sort((a, b) => a - b);
+    const yoyDeltas: number[] = [];
+    for (let i = 1; i < sortedYears.length; i++) {
+      const cur = q4ByYear.get(sortedYears[i])!.revenue;
+      const prev = q4ByYear.get(sortedYears[i - 1])!.revenue;
+      if (prev > 0 && cur > 0 && sortedYears[i] - sortedYears[i - 1] === 1) {
+        yoyDeltas.push(cur / prev);
       }
-      return { spend: 1, roas: 1 };
+    }
+    const measuredYoy = yoyDeltas.length > 0
+      ? Math.pow(yoyDeltas.reduce((a, b) => a * b, 1), 1 / yoyDeltas.length) - 1
+      : 0;
+    // Clamp: a single Q4 can be very volatile; cap at +75%/-25% YoY for
+    // multi-year planning. (Wine/gift seasonal brands rarely sustain >75% YoY.)
+    const q4YoyGrowth = Math.max(-0.25, Math.min(0.75, measuredYoy));
+    // Reference Q4: average of the last 2 years (or whatever exists). Averaging
+    // smooths anomalies; using a single peak overstates the floor.
+    const refYears = sortedYears.slice(-2);
+    const refMonth: Record<number, { spend: number; revenue: number; year: number; n: number }> = {};
+    for (const y of refYears) {
+      for (const m of [10, 11, 12]) {
+        const ym = `${y}-${String(m).padStart(2, "0")}`;
+        const v = q4ByYearMonth.get(ym);
+        if (!v) continue;
+        const cur = refMonth[m] ?? { spend: 0, revenue: 0, year: y, n: 0 };
+        cur.spend += v.spend; cur.revenue += v.revenue; cur.n += 1;
+        cur.year = Math.max(cur.year, y);
+        refMonth[m] = cur;
+      }
+    }
+    const q4FloorMonthly = (year: number, monthIdx0: number) => {
+      const monthNum = monthIdx0 + 1;
+      const ref = refMonth[monthNum];
+      if (!ref || ref.n === 0) return null;
+      const yearsAhead = Math.max(0, year - ref.year);
+      const growthMult = Math.pow(1 + q4YoyGrowth, yearsAhead);
+      const avgSpend = ref.spend / ref.n;
+      const avgRev   = ref.revenue / ref.n;
+      return {
+        spendDay: (avgSpend * growthMult) / 30,
+        revDay:   (avgRev * growthMult) / 30,
+      };
     };
     for (let h = 1; h <= horizon; h++) {
       const futureDate = new Date(lastDate.getTime() + h * 86400000);
       const dow = futureDate.getUTCDay();
       const moy = futureDate.getUTCMonth();
-      const uplift = ondUplift(futureDate);
       // CAGR-based projection: baseline daily × compounded growth × DoW seasonality.
       const growthSpend = Math.pow(spendDaily, h);
       const growthRev   = Math.pow(revDaily,   h);
-      const rawSpend = Math.max(spendFloor, baselineSpend * growthSpend) * spendSeason[dow] * spendMonthSeason[moy] * spendTilt * uplift.spend;
+      const rawSpend = Math.max(spendFloor, baselineSpend * growthSpend) * spendSeason[dow] * spendMonthSeason[moy] * spendTilt;
       let trendSpend = rawSpend;
       const rawRev   = baselineRev * growthRev * revSeason[dow] * revMonthSeason[moy] * revenueTilt;
       let trendRev   = rawRev;
-      // Apply Q4 historical floor (with YoY growth) so OND projections never
-      // fall below the prior peak compounded at +100%/yr.
+      // Apply Q4 historical floor (avg of last 2 prior Q4s × measured YoY) so
+      // OND projections never fall below what the brand has demonstrably done.
       const floor = q4FloorMonthly(futureDate.getUTCFullYear(), moy);
       if (floor) {
         const dowSpendIdx = spendSeason[dow];
         const dowRevIdx   = revSeason[dow];
-        trendSpend = Math.max(trendSpend, floor.spendDay * dowSpendIdx * uplift.spend);
+        trendSpend = Math.max(trendSpend, floor.spendDay * dowSpendIdx);
         trendRev   = Math.max(trendRev,   floor.revDay   * dowRevIdx);
       }
       if (trendSpend > 0 && baselineRoas > 0) {
         const implied = trendRev / trendSpend;
-        // During Q4 (uplift active) widen the ROAS ceiling so historical Q4
-        // efficiency isn't clamped down to a depressed off-season baseline.
-        const ceilingActive = uplift.roas > 1 ? roasCeiling * 2.5 : roasCeiling;
-        const targetRoas = Math.min(ceilingActive, Math.max(roasFloor, implied)) * roasTilt * uplift.roas;
+        // Widen ROAS ceiling in Q4 where seasonal index > 1.15 so historical
+        // Q4 efficiency isn't clamped to a depressed off-season baseline.
+        const seasonalLift = Math.max(spendMonthSeason[moy], revMonthSeason[moy]);
+        const ceilingActive = seasonalLift > 1.15 ? roasCeiling * 2.0 : roasCeiling;
+        const targetRoas = Math.min(ceilingActive, Math.max(roasFloor, implied)) * roasTilt;
         trendRev = trendSpend * targetRoas;
       }
       const roas = trendSpend > 0 ? trendRev / trendSpend : 0;
@@ -345,8 +368,8 @@ Deno.serve(async (req) => {
       upper_bound: Math.round(series.reduce((s, p) => s + p.revenue_upper, 0) * 100) / 100,
       confidence: 0.80,
       model: "cagr_dow_month_seasonality_v2",
-      series: { points: series, summary, strategy_mode: { goal, pace }, baseline: { roas: Math.round(baselineRoas * 1000) / 1000, daily_spend: Math.round(baselineSpend * 100) / 100, daily_revenue: Math.round(baselineRev * 100) / 100, days: recent28Spend.length, revenue_cagr: Math.round(revCagr * 1000) / 1000, spend_cagr: Math.round(spendCagr * 1000) / 1000 }, seasonality: { dow_revenue: revSeason.map((v) => Math.round(v * 1000) / 1000), month_revenue: revMonthSeason.map((v) => Math.round(v * 1000) / 1000), month_spend: spendMonthSeason.map((v) => Math.round(v * 1000) / 1000), history_days: seasonDates.length } },
-      narrative: `${horizon}-day projection: baseline ROAS ${baselineRoas.toFixed(2)}x, revenue CAGR ${(revCagr*100).toFixed(1)}%, spend CAGR ${(spendCagr*100).toFixed(1)}% (90d vs prior 90d, annualized). Seasonality: day-of-week + calendar-month (24mo, ${seasonDates.length} days observed). Goal ${goal}/100, Pace ${pace}/100.`,
+      series: { points: series, summary, strategy_mode: { goal, pace }, baseline: { roas: Math.round(baselineRoas * 1000) / 1000, daily_spend: Math.round(baselineSpend * 100) / 100, daily_revenue: Math.round(baselineRev * 100) / 100, days: recent28Spend.length, revenue_cagr: Math.round(revCagr * 1000) / 1000, spend_cagr: Math.round(spendCagr * 1000) / 1000 }, seasonality: { dow_revenue: revSeason.map((v) => Math.round(v * 1000) / 1000), month_revenue: revMonthSeason.map((v) => Math.round(v * 1000) / 1000), month_spend: spendMonthSeason.map((v) => Math.round(v * 1000) / 1000), history_days: seasonDates.length }, q4: { yoy_growth_measured: Math.round(measuredYoy * 1000) / 1000, yoy_growth_applied: Math.round(q4YoyGrowth * 1000) / 1000, prior_q4_years: sortedYears, ref_years: refYears, yoy_deltas: yoyDeltas.map((v) => Math.round(v * 1000) / 1000) } },
+      narrative: `${horizon}-day projection: baseline ROAS ${baselineRoas.toFixed(2)}x, revenue CAGR ${(revCagr*100).toFixed(1)}%, spend CAGR ${(spendCagr*100).toFixed(1)}% (90d vs prior 90d, annualized). Q4 floor: avg of last ${refYears.length} prior Q4s × ${(q4YoyGrowth*100).toFixed(1)}% measured YoY (from ${yoyDeltas.length} prior Q4-over-Q4 comparisons, clamped -25%..+75%). Seasonality: day-of-week + calendar-month (${seasonDates.length} days history, ${sortedYears.length} prior Q4s).`,
       generated_at: new Date().toISOString(),
       valid_until: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
     };

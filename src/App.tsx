@@ -7,6 +7,7 @@ import { useCartSync } from "@/hooks/useCartSync";
 import { useAbandonedCartSnapshot } from "@/hooks/useAbandonedCartSnapshot";
 import { lazy, Suspense, useEffect } from "react";
 import { captureFbclid, captureGclid } from "@/lib/metaAttribution";
+import { initMetaPixel, trackPageView } from "@/lib/metaPixel";
 import { initVariantHandshake } from "@/lib/abVariant";
 import { logAbEvent } from "@/lib/abEvents";
 import { AgeGate } from "@/components/AgeGate";
@@ -138,9 +139,16 @@ function AppContent() {
     captureFbclid();
     captureGclid();
     initVariantHandshake();
+    initMetaPixel();
   }, []);
   const location = useLocation();
   const path = location.pathname.toLowerCase();
+  // Fire Meta Pixel PageView on every SPA route change (after initial init).
+  useEffect(() => {
+    if (path.startsWith("/admin") || path.startsWith("/cms") || path.startsWith("/crm") ||
+        path.startsWith("/kennel") || path.startsWith("/dropship")) return;
+    trackPageView();
+  }, [path]);
   useEffect(() => {
     if (path === "/merch" || path.startsWith("/merch/")) {
       sessionStorage.setItem("lastStorePath", "/merch");

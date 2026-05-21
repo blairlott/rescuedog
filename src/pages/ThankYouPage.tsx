@@ -8,6 +8,7 @@ import { CheckCircle2, Heart, Users, Gift, Percent } from "lucide-react";
 import { useIsMember } from "@/hooks/useIsMember";
 import { PostPurchaseUpsell } from "@/components/PostPurchaseUpsell";
 import { recordExperimentRevenueForVisitor } from "@/lib/experimentRevenue";
+import { trackPurchase } from "@/lib/metaPixel";
 
 export default function ThankYouPage() {
   const [params] = useSearchParams();
@@ -33,6 +34,17 @@ export default function ThankYouPage() {
         },
       });
     } catch {}
+    // Browser-side Meta Pixel Purchase — uses same event_id as the server
+    // CAPI Purchase so Meta dedupes. Once legacy checkout is retired and
+    // orders flow through this site, this fires alongside the server event
+    // and lifts EMQ via `_fbp`/`_fbc` browser cookies.
+    if (orderId && total) {
+      const dedupeKey = `rdw_meta_purchase_${orderId}`;
+      if (!sessionStorage.getItem(dedupeKey)) {
+        sessionStorage.setItem(dedupeKey, "1");
+        trackPurchase({ eventId: orderId, value: Number(total) || 0, currency: "USD" });
+      }
+    }
     // Feed revenue back to every running experiment this visitor saw, so
     // the bandit can optimize on actual revenue-per-visitor.
     if (orderId) {

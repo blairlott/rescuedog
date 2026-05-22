@@ -320,7 +320,7 @@ const ProductDetail = () => {
                       <p className="text-[11px] uppercase tracking-brand text-primary font-bold mt-1">
                         {isMember
                           ? `Your Member Price (${teaserDiscountPct}% off)`
-                          : `Pack Member Price (${teaserDiscountPct}% off) — applied at checkout`}
+                          : `Wine Club Member Price (${teaserDiscountPct}% off) — applied at checkout`}
                       </p>
                     </div>
                   ) : (

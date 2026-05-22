@@ -90,7 +90,7 @@ export default function ThankYouPage() {
             <aside className="border border-primary bg-primary/5 p-5 my-6 text-left">
               <div className="flex items-center gap-2 mb-2">
                 <Percent className="h-5 w-5 text-primary" />
-                <p className="font-bold uppercase tracking-brand text-sm">Pack members would have saved</p>
+                <p className="font-bold uppercase tracking-brand text-sm">Wine Club members would have saved</p>
               </div>
               <p className="text-2xl font-display font-bold text-primary mb-1">
                 ${(Number(total) * 0.20).toFixed(2)} on this order

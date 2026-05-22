@@ -3,6 +3,8 @@ project_id = "eskqaxmypgvwtsffcbsw"
 [functions]
   [functions.auth-email-hook]
     verify_jwt = false
+  [functions.provision-cfo]
+    verify_jwt = false
   [functions.compliance-audit]
     verify_jwt = false
   [functions.handle-email-suppression]

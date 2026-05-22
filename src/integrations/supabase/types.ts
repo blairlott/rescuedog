@@ -11536,6 +11536,26 @@ export type Database = {
           valid: boolean
         }[]
       }
+      wine_club_conversion_triggers: {
+        Args: never
+        Returns: {
+          baseline_rate: number
+          converters: number
+          multi_bottle_converters: number
+          multi_bottle_rate: number
+          multi_bottle_touched: number
+          tasting_converters: number
+          tasting_rate: number
+          tasting_touched: number
+          total_guests: number
+          welcome_3plus_converters: number
+          welcome_3plus_rate: number
+          welcome_3plus_touched: number
+          wine_club_page_converters: number
+          wine_club_page_rate: number
+          wine_club_page_touched: number
+        }[]
+      }
     }
     Enums: {
       app_role:

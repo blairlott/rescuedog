@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, ExternalLink, RefreshCcw, Unplug } from "lucide-react";
+import { Loader2, CheckCircle2, ExternalLink, RefreshCcw, Unplug, Download } from "lucide-react";
 import { toast } from "sonner";
 
 export function QuickBooksPanel({ days }: { days: number }) {
   const [connecting, setConnecting] = useState(false);
   const [loadingReport, setLoadingReport] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [report, setReport] = useState<any>(null);
+  const qc = useQueryClient();
 
   const { data: conn, refetch } = useQuery({
     queryKey: ["qbo-connection"],
@@ -63,6 +65,33 @@ export function QuickBooksPanel({ days }: { days: number }) {
     }
   };
 
+  const importToFinance = async () => {
+    setImporting(true);
+    try {
+      const end = new Date();
+      const start = new Date(end.getTime() - days * 86400000);
+      const fmt = (d: Date) => d.toISOString().slice(0, 10);
+      const { data, error } = await supabase.functions.invoke("qbo-import-pnl", {
+        body: { start_date: fmt(start), end_date: fmt(end) },
+      });
+      if (error) throw error;
+      toast.success(`Imported ${data?.imported ?? 0} entries`, {
+        description: `Range ${fmt(start)} → ${fmt(end)}. Tiles will refresh.`,
+      });
+      // Refresh all finance tile queries
+      qc.invalidateQueries({ queryKey: ["finance_pnl_summary"] });
+      qc.invalidateQueries({ queryKey: ["finance_revenue_by_channel"] });
+      qc.invalidateQueries({ queryKey: ["finance_spend_by_platform"] });
+      qc.invalidateQueries({ queryKey: ["finance_cash_trend"] });
+      qc.invalidateQueries({ queryKey: ["finance_top_vendors"] });
+      qc.invalidateQueries({ queryKey: ["finance_cc_roas"] });
+    } catch (e: any) {
+      toast.error("Import failed", { description: String(e?.message ?? e) });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <section className="border border-border bg-card p-5 space-y-3">
       <div className="flex items-center justify-between">
@@ -99,6 +128,10 @@ export function QuickBooksPanel({ days }: { days: number }) {
           <Button size="sm" variant="outline" onClick={pullPnL} disabled={loadingReport} className="gap-2">
             {loadingReport ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
             Pull P&amp;L (last {days} days)
+          </Button>
+          <Button size="sm" onClick={importToFinance} disabled={importing} className="gap-2">
+            {importing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+            Import to Finance (last {days} days)
           </Button>
           {report && (
             <span className="text-xs text-muted-foreground">

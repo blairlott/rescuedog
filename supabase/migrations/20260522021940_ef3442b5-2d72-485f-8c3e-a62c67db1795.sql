@@ -1,0 +1,1 @@
+UPDATE public.feature_flags SET enabled = true, updated_at = now() WHERE key = 'vs_api_watcher_enabled';

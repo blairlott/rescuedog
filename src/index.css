@@ -208,3 +208,15 @@ body {
   --vs-cart-footer-subtotal-font-weight: 800;
   --vs-cart-footer-subtotal-text-transform: uppercase;
 }
+
+/* SAP-style dense Finance workspace */
+.finance-workspace {
+  font-size: 13px;
+}
+.finance-workspace .tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+  letter-spacing: -0.01em;
+}
+.finance-workspace h3 { font-size: 13px; }
+.finance-workspace section > div > div { border-radius: 0; }

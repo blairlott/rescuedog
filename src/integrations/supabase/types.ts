@@ -2435,6 +2435,54 @@ export type Database = {
         }
         Relationships: []
       }
+      cfo_insights: {
+        Row: {
+          body: string | null
+          date_range_days: number | null
+          dedupe_hash: string
+          generated_at: string
+          headline: string
+          id: string
+          metric_snapshot: Json | null
+          recommended_action: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          tile_key: string
+        }
+        Insert: {
+          body?: string | null
+          date_range_days?: number | null
+          dedupe_hash: string
+          generated_at?: string
+          headline: string
+          id?: string
+          metric_snapshot?: Json | null
+          recommended_action?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          status?: string
+          tile_key: string
+        }
+        Update: {
+          body?: string | null
+          date_range_days?: number | null
+          dedupe_hash?: string
+          generated_at?: string
+          headline?: string
+          id?: string
+          metric_snapshot?: Json | null
+          recommended_action?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          tile_key?: string
+        }
+        Relationships: []
+      }
       cfo_saved_views: {
         Row: {
           config: Json

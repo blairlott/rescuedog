@@ -6,12 +6,15 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, X, Calendar, BookOpen, Wine, Activity } from "lucide-react";
+import { Plus, X, Calendar, BookOpen, Wine, Activity, Sparkles, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_TILE_KEYS, FINANCE_TILES, SOURCE_LABEL, TILE_BY_KEY, type FinanceTileSource } from "@/lib/financeTiles";
 import { renderTile } from "@/components/finance/FinanceTiles";
 import { FeatureRequestBox } from "@/components/admin/FeatureRequestBox";
 import { QuickBooksPanel } from "@/components/finance/QuickBooksPanel";
+import { TileInsightStrip } from "@/components/finance/InsightStrip";
+import { InsightsDrawer } from "@/components/finance/InsightsDrawer";
+import { useCfoInsights, useGenerateInsights } from "@/hooks/finance/useCfoInsights";
 
 const RANGES = [
   { label: "Last 7 days", days: 7 },
@@ -28,6 +31,9 @@ export default function FinanceDashboard() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [insightsOpen, setInsightsOpen] = useState(false);
+  const { data: openInsights = [] } = useCfoInsights("open");
+  const generate = useGenerateInsights();
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -103,18 +109,41 @@ export default function FinanceDashboard() {
   }, { quickbooks: [], vinoshipper: [], command_center: [] });
 
   return (
-    <div className="px-6 py-6 space-y-8 max-w-[1600px] mx-auto">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <h1 className="text-2xl font-bold leading-tight">Overview</h1>
-          <p className="text-sm text-muted-foreground">Live financial pulse across QuickBooks, Vinoshipper, and the Command Center.</p>
+    <div className="finance-workspace px-6 py-5 space-y-6 max-w-[1700px] mx-auto">
+      {/* SAP-style sticky toolbar */}
+      <div className="sticky top-14 z-20 -mx-6 px-6 py-3 bg-card border-b border-border flex flex-wrap items-center gap-2">
+        <div className="flex flex-col leading-tight">
+          <span className="text-[10px] uppercase tracking-brand text-muted-foreground">Workspace</span>
+          <h1 className="text-base font-bold">Overview</h1>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <div className="flex items-center gap-2 h-9 px-3 border border-border bg-card">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5"
+            onClick={() => qc.invalidateQueries()}
+            title="Refresh all tiles"
+          >
+            <RefreshCcw className="h-3.5 w-3.5" /> Refresh
+          </Button>
+          <Button
+            size="sm"
+            variant={openInsights.length ? "default" : "outline"}
+            className="h-8 gap-1.5 relative"
+            onClick={() => setInsightsOpen(true)}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Insights
+            {openInsights.length > 0 && (
+              <span className="ml-1 inline-flex h-4 min-w-4 px-1 items-center justify-center text-[10px] font-bold bg-background text-foreground">
+                {openInsights.length}
+              </span>
+            )}
+          </Button>
+          <div className="flex items-center gap-2 h-8 px-2 border border-border bg-card">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <Select value={String(days)} onValueChange={onDaysChange}>
-              <SelectTrigger className="w-40 h-7 border-0 px-0 focus:ring-0 shadow-none"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-36 h-6 border-0 px-0 focus:ring-0 shadow-none text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {RANGES.map(r => <SelectItem key={r.days} value={String(r.days)}>{r.label}</SelectItem>)}
               </SelectContent>
@@ -122,7 +151,7 @@ export default function FinanceDashboard() {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add report</Button>
+              <Button size="sm" className="h-8"><Plus className="h-3.5 w-3.5 mr-1" /> Add report</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
               {(Object.keys(grouped) as FinanceTileSource[]).map(src => (
@@ -170,7 +199,7 @@ export default function FinanceDashboard() {
               <div className="h-px flex-1 bg-border" />
               <span className="text-[10px] uppercase tracking-brand text-muted-foreground">{keys.length} {keys.length === 1 ? "tile" : "tiles"}</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3">
               {keys.map(key => {
                 const def = TILE_BY_KEY[key];
                 if (!def) return null;
@@ -179,7 +208,7 @@ export default function FinanceDashboard() {
                 return (
                   <div
                     key={key}
-                    className={`group border border-border bg-card p-4 hover:border-foreground/30 transition-colors ${colClass}`}
+                    className={`group border border-border bg-card p-4 hover:border-foreground/40 transition-colors flex flex-col ${colClass}`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="min-w-0">
@@ -196,7 +225,8 @@ export default function FinanceDashboard() {
                         <X className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                    {renderTile(key, days)}
+                    <div className="flex-1">{renderTile(key, days)}</div>
+                    <TileInsightStrip tileKey={key} onOpen={() => setInsightsOpen(true)} />
                   </div>
                 );
               })}
@@ -218,6 +248,7 @@ export default function FinanceDashboard() {
       )}
 
       <QuickBooksPanel days={days} />
+      <InsightsDrawer open={insightsOpen} onOpenChange={setInsightsOpen} days={days} />
     </div>
   );
 }

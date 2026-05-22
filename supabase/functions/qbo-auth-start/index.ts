@@ -8,7 +8,7 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const J = (s: number, b: unknown) =>
-  new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
+  new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
 
 const REDIRECT_URI = `${Deno.env.get("SUPABASE_URL")}/functions/v1/qbo-auth-callback`;
 const SCOPE = "com.intuit.quickbooks.accounting";
@@ -36,7 +36,16 @@ Deno.serve(async (req) => {
 
   const state = crypto.randomUUID();
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  await admin.from("qbo_oauth_states").insert({ state, user_id: userId });
+  await admin.from("qbo_oauth_states").delete().eq("user_id", userId);
+  const { error: stateError } = await admin.from("qbo_oauth_states").insert({
+    state,
+    user_id: userId,
+    expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+  });
+  if (stateError) {
+    console.error("qbo oauth state insert failed", stateError.message);
+    return J(500, { error: "Could not start QuickBooks connection. Please try again." });
+  }
 
   const url = new URL("https://appcenter.intuit.com/connect/oauth2");
   url.searchParams.set("client_id", clientId);

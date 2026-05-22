@@ -20,6 +20,7 @@ import { useCfoInsights } from "@/hooks/finance/useCfoInsights";
 import { useCfoBoards, useCreateBoard, useUpdateBoard, useDeleteBoard, useIncomingShares, type CfoBoard } from "@/hooks/finance/useCfoBoards";
 import { SortableTileGrid, type SortableTile } from "@/components/finance/SortableTileGrid";
 import { ShareBoardDialog } from "@/components/finance/ShareBoardDialog";
+import { GrazChat } from "@/components/finance/GrazChat";
 
 const RANGES = [
   { label: "Last 7 days", days: 7 },

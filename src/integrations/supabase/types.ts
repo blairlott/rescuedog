@@ -2361,6 +2361,130 @@ export type Database = {
         }
         Relationships: []
       }
+      cfo_dataset_rows: {
+        Row: {
+          data: Json
+          dataset_id: string
+          id: number
+          row_index: number
+        }
+        Insert: {
+          data: Json
+          dataset_id: string
+          id?: number
+          row_index: number
+        }
+        Update: {
+          data?: Json
+          dataset_id?: string
+          id?: number
+          row_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_dataset_rows_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cfo_datasets: {
+        Row: {
+          column_meta: Json
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          owner_id: string
+          row_count: number
+          source_format: string | null
+          source_ref: string | null
+          source_type: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          column_meta?: Json
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          owner_id: string
+          row_count?: number
+          source_format?: string | null
+          source_ref?: string | null
+          source_type: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          column_meta?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          row_count?: number
+          source_format?: string | null
+          source_ref?: string | null
+          source_type?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
+      cfo_saved_views: {
+        Row: {
+          config: Json
+          created_at: string
+          dataset_id: string | null
+          email_daily: boolean
+          id: string
+          last_refreshed_at: string | null
+          name: string
+          owner_id: string
+          pinned_to_dashboard: boolean
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          dataset_id?: string | null
+          email_daily?: boolean
+          id?: string
+          last_refreshed_at?: string | null
+          name: string
+          owner_id: string
+          pinned_to_dashboard?: boolean
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          dataset_id?: string | null
+          email_daily?: boolean
+          id?: string
+          last_refreshed_at?: string | null
+          name?: string
+          owner_id?: string
+          pinned_to_dashboard?: boolean
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_saved_views_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channel_attribution_events: {
         Row: {
           channel: string | null

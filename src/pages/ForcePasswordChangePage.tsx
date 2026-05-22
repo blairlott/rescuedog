@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +13,16 @@ export default function ForcePasswordChangePage() {
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const nextRaw = params.get("next") || "/admin";
+  // Only allow safe in-app paths
+  const next = nextRaw.startsWith("/") ? nextRaw : "/admin";
 
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate("/admin", { replace: true });
+        navigate(next, { replace: true });
         return;
       }
       setReady(true);
@@ -31,7 +35,7 @@ export default function ForcePasswordChangePage() {
       toast.error("Password must be at least 10 characters.");
       return;
     }
-    if (password === "ChangeMeRDW!") {
+    if (password === "ChangeMeRDW!" || password === "ChangeMe2026!") {
       toast.error("Please choose a new password — not the temporary one.");
       return;
     }
@@ -51,7 +55,7 @@ export default function ForcePasswordChangePage() {
           .eq("id", user.id);
       }
       toast.success("Password updated. Welcome!");
-      navigate("/admin", { replace: true });
+      navigate(next, { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Could not update password.");
     } finally {

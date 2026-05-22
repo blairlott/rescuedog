@@ -252,8 +252,8 @@ export function MetaAutopilotHealth() {
               <div className="border-t border-foreground/20 pt-2">
                 <div className="text-[11px] text-muted-foreground mb-2">
                   {cooldownActive
-                    ? <>Cooldown active: <strong>{Math.ceil(cooldownRemainingMs / 60_000)} min</strong> remaining. Re-enable available at {cooldownEndsAt?.toLocaleTimeString()}.</>
-                    : <>Cooldown elapsed. Re-enable with one click.</>}
+                    ? <>Cooldown active: <strong>{Math.ceil(cooldownRemainingMs / 60_000)} min</strong> remaining. Auto-recovery will attempt restart at {cooldownEndsAt?.toLocaleTimeString()} if kill switches recover. You can also re-enable manually.</>
+                    : <>Cooldown elapsed — autopilot will self-restart on the next cron tick if kill switches are healthy. Re-enable manually to skip the wait.</>}
                 </div>
                 <button
                   onClick={reEnable}

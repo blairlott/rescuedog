@@ -67,7 +67,7 @@ function trendShape(older: number, mid: number, curr: number): string {
   return "flat";
 }
 
-async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
+async function runHeuristics(financeClient: any, days: number): Promise<Heuristic[]> {
   const end = new Date();
   const startCurr = shiftDays(end, -days);
   const startPrev = shiftDays(end, -days * 2);
@@ -79,9 +79,9 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- VS summary heuristic (3-window historical) ----
   const [vsCurr, vsPrev, vsPrev2] = await Promise.all([
-    admin.rpc("finance_vs_summary", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
-    admin.rpc("finance_vs_summary", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
-    admin.rpc("finance_vs_summary", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
+    financeClient.rpc("finance_vs_summary", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    financeClient.rpc("finance_vs_summary", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    financeClient.rpc("finance_vs_summary", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
   ]);
   const vc = (vsCurr.data ?? [])[0];
   const vp = (vsPrev.data ?? [])[0];
@@ -120,9 +120,9 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- P&L heuristic (3-window historical) ----
   const [pnlCurr, pnlPrev, pnlPrev2] = await Promise.all([
-    admin.rpc("finance_pnl_summary", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
-    admin.rpc("finance_pnl_summary", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
-    admin.rpc("finance_pnl_summary", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
+    financeClient.rpc("finance_pnl_summary", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    financeClient.rpc("finance_pnl_summary", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    financeClient.rpc("finance_pnl_summary", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
   ]);
   const sumPnl = (rows: any[] | null) => {
     const r = rows ?? [];
@@ -156,9 +156,9 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- Ad spend by platform (per-platform + total + ROAS, 3-window) ----
   const [spCurr, spPrev, spPrev2] = await Promise.all([
-    admin.rpc("finance_spend_by_platform", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
-    admin.rpc("finance_spend_by_platform", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
-    admin.rpc("finance_spend_by_platform", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
+    financeClient.rpc("finance_spend_by_platform", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    financeClient.rpc("finance_spend_by_platform", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    financeClient.rpc("finance_spend_by_platform", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
   ]);
   const spendCurrTotal = ((spCurr.data ?? []) as any[]).reduce((s, r) => s + Number(r.spend_cents), 0);
   const spendPrevTotal = ((spPrev.data ?? []) as any[]).reduce((s, r) => s + Number(r.spend_cents), 0);
@@ -220,9 +220,9 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- Revenue by Channel (qb_revenue_ch) ----
   const [chCurr, chPrev, chPrev2] = await Promise.all([
-    admin.rpc("finance_revenue_by_channel", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
-    admin.rpc("finance_revenue_by_channel", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
-    admin.rpc("finance_revenue_by_channel", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
+    financeClient.rpc("finance_revenue_by_channel", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    financeClient.rpc("finance_revenue_by_channel", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    financeClient.rpc("finance_revenue_by_channel", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
   ]);
   const byCh = (rows: any[] | null) => Object.fromEntries(((rows ?? []) as any[]).map(r => [r.channel, Number(r.revenue_cents)]));
   const cC = byCh(chCurr.data), cP = byCh(chPrev.data), cP2 = byCh(chPrev2.data);
@@ -243,8 +243,8 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- Top Vendors (qb_top_vendors) ----
   const [vCurr, vPrev] = await Promise.all([
-    admin.rpc("finance_top_vendors", { _start: isoDate(startCurr), _end: isoDate(end),     _limit: 15 }),
-    admin.rpc("finance_top_vendors", { _start: isoDate(startPrev), _end: isoDate(endPrev), _limit: 15 }),
+    financeClient.rpc("finance_top_vendors", { _start: isoDate(startCurr), _end: isoDate(end),     _limit: 15 }),
+    financeClient.rpc("finance_top_vendors", { _start: isoDate(startPrev), _end: isoDate(endPrev), _limit: 15 }),
   ]);
   const venC = Object.fromEntries(((vCurr.data ?? []) as any[]).map(r => [r.vendor, Number(r.spend_cents)]));
   const venP = Object.fromEntries(((vPrev.data ?? []) as any[]).map(r => [r.vendor, Number(r.spend_cents)]));
@@ -266,8 +266,8 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- Cash trend (qb_cash_trend) — current vs prior net cash ----
   const [cashCurr, cashPrev] = await Promise.all([
-    admin.rpc("finance_cash_trend", { _start: isoDate(startCurr), _end: isoDate(end),     _bucket: "week" }),
-    admin.rpc("finance_cash_trend", { _start: isoDate(startPrev), _end: isoDate(endPrev), _bucket: "week" }),
+    financeClient.rpc("finance_cash_trend", { _start: isoDate(startCurr), _end: isoDate(end),     _bucket: "week" }),
+    financeClient.rpc("finance_cash_trend", { _start: isoDate(startPrev), _end: isoDate(endPrev), _bucket: "week" }),
   ]);
   const sumNet = (rows: any[] | null) => ((rows ?? []) as any[]).reduce((s, r) => s + Number(r.net_cents), 0);
   const netC = sumNet(cashCurr.data);
@@ -285,8 +285,8 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- VS Waterfall (vs_waterfall) — contribution after COGS & ads ----
   const [wCurr, wPrev] = await Promise.all([
-    admin.rpc("finance_vs_waterfall", { _start: isoDate(startCurr), _end: isoDate(end)     }),
-    admin.rpc("finance_vs_waterfall", { _start: isoDate(startPrev), _end: isoDate(endPrev) }),
+    financeClient.rpc("finance_vs_waterfall", { _start: isoDate(startCurr), _end: isoDate(end)     }),
+    financeClient.rpc("finance_vs_waterfall", { _start: isoDate(startPrev), _end: isoDate(endPrev) }),
   ]);
   const wc = ((wCurr.data ?? []) as any[])[0];
   const wp = ((wPrev.data ?? []) as any[])[0];

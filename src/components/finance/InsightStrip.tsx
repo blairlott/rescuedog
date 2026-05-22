@@ -1,43 +1,88 @@
-import { AlertTriangle, Eye, Info, Check, X } from "lucide-react";
+import { AlertTriangle, Eye, Info, Check, X, Siren } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCfoInsights, useUpdateInsightStatus, type CfoInsight } from "@/hooks/finance/useCfoInsights";
 import { cn } from "@/lib/utils";
 
-const SEV_META: Record<CfoInsight["severity"], { icon: typeof AlertTriangle; cls: string; label: string }> = {
-  critical: { icon: AlertTriangle, cls: "border-l-destructive bg-destructive/5 text-destructive", label: "Critical" },
-  watch:    { icon: Eye,           cls: "border-l-amber-500 bg-amber-500/5 text-amber-700 dark:text-amber-400", label: "Watch" },
-  fyi:      { icon: Info,          cls: "border-l-foreground/30 bg-muted/30 text-foreground/80", label: "FYI" },
+const SEV_META: Record<CfoInsight["severity"], { icon: typeof AlertTriangle; cls: string; label: string; pulse?: boolean }> = {
+  critical: {
+    icon: Siren,
+    cls: "border-l-4 border-l-destructive bg-destructive text-destructive-foreground",
+    label: "Urgent",
+    pulse: true,
+  },
+  watch: {
+    icon: Eye,
+    cls: "border-l-4 border-l-amber-500 bg-amber-500/10 text-amber-800 dark:text-amber-300",
+    label: "Watch",
+  },
+  fyi: {
+    icon: Info,
+    cls: "border-l-4 border-l-foreground/30 bg-muted/40 text-foreground/80",
+    label: "FYI",
+  },
 };
 
-/** Inline strip rendered at the bottom of every Finance tile. */
+const SEV_RANK: Record<CfoInsight["severity"], number> = { critical: 0, watch: 1, fyi: 2 };
+
+/** Stack of pushed insights rendered at the bottom of every Finance tile.
+ *  Urgent (critical) insights appear in red, watch in amber, fyi muted.
+ *  All open insights for the tile are shown — most severe first. */
 export function TileInsightStrip({ tileKey, onOpen }: { tileKey: string; onOpen?: () => void }) {
   const { data: insights } = useCfoInsights("open");
-  const tileInsights = (insights ?? []).filter((i) => i.tile_key === tileKey);
+  const update = useUpdateInsightStatus();
+  const tileInsights = (insights ?? [])
+    .filter((i) => i.tile_key === tileKey)
+    .sort((a, b) => SEV_RANK[a.severity] - SEV_RANK[b.severity]);
   if (!tileInsights.length) return null;
-  const top = tileInsights[0];
-  const Sev = SEV_META[top.severity];
-  const Icon = Sev.icon;
+
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className={cn(
-        "mt-3 -mx-4 -mb-4 px-3 py-2 border-t border-border border-l-2 text-left w-[calc(100%+2rem)] flex items-start gap-2 hover:bg-muted/40 transition-colors",
-        Sev.cls,
-      )}
-      title="View insight"
-    >
-      <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-      <div className="min-w-0 flex-1">
-        <div className="text-[11px] font-semibold leading-tight truncate">{top.headline}</div>
-        {top.recommended_action && (
-          <div className="text-[10px] uppercase tracking-brand opacity-80 mt-0.5 truncate">→ {top.recommended_action}</div>
-        )}
-      </div>
-      {tileInsights.length > 1 && (
-        <span className="text-[10px] font-bold tabular-nums">+{tileInsights.length - 1}</span>
-      )}
-    </button>
+    <div className="mt-3 -mx-4 -mb-4 border-t border-border divide-y divide-border/60">
+      {tileInsights.map((ins) => {
+        const Sev = SEV_META[ins.severity];
+        const Icon = Sev.icon;
+        return (
+          <div
+            key={ins.id}
+            className={cn(
+              "px-3 py-2 flex items-start gap-2 group",
+              Sev.cls,
+            )}
+          >
+            <Icon className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", Sev.pulse && "animate-pulse")} />
+            <button
+              type="button"
+              onClick={onOpen}
+              className="min-w-0 flex-1 text-left"
+              title="View insight details"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className={cn(
+                  "text-[9px] font-bold uppercase tracking-brand px-1 py-0.5",
+                  ins.severity === "critical" ? "bg-destructive-foreground/20" : "bg-foreground/10"
+                )}>
+                  {Sev.label}
+                </span>
+                <span className="text-[11px] font-semibold leading-tight truncate">{ins.headline}</span>
+              </div>
+              {ins.recommended_action && (
+                <div className="text-[10px] uppercase tracking-brand opacity-90 mt-0.5 truncate">
+                  → {ins.recommended_action}
+                </div>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); update.mutate({ id: ins.id, status: "dismissed" }); }}
+              className="opacity-60 hover:opacity-100 shrink-0"
+              title="Dismiss"
+              aria-label="Dismiss insight"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

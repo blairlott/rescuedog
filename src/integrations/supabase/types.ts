@@ -2394,36 +2394,42 @@ export type Database = {
         Row: {
           created_at: string
           date_range_days: number
+          end_date: string | null
           id: string
           is_default: boolean
           name: string
           owner_id: string
           position: number
           slug: string
+          start_date: string | null
           tiles: Json
           updated_at: string
         }
         Insert: {
           created_at?: string
           date_range_days?: number
+          end_date?: string | null
           id?: string
           is_default?: boolean
           name: string
           owner_id: string
           position?: number
           slug: string
+          start_date?: string | null
           tiles?: Json
           updated_at?: string
         }
         Update: {
           created_at?: string
           date_range_days?: number
+          end_date?: string | null
           id?: string
           is_default?: boolean
           name?: string
           owner_id?: string
           position?: number
           slug?: string
+          start_date?: string | null
           tiles?: Json
           updated_at?: string
         }

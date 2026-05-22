@@ -2,6 +2,17 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const REDIRECT_URI = `${Deno.env.get("SUPABASE_URL")}/functions/v1/qbo-auth-callback`;
+const DISCOVERY_URL = "https://developer.api.intuit.com/.well-known/openid_configuration";
+
+let _discoveryCache: { token_endpoint: string } | null = null;
+async function getTokenEndpoint() {
+  if (_discoveryCache) return _discoveryCache.token_endpoint;
+  const r = await fetch(DISCOVERY_URL, { headers: { Accept: "application/json" } });
+  if (!r.ok) throw new Error(`intuit discovery failed: ${r.status}`);
+  const j: any = await r.json();
+  _discoveryCache = { token_endpoint: j.token_endpoint };
+  return _discoveryCache.token_endpoint;
+}
 
 function html(body: string, status = 200) {
   return new Response(
@@ -45,8 +56,9 @@ Deno.serve(async (req) => {
   const clientId = Deno.env.get("QBO_CLIENT_ID")!;
   const clientSecret = Deno.env.get("QBO_CLIENT_SECRET")!;
 
-  // Exchange code for tokens
-  const tokenRes = await fetch("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
+  // Exchange code for tokens (endpoint pulled from Intuit discovery document)
+  const tokenEndpoint = await getTokenEndpoint();
+  const tokenRes = await fetch(tokenEndpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",

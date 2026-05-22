@@ -177,7 +177,32 @@ async function fetchAdSets(token: string, adsetIds: string[]): Promise<Map<strin
   return out;
 }
 
-async function pauseAd(token: string, adId: string) {
+// Hard guard: refuses to POST status=PAUSED to anything that we know is an ad set.
+// Z8 kill rules MUST target ads only; ad-set pauses require Blair's explicit approval.
+async function pauseAd(
+  token: string,
+  adId: string,
+  guard?: { adsetIds: Set<string>; adIds: Set<string>; admin: any; runId: string; reason: string },
+) {
+  if (guard) {
+    if (guard.adsetIds.has(adId)) {
+      await guard.admin.from("ad_execution_log").insert({
+        executor: "z8_auto",
+        actor_kind: "system",
+        platform: "meta",
+        action: "kill",
+        target_level: "adset",
+        target_id: adId,
+        success: false,
+        error_message: "kill rule attempted adset pause — blocked",
+        request_payload: { ad_id: adId, run_id: guard.runId, reason: guard.reason, blocked: true },
+      });
+      throw new Error(`kill rule attempted adset pause — blocked (id=${adId})`);
+    }
+    if (!guard.adIds.has(adId)) {
+      throw new Error(`kill rule target id not in known ad set — refusing pause (id=${adId})`);
+    }
+  }
   return metaFetch(`/${adId}`, token, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

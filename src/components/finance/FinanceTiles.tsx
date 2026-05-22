@@ -295,7 +295,7 @@ export function VsWaterfallTile({ days, start: s, end: e }: TileRangeProps) {
     { label: "Conversion-Attributed Orders",     v: data.ad_attributed_revenue_cents, sub: `${Number(data.ad_conversions).toLocaleString()} conv · Meta + Google (subset of above)`, indent: true },
     { label: "Wine Club Shipments",              v: data.wine_club_net_cents,         sub: "Net of discounts",                                              indent: true },
     ...(Number(data.wholesale_net_cents) > 0
-      ? [{ label: "Wholesale", v: data.wholesale_net_cents, sub: "Net of discounts", indent: true } as Row]
+      ? [{ label: "Wholesale *", v: data.wholesale_net_cents, sub: "Net of discounts", indent: true } as Row]
       : []),
     { label: "Net Revenue (Vinoshipper)",        v: data.net_revenue_cents,           sub: `Gross ${fmtCents(data.gross_revenue_cents)} − ${fmtCents(data.discount_cents)} discounts`, subtotal: true },
     { label: "Contribution after Ad Spend",      v: data.contribution_after_ads_cents, sub: `− ${fmtCents(data.converting_ad_spend_cents)} converting ad spend`, subtotal: true, tone: contribNeg ? "text-red-600 dark:text-red-400" : undefined },
@@ -326,6 +326,11 @@ export function VsWaterfallTile({ days, start: s, end: e }: TileRangeProps) {
           Platform-reported ROAS:{" "}
           {(Number(data.ad_attributed_revenue_cents) / Number(data.converting_ad_spend_cents)).toFixed(2)}× ·
           Conversion-attributed lines reflect Meta + Google only.
+        </div>
+      )}
+      {Number(data.wholesale_net_cents) > 0 && (
+        <div className="text-[10px] text-muted-foreground pt-1 italic">
+          * Wholesale reflects a one-off shipment via Vinoshipper, not a recurring channel.
         </div>
       )}
     </div>

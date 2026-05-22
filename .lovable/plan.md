@@ -1,4 +1,71 @@
-# CFO Finance Portal
+# CFO Finance Portal — Phase 2: Uploads + Pivot/Chart Builder
+
+Builds on the existing /finance scaffold (FinanceLogin, FinanceDashboard, FinanceUsersPage, FinanceLayout, FinanceTiles). Wires routes into App.tsx and adds self-serve data upload + analysis.
+
+## New capabilities
+
+1. **File uploads** — CFO + finance users can upload CSV, XLSX, and PDF (parsed) directly into the portal. Each upload becomes a "dataset" with named columns and typed rows.
+2. **Private vs Shared toggle** — at upload time the user picks `private` (only them) or `shared` (all finance roles). Switchable later by the owner.
+3. **Pivot builder** — per-dataset UI with dropdowns for Rows, Columns, Values, Aggregation (sum / avg / count / min / max), plus a Filters chip row. Powered by `react-pivottable` for the multi-dim grid.
+4. **Chart builder** — Recharts. Dropdowns: chart type (bar / line / area / pie / stacked bar), X-axis dim, Y-axis measure(s), group-by, aggregation. Renders below the pivot.
+5. **Saved views** — name + persist the {dataset, pivot config, chart config, filters} bundle as a "view". Listed in a sidebar; one-click to reload. Toggle to mark a view as "Pin to dashboard" so it shows as a tile on `/finance`.
+6. **Scheduled refresh** — for views built on `bm_finance_entries` / `vs_transactions` (live DB sources), a daily cron re-aggregates and emails a snapshot to the owner if "Email me daily" is on. For uploaded files this is a no-op (static snapshot).
+
+## Data model (migration)
+
+- `cfo_datasets` — id, owner_id, name, source_type (`upload`|`live_db`), source_ref (storage path or rpc name), visibility (`private`|`shared`), row_count, column_meta jsonb (`[{name,type}]`), created_at.
+- `cfo_dataset_rows` — id, dataset_id, row_index, data jsonb (one row of the parsed file). Indexed on dataset_id.
+- `cfo_saved_views` — id, owner_id, dataset_id, name, visibility, config jsonb (pivot + chart + filters), pinned_to_dashboard bool, email_daily bool.
+- Storage bucket `cfo-finance` (private). RLS: owner can read own; finance roles can read shared.
+- RLS via `can_view_finance(uid)` + per-row owner check for private.
+
+## Edge function
+
+- `cfo-parse-upload` — POST `{storage_path, dataset_name, visibility, source_format}`. Downloads the file, parses:
+  - CSV → Deno `std/csv`
+  - XLSX → SheetJS (`xlsx` from esm.sh)
+  - PDF → `pdf-parse` text + table heuristics (single-table flat extraction)
+  Infers column types (number / date / string), inserts `cfo_datasets` + `cfo_dataset_rows`, returns dataset_id. Auth-gated by `can_view_finance`.
+
+## Frontend
+
+New files under `src/pages/finance/` and `src/components/finance/`:
+- `FinanceWorkspace.tsx` (new route `/finance/workspace/:datasetId?`) — three-pane: dataset list (left), pivot+chart builder (center), saved views (right).
+- `UploadDatasetDialog.tsx` — drag/drop, format picker, visibility toggle, calls edge function.
+- `PivotBuilder.tsx` — wraps `react-pivottable` with our dropdown chrome.
+- `ChartBuilder.tsx` — Recharts (bar/line/area/pie/stacked) with field-picker dropdowns.
+- `SavedViewsPanel.tsx` — list / rename / delete / pin / email-toggle.
+- `useCfoDatasets.ts`, `useCfoViews.ts` — react-query hooks.
+
+App.tsx route additions:
+- `/finance/login`, `/finance`, `/finance/users`, `/finance/workspace`, `/finance/workspace/:datasetId`.
+- Wrap all `/finance/*` (except login) in `FinanceLayout` + auth guard (`can_view_finance`).
+
+## Dependencies
+
+- `react-pivottable` (pivot grid + drag-drop chrome we hide in favor of dropdowns)
+- `xlsx` (already available; check)
+- `papaparse` for client-side CSV preview
+- Recharts already installed.
+
+## Scheduled refresh
+
+Daily cron `cfo-refresh-views` (pg_cron + edge function) at 06:00 UTC: re-runs `live_db` views, snapshots results, emails owners with `email_daily=true` via Resend.
+
+## Lindy manual
+
+Append changelog entry to `/mnt/documents/Lindy_User_Manual_and_Roadmap.docx` covering: new tables, new edge function `cfo-parse-upload`, scheduled job, storage bucket.
+
+## Out of scope (later)
+
+- Live QuickBooks OAuth (still stubbed; Phase 3).
+- Joining multiple datasets in one view.
+- Formula/calculated columns.
+- Excel export of views (can add a Download button if quick).
+
+---
+
+# (Previous) CFO Finance Portal — Phase 1
 
 A locked-down `/finance` portal for the CFO and approved viewers. CFO sees only this dashboard — no exposure to CMS, CRM, Kennel, Wine Club admin, etc.
 

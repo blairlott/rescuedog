@@ -19,6 +19,8 @@ const ALLOWED_TYPES = new Set([
   "ad_creative_draft",
   "compliance_note",
   "generic_note",
+  "lovable_prompt",
+  "lovable_response",
 ]);
 
 Deno.serve(async (req) => {

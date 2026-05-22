@@ -25,6 +25,14 @@ function rangeDates(days: number) {
   return { start: isoDate(start), end: isoDate(end) };
 }
 
+/** Use explicit start/end if provided, else compute from rolling `days`. */
+function resolveRange(days: number, start?: string, end?: string) {
+  if (start && end) return { start, end };
+  return rangeDates(days);
+}
+
+export type TileRangeProps = { days: number; start?: string; end?: string };
+
 function Loading() { return <div className="text-xs text-muted-foreground">Loading…</div>; }
 function Empty({ msg = "No data in range" }: { msg?: string }) {
   return <div className="text-xs text-muted-foreground py-4">{msg}</div>;
@@ -32,8 +40,8 @@ function Empty({ msg = "No data in range" }: { msg?: string }) {
 
 /* ---------------- QuickBooks tiles ---------------- */
 
-export function QbPnlTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
+export function QbPnlTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
   const { data, isLoading } = useQuery({
     queryKey: ["finance_pnl_summary", start, end],
     queryFn: async () => {
@@ -71,8 +79,8 @@ export function QbPnlTile({ days }: { days: number }) {
   );
 }
 
-export function QbRevenueChannelTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
+export function QbRevenueChannelTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
   const { data, isLoading } = useQuery({
     queryKey: ["finance_revenue_by_channel", start, end],
     queryFn: async () => {
@@ -98,8 +106,8 @@ export function QbRevenueChannelTile({ days }: { days: number }) {
   );
 }
 
-export function QbAdSpendTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
+export function QbAdSpendTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
   const { data, isLoading } = useQuery({
     queryKey: ["finance_spend_by_platform", start, end],
     queryFn: async () => {
@@ -126,9 +134,10 @@ export function QbAdSpendTile({ days }: { days: number }) {
   );
 }
 
-export function QbCashTrendTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
-  const bucket = days <= 31 ? "day" : days <= 120 ? "week" : "month";
+export function QbCashTrendTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
+  const spanDays = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000));
+  const bucket = spanDays <= 31 ? "day" : spanDays <= 120 ? "week" : "month";
   const { data, isLoading } = useQuery({
     queryKey: ["finance_cash_trend", start, end, bucket],
     queryFn: async () => {
@@ -162,8 +171,8 @@ export function QbCashTrendTile({ days }: { days: number }) {
   );
 }
 
-export function QbTopVendorsTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
+export function QbTopVendorsTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
   const { data, isLoading } = useQuery({
     queryKey: ["finance_top_vendors", start, end],
     queryFn: async () => {
@@ -191,8 +200,8 @@ export function QbTopVendorsTile({ days }: { days: number }) {
 
 /* ---------------- Vinoshipper tiles ---------------- */
 
-function useVsSummary(days: number) {
-  const { start, end } = rangeDates(days);
+function useVsSummary(days: number, s?: string, e?: string) {
+  const { start, end } = resolveRange(days, s, e);
   return useQuery({
     queryKey: ["finance_vs_summary", start, end],
     queryFn: async () => {
@@ -204,8 +213,8 @@ function useVsSummary(days: number) {
   });
 }
 
-export function VsSummaryTile({ days }: { days: number }) {
-  const { data, isLoading } = useVsSummary(days);
+export function VsSummaryTile({ days, start, end }: TileRangeProps) {
+  const { data, isLoading } = useVsSummary(days, start, end);
   if (isLoading) return <Loading />;
   if (!data) return <Empty />;
   const rows = [
@@ -227,8 +236,8 @@ export function VsSummaryTile({ days }: { days: number }) {
   );
 }
 
-export function VsWcVsAlcTile({ days }: { days: number }) {
-  const { data, isLoading } = useVsSummary(days);
+export function VsWcVsAlcTile({ days, start, end }: TileRangeProps) {
+  const { data, isLoading } = useVsSummary(days, start, end);
   if (isLoading) return <Loading />;
   if (!data) return <Empty />;
   const chartData = [
@@ -253,8 +262,8 @@ export function VsWcVsAlcTile({ days }: { days: number }) {
 
 /* ---------------- Command Center read-only imports ---------------- */
 
-export function CcRoasTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
+export function CcRoasTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
   const { data, isLoading } = useQuery({
     queryKey: ["finance_cc_roas", start, end],
     queryFn: async () => {
@@ -370,16 +379,17 @@ export function CcPathwaysTile({ days: _days }: { days: number }) {
 
 /* ---------------- Tile renderer ---------------- */
 
-export function renderTile(key: string, days: number) {
+export function renderTile(key: string, days: number, range?: { start?: string; end?: string }) {
+  const p = { days, start: range?.start, end: range?.end };
   switch (key) {
-    case "qb_pnl": return <QbPnlTile days={days} />;
-    case "qb_revenue_ch": return <QbRevenueChannelTile days={days} />;
-    case "qb_ad_spend": return <QbAdSpendTile days={days} />;
-    case "qb_cash_trend": return <QbCashTrendTile days={days} />;
-    case "qb_top_vendors": return <QbTopVendorsTile days={days} />;
-    case "vs_summary": return <VsSummaryTile days={days} />;
-    case "vs_wc_vs_alc": return <VsWcVsAlcTile days={days} />;
-    case "cc_roas": return <CcRoasTile days={days} />;
+    case "qb_pnl": return <QbPnlTile {...p} />;
+    case "qb_revenue_ch": return <QbRevenueChannelTile {...p} />;
+    case "qb_ad_spend": return <QbAdSpendTile {...p} />;
+    case "qb_cash_trend": return <QbCashTrendTile {...p} />;
+    case "qb_top_vendors": return <QbTopVendorsTile {...p} />;
+    case "vs_summary": return <VsSummaryTile {...p} />;
+    case "vs_wc_vs_alc": return <VsWcVsAlcTile {...p} />;
+    case "cc_roas": return <CcRoasTile {...p} />;
     case "cc_wine_club": return <CcWineClubTile days={days} />;
     case "cc_pathways": return <CcPathwaysTile days={days} />;
     case "km_ad_command":    return <KennelMirror><AdCommandTiles /></KennelMirror>;

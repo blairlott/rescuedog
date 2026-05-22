@@ -7,7 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Calendar, BookOpen, Wine, Activity, Sparkles, RefreshCcw, Share2, Inbox, Trash2, LayoutDashboard, Radar } from "lucide-react";
+import { Plus, Calendar, BookOpen, Wine, Activity, Sparkles, RefreshCcw, Share2, Inbox, Trash2, LayoutDashboard, Radar, History, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { FINANCE_TILES, SOURCE_LABEL, TILE_BY_KEY, type FinanceTileSource } from "@/lib/financeTiles";
@@ -28,6 +28,8 @@ const RANGES = [
   { label: "Last 90 days", days: 90 },
   { label: "Last 6 months", days: 180 },
   { label: "Last 12 months", days: 365 },
+  { label: "Last 3 years", days: 365 * 3 },
+  { label: "Last 5 years", days: 365 * 5 },
 ];
 
 const SOURCE_META: Record<FinanceTileSource, { icon: typeof BookOpen; chip: string }> = {
@@ -73,6 +75,14 @@ export default function FinanceDashboard() {
   const board: CfoBoard | undefined = boards.find(b => b.id === activeBoardId);
   const tiles = board?.tiles ?? [];
   const days = board?.date_range_days ?? 90;
+  const customStart = board?.start_date ?? null;
+  const customEnd = board?.end_date ?? null;
+  const usingCustom = !!(customStart && customEnd);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const effectiveStart = usingCustom
+    ? customStart!
+    : new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+  const effectiveEnd = usingCustom ? customEnd! : todayIso;
 
   const persistBoard = (patch: Partial<CfoBoard>) => {
     if (!board) return;
@@ -86,7 +96,11 @@ export default function FinanceDashboard() {
   };
   const removeTile = (key: string) => persistBoard({ tiles: tiles.filter(k => k !== key) });
   const reorderTiles = (next: string[]) => persistBoard({ tiles: next });
-  const onDaysChange = (v: string) => persistBoard({ date_range_days: Number(v) });
+  const onDaysChange = (v: string) => persistBoard({ date_range_days: Number(v), start_date: null, end_date: null });
+  const onStartChange = (v: string) => persistBoard({ start_date: v || null, end_date: customEnd ?? todayIso });
+  const onEndChange = (v: string) => persistBoard({ end_date: v || null, start_date: customStart ?? "2017-01-01" });
+  const applyFullHistory = () => persistBoard({ start_date: "2017-01-01", end_date: todayIso });
+  const clearCustom = () => persistBoard({ start_date: null, end_date: null });
 
   const grouped = useMemo(() => {
     const g: Record<FinanceTileSource, typeof FINANCE_TILES> = { quickbooks: [], vinoshipper: [], command_center: [], kennel_mirror: [] };
@@ -107,7 +121,7 @@ export default function FinanceDashboard() {
         badgeClass: meta.chip,
         body: (
           <div className="flex flex-col h-full">
-            <div className="flex-1">{renderTile(key, days)}</div>
+            <div className="flex-1">{renderTile(key, days, usingCustom ? { start: effectiveStart, end: effectiveEnd } : undefined)}</div>
             <TileInsightStrip tileKey={key} onOpen={() => setInsightsOpen(true)} />
           </div>
         ),
@@ -178,15 +192,47 @@ export default function FinanceDashboard() {
               <span className="ml-1 inline-flex h-4 min-w-4 px-1 items-center justify-center text-[10px] font-bold bg-background text-foreground">{openInsights.length}</span>
             )}
           </Button>
-          <div className="flex items-center gap-2 h-8 px-2 border border-border bg-card">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <Select value={String(days)} onValueChange={onDaysChange}>
-              <SelectTrigger className="w-36 h-6 border-0 px-0 focus:ring-0 shadow-none text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {RANGES.map(r => <SelectItem key={r.days} value={String(r.days)}>{r.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          {!usingCustom && (
+            <div className="flex items-center gap-2 h-8 px-2 border border-border bg-card">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Select value={String(days)} onValueChange={onDaysChange}>
+                <SelectTrigger className="w-36 h-6 border-0 px-0 focus:ring-0 shadow-none text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {RANGES.map(r => <SelectItem key={r.days} value={String(r.days)}>{r.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="flex items-center gap-1 h-8 px-2 border border-border bg-card">
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              type="date"
+              min="2017-01-01"
+              max={todayIso}
+              value={effectiveStart}
+              onChange={(e) => onStartChange(e.target.value)}
+              className="h-6 w-32 border-0 px-1 text-xs focus-visible:ring-0 shadow-none"
+              title="Start date"
+            />
+            <span className="text-xs text-muted-foreground">→</span>
+            <Input
+              type="date"
+              min="2017-01-01"
+              max={todayIso}
+              value={effectiveEnd}
+              onChange={(e) => onEndChange(e.target.value)}
+              className="h-6 w-32 border-0 px-1 text-xs focus-visible:ring-0 shadow-none"
+              title="End date"
+            />
+            {usingCustom && (
+              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={clearCustom} title="Clear custom range">
+                <X className="h-3 w-3" />
+              </Button>
+            )}
           </div>
+          <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={applyFullHistory} title="Pull data back to Jan 1, 2017">
+            <History className="h-3.5 w-3.5" /> 2017 → today
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" className="h-8"><Plus className="h-3.5 w-3.5 mr-1" /> Add tile</Button>

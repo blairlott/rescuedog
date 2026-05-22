@@ -9,6 +9,8 @@ export interface CfoBoard {
   slug: string;
   tiles: string[];
   date_range_days: number;
+  start_date: string | null;
+  end_date: string | null;
   position: number;
   is_default: boolean;
   created_at: string;

@@ -200,7 +200,7 @@ export function ProductCard({ product }: ProductCardProps) {
               <span className="text-[10px] text-muted-foreground line-through ml-2">${priceNum.toFixed(2)}</span>
             </p>
             <p className="text-[10px] uppercase tracking-brand text-primary font-bold">
-              {isMember ? "Your Member Price" : "Pack Member Price (20% off)"}
+              {isMember ? "Your Member Price" : "Wine Club Member Price (20% off)"}
             </p>
           </div>
         ) : (

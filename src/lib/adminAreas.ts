@@ -1,4 +1,4 @@
-import { PenLine, Users, Wine, Truck, Megaphone, type LucideIcon } from "lucide-react";
+import { PenLine, Users, Wine, Truck, Megaphone, DollarSign, type LucideIcon } from "lucide-react";
 
 export interface AdminArea {
   key: string;
@@ -58,6 +58,14 @@ const RAW_ADMIN_AREAS: AdminArea[] = [
     icon: Megaphone,
     roles: ["owner", "admin", "ad_ops_manager", "executive", "kennel_viewer"],
   },
+  {
+    key: "finance",
+    to: "/finance",
+    title: "Finance",
+    desc: "CFO dashboard — P&L, cash, ROAS, MRR, Vinoshipper sales.",
+    icon: DollarSign,
+    roles: ["owner", "admin", "executive", "cfo"],
+  },
 ];
 
 export const ADMIN_AREAS: AdminArea[] = RAW_ADMIN_AREAS.map((area) => ({
@@ -100,5 +108,9 @@ export const REQUESTABLE_ROLES_BY_AREA: Record<string, { value: string; label: s
     { value: "kennel_viewer", label: "Kennel Viewer (read-only)" },
     { value: "ad_ops_manager", label: "Ad Ops Manager" },
     { value: "admin", label: "Admin (full Kennel control)" },
+  ],
+  finance: [
+    { value: "cfo", label: "CFO (Finance dashboard access)" },
+    { value: "admin", label: "Admin (full Finance control)" },
   ],
 };

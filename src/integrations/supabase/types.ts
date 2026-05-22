@@ -2340,6 +2340,27 @@ export type Database = {
         }
         Relationships: []
       }
+      cfo_dashboard_layouts: {
+        Row: {
+          date_range_days: number
+          tiles: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          date_range_days?: number
+          tiles?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          date_range_days?: number
+          tiles?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       channel_attribution_events: {
         Row: {
           channel: string | null
@@ -4617,6 +4638,39 @@ export type Database = {
           key?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      finance_qb_connection: {
+        Row: {
+          access_token: string | null
+          connected_by: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          realm_id: string
+          refresh_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          connected_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          realm_id: string
+          refresh_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          connected_by?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          realm_id?: string
+          refresh_token?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -11286,6 +11340,7 @@ export type Database = {
         }
         Returns: string
       }
+      can_view_finance: { Args: { _user_id: string }; Returns: boolean }
       can_view_kennel: { Args: { _user_id: string }; Returns: boolean }
       compliant_retailer_set: {
         Args: {
@@ -11352,6 +11407,58 @@ export type Database = {
         }
         Returns: undefined
       }
+      finance_cash_trend: {
+        Args: { _bucket?: string; _end: string; _start: string }
+        Returns: {
+          bucket_start: string
+          cash_in_cents: number
+          cash_out_cents: number
+          net_cents: number
+        }[]
+      }
+      finance_pnl_summary: {
+        Args: { _end: string; _start: string }
+        Returns: {
+          entry_type: string
+          total_cents: number
+          txn_count: number
+        }[]
+      }
+      finance_revenue_by_channel: {
+        Args: { _end: string; _start: string }
+        Returns: {
+          channel: string
+          orders: number
+          revenue_cents: number
+        }[]
+      }
+      finance_spend_by_platform: {
+        Args: { _end: string; _start: string }
+        Returns: {
+          platform: string
+          spend_cents: number
+        }[]
+      }
+      finance_top_vendors: {
+        Args: { _end: string; _limit?: number; _start: string }
+        Returns: {
+          category: string
+          spend_cents: number
+          txn_count: number
+          vendor: string
+        }[]
+      }
+      finance_vs_summary: {
+        Args: { _end: string; _start: string }
+        Returns: {
+          ala_carte_cents: number
+          aov_cents: number
+          order_count: number
+          revenue_cents: number
+          wholesale_cents: number
+          wine_club_cents: number
+        }[]
+      }
       get_public_impact_totals: {
         Args: never
         Returns: {
@@ -11373,6 +11480,7 @@ export type Database = {
       is_ambassador_manager: { Args: { _user_id: string }; Returns: boolean }
       is_backend_viewer: { Args: { _user_id: string }; Returns: boolean }
       is_brand_ambassador: { Args: { _user_id: string }; Returns: boolean }
+      is_cfo: { Args: { _user_id: string }; Returns: boolean }
       is_cms_editor: { Args: { _user_id: string }; Returns: boolean }
       is_dropship_manager: { Args: { _user_id: string }; Returns: boolean }
       is_executive: { Args: { _user_id: string }; Returns: boolean }
@@ -11575,6 +11683,7 @@ export type Database = {
         | "executive"
         | "kennel_viewer"
         | "viewer"
+        | "cfo"
       discount_scope: "sitewide" | "wine" | "merch" | "sku_list" | "collection"
       discount_tier: "public" | "club_member" | "ambassador" | "vip" | "staff"
       discount_type: "percent" | "fixed" | "shipping"
@@ -11743,6 +11852,7 @@ export const Constants = {
         "executive",
         "kennel_viewer",
         "viewer",
+        "cfo",
       ],
       discount_scope: ["sitewide", "wine", "merch", "sku_list", "collection"],
       discount_tier: ["public", "club_member", "ambassador", "vip", "staff"],

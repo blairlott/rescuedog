@@ -11575,6 +11575,7 @@ export type Database = {
         | "executive"
         | "kennel_viewer"
         | "viewer"
+        | "cfo"
       discount_scope: "sitewide" | "wine" | "merch" | "sku_list" | "collection"
       discount_tier: "public" | "club_member" | "ambassador" | "vip" | "staff"
       discount_type: "percent" | "fixed" | "shipping"
@@ -11743,6 +11744,7 @@ export const Constants = {
         "executive",
         "kennel_viewer",
         "viewer",
+        "cfo",
       ],
       discount_scope: ["sitewide", "wine", "merch", "sku_list", "collection"],
       discount_tier: ["public", "club_member", "ambassador", "vip", "staff"],

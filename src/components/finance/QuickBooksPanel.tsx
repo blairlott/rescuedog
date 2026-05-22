@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2, ExternalLink, RefreshCcw, Unplug, Download } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,6 +11,11 @@ export function QuickBooksPanel({ days }: { days: number }) {
   const [connecting, setConnecting] = useState(false);
   const [loadingReport, setLoadingReport] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [historicalBusy, setHistoricalBusy] = useState(false);
+  const [historicalProgress, setHistoricalProgress] = useState<string>("");
+  const today = new Date().toISOString().slice(0, 10);
+  const [customStart, setCustomStart] = useState<string>("2017-01-01");
+  const [customEnd, setCustomEnd] = useState<string>(today);
   const [report, setReport] = useState<any>(null);
   const qc = useQueryClient();
 
@@ -78,17 +85,54 @@ export function QuickBooksPanel({ days }: { days: number }) {
       toast.success(`Imported ${data?.imported ?? 0} entries`, {
         description: `Range ${fmt(start)} → ${fmt(end)}. Tiles will refresh.`,
       });
-      // Refresh all finance tile queries
-      qc.invalidateQueries({ queryKey: ["finance_pnl_summary"] });
-      qc.invalidateQueries({ queryKey: ["finance_revenue_by_channel"] });
-      qc.invalidateQueries({ queryKey: ["finance_spend_by_platform"] });
-      qc.invalidateQueries({ queryKey: ["finance_cash_trend"] });
-      qc.invalidateQueries({ queryKey: ["finance_top_vendors"] });
-      qc.invalidateQueries({ queryKey: ["finance_cc_roas"] });
+      refreshTiles();
     } catch (e: any) {
       toast.error("Import failed", { description: String(e?.message ?? e) });
     } finally {
       setImporting(false);
+    }
+  };
+
+  const refreshTiles = () => {
+    qc.invalidateQueries({ queryKey: ["finance_pnl_summary"] });
+    qc.invalidateQueries({ queryKey: ["finance_revenue_by_channel"] });
+    qc.invalidateQueries({ queryKey: ["finance_spend_by_platform"] });
+    qc.invalidateQueries({ queryKey: ["finance_cash_trend"] });
+    qc.invalidateQueries({ queryKey: ["finance_top_vendors"] });
+    qc.invalidateQueries({ queryKey: ["finance_cc_roas"] });
+  };
+
+  // Imports a range in 1-year chunks to avoid QBO timeouts on long spans.
+  const importRange = async (startDate: string, endDate: string) => {
+    setHistoricalBusy(true);
+    setHistoricalProgress("");
+    let totalImported = 0;
+    try {
+      const startY = Number(startDate.slice(0, 4));
+      const endY = Number(endDate.slice(0, 4));
+      if (!isFinite(startY) || !isFinite(endY) || startY > endY) {
+        throw new Error("Invalid date range");
+      }
+      for (let y = startY; y <= endY; y++) {
+        const chunkStart = y === startY ? startDate : `${y}-01-01`;
+        const chunkEnd = y === endY ? endDate : `${y}-12-31`;
+        setHistoricalProgress(`Pulling ${chunkStart} → ${chunkEnd}...`);
+        const { data, error } = await supabase.functions.invoke("qbo-import-pnl", {
+          body: { start_date: chunkStart, end_date: chunkEnd },
+        });
+        if (error) throw new Error(error.message);
+        if ((data as any)?.error) throw new Error((data as any).error);
+        totalImported += (data as any)?.imported ?? 0;
+      }
+      toast.success(`Imported ${totalImported} entries`, {
+        description: `Range ${startDate} → ${endDate}.`,
+      });
+      refreshTiles();
+    } catch (e: any) {
+      toast.error("Historical import failed", { description: String(e?.message ?? e) });
+    } finally {
+      setHistoricalBusy(false);
+      setHistoricalProgress("");
     }
   };
 
@@ -138,6 +182,47 @@ export function QuickBooksPanel({ days }: { days: number }) {
               {report.start_date} → {report.end_date}
             </span>
           )}
+        </div>
+      )}
+
+      {conn && (
+        <div className="pt-3 border-t border-border space-y-2">
+          <div className="text-[10px] uppercase tracking-brand font-semibold text-muted-foreground">Historical import</div>
+          <div className="flex flex-wrap items-end gap-2">
+            <div>
+              <Label className="text-[10px] uppercase tracking-brand">Start date</Label>
+              <Input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="h-8 w-40 text-xs" />
+            </div>
+            <div>
+              <Label className="text-[10px] uppercase tracking-brand">End date</Label>
+              <Input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="h-8 w-40 text-xs" />
+            </div>
+            <Button
+              size="sm"
+              onClick={() => importRange(customStart, customEnd)}
+              disabled={historicalBusy || !customStart || !customEnd}
+              className="gap-2"
+            >
+              {historicalBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+              Import custom range
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => importRange("2017-01-01", today)}
+              disabled={historicalBusy}
+              className="gap-2"
+            >
+              {historicalBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+              Full history (2017 → today)
+            </Button>
+            {historicalProgress && (
+              <span className="text-xs text-muted-foreground">{historicalProgress}</span>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Long ranges are pulled in 1-year chunks. Re-runs are idempotent (upserts by QBO account + month).
+          </p>
         </div>
       )}
 

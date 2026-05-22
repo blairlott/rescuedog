@@ -8802,6 +8802,86 @@ export type Database = {
         }
         Relationships: []
       }
+      vinoshipper_api_changelog: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          change_type: string
+          created_at: string
+          details: Json | null
+          email_sent_at: string | null
+          endpoint_method: string | null
+          endpoint_path: string | null
+          id: string
+          snapshot_id: string | null
+          summary: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          change_type: string
+          created_at?: string
+          details?: Json | null
+          email_sent_at?: string | null
+          endpoint_method?: string | null
+          endpoint_path?: string | null
+          id?: string
+          snapshot_id?: string | null
+          summary: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          change_type?: string
+          created_at?: string
+          details?: Json | null
+          email_sent_at?: string | null
+          endpoint_method?: string | null
+          endpoint_path?: string | null
+          id?: string
+          snapshot_id?: string | null
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vinoshipper_api_changelog_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "vinoshipper_api_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vinoshipper_api_snapshots: {
+        Row: {
+          fetched_at: string
+          id: string
+          probe_results: Json | null
+          source: string
+          source_url: string | null
+          spec_hash: string
+          spec_json: Json | null
+        }
+        Insert: {
+          fetched_at?: string
+          id?: string
+          probe_results?: Json | null
+          source: string
+          source_url?: string | null
+          spec_hash: string
+          spec_json?: Json | null
+        }
+        Update: {
+          fetched_at?: string
+          id?: string
+          probe_results?: Json | null
+          source?: string
+          source_url?: string | null
+          spec_hash?: string
+          spec_json?: Json | null
+        }
+        Relationships: []
+      }
       vinoshipper_backfill_runs: {
         Row: {
           created_by: string | null

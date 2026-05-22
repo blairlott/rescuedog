@@ -32,6 +32,8 @@ import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
 import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInterstitial";
 import { CartLineSizePicker } from "@/components/cart/CartLineSizePicker";
 import { addLinesAndGoToHostedCart } from "@/lib/vinoshipperInjector";
+import { refreshWineClubMembership } from "@/lib/refreshWineClubMembership";
+import { useQueryClient } from "@tanstack/react-query";
 import { recordCheckoutIntent } from "@/lib/abCheckoutIntent";
 import { VS_FLAT_SHIPPING_MIN_BOTTLES, VS_FLAT_SHIPPING_USD } from "@/lib/vinoshipperConfig";
 import { supabase } from "@/integrations/supabase/client";
@@ -117,6 +119,7 @@ export const CartDrawer = () => {
     ? totalPrice >= merchFreeShippingThreshold
     : totalBottlesEffective >= freeShippingBottleCount;
   const { isMember, discountPercent } = useIsMember();
+  const queryClient = useQueryClient();
   const discountableSubtotal = !isMerchRoute ? discountEligibleSubtotal(items as any) : totalPrice;
   const memberSavings = !isMerchRoute && isMember ? discountableSubtotal * (discountPercent / 100) : 0;
   const bottlesNeeded = freeShippingBottleCount - totalBottlesEffective;
@@ -298,6 +301,11 @@ export const CartDrawer = () => {
     const popup =
       preOpenedPopup ??
       (typeof window !== "undefined" ? window.open("about:blank", "_blank") : null);
+
+    // Vinoshipper is the source of truth for wine club membership.
+    // Poll once at checkout so member pricing / gating is fresh before
+    // we hand off to the VS hosted cart. Non-blocking on failure.
+    await refreshWineClubMembership(queryClient);
 
     // Fire mid-funnel InitiateCheckout to Meta CAPI (state-weighted server-side)
     try {

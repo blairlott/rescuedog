@@ -71,6 +71,7 @@ const CmsDiscountsPage = lazy(() => import("./pages/CmsDiscountsPage"));
 const CmsEmailsPage = lazy(() => import("./pages/CmsEmailsPage"));
 const CmsFormsPage = lazy(() => import("./pages/CmsFormsPage"));
 const CmsMediaPage = lazy(() => import("./pages/CmsMediaPage"));
+const CmsLindyInboxPage = lazy(() => import("./pages/CmsLindyInboxPage"));
 const WineClubAdminPage = lazy(() => import("./pages/WineClubAdminPage"));
 const WineClubLoginPage = lazy(() => import("./pages/WineClubLoginPage"));
 const WineClubResetPasswordPage = lazy(() => import("./pages/WineClubResetPasswordPage"));
@@ -268,6 +269,7 @@ function AppContent() {
       <Route path="/cms/emails" element={<CmsEmailsPage />} />
       <Route path="/cms/forms" element={<CmsFormsPage />} />
       <Route path="/cms/media" element={<CmsMediaPage />} />
+      <Route path="/cms/lindy-inbox" element={<CmsLindyInboxPage />} />
       <Route path="/crm" element={<CrmLayout />}>
         <Route index element={<CrmDashboard />} />
         <Route path="account/:id" element={<CrmAccountDetail />} />

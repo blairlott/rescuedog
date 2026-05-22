@@ -62,4 +62,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'wine-subscription-card-expiring': wineSubCardExpiring,
   'autopilot-auto-stopped': autopilotAutoStopped,
   'access-request-admin-notification': accessRequestAdminNotification,
+  'vs-api-update': vsApiUpdate,
 }

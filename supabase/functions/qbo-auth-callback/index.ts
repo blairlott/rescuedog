@@ -74,8 +74,9 @@ Deno.serve(async (req) => {
 
   if (!tokenRes.ok) {
     const t = await tokenRes.text();
-    console.error("qbo token exchange failed", tokenRes.status, t);
-    return html(`<h1 class="err">Token exchange failed</h1><p>${t.slice(0, 300)}</p>`, 500);
+    const tid = tokenRes.headers.get("intuit_tid") ?? tokenRes.headers.get("intuit-tid");
+    console.error("qbo token exchange failed", { status: tokenRes.status, intuit_tid: tid, body: t });
+    return html(`<h1 class="err">Token exchange failed</h1><p>${t.slice(0, 300)}</p><p><small>intuit_tid: ${tid ?? "n/a"}</small></p>`, 500);
   }
   const tok: any = await tokenRes.json();
 

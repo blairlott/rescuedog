@@ -77,6 +77,18 @@ export default function FinanceDashboard() {
 
   const board: CfoBoard | undefined = boards.find(b => b.id === activeBoardId);
   const tiles = board?.tiles ?? [];
+
+  // Auto-add vs_waterfall next to vs_summary on existing boards (one-time migration).
+  useEffect(() => {
+    if (!board) return;
+    if (tiles.includes("vs_summary") && !tiles.includes("vs_waterfall")) {
+      const idx = tiles.indexOf("vs_summary");
+      const next = [...tiles.slice(0, idx + 1), "vs_waterfall", ...tiles.slice(idx + 1)];
+      updateBoard.mutate({ id: board.id, tiles: next });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [board?.id]);
+
   const days = board?.date_range_days ?? 90;
   const customStart = board?.start_date ?? null;
   const customEnd = board?.end_date ?? null;

@@ -119,6 +119,7 @@ export const CartDrawer = () => {
     ? totalPrice >= merchFreeShippingThreshold
     : totalBottlesEffective >= freeShippingBottleCount;
   const { isMember, discountPercent } = useIsMember();
+  const queryClient = useQueryClient();
   const discountableSubtotal = !isMerchRoute ? discountEligibleSubtotal(items as any) : totalPrice;
   const memberSavings = !isMerchRoute && isMember ? discountableSubtotal * (discountPercent / 100) : 0;
   const bottlesNeeded = freeShippingBottleCount - totalBottlesEffective;

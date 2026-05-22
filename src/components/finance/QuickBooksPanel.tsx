@@ -93,6 +93,12 @@ export function QuickBooksPanel({ days }: { days: number }) {
     }
   };
 
+  const pullAndImport = async () => {
+    await pullPnL();
+    await importToFinance();
+  };
+  const syncing = loadingReport || importing;
+
   const refreshTiles = () => {
     qc.invalidateQueries({ queryKey: ["finance_pnl_summary"] });
     qc.invalidateQueries({ queryKey: ["finance_revenue_by_channel"] });
@@ -169,13 +175,13 @@ export function QuickBooksPanel({ days }: { days: number }) {
 
       {conn && (
         <div className="flex items-center gap-2 pt-2 border-t border-border">
-          <Button size="sm" variant="outline" onClick={pullPnL} disabled={loadingReport} className="gap-2">
-            {loadingReport ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-            Pull P&amp;L (last {days} days)
+          <Button size="sm" onClick={pullAndImport} disabled={syncing} className="gap-2">
+            {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+            {loadingReport ? `Pulling P&L…` : importing ? `Importing…` : `Pull & Import P&L (last ${days} days)`}
           </Button>
-          <Button size="sm" onClick={importToFinance} disabled={importing} className="gap-2">
-            {importing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-            Import to Finance (last {days} days)
+          <Button size="sm" variant="outline" onClick={pullPnL} disabled={syncing} className="gap-2">
+            {loadingReport ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+            Pull only
           </Button>
           {report && (
             <span className="text-xs text-muted-foreground">

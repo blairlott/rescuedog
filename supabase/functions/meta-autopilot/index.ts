@@ -2,9 +2,11 @@
 // (execution error rate + trailing Purchase ROAS) before executing approved
 // ad_recommendations for platform='meta'. Logs every evaluation to
 // ad_autopilot_kill_switch_evaluations and ad_autopilot_evaluations.
-// Cooldown gate: respects meta_autopilot_auto_stopped_at + cooldown_minutes
-// so an auto-stopped pilot cannot self-restart until cooldown elapses AND a
-// human has flipped meta_autopilot_enabled back to true via the UI.
+//
+// Auto-recovery: when an auto-stop has fired, the pilot self-evaluates on every
+// cron tick after cooldown elapses. If both kill switches are healthy on the
+// current data, it re-enables itself (clears auto_stopped_at/reason) and
+// resumes execution in the same tick. Goal: minimize downtime.
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -68,7 +70,8 @@ Deno.serve(async (req) => {
     const cfg: Record<string, any> = {};
     (settings ?? []).forEach((r: any) => { cfg[r.key] = r.value; });
 
-    const enabled = cfg.meta_autopilot_enabled === true;
+    const enabledInitial = cfg.meta_autopilot_enabled === true;
+    let enabled = enabledInitial;
     const minConf = getNum(cfg.meta_autopilot_confidence_min, 0.75);
     const maxBudgetPct = getNum(cfg.meta_autopilot_max_budget_change_pct, 20);
     const dailyCap = getNum(cfg.meta_autopilot_daily_action_cap, 10);
@@ -80,19 +83,23 @@ Deno.serve(async (req) => {
     const minRoas = getNum(cfg.meta_autopilot_min_roas, 2.0);
     const roasWindowDays = Math.max(1, getNum(cfg.meta_autopilot_roas_window_days, 7));
     const minActionsForEval = Math.max(1, getNum(cfg.meta_autopilot_min_actions_for_eval, 10));
-    const cooldownMinutes = Math.max(0, getNum(cfg.meta_autopilot_cooldown_minutes, 60));
+    const cooldownMinutes = Math.max(0, getNum(cfg.meta_autopilot_cooldown_minutes, 15));
     const notifyEmails: string[] = Array.isArray(cfg.meta_autopilot_notify_emails)
       ? cfg.meta_autopilot_notify_emails.filter((s: any) => typeof s === "string" && s.includes("@"))
       : [];
 
-    // Cooldown gate: if we were auto-stopped recently, refuse to run even if a
-    // human flipped enabled=true too early. Belt-and-braces with the UI guard.
-    if (cooldownMinutes > 0 && cfg.meta_autopilot_auto_stopped_at) {
+    // Cooldown gate: if we were auto-stopped recently, refuse to run until
+    // cooldown elapses. Once it elapses we attempt auto-recovery (re-evaluate
+    // kill switches and re-enable in-place if healthy).
+    let attemptAutoRestart = false;
+    if (cfg.meta_autopilot_auto_stopped_at) {
       const stoppedAt = new Date(String(cfg.meta_autopilot_auto_stopped_at)).getTime();
       const cooldownEnds = stoppedAt + cooldownMinutes * 60_000;
       if (Number.isFinite(stoppedAt) && Date.now() < cooldownEnds) {
         return J(200, { ok: true, skipped: "cooldown_active", cooldown_ends_at: new Date(cooldownEnds).toISOString() });
       }
+      // Cooldown elapsed — try to recover automatically on this tick.
+      attemptAutoRestart = true;
     }
 
     let evaluatedB2B = 0;
@@ -108,6 +115,8 @@ Deno.serve(async (req) => {
     let spendOut = 0;
     let salesOut = 0;
     let notificationSent = false;
+    let autoRestarted = false;
+    let autoRestartReason: string | null = null;
     const killSwitchLog: Array<Record<string, unknown>> = [];
 
     const logKillSwitch = async (row: {
@@ -149,7 +158,7 @@ Deno.serve(async (req) => {
     const writeEvaluation = async (finalEnabled: boolean) => {
       await admin.from("ad_autopilot_evaluations").insert({
         platform: "meta",
-        enabled_before: enabled,
+        enabled_before: enabledInitial,
         enabled_after: finalEnabled,
         error_pct: errPctOut,
         error_sample: errSampleOut,
@@ -172,6 +181,8 @@ Deno.serve(async (req) => {
           cooldown_minutes: cooldownMinutes,
           allowed,
           kill_switches: killSwitchLog,
+          auto_restarted: autoRestarted,
+          auto_restart_reason: autoRestartReason,
           ...autoStopDetail,
         },
       });
@@ -225,7 +236,7 @@ Deno.serve(async (req) => {
       } catch (e) { console.warn("meta autopilot notification failed", e); }
     };
 
-    if (!enabled) {
+    if (!enabled && !attemptAutoRestart) {
       await writeEvaluation(false);
       return J(200, { ok: true, skipped: "autopilot_disabled" });
     }
@@ -320,6 +331,23 @@ Deno.serve(async (req) => {
         spend_cents: spend, sales_cents: sales,
         detail: { reason: "insufficient_spend", min_spend_cents: 10_000, window_days: roasWindowDays },
       });
+    }
+
+    // Both kill switches are healthy (or skipped for insufficient data).
+    // If we got here in auto-restart mode, commit the recovery: flip the
+    // enabled flag back on, clear auto-stop markers, and continue executing.
+    if (attemptAutoRestart && !enabled) {
+      const restartAt = new Date().toISOString();
+      await admin.from("app_settings").upsert([
+        { key: "meta_autopilot_enabled", value: true },
+        { key: "meta_autopilot_auto_stopped_at", value: null },
+        { key: "meta_autopilot_auto_stopped_reason", value: null },
+        { key: "meta_autopilot_last_auto_restart_at", value: restartAt },
+      ], { onConflict: "key" });
+      enabled = true;
+      autoRestarted = true;
+      autoRestartReason = "kill_switches_recovered";
+      console.log("meta-autopilot auto-restarted", { restartAt, errPct: errPctOut, roas: roasOut });
     }
 
     // Daily cap check.

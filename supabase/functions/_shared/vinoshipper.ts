@@ -176,7 +176,12 @@ export async function vsFindCustomerByEmail(
     }
     return null;
   } catch (err) {
-    if (err instanceof VinoshipperError && err.status === 404) return null;
+    // Treat "endpoint not available" responses as "not found" so callers can
+    // fall through to create. VS returns 405 for methods not yet enabled on
+    // the producer-scoped customer endpoint.
+    if (err instanceof VinoshipperError && (err.status === 404 || err.status === 405)) {
+      return null;
+    }
     throw err;
   }
 }

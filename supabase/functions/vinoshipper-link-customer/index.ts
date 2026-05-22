@@ -109,7 +109,17 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("vinoshipper-link-customer error", err);
     if (err instanceof VinoshipperError) {
-      return json({ error: err.message, details: err.details }, err.status);
+      // Don't block auth flow on upstream VS errors (e.g. 405 from
+      // endpoints not yet enabled on our producer account). Degrade to
+      // simulation so the client continues; watcher will surface when the
+      // endpoint becomes available.
+      return json({
+        ok: true,
+        source: "vs_unavailable",
+        vinoshipperCustomerId: null,
+        vsStatus: err.status,
+        vsMessage: err.message,
+      });
     }
     return json({ error: String(err) }, 500);
   }

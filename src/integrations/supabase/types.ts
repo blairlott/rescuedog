@@ -11900,6 +11900,20 @@ export type Database = {
           wine_club_cents: number
         }[]
       }
+      finance_vs_waterfall: {
+        Args: { _end: string; _start: string }
+        Returns: {
+          ad_attributed_revenue_cents: number
+          ad_conversions: number
+          cogs_cents: number
+          converting_ad_spend_cents: number
+          discount_cents: number
+          gross_revenue_cents: number
+          net_after_cogs_and_ads_cents: number
+          net_after_cogs_cents: number
+          net_revenue_cents: number
+        }[]
+      }
       get_public_impact_totals: {
         Args: never
         Returns: {

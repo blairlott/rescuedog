@@ -1,69 +1,71 @@
-## Z8 Nightly Optimizer — Auto-Kill + Auto-Scale Build Plan
+# CFO Finance Portal
 
-### Scope summary
-Z8 does not exist in the codebase today. The existing **meta-autopilot** function executes pre-approved recommendations from `ad_recommendations` (a queue produced elsewhere). Z8 is a separate nightly **ad-level** decision engine that runs at 04:00 ET, makes its own kill/scale calls directly against the Meta Marketing API, and logs to `ad_execution_log` with `actor='z8_auto'`.
+A locked-down `/finance` portal for the CFO and approved viewers. CFO sees only this dashboard — no exposure to CMS, CRM, Kennel, Wine Club admin, etc.
 
-### What I'll build
+## Access model
 
-1. **New edge function `z8-nightly-optimizer`** (`supabase/functions/z8-nightly-optimizer/index.ts`)
-   - Cron-callable via `x-cron-secret = KENNEL_INGEST_SECRET`, plus admin/ad-ops manual trigger.
-   - Pulls 14-day ad-level + adset-level insights from Meta Graph API v19.0 (`META_ADS_ACCOUNT_ID`, `META_ADS_ACCESS_TOKEN`).
-   - Fields: `ad_id, ad_name, adset_id, adset_name, status, daily_budget, spend, frequency, actions{omni_purchase, add_to_cart, initiate_checkout}, created_time`.
-   - Evaluates the 5 rule families in order: kill switch check → checkout-dropoff flag → kill → rotate → scale → retargeting freq kill.
-   - Posts to Meta (`POST /v19.0/{id}` with `status` or `daily_budget`) and logs every action.
-   - Sends SMS via existing `kennel-alert-dispatch`.
+New `cfo` app_role added to `app_role` enum. Helper `public.can_view_finance(uid)` returns true for `owner`, `admin`, `executive`, `cfo`, plus existing `viewer` users explicitly granted via the new finance grants table.
 
-2. **Rule logic (exact thresholds from the prompt)**
-   - **Kill**: spend ≥ $25, omni_purchase = 0, ad age ≥ 48h, name does NOT start with `WC-`. Cap: 5 per night (highest spend first).
-   - **Checkout drop-off** (evaluated *before* kill, supersedes it): `add_to_cart ≥ 10 AND initiate_checkout ≥ 2 AND purchases = 0` → log `checkout_dropoff_suspected`, **no kill, no rotate**, dedicated SMS.
-   - **Retargeting kill**: spend ≥ $25 AND frequency ≥ 3.0 AND purchases = 0, only for adsets tagged retargeting (via `adset_name` regex `/RTG|retarget|RMK/i` — confirm pattern).
-   - **Scale**: purchases ≥ 2 AND ROAS ≥ 3.0x AND current daily_budget < $150 → +20%, capped at $150 cents per adset, max 1 per 48h, max 3 per night.
-   - **Rotate**: after a kill, look up `ad_reserves` table for next paused reserve in same adset → activate.
-   - **Auto-rollback**: at start of each run, check scale actions from last 48h; if ROAS dropped >30% vs baseline at-time, revert budget.
+- **You (owner)**: full access + can grant/revoke `cfo` role and finance access to other users.
+- **Jana (viewer)**: already a `viewer` — auto-granted finance access via `is_backend_viewer`.
+- **CFO**: gets the `cfo` role from you. On login at `/finance/login`, lands directly on `/finance` and is blocked from `/admin`, `/crm`, `/cms`, `/kennel`, `/club`, `/dropship`. Existing admin layouts also exclude CFOs from their nav.
 
-3. **New tables** (migration)
-   - `ad_reserves(adset_id, ad_id, rotation_order, status)` — for creative rotation lookup.
-   - `z8_kill_switch(enabled boolean, paused_at, resumed_at)` — Blair's "pause" / "resume" SMS reply target. Single-row config.
-   - Extend `ad_execution_log` only if missing columns: `actor`, `action_type`, `reason`, `roas_at_time`, `spend_at_time` — I'll check and ALTER if needed.
+## Routes
 
-4. **Cron job** (pg_cron, scheduled via `insert` tool since it contains the project ref + key)
-   - `0 8 * * *` UTC = 04:00 EDT (note: ET drifts; user said "4am ET" — I'll use 09:00 UTC for EST and document).
+```text
+/finance/login      → standalone login (no admin chrome)
+/finance            → dashboard (this is the ONLY route a pure-CFO can hit)
+/finance/users      → owner-only: grant/revoke cfo role
+/admin              → adds "Finance" tile (owner/admin/executive only)
+```
 
-5. **Vinoshipper handoff check (one-time, EV26-D)**
-   - Script run inline: fetch the EV26-D ad's landing URL via Meta API, follow redirects, verify it reaches `vinoshipper.com` and renders on mobile-UA. Report finding in run output and SMS Blair if broken.
+A pure CFO who tries `/admin`, `/crm`, etc. is redirected to `/finance`.
 
-### Open questions (need confirmation before I build)
+## Dashboard layout
 
-1. **Reserve ad source of truth**: The prompt mentions `ad_reserves` — that table doesn't exist. Do you want me to:
-   (a) create an empty `ad_reserves` table you'll populate manually,
-   (b) auto-detect reserves as paused ads in the same adset (no table needed), or
-   (c) use a naming convention (e.g. `-R1`, `-R2` suffix)?
+Single page with a configurable tile grid. Each tile has a dropdown picker in an "Add Report" toolbar so the CFO can compose his own view. Layout persists per-user in `cfo_dashboard_layouts` (jsonb).
 
-2. **Retargeting adset identification**: How is a retargeting adset identified today? Naming convention (`RTG-`, `RMK-`), Meta `targeting_type`, or a tag in the campaign metadata?
+### Tile categories
 
-3. **SMS pause/resume inbound**: `kennel-alert-dispatch` sends outbound. There's no inbound SMS webhook today. Should I:
-   (a) skip the inbound reply mechanism for now and just expose a `/kennel/z8` toggle in the admin UI for the kill switch, or
-   (b) build a Twilio inbound webhook that parses "pause"/"resume" replies?
+1. **QuickBooks (from `bm_finance_entries` — Lindy sync)**
+   - P&L Summary (revenue / COGS / opex / net) — date range picker
+   - Revenue by channel (DTC / wholesale / wine club / merch)
+   - Ad spend by platform (Meta / Google / Instacart)
+   - COGS by SKU
+   - Cash in vs cash out trend
+   - Top vendors / top expense categories
 
-4. **Auto-rollback baseline**: To detect "ROAS dropped >30% within 48h of scale," I need a baseline ROAS snapshot at scale time. I'll store `roas_at_time` on the scale log and compare against current trailing-2-day ROAS for that adset. Confirm OK.
+2. **Vinoshipper (from `vs_transactions`)**
+   - Orders, AOV, revenue by day/week/month
+   - DTC vs wholesale split
+   - Top ship-to states
+   - Wine club vs à la carte revenue
 
-5. **Cron schedule**: "4am ET" — should I use 09:00 UTC year-round (EST winter, off-by-1h in EDT summer), or wire DST-aware scheduling via two cron entries?
+3. **Command Center read-only imports**
+   - Revenue / ROAS / blended CAC / MER (Kennel `true_roas` view)
+   - Wine Club MRR, active members, churn (existing `wine_club_*` queries)
+   - Conversion Pathways summary (guest→club rate, median days, à la carte)
 
-6. **Meta API version**: prompt says v19.0; current ingest functions use v20.0+. Stick with v19.0 as specified, or use whatever the rest of the codebase uses?
+Each tile renders as a small card with KPI + sparkline/bar chart (Recharts). Date range filter at top of dashboard applies to all date-aware tiles.
 
-### What I will NOT build (per "approval required" list)
-- No budget increase above $150/adset
-- No cross-campaign reallocation
-- No adset-level pause (only ad-level)
-- No new campaign/adset launch
-- No bid-strategy changes
-These will remain manual / require Blair "execute [N]".
+### "Add Report" UX
 
-### Files I'll create / modify
-- `supabase/functions/z8-nightly-optimizer/index.ts` (new, ~500 lines)
-- `supabase/functions/_shared/meta-graph.ts` (small helper if not already shared)
-- `supabase/migrations/<timestamp>_z8.sql` (new tables + log columns)
-- pg_cron entry (via insert tool)
-- `src/pages/kennel/KennelZ8Page.tsx` (small admin UI: kill-switch toggle, recent run log, manual "run now" button) — only if you want UI; otherwise skip.
+Toolbar button → dropdown grouped by category (QB / Vinoshipper / Command Center) → click to add. Tiles can be removed/reordered.
 
-**Please answer the 6 open questions (or say "your call on all") and I'll build.**
+## QuickBooks live API (Phase 2 — scaffolded but not wired)
+
+Adds a `finance_qb_connection` table (encrypted OAuth tokens) and an empty `quickbooks-oauth` + `quickbooks-report` edge function pair stubbed with TODOs. Tiles will keep reading from `bm_finance_entries` until you create an Intuit developer app and add `QB_CLIENT_ID` / `QB_CLIENT_SECRET` secrets.
+
+## Technical details
+
+- **Migration**: add `cfo` to `app_role` enum; create `can_view_finance(uid)` and `is_cfo(uid)`; create `cfo_dashboard_layouts (user_id pk, tiles jsonb, updated_at)`; create `finance_qb_connection` stub table; new RPC `finance_pnl_summary(_start date, _end date)` that aggregates `bm_finance_entries` by `entry_type`; new RPC `finance_revenue_by_channel(_start, _end)`; new RPC `finance_spend_by_platform(_start, _end)`. All RPCs `SECURITY DEFINER`, gated by `can_view_finance`.
+- **Frontend**: `src/pages/finance/FinanceLogin.tsx`, `src/pages/finance/FinanceDashboard.tsx`, `src/pages/finance/FinanceUsersPage.tsx`, `src/components/finance/FinanceLayout.tsx` (minimal chrome — no admin sidebar), `src/components/finance/tiles/*.tsx` (one per tile), `src/components/finance/AddTileMenu.tsx`, `src/lib/financeTiles.ts` (registry).
+- **Routing**: add routes in `App.tsx`. A `RequireFinanceAccess` guard wraps `/finance/*`. Existing `CrmLayout` / `KennelDashboard` / `CmsDashboard` / `AdminPortalPage` add a redirect-to-`/finance` for pure-CFO users.
+- **Admin nav**: add a "Finance" tile to `ADMIN_AREAS` (owner/admin/executive/cfo). CFO clicking it goes to `/finance`. Pure CFO never hits `/admin` because their login redirect points to `/finance`.
+- **Manual update**: append changelog entry to Lindy manual per mem rule (new RPCs + finance portal surface).
+
+## Out of scope (this round)
+
+- Live QB OAuth flow (table + stub functions only — wire up when you create the Intuit app)
+- PDF export of reports
+- Scheduled email reports

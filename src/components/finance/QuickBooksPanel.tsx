@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, ExternalLink, RefreshCcw } from "lucide-react";
+import { Loader2, CheckCircle2, ExternalLink, RefreshCcw, Unplug } from "lucide-react";
 import { toast } from "sonner";
 
 export function QuickBooksPanel({ days }: { days: number }) {
@@ -29,6 +29,18 @@ export function QuickBooksPanel({ days }: { days: number }) {
     } finally {
       setConnecting(false);
     }
+  };
+
+  const disconnect = async () => {
+    if (!conn) return;
+    if (!confirm("Disconnect QuickBooks? You'll need to re-authorize to pull reports again.")) return;
+    const { error } = await supabase.from("qbo_connections").delete().eq("id", conn.id);
+    if (error) {
+      toast.error("Disconnect failed", { description: error.message });
+      return;
+    }
+    toast.success("QuickBooks disconnected");
+    refetch();
   };
 
   const pullPnL = async () => {
@@ -65,6 +77,14 @@ export function QuickBooksPanel({ days }: { days: number }) {
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <span className="font-semibold">{conn.company_name ?? conn.realm_id}</span>
             <Button size="sm" variant="outline" onClick={() => refetch()} className="h-7"><RefreshCcw className="h-3 w-3" /></Button>
+            <Button size="sm" variant="outline" onClick={connect} disabled={connecting} className="h-7 gap-1">
+              {connecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />}
+              Reconnect
+            </Button>
+            <Button size="sm" variant="outline" onClick={disconnect} className="h-7 gap-1">
+              <Unplug className="h-3 w-3" />
+              Disconnect
+            </Button>
           </div>
         ) : (
           <Button onClick={connect} disabled={connecting} size="sm" className="gap-2">

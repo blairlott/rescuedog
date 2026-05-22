@@ -37,8 +37,12 @@ Deno.serve(async (req) => {
     if (!user) return json({ error: "unauthorized" }, 401);
 
     // If Vinoshipper isn't configured yet (simulation mode), no-op gracefully
-    // so client auth flow doesn't surface a 500.
-    if (!Deno.env.get("VINOSHIPPER_API_KEY")) {
+    // so client auth flow doesn't surface a 500. We accept either the new
+    // KEY_ID/SECRET pair OR the legacy bearer token.
+    const hasVsCreds =
+      (Deno.env.get("VINOSHIPPER_API_KEY_ID") && Deno.env.get("VINOSHIPPER_API_SECRET")) ||
+      Deno.env.get("VINOSHIPPER_API_KEY");
+    if (!hasVsCreds) {
       return json({ ok: true, source: "simulation", vinoshipperCustomerId: null });
     }
 

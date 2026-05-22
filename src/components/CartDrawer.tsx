@@ -302,6 +302,11 @@ export const CartDrawer = () => {
       preOpenedPopup ??
       (typeof window !== "undefined" ? window.open("about:blank", "_blank") : null);
 
+    // Vinoshipper is the source of truth for wine club membership.
+    // Poll once at checkout so member pricing / gating is fresh before
+    // we hand off to the VS hosted cart. Non-blocking on failure.
+    await refreshWineClubMembership(queryClient);
+
     // Fire mid-funnel InitiateCheckout to Meta CAPI (state-weighted server-side)
     try {
       const { trackMidfunnelCapi } = await import("@/lib/metaPixel");

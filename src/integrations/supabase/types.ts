@@ -8856,7 +8856,13 @@ export type Database = {
           processed: boolean
           processed_at: string | null
           processing_error: string | null
+          raw_body: string | null
           received_at: string
+          related_cycle_id: string | null
+          related_subscription_id: string | null
+          signature_header: string | null
+          signature_valid: boolean | null
+          source_ip: string | null
           subject: string
         }
         Insert: {
@@ -8867,7 +8873,13 @@ export type Database = {
           processed?: boolean
           processed_at?: string | null
           processing_error?: string | null
+          raw_body?: string | null
           received_at?: string
+          related_cycle_id?: string | null
+          related_subscription_id?: string | null
+          signature_header?: string | null
+          signature_valid?: boolean | null
+          source_ip?: string | null
           subject: string
         }
         Update: {
@@ -8878,10 +8890,31 @@ export type Database = {
           processed?: boolean
           processed_at?: string | null
           processing_error?: string | null
+          raw_body?: string | null
           received_at?: string
+          related_cycle_id?: string | null
+          related_subscription_id?: string | null
+          signature_header?: string | null
+          signature_valid?: boolean | null
+          source_ip?: string | null
           subject?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vinoshipper_webhook_events_related_cycle_id_fkey"
+            columns: ["related_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vinoshipper_webhook_events_related_subscription_id_fkey"
+            columns: ["related_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vinoshipper_webhook_logs: {
         Row: {

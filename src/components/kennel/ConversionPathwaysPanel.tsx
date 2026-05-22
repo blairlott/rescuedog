@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchConversionPathways } from "@/lib/wineClubMembers";
 import { Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 function fmtPct(n: number) {
   if (!isFinite(n)) return "—";
@@ -32,6 +33,36 @@ export function ConversionPathwaysPanel() {
   const { data, isLoading } = useQuery({
     queryKey: ["kennel-conversion-pathways-v1"],
     queryFn: fetchConversionPathways,
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: triggers } = useQuery({
+    queryKey: ["kennel-conversion-triggers-v1"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc(
+        "wine_club_conversion_triggers" as never,
+      );
+      if (error) throw error;
+      const arr = (data ?? []) as unknown as any[];
+      const row = Array.isArray(arr) ? arr[0] : arr;
+      return row as null | {
+        total_guests: number;
+        converters: number;
+        baseline_rate: number;
+        tasting_touched: number;
+        tasting_converters: number;
+        tasting_rate: number;
+        welcome_3plus_touched: number;
+        welcome_3plus_converters: number;
+        welcome_3plus_rate: number;
+        wine_club_page_touched: number;
+        wine_club_page_converters: number;
+        wine_club_page_rate: number;
+        multi_bottle_touched: number;
+        multi_bottle_converters: number;
+        multi_bottle_rate: number;
+      };
+    },
     staleTime: 5 * 60_000,
   });
 
@@ -152,17 +183,120 @@ export function ConversionPathwaysPanel() {
               <div className="flex-1 text-xs text-foreground leading-relaxed space-y-1">
                 <div className="uppercase tracking-brand font-bold">Growth read</div>
                 <p>{buildReadout(data)}</p>
-                <p className="text-muted-foreground">
-                  Next signal to add: tie pre-join behavior to <code className="font-mono">site_intel_events</code>{" "}
-                  + welcome email step at time of join (requires linking <code className="font-mono">profiles.email</code>{" "}
-                  → VS email). That unlocks "what triggered the join" attribution.
-                </p>
               </div>
             </div>
           </div>
+
+          {/* Trigger attribution */}
+          {triggers && (
+            <TriggerAttribution t={triggers} />
+          )}
         </div>
       )}
     </section>
+  );
+}
+
+function lift(rate: number, baseline: number): { pct: string; cls: string } {
+  if (!baseline || baseline === 0) return { pct: "—", cls: "text-muted-foreground" };
+  const x = rate / baseline;
+  const arrow = x >= 1 ? "+" : "";
+  return {
+    pct: `${arrow}${((x - 1) * 100).toFixed(0)}%`,
+    cls: x >= 1.25 ? "text-primary" : x <= 0.75 ? "text-destructive" : "text-foreground",
+  };
+}
+
+function TriggerAttribution({
+  t,
+}: {
+  t: {
+    total_guests: number;
+    converters: number;
+    baseline_rate: number;
+    tasting_touched: number;
+    tasting_rate: number;
+    welcome_3plus_touched: number;
+    welcome_3plus_rate: number;
+    wine_club_page_touched: number;
+    wine_club_page_rate: number;
+    multi_bottle_touched: number;
+    multi_bottle_rate: number;
+  };
+}) {
+  const baseline = Number(t.baseline_rate ?? 0);
+  const rows = [
+    {
+      label: "Attended tasting / event",
+      touched: t.tasting_touched,
+      rate: Number(t.tasting_rate ?? 0),
+      detail: "guest had a POS or EVENT order before joining",
+    },
+    {
+      label: "Welcome email reached step 3+",
+      touched: t.welcome_3plus_touched,
+      rate: Number(t.welcome_3plus_rate ?? 0),
+      detail: "welcome series 'mission' email landed before join",
+    },
+    {
+      label: "Viewed /wine-club page",
+      touched: t.wine_club_page_touched,
+      rate: Number(t.wine_club_page_rate ?? 0),
+      detail: "site intel pageview, requires linked account",
+    },
+    {
+      label: "Bought 2+ bottles in one order",
+      touched: t.multi_bottle_touched,
+      rate: Number(t.multi_bottle_rate ?? 0),
+      detail: "multi-bottle purchase is the strongest commit signal",
+    },
+  ];
+
+  return (
+    <div className="border-2 border-foreground p-4" style={{ borderRadius: 0 }}>
+      <div className="flex items-baseline justify-between mb-3">
+        <h3 className="text-xs uppercase tracking-brand font-bold text-foreground">
+          Trigger attribution · lift vs baseline
+        </h3>
+        <div className="text-[11px] text-muted-foreground">
+          baseline {(baseline * 100).toFixed(1)}% · {Number(t.total_guests).toLocaleString()} guests
+        </div>
+      </div>
+      <div className="space-y-2">
+        {rows.map((r) => {
+          const L = lift(r.rate, baseline);
+          return (
+            <div
+              key={r.label}
+              className="grid grid-cols-12 gap-2 items-baseline text-xs border-t border-muted pt-2"
+            >
+              <div className="col-span-6">
+                <div className="font-bold text-foreground">{r.label}</div>
+                <div className="text-[11px] text-muted-foreground">{r.detail}</div>
+              </div>
+              <div className="col-span-2 text-right">
+                <div className="text-muted-foreground uppercase tracking-brand text-[10px]">touched</div>
+                <div className="tabular-nums font-bold">{Number(r.touched).toLocaleString()}</div>
+              </div>
+              <div className="col-span-2 text-right">
+                <div className="text-muted-foreground uppercase tracking-brand text-[10px]">convert</div>
+                <div className="tabular-nums font-bold">{(r.rate * 100).toFixed(1)}%</div>
+              </div>
+              <div className="col-span-2 text-right">
+                <div className="text-muted-foreground uppercase tracking-brand text-[10px]">lift</div>
+                <div className={`tabular-nums font-bold ${L.cls}`}>{L.pct}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
+        Lift = conversion rate within the touched cohort ÷ overall baseline. Anything &gt; +25% is a real
+        growth lever — invest there. Anything &lt; −25% likely signals selection bias (e.g. guests who never
+        engage are unreachable). Site-page views require the guest to have a linked account, so the
+        denominator there is smaller than tasting/welcome cohorts.
+      </p>
+    </div>
   );
 }
 

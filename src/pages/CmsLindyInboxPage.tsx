@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, XCircle, Loader2, ExternalLink, Inbox } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Loader2, ExternalLink, Inbox, Undo2 } from "lucide-react";
 
 type Draft = {
   id: string;
@@ -15,7 +15,7 @@ type Draft = {
   payload: Record<string, unknown>;
   source_url: string | null;
   confidence: "low" | "medium" | "high" | null;
-  status: "pending" | "approved" | "rejected" | "promoted" | "error";
+  status: "pending" | "approved" | "rejected" | "promoted" | "error" | "pushed_back";
   submitted_by: string | null;
   reviewer_notes: string | null;
   promoted_ref: string | null;
@@ -30,6 +30,7 @@ const STATUS_COLORS: Record<Draft["status"], string> = {
   promoted: "bg-green-500/15 text-green-700 border-green-500/40",
   rejected: "bg-muted text-muted-foreground border-border",
   error: "bg-destructive/15 text-destructive border-destructive/40",
+  pushed_back: "bg-orange-500/15 text-orange-700 border-orange-500/40",
 };
 
 export default function CmsLindyInboxPage() {
@@ -74,6 +75,23 @@ export default function CmsLindyInboxPage() {
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  const pushback = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const note = (notes[id] ?? "").trim();
+      if (!note) throw new Error("Add a note explaining what Lindy should fix.");
+      const { data, error } = await supabase.functions.invoke("lindy-pushback", {
+        body: { draft_id: id, note },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+    },
+    onSuccess: () => {
+      toast({ title: "Pushed back to Lindy", description: "Email sent to blair.lott@rescuedogwines.com" });
+      qc.invalidateQueries({ queryKey: ["lindy-inbox"] });
+    },
+    onError: (e: Error) => toast({ title: "Pushback failed", description: e.message, variant: "destructive" }),
+  });
+
   const counts = drafts.reduce((acc, d) => { acc[d.status] = (acc[d.status] ?? 0) + 1; return acc; }, {} as Record<string, number>);
 
   return (
@@ -89,8 +107,8 @@ export default function CmsLindyInboxPage() {
               <h1 className="text-xl font-bold uppercase tracking-brand">Lindy Inbox</h1>
             </div>
           </div>
-          <div className="flex gap-1">
-            {(["pending", "approved", "rejected", "promoted", "all"] as const).map((s) => (
+          <div className="flex gap-1 flex-wrap">
+            {(["pending", "approved", "pushed_back", "rejected", "promoted", "all"] as const).map((s) => (
               <Button
                 key={s}
                 size="sm"
@@ -179,6 +197,17 @@ export default function CmsLindyInboxPage() {
                         className="uppercase tracking-brand text-xs"
                       >
                         <XCircle className="h-4 w-4 mr-1" /> Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => pushback.mutate({ id: d.id })}
+                        disabled={pushback.isPending || !(notes[d.id] ?? "").trim()}
+                        style={{ borderRadius: 0 }}
+                        className="uppercase tracking-brand text-xs border-orange-500/60 text-orange-700 hover:bg-orange-500/10"
+                        title={(notes[d.id] ?? "").trim() ? "Send back to Lindy via email" : "Add a note first"}
+                      >
+                        <Undo2 className="h-4 w-4 mr-1" /> Push back to Lindy
                       </Button>
                     </div>
                   </div>

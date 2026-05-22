@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { DollarSign, LogOut, LayoutDashboard, Users, ArrowLeft } from "lucide-react";
+import { DollarSign, LogOut, LayoutDashboard, Users, ArrowLeft, FlaskConical } from "lucide-react";
 
 /**
  * Stripped-down chrome for the finance portal. CFOs do NOT get the admin
@@ -71,6 +71,14 @@ export default function FinanceLayout() {
               }`}
             >
               <LayoutDashboard className="h-4 w-4" /> Dashboard
+            </Link>
+            <Link
+              to="/finance/workspace"
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm uppercase tracking-brand transition-colors ${
+                location.pathname.startsWith("/finance/workspace") ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <FlaskConical className="h-4 w-4" /> Workspace
             </Link>
             {canManageUsers && (
               <Link

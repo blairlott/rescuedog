@@ -303,6 +303,22 @@ Deno.serve(async (req) => {
     return J(200, { generated: 0, considered: 0, note: "No material moves detected for this window." });
   }
 
+  // Pull this user's standing directives + taught business facts so Graz's
+  // tile-level insights are framed in the operator's own strategy and ground
+  // truth — not generic CFO platitudes.
+  const { data: graz } = await admin
+    .from("graz_directives")
+    .select("directive,kind,active")
+    .eq("user_id", userId)
+    .eq("active", true);
+  const directives = ((graz ?? []) as any[])
+    .filter((d) => (d.kind ?? "directive") === "directive")
+    .map((d) => String(d.directive));
+  const facts = ((graz ?? []) as any[])
+    .filter((d) => d.kind === "context")
+    .map((d) => String(d.directive));
+  const knowledge = { directives, facts };
+
   let written = 0;
   let skipped = 0;
   for (const h of heuristics) {
@@ -311,7 +327,7 @@ Deno.serve(async (req) => {
     const deltaBucket = h.delta_pct != null ? Math.sign(h.delta_pct) * Math.floor(Math.abs(h.delta_pct) * 10) / 10 : 0;
     const dedupe = await sha256Hex(`${h.tile_key}|${h.metric}|${deltaBucket}|${h.detail.window_days}|${day}`);
 
-    const nar = apiKey ? await generateNarrative(apiKey, h) : fallbackNarrative(h);
+    const nar = apiKey ? await generateNarrative(apiKey, h, knowledge) : fallbackNarrative(h);
 
     const { error } = await admin.from("cfo_insights").insert({
       tile_key: h.tile_key,

@@ -128,6 +128,7 @@ export default function FinanceDashboard() {
     setHistoricalBusy(true);
     setHistoricalProgress("");
     let totalImported = 0;
+    const report: string[] = [];
     try {
       const startY = 2017;
       const endY = new Date().getFullYear();
@@ -138,15 +139,32 @@ export default function FinanceDashboard() {
         const { data, error } = await supabase.functions.invoke("qbo-import-pnl", {
           body: { start_date: chunkStart, end_date: chunkEnd },
         });
-        if (error) throw new Error(error.message);
-        if ((data as any)?.error) throw new Error((data as any).error);
-        totalImported += (data as any)?.imported ?? 0;
+        if (error) { report.push(`${y}: ERROR ${error.message}`); continue; }
+        if ((data as any)?.error) { report.push(`${y}: ERROR ${(data as any).error}`); continue; }
+        const d: any = data;
+        const by = d?.debug?.by_type ?? {};
+        const cols = d?.debug?.raw_column_titles ?? [];
+        report.push(
+          `${y}: imported ${d?.imported ?? 0} | parsed ${d?.debug?.parsed_entries ?? 0} ` +
+          `(rev ${by.revenue ?? 0}, cogs ${by.cogs ?? 0}, exp ${by.expense ?? 0}) ` +
+          `| QBO returned ${cols.length} columns: ${cols.join(", ") || "(none)"}`
+        );
+        totalImported += d?.imported ?? 0;
       }
       toast.success(`Imported ${totalImported} entries`, { description: "2017 → today. Tiles refreshing." });
+      console.log("[QBO Backfill Report]\n" + report.join("\n"));
+      // Also surface the full report in a downloadable file via a temporary anchor.
+      const blob = new Blob([report.join("\n")], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `qbo-backfill-report-${todayIso}.txt`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
       applyPreset({ start: "2017-01-01", end: todayIso });
       refreshAllTiles();
     } catch (e: any) {
       toast.error("Historical import failed", { description: String(e?.message ?? e) });
+      console.log("[QBO Backfill Report so far]\n" + report.join("\n"));
     } finally {
       setHistoricalBusy(false);
       setHistoricalProgress("");

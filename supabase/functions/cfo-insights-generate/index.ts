@@ -305,6 +305,61 @@ async function runHeuristics(financeClient: any, days: number): Promise<Heuristi
     }
   }
 
+  // ---- Wine Club MRR & churn (cc_wine_club) ----
+  const [clubCurr, clubPrev, clubPrev2] = await Promise.all([
+    financeClient.from("wine_club_memberships").select("status,joined_at,cancelled_at").or(`joined_at.lte.${isoDate(end)},cancelled_at.gte.${isoDate(startCurr)}`),
+    financeClient.from("wine_club_memberships").select("status,joined_at,cancelled_at").or(`joined_at.lte.${isoDate(endPrev)},cancelled_at.gte.${isoDate(startPrev)}`),
+    financeClient.from("wine_club_memberships").select("status,joined_at,cancelled_at").or(`joined_at.lte.${isoDate(endPrev2)},cancelled_at.gte.${isoDate(startPrev2)}`),
+  ]);
+  const clubSummary = (rows: any[] | null | undefined, windowEnd: Date, windowStart: Date) => {
+    const endMs = windowEnd.getTime();
+    const startMs = windowStart.getTime();
+    const active = (rows ?? []).filter((r) => {
+      const joined = r.joined_at ? new Date(r.joined_at).getTime() : 0;
+      const cancelled = r.cancelled_at ? new Date(r.cancelled_at).getTime() : Infinity;
+      return joined <= endMs && cancelled > endMs;
+    }).length;
+    const cancelled = (rows ?? []).filter((r) => {
+      if (!r.cancelled_at) return false;
+      const ts = new Date(r.cancelled_at).getTime();
+      return ts >= startMs && ts <= endMs;
+    }).length;
+    const churn = active + cancelled > 0 ? cancelled / (active + cancelled) : 0;
+    const mrr = active * 7500;
+    return { active, cancelled, churn, mrr };
+  };
+  const cc = clubSummary(clubCurr.data, end, startCurr);
+  const cp = clubSummary(clubPrev.data, endPrev, startPrev);
+  const cp2 = clubSummary(clubPrev2.data, endPrev2, startPrev2);
+  for (const k of ["active", "cancelled", "churn", "mrr"] as const) {
+    const d = pctChange(cc[k], cp[k]);
+    out.push({
+      tile_key: "cc_wine_club",
+      severity: d != null ? severityForAlways(Math.abs(d), k === "active" || k === "mrr") : "fyi",
+      metric: k === "mrr" ? "estimated wine-club MRR" : k === "churn" ? "wine-club churn rate" : `wine-club ${k}`,
+      current: cc[k], prior: cp[k], delta_pct: d,
+      detail: { window_days: days, kind: k, prior2: cp2[k], trend: trendShape(cp2[k], cp[k], cc[k]) },
+    });
+  }
+
+  // ---- Conversion pathways (cc_pathways) baseline from VS recurring mix ----
+  if (vc && vp) {
+    const currOrders = Number(vc.order_count ?? 0);
+    const prevOrders = Number(vp.order_count ?? 0);
+    const prev2Orders = Number(vp2?.order_count ?? 0);
+    const currRate = currOrders > 0 ? Number(vc.wine_club_cents ?? 0) / Math.max(1, Number(vc.revenue_cents ?? 0)) : 0;
+    const prevRate = prevOrders > 0 ? Number(vp.wine_club_cents ?? 0) / Math.max(1, Number(vp.revenue_cents ?? 0)) : 0;
+    const prev2Rate = prev2Orders > 0 ? Number(vp2?.wine_club_cents ?? 0) / Math.max(1, Number(vp2?.revenue_cents ?? 0)) : 0;
+    const d = pctChange(currRate, prevRate);
+    out.push({
+      tile_key: "cc_pathways",
+      severity: d != null ? severityForAlways(Math.abs(d), true) : "fyi",
+      metric: "club conversion pathway mix",
+      current: currRate, prior: prevRate, delta_pct: d,
+      detail: { window_days: days, kind: "club_mix", prior2: prev2Rate, trend: trendShape(prev2Rate, prevRate, currRate), current_orders: currOrders, prior_orders: prevOrders },
+    });
+  }
+
   return out;
 }
 

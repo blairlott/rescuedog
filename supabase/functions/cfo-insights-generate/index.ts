@@ -309,13 +309,16 @@ async function runHeuristics(financeClient: any, days: number): Promise<Heuristi
 }
 
 function fallbackNarrative(h: Heuristic): { headline: string; body: string; recommended_action: string } {
-  const dir = h.delta_pct! >= 0 ? "up" : "down";
-  const pct = `${(Math.abs(h.delta_pct!) * 100).toFixed(1)}%`;
+  const delta = h.delta_pct ?? 0;
+  const dir = delta >= 0 ? "up" : "down";
+  const pct = h.delta_pct == null ? "baseline" : `${(Math.abs(delta) * 100).toFixed(1)}%`;
   const isCents = typeof h.detail.kind === "string" && /cents|revenue|expense|cogs|spend|net/.test(String(h.detail.kind));
   const f = (n: number) => isCents ? fmtCents(n) : Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
   return {
-    headline: `${h.metric} ${dir} ${pct} vs prior ${h.detail.window_days}d`,
-    body: `Now ${f(h.current)} vs prior ${f(h.prior)}. Material move outside normal range.`,
+    headline: h.delta_pct == null
+      ? `${h.metric} baseline for current ${h.detail.window_days}d window`
+      : `${h.metric} ${dir} ${pct} vs prior ${h.detail.window_days}d`,
+    body: `Now ${f(h.current)} vs prior ${f(h.prior)}. Graz is using this as the tile's historical operating read.`,
     recommended_action: dir === "down"
       ? `Investigate driver and confirm not a tracking gap.`
       : `Lock in the lift — verify it's sustainable, then scale.`,

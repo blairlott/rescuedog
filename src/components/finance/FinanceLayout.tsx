@@ -18,6 +18,7 @@ export default function FinanceLayout() {
   const location = useLocation();
   const [user, setUser] = useState<any>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const { data: roleInfo, isLoading: roleLoading } = useUserRole();
 
   useEffect(() => {

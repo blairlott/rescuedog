@@ -379,16 +379,17 @@ export function CcPathwaysTile({ days: _days }: { days: number }) {
 
 /* ---------------- Tile renderer ---------------- */
 
-export function renderTile(key: string, days: number) {
+export function renderTile(key: string, days: number, range?: { start?: string; end?: string }) {
+  const p = { days, start: range?.start, end: range?.end };
   switch (key) {
-    case "qb_pnl": return <QbPnlTile days={days} />;
-    case "qb_revenue_ch": return <QbRevenueChannelTile days={days} />;
-    case "qb_ad_spend": return <QbAdSpendTile days={days} />;
-    case "qb_cash_trend": return <QbCashTrendTile days={days} />;
-    case "qb_top_vendors": return <QbTopVendorsTile days={days} />;
-    case "vs_summary": return <VsSummaryTile days={days} />;
-    case "vs_wc_vs_alc": return <VsWcVsAlcTile days={days} />;
-    case "cc_roas": return <CcRoasTile days={days} />;
+    case "qb_pnl": return <QbPnlTile {...p} />;
+    case "qb_revenue_ch": return <QbRevenueChannelTile {...p} />;
+    case "qb_ad_spend": return <QbAdSpendTile {...p} />;
+    case "qb_cash_trend": return <QbCashTrendTile {...p} />;
+    case "qb_top_vendors": return <QbTopVendorsTile {...p} />;
+    case "vs_summary": return <VsSummaryTile {...p} />;
+    case "vs_wc_vs_alc": return <VsWcVsAlcTile {...p} />;
+    case "cc_roas": return <CcRoasTile {...p} />;
     case "cc_wine_club": return <CcWineClubTile days={days} />;
     case "cc_pathways": return <CcPathwaysTile days={days} />;
     case "km_ad_command":    return <KennelMirror><AdCommandTiles /></KennelMirror>;

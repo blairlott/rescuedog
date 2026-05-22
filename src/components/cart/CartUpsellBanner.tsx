@@ -15,10 +15,10 @@ export function CartUpsellBanner({ totalBottles, cartTotal }: CartUpsellBannerPr
   // Members earn the higher club discount on full cases; guests get the
   // public case discount.
   const effectiveCaseDiscount = isMember ? discountPercent : fullCaseDiscount;
-  // For the "join the club" teaser, show the *incremental* savings a guest
-  // would unlock by becoming a member (club rate − public case rate).
-  const clubUpliftPct = Math.max(0, clubDiscount - fullCaseDiscount);
-  const clubSavings = cartTotal * (clubUpliftPct / 100);
+  // Universal Wine Club à la carte rate — always tease at a flat 20%
+  // so the math matches the PDP member-price badges.
+  const CLUB_ALACARTE_PCT = 20;
+  const clubSavings = cartTotal * (CLUB_ALACARTE_PCT / 100);
 
   return (
     <div className="space-y-2">
@@ -59,11 +59,11 @@ export function CartUpsellBanner({ totalBottles, cartTotal }: CartUpsellBannerPr
 
       {/* Wine Club savings callout — only for non-members, and only when
           there's an actual uplift over the public case rate */}
-      {cartTotal > 0 && !isMember && clubUpliftPct > 0 && (
+      {cartTotal > 0 && !isMember && (
         <div className="flex items-start gap-2 rounded-md bg-primary/5 border border-primary/20 p-3 text-sm">
           <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
           <p className="text-foreground">
-            Wine Club members save an extra <strong>${clubSavings.toFixed(2)}</strong> ({clubUpliftPct}% more) on this order.{" "}
+            Wine Club members save <strong>${clubSavings.toFixed(2)}</strong> ({CLUB_ALACARTE_PCT}%) on this order.{" "}
             <Link to="/club" className="text-primary font-semibold hover:underline">
               Join now →
             </Link>

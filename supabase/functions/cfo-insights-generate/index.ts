@@ -182,18 +182,13 @@ function fallbackNarrative(h: Heuristic): { headline: string; body: string; reco
 async function generateNarrative(
   apiKey: string,
   h: Heuristic,
-  knowledge: { directives: string[]; facts: string[] } = { directives: [], facts: [] },
+  knowledge: { directives: string[]; facts: string[]; kb: string } = { directives: [], facts: [], kb: "" },
 ): Promise<{ headline: string; body: string; recommended_action: string }> {
-  const sys = `You are Graz, the resident CFO/COO-class strategist for Rescue Dog Wines — a small DTC wine + merch business whose mission is helping dogs find their forever home.
+  const sys = `You are Graz — Rescue Dog Wines' Consumer Insights + Competitive Intelligence + BI + wine-industry analyst. You are writing a TILE-LEVEL STRATEGIC INSIGHT, not a metric restatement. The operator already sees the number; your job is to tell them what it MEANS for running RDW this week.
 
-You are writing a TILE-LEVEL STRATEGIC INSIGHT, not a metric restatement. The operator can already see the number on the tile. Your job is to tie this move to how the business is actually run this quarter:
-- What does this number mean for cash, margin, ad efficiency, wine-club retention, wholesale velocity, or fulfillment?
-- Which lever (pricing, ad mix, club cadence, COGS, wholesale push, retention) does it point at?
-- What is the one operator move that compounds — not a generic "monitor it" or "investigate".
+Tie every move to a lever (pricing, ad mix, club cadence, COGS, wholesale, retention, compliance, brand) and to the wine-industry context you know. Lead with the business implication, not the raw delta. Use concrete operator language ("pull Meta prospecting 30%", "tighten club skip window to 5 days", "renegotiate glass at next PO", "reroute wholesale to top-3 distributors"). Never use the word "synergy". Never recommend agencies or consultants. Never restate the metric without a business consequence.
 
-Voice: blunt, numerate, SAP-style precision. Lead with the business implication, not the raw delta. Use concrete operator language ("pull Meta spend", "tighten club skip window", "renegotiate glass", "reroute wholesale to top-3 distributors"). Never use the word "synergy". Never recommend hiring consultants or agencies. Never restate the metric without a business consequence.
-
-Treat the user's standing directives as binding. Treat taught business facts as ground truth.`;
+Voice: SAP-style precision with a quirky, dry wink of humor when it earns its keep (one wink max, never in the recommended_action line). Treat standing directives as binding and taught facts as ground truth.`;
 
   const directiveBlock = knowledge.directives.length
     ? `\n\nSTANDING DIRECTIVES (binding):\n${knowledge.directives.map((d, i) => `${i + 1}. ${d}`).join("\n")}`
@@ -201,7 +196,8 @@ Treat the user's standing directives as binding. Treat taught business facts as 
   const factBlock = knowledge.facts.length
     ? `\n\nBUSINESS CONTEXT (ground truth):\n${knowledge.facts.map((d, i) => `${i + 1}. ${d}`).join("\n")}`
     : "";
-  const fullSys = sys + directiveBlock + factBlock;
+  const kbBlock = knowledge.kb ? `\n\nRDW KNOWLEDGE BASE + ROLLING INDUSTRY INTEL:\n${knowledge.kb.slice(0, 6000)}` : "";
+  const fullSys = sys + directiveBlock + factBlock + kbBlock;
 
   const ctx = JSON.stringify({
     tile: h.tile_key,
@@ -317,7 +313,18 @@ Deno.serve(async (req) => {
   const facts = ((graz ?? []) as any[])
     .filter((d) => d.kind === "context")
     .map((d) => String(d.directive));
-  const knowledge = { directives, facts };
+  // Pull global knowledge base (RDW brief/history/ops + daily web scans).
+  const { data: kbRows } = await admin
+    .from("graz_knowledge")
+    .select("kind,title,content")
+    .eq("active", true)
+    .order("priority", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(30);
+  const kb = ((kbRows ?? []) as any[])
+    .map((r) => `[${r.kind}] ${r.title}\n${r.content}`)
+    .join("\n\n");
+  const knowledge = { directives, facts, kb };
 
   let written = 0;
   let skipped = 0;

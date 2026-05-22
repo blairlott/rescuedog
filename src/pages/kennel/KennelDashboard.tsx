@@ -24,6 +24,7 @@ import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
 import { BrickMortarTimeline, BrandLiftTimeline } from "@/components/kennel/BrickMortarTimeline";
 import { WineClubGrowthPanel, fetchWineClubAiSlice } from "@/components/kennel/WineClubGrowthPanel";
 import { WineClubTimeline } from "@/components/kennel/WineClubTimeline";
+import { ConversionPathwaysPanel } from "@/components/kennel/ConversionPathwaysPanel";
 import { MetaLeadsHealthPanel } from "@/components/kennel/MetaLeadsHealthPanel";
 import { KennelSystemHealthStrip } from "@/components/kennel/KennelSystemHealthStrip";
 import { AdCommandTiles } from "@/components/kennel/AdCommandTiles";
@@ -457,6 +458,8 @@ export default function KennelDashboard() {
           <WineClubTimeline start={start} end={end} setStart={setStart} setEnd={setEnd} hidePicker />
 
           <WineClubGrowthPanel start={start} end={end} rangeLabel={periodMeta.label} />
+
+          <ConversionPathwaysPanel />
 
           <MetaLeadsHealthPanel />
 

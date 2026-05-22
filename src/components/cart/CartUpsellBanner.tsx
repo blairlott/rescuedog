@@ -17,11 +17,11 @@ export function CartUpsellBanner({ totalBottles, cartTotal, clubEligibleTotal }:
   // Members earn the higher club discount on full cases; guests get the
   // public case discount.
   const effectiveCaseDiscount = isMember ? discountPercent : fullCaseDiscount;
-  // Universal Wine Club à la carte rate — always tease at a flat 20%
-  // so the math matches the PDP member-price badges.
-  const CLUB_ALACARTE_PCT = 20;
+  // Wine Club à la carte rate: 20% baseline, 25% on full cases (12+
+  // bottles) — matches the member tier auto-applied at checkout.
+  const clubPct = totalBottles >= fullCaseCount ? 25 : 20;
   const eligibleForClub = clubEligibleTotal ?? cartTotal;
-  const clubSavings = eligibleForClub * (CLUB_ALACARTE_PCT / 100);
+  const clubSavings = eligibleForClub * (clubPct / 100);
 
   return (
     <div className="space-y-2">
@@ -66,7 +66,7 @@ export function CartUpsellBanner({ totalBottles, cartTotal, clubEligibleTotal }:
         <div className="flex items-start gap-2 rounded-md bg-primary/5 border border-primary/20 p-3 text-sm">
           <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
           <p className="text-foreground">
-            Wine Club members save <strong>${clubSavings.toFixed(2)}</strong> ({CLUB_ALACARTE_PCT}%) on this order.{" "}
+            Wine Club members save <strong>${clubSavings.toFixed(2)}</strong> ({clubPct}%) on this order.{" "}
             <Link to="/club" className="text-primary font-semibold hover:underline">
               Join now →
             </Link>

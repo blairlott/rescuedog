@@ -170,19 +170,121 @@ async function applyOrderEvent(identifier: string, event: string, payload: Recor
   return { matched: count ?? 0 };
 }
 
+// ---------------------------------------------------------------
+// Subscribe & Save (S&S / auto-ship) cycle handler.
+// Independent of wine_club_shipments — an order id maps to AT MOST
+// one of: a wine club shipment OR an S&S cycle. Both lookups run
+// every webhook; the one without a match no-ops cheaply.
+// ---------------------------------------------------------------
+async function applySubscriptionCycleEvent(
+  vsOrderId: string,
+  event: string,
+  payload: Record<string, unknown>,
+): Promise<{ matched: number; subscription_id?: string; cycle_id?: string }> {
+  const { data: cycle } = await supabase
+    .from('subscription_cycles')
+    .select('id, subscription_id, retry_count')
+    .eq('vs_order_id', vsOrderId)
+    .maybeSingle();
+
+  if (!cycle?.id) return { matched: 0 };
+
+  const nowIso = new Date().toISOString();
+  let cycleUpdate: Record<string, unknown> | null = null;
+  let subUpdate: Record<string, unknown> | null = null;
+  let eventType: string | null = null;
+  let eventPayload: Record<string, unknown> = {};
+
+  switch (event) {
+    case 'APPROVED':
+      cycleUpdate = { status: 'succeeded', completed_at: nowIso, error_code: null, error_message: null };
+      // Caller (cron) is responsible for advancing next_ship_date when the
+      // cycle is created. We just clear past_due if VS confirms approval.
+      subUpdate = { status: 'active' };
+      eventType = 'payment_recovered';
+      break;
+    case 'TRACKING_NUMBER': {
+      const tracking =
+        (typeof payload.tracking_number === 'string' && payload.tracking_number) ||
+        (typeof payload.trackingNumber === 'string' && payload.trackingNumber) ||
+        null;
+      cycleUpdate = { status: 'succeeded', completed_at: nowIso };
+      eventType = 'shipped';
+      eventPayload = { tracking_number: tracking };
+      break;
+    }
+    case 'CARD_DECLINED':
+      cycleUpdate = {
+        status: 'failed',
+        error_code: 'CARD_DECLINED',
+        error_message: 'Vinoshipper reported card declined',
+        retry_count: (cycle.retry_count ?? 0) + 1,
+        next_retry_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      };
+      subUpdate = { status: 'past_due' };
+      eventType = 'payment_failed';
+      break;
+    case 'CANCELLED':
+      cycleUpdate = { status: 'failed', error_code: 'CANCELLED', error_message: 'Order cancelled by Vinoshipper' };
+      eventType = 'cycle_cancelled';
+      break;
+    default:
+      return { matched: 0, subscription_id: cycle.subscription_id };
+  }
+
+  if (cycleUpdate) {
+    const { error } = await supabase
+      .from('subscription_cycles')
+      .update({ ...cycleUpdate, updated_at: nowIso })
+      .eq('id', cycle.id);
+    if (error) throw error;
+  }
+
+  if (subUpdate) {
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ ...subUpdate, updated_at: nowIso })
+      .eq('id', cycle.subscription_id);
+    if (error) throw error;
+  }
+
+  if (eventType) {
+    await supabase.from('subscription_events').insert({
+      subscription_id: cycle.subscription_id,
+      cycle_id: cycle.id,
+      event_type: eventType,
+      payload: { vs_order_id: vsOrderId, vs_event: event, ...eventPayload },
+    });
+  }
+
+  return { matched: 1, subscription_id: cycle.subscription_id, cycle_id: cycle.id };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return ok({ error: 'method not allowed' }, 405);
 
   // Optional shared-secret check (set VINOSHIPPER_WEBHOOK_SECRET and configure on Vinoshipper side as a query param ?token=...)
+  const sigHeader =
+    req.headers.get('x-vinoshipper-signature') ??
+    req.headers.get('x-signature') ??
+    null;
+  const sourceIp =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    req.headers.get('cf-connecting-ip') ??
+    null;
+  let signatureValid: boolean | null = null;
   if (SHARED_SECRET) {
     const url = new URL(req.url);
     const token = url.searchParams.get('token') ?? req.headers.get('x-webhook-token');
-    if (token !== SHARED_SECRET) return ok({ error: 'unauthorized' }, 401);
+    signatureValid = token === SHARED_SECRET;
+    if (!signatureValid) return ok({ error: 'unauthorized' }, 401);
   }
 
+  // Read raw bytes first so we can persist them verbatim for replay/audit.
+  const rawBody = await req.text();
   let body: Record<string, unknown>;
-  try { body = await req.json(); }
+  try { body = JSON.parse(rawBody); }
   catch { return ok({ error: 'invalid json' }, 400); }
 
   const subject = String(body.subject ?? '').toUpperCase();
@@ -194,20 +296,44 @@ Deno.serve(async (req) => {
   // Log every event
   const { data: logRow, error: logErr } = await supabase
     .from('vinoshipper_webhook_events')
-    .insert({ subject, event, identifier, payload: body })
+    .insert({
+      subject,
+      event,
+      identifier,
+      payload: body,
+      raw_body: rawBody,
+      signature_header: sigHeader,
+      signature_valid: signatureValid,
+      source_ip: sourceIp,
+    })
     .select('id')
     .single();
   if (logErr) console.error('webhook log insert failed', logErr);
 
   let result: Record<string, unknown> = { skipped: true };
   let processingError: string | null = null;
+  let relatedSubscriptionId: string | null = null;
+  let relatedCycleId: string | null = null;
 
   try {
     if (identifier) {
       if (subject === 'CLUB_MEMBERSHIP') {
         result = await applyMembershipEvent(identifier, event, body);
       } else if (subject === 'ORDER') {
-        result = await applyOrderEvent(identifier, event, body);
+        // Run both lookups; whichever matches wins. A VS order id maps to
+        // at most one of: a wine club shipment OR an S&S cycle.
+        const [wineClubRes, ssRes] = await Promise.all([
+          applyOrderEvent(identifier, event, body),
+          applySubscriptionCycleEvent(identifier, event, body),
+        ]);
+        if (ssRes.matched > 0) {
+          relatedSubscriptionId = ssRes.subscription_id ?? null;
+          relatedCycleId = ssRes.cycle_id ?? null;
+        }
+        result = {
+          wine_club: wineClubRes,
+          subscribe_and_save: ssRes,
+        };
       }
     }
   } catch (e) {
@@ -222,6 +348,8 @@ Deno.serve(async (req) => {
         processed: processingError == null,
         processing_error: processingError,
         processed_at: new Date().toISOString(),
+        related_subscription_id: relatedSubscriptionId,
+        related_cycle_id: relatedCycleId,
       })
       .eq('id', logRow.id);
   }

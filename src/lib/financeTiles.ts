@@ -52,10 +52,11 @@ export const SOURCE_LABEL: Record<FinanceTileSource, string> = {
 };
 
 export const DEFAULT_TILE_KEYS: string[] = [
+  "qb_cash_trend",
   "qb_pnl",
   "qb_revenue_ch",
+  "qb_top_vendors",
   "qb_ad_spend",
-  "qb_cash_trend",
   "vs_summary",
   "vs_waterfall",
   "cc_roas",

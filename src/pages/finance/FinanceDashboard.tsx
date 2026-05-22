@@ -399,11 +399,30 @@ export default function FinanceDashboard() {
         </div>
       )}
 
-      {tiles.length > 0 && (
-        <SortableTileGrid tiles={sortableTiles} onReorder={reorderTiles} onRemove={removeTile} />
-      )}
-
-      <GrazChat days={days} userId={userId} />
+      {tiles.length > 0 && (() => {
+        const cashIdx = sortableTiles.findIndex(t => t.id === "qb_cash_trend");
+        if (cashIdx === -1) {
+          return (
+            <>
+              <SortableTileGrid tiles={sortableTiles} onReorder={reorderTiles} onRemove={removeTile} />
+              <GrazChat days={days} userId={userId} />
+            </>
+          );
+        }
+        const head = sortableTiles.slice(0, cashIdx + 1);
+        const tail = sortableTiles.slice(cashIdx + 1);
+        const reorderHead = (next: string[]) => reorderTiles([...next, ...tail.map(t => t.id)]);
+        const reorderTail = (next: string[]) => reorderTiles([...head.map(t => t.id), ...next]);
+        return (
+          <>
+            <SortableTileGrid tiles={head} onReorder={reorderHead} onRemove={removeTile} />
+            <GrazChat days={days} userId={userId} />
+            {tail.length > 0 && (
+              <SortableTileGrid tiles={tail} onReorder={reorderTail} onRemove={removeTile} />
+            )}
+          </>
+        );
+      })()}
 
       {userId && (
         <FeatureRequestBox

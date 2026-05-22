@@ -1,29 +1,16 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import {
   ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ReferenceLine,
 } from "recharts";
 import { Wine, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { fetchActiveVsMemberEmails, fetchActiveVsGiftRecipientKeys } from "@/lib/wineClubMembers";
+import { fetchVsClubTimeline } from "@/lib/wineClubMembers";
 import {
   DateRangeControls, defaultStart, defaultEnd, todayUTC, isoDay,
   monthKey, pickBucket, daysBetween, formatAxisDate,
 } from "./DateRangeControls";
-
-type Membership = {
-  id: string;
-  tier_id: string;
-  status: string;
-  origin: string | null;
-  is_gift: boolean | null;
-  joined_at: string | null;
-  cancelled_at: string | null;
-  created_at: string | null;
-};
-type Tier = { id: string; name: string; price_cents: number };
 
 const GROWTH_MAP: Record<string, number> = { flat: 0, g10: 0.10, g25: 0.25, g50: 0.50 };
 
@@ -81,59 +68,23 @@ export function WineClubTimeline({
   const observedEnd = end < today ? end : today;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["wine-club-timeline", "vs-paged-v3-gifts"],
-    queryFn: async () => {
-      const [tiersRes, mRes, vsActiveEmails, vsGiftRecipients] = await Promise.all([
-        supabase.from("wine_club_tiers" as any).select("id, name, price_cents"),
-        supabase.from("wine_club_memberships" as any)
-          .select("id, tier_id, status, origin, is_gift, joined_at, cancelled_at, created_at"),
-        fetchActiveVsMemberEmails(),
-        fetchActiveVsGiftRecipientKeys(),
-      ]);
-      return {
-        tiers: ((tiersRes.data as any) || []) as Tier[],
-        memberships: ((mRes.data as any) || []) as Membership[],
-        vsActiveEmails,
-        vsGiftRecipients,
-      };
-    },
+    queryKey: ["wine-club-timeline", "vs-only-v1"],
+    queryFn: () => fetchVsClubTimeline(),
   });
 
   const chart = useMemo(() => {
     if (!data) return { points: [] as any[], activeNow: 0, activeMrr: 0, projectedEndActive: 0, projectedEndMrr: 0, avgTier: 0, dailyNewBaseline: 0, dailyChurnBaseline: 0 };
 
-    const tierMap = new Map(data.tiers.map(t => [t.id, t.price_cents]));
-    const priceOf = (tid: string) => tierMap.get(tid) ?? 0;
+    // All series come directly from Vinoshipper (source of truth).
+    const dailyNew = new Map<string, { count: number }>();
+    const dailyChurn = new Map<string, { count: number }>();
+    for (const [k, v] of data.signupByDay.entries()) dailyNew.set(k, { count: v });
+    for (const [k, v] of data.churnByDay.entries()) dailyChurn.set(k, { count: v });
 
-    // Daily aggregation across full history
-    const dailyNew = new Map<string, { count: number; mrr_cents: number }>();
-    const dailyChurn = new Map<string, { count: number; mrr_cents: number }>();
-    for (const r of data.memberships) {
-      const joinedIso = r.joined_at ?? r.created_at;
-      if (joinedIso && r.origin !== "vinoshipper_legacy") {
-        const k = joinedIso.slice(0, 10);
-        const cur = dailyNew.get(k) ?? { count: 0, mrr_cents: 0 };
-        cur.count += 1;
-        cur.mrr_cents += priceOf(r.tier_id);
-        dailyNew.set(k, cur);
-      }
-      if (r.cancelled_at) {
-        const k = r.cancelled_at.slice(0, 10);
-        const cur = dailyChurn.get(k) ?? { count: 0, mrr_cents: 0 };
-        cur.count += 1;
-        cur.mrr_cents += priceOf(r.tier_id);
-        dailyChurn.set(k, cur);
-      }
-    }
-
-    // Snapshot of currently active for headline metrics
-    const activeRows = data.memberships.filter(r => r.status === "active");
-    const activeAppNow = activeRows.length;
-    const activeVsNow = data.vsActiveEmails.size;
-    const vsGiftNow = data.vsGiftRecipients.size;
-    const activeNow = activeVsNow + vsGiftNow + activeAppNow;
-    const activeMrr = activeRows.reduce((s, r) => s + priceOf(r.tier_id), 0) / 100;
-    const avgTier = activeNow > 0 ? activeMrr / activeNow : (data.tiers[0]?.price_cents ?? 0) / 100;
+    const activeNow = data.activeNow;
+    const monthlyPerMember = data.monthlyRevenuePerMemberCents / 100;
+    const activeMrr = activeNow * monthlyPerMember;
+    const avgTier = monthlyPerMember;
 
     // Running active members series (history). We approximate "active at end of period"
     // by cumulative (new - churn) from earliest date forward, anchored so the value
@@ -152,18 +103,16 @@ export function WineClubTimeline({
     // Build observed buckets across the requested range
     const observedKeys = bucketIterator(start, observedEnd, bucket);
     const observed = observedKeys.map((k) => {
-      let newCount = 0, churnCount = 0, newMrr = 0, churnMrr = 0;
+      let newCount = 0, churnCount = 0;
       if (bucket === "day") {
         newCount = dailyNew.get(k)?.count ?? 0;
         churnCount = dailyChurn.get(k)?.count ?? 0;
-        newMrr = (dailyNew.get(k)?.mrr_cents ?? 0) / 100;
-        churnMrr = (dailyChurn.get(k)?.mrr_cents ?? 0) / 100;
       } else {
         for (const [day, v] of dailyNew.entries()) {
-          if (day.startsWith(k)) { newCount += v.count; newMrr += v.mrr_cents / 100; }
+          if (day.startsWith(k)) newCount += v.count;
         }
         for (const [day, v] of dailyChurn.entries()) {
-          if (day.startsWith(k)) { churnCount += v.count; churnMrr += v.mrr_cents / 100; }
+          if (day.startsWith(k)) churnCount += v.count;
         }
       }
       // running active at end of this bucket
@@ -303,9 +252,9 @@ export function WineClubTimeline({
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-3">
             <div className="border-2 border-border p-2" style={{ borderRadius: 0 }}>
-              <div className="text-muted-foreground uppercase tracking-brand">Active members</div>
+              <div className="text-muted-foreground uppercase tracking-brand">Active members · VS</div>
               <div className="text-lg font-bold tabular-nums">{chart.activeNow.toLocaleString()}</div>
-              <div className="text-muted-foreground">avg tier {fmtUsd(chart.avgTier)}</div>
+              <div className="text-muted-foreground">~{fmtUsd(chart.avgTier)}/mo per member</div>
             </div>
             <div className="border-2 border-border p-2" style={{ borderRadius: 0 }}>
               <div className="text-muted-foreground uppercase tracking-brand">Active MRR</div>
@@ -357,11 +306,11 @@ export function WineClubTimeline({
           <div className="mt-3 flex items-start gap-2 text-[11px] text-muted-foreground">
             <Sparkles className="h-3 w-3 text-primary shrink-0 mt-0.5" />
             <p>
-              Projection uses the trailing 90-day signup rate (
+              All series sourced from Vinoshipper WINE_CLUB transactions (2019→today). Memberships are buyer-email + distinct gift-recipient address. Active = VS-flagged or shipped within last 120 days. Projection uses the trailing 90-day signup rate (
               <strong className="text-foreground">{chart.dailyNewBaseline.toFixed(2)}/day new</strong>
               {" · "}
               <strong className="text-foreground">{chart.dailyChurnBaseline.toFixed(2)}/day churn</strong>
-              ) and compounds new signups by the selected growth lever. MRR uses average active tier price ({fmtUsd(chart.avgTier)}). Net new from a Meta OUTCOME_LEADS push will lift the new-signup baseline directly.
+              ) and compounds new signups by the selected growth lever. Monthly per-member revenue ({fmtUsd(chart.avgTier)}) = trailing-365d avg shipment value ÷ 3 (quarterly cadence).
             </p>
           </div>
         </>

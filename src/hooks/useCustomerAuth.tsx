@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { setInternalUserEmail } from "@/lib/internalUsers";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface CustomerAuthContextType {
   user: User | null;
@@ -21,6 +22,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Fire-and-forget call to ensure each authenticated user is linked to a
   // Vinoshipper customer record. Safe to call repeatedly — the edge function
@@ -36,6 +38,10 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         // (source of truth). Non-blocking; we don't await it.
         supabase.functions
           .invoke("vinoshipper-sync-membership")
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: ["wine-club-membership", uid] });
+            queryClient.invalidateQueries({ queryKey: ["wine-club-gifts", uid] });
+          })
           .catch((err) => {
             console.warn("[vinoshipper-sync-membership] failed", err);
           });

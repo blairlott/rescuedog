@@ -88,62 +88,16 @@ Deno.serve(async (req) => {
   }
 
   const days = Math.min(Math.max(Number(body?.days ?? 30), 1), 90);
-  let inserted = 0;
-  const errors: string[] = [];
-
-  try {
-    const rows = await insights(days);
-    const agg = new Map<string, any>();
-    for (const r of rows) {
-      const q = r.search_query;
-      if (!q || typeof q !== "string") continue;
-      const key = `${r.campaign_id ?? ""}::${q}`;
-      const stats = purchaseStats(r.actions, r.action_values);
-      const cur = agg.get(key) ?? {
-        platform_slug: "meta",
-        query: q,
-        impressions: 0,
-        clicks: 0,
-        spend_cents: 0,
-        conversions: 0,
-        sales_cents: 0,
-        metadata: {
-          campaign_id: r.campaign_id ?? null,
-          campaign_name: r.campaign_name ?? null,
-          window_days: days,
-        },
-      };
-      cur.impressions += Number(r.impressions ?? 0);
-      cur.clicks += Number(r.clicks ?? 0);
-      cur.spend_cents += Math.round(Number(r.spend ?? 0) * 100);
-      cur.conversions += stats.conv;
-      cur.sales_cents += stats.rev_cents;
-      agg.set(key, cur);
-    }
-    // Replace recent unresolved Meta search terms
-    await sb.from("ad_search_terms")
-      .delete()
-      .eq("platform_slug", "meta")
-      .is("resolved_at", null);
-    const payload = Array.from(agg.values());
-    for (let i = 0; i < payload.length; i += 500) {
-      const chunk = payload.slice(i, i + 500);
-      const { error } = await sb.from("ad_search_terms").insert(chunk);
-      if (error) throw new Error(error.message);
-      inserted += chunk.length;
-    }
-  } catch (e: any) {
-    errors.push(String(e?.message ?? e));
-  }
-
-  return J(errors.length ? 207 : 200, {
-    ok: errors.length === 0,
+  // Meta's Insights API does not expose any user-search-query breakdown — confirmed
+  // by the API's allowed-breakdowns list (no `search_query` field). The closest
+  // surrogate is the audience targeting (interests, lookalikes, custom audiences),
+  // which is already covered by kennel-ingest-meta. We keep this function as a
+  // no-op so the Keyword Optimizer + nightly orchestrator stay consistent.
+  void insights; void purchaseStats; void sb; void days;
+  return J(200, {
+    ok: true,
     function: "kennel-ingest-meta-search-terms",
-    days,
-    search_terms_inserted: inserted,
-    note: inserted === 0 && !errors.length
-      ? "No search-query breakdown returned. Meta only exposes this for ASC/Shopping campaigns with enough volume."
-      : undefined,
-    errors,
+    search_terms_inserted: 0,
+    note: "Meta has no public search-term API. Keyword Optimizer covers Meta via audience/creative recs instead.",
   });
 });

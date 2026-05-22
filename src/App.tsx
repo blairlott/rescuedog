@@ -186,7 +186,7 @@ function AppContent() {
     }
     logAbEvent("pageview", { path });
   }, [path]);
-  const showSommelier = !["/merch", "/crm", "/cms", "/sell", "/donation", "/login", "/signup", "/ambassador", "/club", "/checkout", "/cart"].some(p => path === p || path.startsWith(p + "/"));
+  const showSommelier = !["/merch", "/crm", "/cms", "/sell", "/donation", "/login", "/signup", "/ambassador", "/club", "/checkout", "/cart", "/finance", "/admin"].some(p => path === p || path.startsWith(p + "/"));
   const isKennel = path === "/kennel" || path.startsWith("/kennel/");
   return (
     <>

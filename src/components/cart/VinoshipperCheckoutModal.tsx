@@ -319,7 +319,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
       // Stash A/B + GA attribution before VS takes over so the webhook can
       // stitch the resulting purchase back to the right arm.
       recordCheckoutIntent({ email: form.email || user?.email || null, cartId: null });
-      await addLinesAndGoToHostedCart(vsLines, popup);
+      await addLinesAndGoToHostedCart(vsLines, popup, activePromoCode);
       try { localStorage.setItem("rdw_returning_customer", "true"); } catch {}
       await markAbandonment("converted");
 

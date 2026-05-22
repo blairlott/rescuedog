@@ -284,6 +284,7 @@ function AppContent() {
       <Route path="/cms/forms" element={<CmsFormsPage />} />
       <Route path="/cms/media" element={<CmsMediaPage />} />
       <Route path="/cms/lindy-inbox" element={<CmsLindyInboxPage />} />
+      <Route path="/cms/audiences" element={<CmsAudiencesPage />} />
       <Route path="/crm" element={<CrmLayout />}>
         <Route index element={<CrmDashboard />} />
         <Route path="account/:id" element={<CrmAccountDetail />} />

@@ -1,60 +1,118 @@
-## What I found
+## Vision
 
-I dug into why the tiles are empty even though you "pulled data". Two distinct problems, only one of them is what you think:
+Turn `/finance` from a static tile grid into an **SAP Analytics Cloud–style workspace** the CFO can actually operate:
 
-### 1. Vinoshipper tile is broken at the SQL level
-The `finance_vs_summary` RPC sums a column called `total_cents` — that column **does not exist** on `vs_transactions`. The real money column is `order_total` (dollars). So every Vinoshipper tile call has been silently returning zero rows since this RPC shipped. There are **8,589 VS transactions** in the DB, with data as recent as 2026-05-17. It's purely a column-name bug.
+- Mirror **every Kennel tile** as a read-only block (he sees what marketing/ops see, in his own dashboard).
+- Real **slice & dice**: pivot tables, custom charts, multi-layer overlays, drill-down, saved views.
+- **Actionable insight cards** rendered next to each tile (auto-generated narrative + recommended action, persisted so he can dismiss / mark done).
+- Dense, structured, monochrome SAP-style chrome (compact rows, sticky toolbars, fixed left rail, breadcrumbed boards).
 
-### 2. QuickBooks "Pull P&L" doesn't actually persist anything
-The Pull P&L button in the QuickBooks panel fetches the report from Intuit and renders the JSON in the panel. It **never writes to `bm_finance_entries`**, which is what the QB tiles (`finance_pnl_summary`, `finance_revenue_by_channel`, `finance_cash_trend`, etc.) read from.
+## Audit of what exists
 
-The 604 existing rows in `bm_finance_entries` are a one-time backfill: all `revenue / quickbooks` entries dated 2022-01-03 → 2025-05-16. The default tile window is "Last 90 days" → there is literally zero data in the window the tiles ask for, so they correctly show "No data in range".
+Already shipped (will reuse, not rebuild):
+- `FinanceTiles.tsx` — 10 KPI tiles wired to `finance_*` RPCs and `vs_transactions` (just fixed)
+- `qbo-import-pnl` edge function (just shipped) — feeds `bm_finance_entries`
+- `ChartBuilder.tsx`, `PivotBuilder.tsx`, `SavedViewsPanel.tsx`, `UploadDatasetDialog.tsx` — partial primitives, surfaced today only via `FinanceWorkspace.tsx`
+- `cfo_dashboard_layouts` table — already persists tile choice + date range
+- Kennel: `KennelDashboard.tsx` and supporting tile components exist under `src/components/kennel/...`
 
-So the QB tiles aren't "broken" — they're starving. We never built the live QBO → finance ingestion.
+Gaps:
+- No registry/catalog of Kennel tiles for cross-board use
+- Boards (multi-page dashboards) and stacked layouts aren't supported
+- No insight engine
+- Chart/Pivot builders aren't fed by a unified dataset registry
+- Visual chrome is shadcn-default, not SAP-dense
 
-## What I'll build
+## Build plan
 
-### Step 1 — Fix the VS RPC (5 min, immediate effect)
+### Phase 1 — Information architecture (foundation, ~1 turn)
 
-Migration to replace `finance_vs_summary`:
-- Replace `SUM(t.total_cents)` with `SUM(ROUND(t.order_total * 100))::bigint`
-- Same for `wine_club_cents`, `ala_carte_cents`, `wholesale_cents`, `aov_cents`
-- Keep signature and permission check identical
+1. **Tile registry** (`src/lib/financeTileRegistry.ts`):
+   - Single source of truth: `{ key, title, source, group, defaultSpan, component, datasetKey, supportsInsight }`
+   - Re-exports current QB / VS / CC tiles **plus wrappers** around Kennel components (mounted read-only with `viewerOverride='cfo_readonly'` prop).
 
-After this: the Vinoshipper Summary and Wine Club vs À la Carte tiles light up using existing data.
+2. **Kennel mirror wrappers** (`src/components/finance/kennel-mirrors/`):
+   - One wrapper per Kennel tile we expose: ROAS leaderboard, Channel Mix, Funnel, Anomalies, Creative performance, Pixel signal health, Cohort retention, LTV/CAC, Top campaigns, Audience saturation, etc.
+   - Each calls the same RPCs the Kennel uses, no writes, no edit affordances.
+   - Catalogued in the registry so the "Add report" dropdown lists them under a new **Kennel (read-only)** group.
 
-### Step 2 — Build a QBO → Finance importer
+3. **Boards model** (DB migration):
+   - `cfo_boards` (id, user_id, name, slug, position, layout jsonb)
+   - `cfo_board_tiles` (id, board_id, tile_key, position, span, config jsonb)
+   - `cfo_insights` (id, user_id, tile_key, board_id, severity, headline, body, recommended_action, status [open/done/dismissed], generated_at)
+   - RLS: viewer is self only; admin/owner read all.
+   - Replace the single saved layout with multi-board navigation.
 
-New edge function `qbo-import-pnl` that:
-- Takes `start_date`, `end_date` from the caller
-- Reuses the existing QBO connection + token-refresh logic
-- Calls QuickBooks `ProfitAndLoss` (and optionally a couple of other reports)
-- Walks the row tree and emits one `bm_finance_entries` row per account-line for the period, using:
-  - `external_id` = `qbo:<realm>:<report>:<account>:<period_start>` (idempotent upsert)
-  - `entry_type` = `revenue` for Income, `cogs` for COGS, `expense` for Expenses
-  - `category` = account group name, `account_name` / `account_code` from QBO
-  - `amount_cents` = QBO dollar amount × 100
-  - `date` = period end (or month buckets if we choose monthly granularity — I'll default to monthly buckets so the cash trend chart works)
-  - `source` = `quickbooks`
-- Returns `{ imported: N, skipped: N, range }`
+### Phase 2 — SAP-style workspace shell (~1 turn)
 
-Add an **"Import to Finance"** button next to "Pull P&L" in `QuickBooksPanel.tsx`. It calls the new function for the selected date range, invalidates the finance React Query keys, and tiles populate.
+4. **New `FinanceWorkspaceLayout`**:
+   - Fixed left rail: board list + "+ New board"; collapses to icons.
+   - Top bar: breadcrumb (Workspace › Board › View), period selector, compare-period toggle, currency, refresh-all.
+   - Right rail (toggleable): **Insights drawer** showing all open insights across the active board.
+   - Dense typography (12px base in workspace), sharp borders, mono numeric font for tabular data, zebra rows.
 
-Optionally (call it out for you to approve separately): a daily cron that runs the import for the trailing 7 days so the dashboard stays fresh without you clicking.
+5. **Tile container**:
+   - Header row with chip (source), title, span control (3/4/6/12), drag handle, "i" → opens insight side panel, "⋯" → duplicate / move to board / pin / remove.
+   - Optional **footer insight strip**: 1-line auto-generated narrative + "View" link to the insight side panel.
+   - Stack mode: two tiles can be stacked vertically inside one grid cell (e.g. KPI on top of trendline).
 
-### Step 3 — Confirm Vinoshipper ingestion is current
+### Phase 3 — Slice & dice engine (~1 turn)
 
-`vs_transactions` is up to date through 2026-05-17. The `vinoshipper-poll` function is in place. I won't touch it — if you want, I can also add a "Sync now" button on the dashboard, but that's optional.
+6. **Dataset registry** (`src/lib/financeDatasets.ts`):
+   - Declarative descriptors for each queryable dataset: VS transactions, bm_finance_entries, Kennel attribution rollup, wine_club_memberships, loyalty_ledger.
+   - Each declares: `dimensions[]`, `measures[]`, `dateField`, server fetch fn, optional `partitionBy`.
 
-### Out of scope (flag only, won't build unless you say so)
-- Ad-spend tile (`finance_spend_by_platform`) needs ad-spend entries in `bm_finance_entries` with `subcategory IN ('meta_ads','google_ads','instacart_ads')`. None exist today. Hook up after QBO importer lands (most users put ad spend in QBO).
-- Top Vendors tile depends on QBO importer Step 2 — will start working automatically once we import expense lines.
+7. **Pivot Builder v2** (rewrite of `PivotBuilder.tsx`):
+   - Dataset picker → rows / columns / values / filters drag-drop (using existing dnd-kit).
+   - Aggregations: sum, avg, count, distinct count, %, weighted avg.
+   - Totals + subtotals + variance vs prior period column.
+   - Sticky first column, sticky header, horizontal scroll.
+   - "Save as tile" → registers as a custom tile in the registry (persisted in `cfo_board_tiles.config`).
 
-## Acceptance check after build
+8. **Chart Builder v2** (rewrite of `ChartBuilder.tsx`):
+   - Same dataset picker; chart types: line, bar, stacked bar, area, combo (line + bar), scatter, pie, funnel, heatmap.
+   - Multi-series overlay (e.g. revenue + ad spend + ROAS on dual y-axis).
+   - Drill-down: click a bar → opens pivot pre-filtered to that slice.
+   - "Save as tile".
 
-I'll run:
-- `SELECT * FROM finance_vs_summary(now()-90, now())` returns non-zero
-- Click Import to Finance for last 12 months → `SELECT COUNT(*) FROM bm_finance_entries WHERE source='quickbooks' AND date >= now()-90` is > 0
-- Reload `/finance` → VS Summary, WC vs À la Carte, QB P&L, Revenue by Channel, Cash Trend, Top Vendors all show data
+9. **Cross-tile filters**:
+   - Board-level filter bar (state, channel, customer segment, ambassador) applied to all tiles that opt in via dataset registry.
 
-Sound good? If yes I'll execute steps 1 + 2 and report back with the verification numbers.
+### Phase 4 — Insight engine (~1 turn)
+
+10. **Edge function `cfo-insights-generate`**:
+    - On demand (per board) or nightly cron.
+    - For each tile on the board, runs heuristics on the tile's underlying dataset (variance vs prior 28d, spike detection, % share shifts, churn deltas, ROAS dips, top-mover detection).
+    - For anything material, calls Lovable AI (`google/gemini-2.5-flash`) with a structured prompt → returns `{severity, headline, body ≤ 280 chars, recommended_action ≤ 120 chars}`.
+    - Writes to `cfo_insights`; deduplicates by hash of (tile_key + headline) within 24h.
+    - Owner / admin / cfo only.
+
+11. **Insight side panel** (already part of Phase 2 shell):
+    - List grouped by severity (critical / watch / fyi).
+    - Each card: headline, body, recommended action, "Mark done", "Dismiss", "Open tile".
+    - "Refresh insights" button → invokes the edge function.
+
+### Phase 5 — Polish (~1 turn)
+
+12. SAP-style theme additions to `index.css`:
+    - `--finance-bg`, `--finance-rail`, `--finance-rule`, dense table tokens, ag-grid-style hover.
+    - Compact numeric font stack (`'JetBrains Mono', ui-monospace, ...`) for all tabular cells.
+
+13. Keyboard nav inside pivots, CSV export per tile, print-friendly board view.
+
+14. Update Lindy manual changelog with the new RPCs / edge function / tile registry.
+
+## What I need from you before I start
+
+This is multi-phase. I propose:
+- **Build Phases 1–2 first** (registry + Kennel mirrors + SAP shell + multi-board nav) so the structural change ships and you can use it.
+- **Then Phase 3** (slice & dice).
+- **Then Phase 4** (insight engine).
+- **Then Phase 5** (polish).
+
+Two decisions:
+
+1. **Which Kennel tiles do you want mirrored?** Default: all of them, marked read-only. Say "all" and I'll mirror the full catalog. Or list specific ones.
+2. **Insight engine**: OK to use the Lovable AI Gateway (`google/gemini-2.5-flash`) for narrative generation, with deterministic heuristics for the trigger logic? It uses your existing `LOVABLE_API_KEY` — no new secrets needed.
+
+Reply with "go" and your two answers and I'll start Phase 1.

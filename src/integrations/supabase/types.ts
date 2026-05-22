@@ -4765,6 +4765,45 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_requests: {
+        Row: {
+          admin_notes: string | null
+          area: string | null
+          created_at: string
+          id: string
+          request: string
+          status: string
+          updated_at: string
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          area?: string | null
+          created_at?: string
+          id?: string
+          request: string
+          status?: string
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          area?: string | null
+          created_at?: string
+          id?: string
+          request?: string
+          status?: string
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       finance_qb_connection: {
         Row: {
           access_token: string | null

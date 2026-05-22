@@ -23,6 +23,7 @@ const J = (s: number, b: unknown) =>
 const KILL_MIN_SPEND_CENTS = 2500;        // $25
 const KILL_MIN_AGE_HOURS = 48;
 const KILL_MAX_PER_NIGHT = 5;
+const KILL_LINK_CLICK_MIN_SPEND_CENTS = 1500; // $15 + 0 link clicks → kill ad
 const SCALE_MIN_PURCHASES = 2;
 const SCALE_MIN_ROAS = 3.0;
 const SCALE_MAX_BUDGET_CENTS = 15000;     // $150
@@ -49,6 +50,7 @@ type AdRow = {
   revenue_cents: number;
   add_to_cart: number;
   initiate_checkout: number;
+  link_clicks: number;
   frequency: number;
   is_retargeting: boolean;
   is_wine_club: boolean;
@@ -85,7 +87,8 @@ async function metaFetch(path: string, token: string, init: RequestInit = {}): P
 
 async function fetchAdInsights(token: string, accountId: string): Promise<AdRow[]> {
   const fields = [
-    "ad_id", "ad_name", "adset_id", "adset_name", "spend", "frequency", "actions", "action_values",
+    "ad_id", "ad_name", "adset_id", "adset_name", "spend", "frequency",
+    "actions", "action_values", "inline_link_clicks",
   ].join(",");
   const params = new URLSearchParams({
     level: "ad",
@@ -140,6 +143,7 @@ async function fetchAdInsights(token: string, accountId: string): Promise<AdRow[
       revenue_cents: Math.round(revenue * 100),
       add_to_cart: actionCount(ins.actions, "add_to_cart") || actionCount(ins.actions, "omni_add_to_cart"),
       initiate_checkout: actionCount(ins.actions, "initiate_checkout") || actionCount(ins.actions, "omni_initiated_checkout"),
+      link_clicks: Number(ins.inline_link_clicks) || 0,
       frequency: Number(ins.frequency) || 0,
       is_retargeting: RTG_NAME_RE.test(adsetName) || RTG_NAME_RE.test(adName),
       is_wine_club: adName.startsWith(WC_NAME_PREFIX),

@@ -419,7 +419,7 @@ export function VsWaterfallTile({ days, start: s, end: e }: TileRangeProps) {
 
 export function CcRoasTile({ days, start: s, end: e }: TileRangeProps) {
   const { start, end } = resolveRange(days, s, e);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["finance_cc_roas", start, end],
     queryFn: async () => {
       // Pull revenue and ad spend from finance entries (same source the
@@ -436,11 +436,24 @@ export function CcRoasTile({ days, start: s, end: e }: TileRangeProps) {
     },
   });
   if (isLoading) return <Loading />;
+  if (error) {
+    return (
+      <div className="border border-red-600 bg-red-50 dark:bg-red-950/30 p-3 text-xs text-red-700 dark:text-red-400">
+        <strong>Tile failed to load.</strong> {(error as Error).message}
+      </div>
+    );
+  }
   if (!data) return <Empty />;
+  const noData = data.revenue === 0 && data.spend === 0;
   const roas = data.spend > 0 ? data.revenue / data.spend : null;
   const mer = roas;
   return (
     <div className="grid grid-cols-2 gap-3">
+      {noData && (
+        <div className="col-span-2">
+          <QbConfigWarning field="revenue or ad spend in this date range" />
+        </div>
+      )}
       <div className="border border-border p-2">
         <div className="text-[10px] uppercase tracking-brand text-muted-foreground">Revenue</div>
         <div className="text-lg font-bold tabular-nums">{fmtCents(data.revenue)}</div>

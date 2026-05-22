@@ -441,6 +441,11 @@ Deno.serve(async (req) => {
     const adsetIds = Array.from(new Set(ads.map(a => a.adset_id).filter(Boolean)));
     const adsets = await fetchAdSets(token, adsetIds);
 
+    // Guard set: every id we know is an ad set, every id we know is an ad.
+    // pauseAd() refuses to POST status=PAUSED to anything in adsetIdsSet.
+    const adsetIdsSet = new Set<string>(adsetIds);
+    const adIdsSet = new Set<string>(ads.map(a => a.ad_id).filter(Boolean));
+
     // ---------- 3. Checkout drop-off detection (before kill) ----------
     const dropoffAdIds = new Set<string>();
     for (const a of ads) {
@@ -472,10 +477,16 @@ Deno.serve(async (req) => {
     // ---------- 4. Kill candidates (general + retargeting) ----------
     const generalKillCandidates: AdRow[] = [];
     const rtgKillCandidates: AdRow[] = [];
+    const linkClickKillCandidates: AdRow[] = [];
     for (const a of ads) {
       if (a.status !== "ACTIVE") continue;
       if (a.is_wine_club) continue;
       if (dropoffAdIds.has(a.ad_id)) continue; // skip drop-offs entirely
+      // Link-click kill: $15+ spend, 0 link clicks. Evaluated per ad. Doesn't need 48h age.
+      if (a.spend_cents >= KILL_LINK_CLICK_MIN_SPEND_CENTS && a.link_clicks === 0) {
+        linkClickKillCandidates.push(a);
+        continue;
+      }
       if (a.spend_cents < KILL_MIN_SPEND_CENTS) continue;
       if (a.purchases > 0) continue;
       if (a.age_hours < KILL_MIN_AGE_HOURS) continue;
@@ -497,6 +508,7 @@ Deno.serve(async (req) => {
     const allKills = [
       ...generalToKill.map(a => ({ ad: a, reason: "zero_purchase_kill" })),
       ...rtgKillCandidates.map(a => ({ ad: a, reason: "frequency_exhausted_kill" })),
+      ...linkClickKillCandidates.map(a => ({ ad: a, reason: "zero_link_clicks_kill" })),
     ];
 
     for (const { ad, reason } of allKills) {
@@ -507,9 +519,19 @@ Deno.serve(async (req) => {
         killedAdNames.push(ad.ad_name);
         continue;
       }
-      const r = await pauseAd(token, ad.ad_id);
+      let r: { ok: boolean; status: number; body: any };
+      try {
+        r = await pauseAd(token, ad.ad_id, {
+          adsetIds: adsetIdsSet, adIds: adIdsSet, admin, runId, reason,
+        });
+      } catch (guardErr: any) {
+        errors++;
+        summary.errors.push({ stage: "kill_guard", ad_id: ad.ad_id, err: String(guardErr?.message ?? guardErr) });
+        continue;
+      }
       await logExec({
         action: "kill", ad_id: ad.ad_id, adset_id: ad.adset_id, reason,
+        target_level: "ad", target_id: ad.ad_id,
         before: { status: "ACTIVE", spend_cents_14d: ad.spend_cents, purchases: ad.purchases, frequency: ad.frequency },
         after: { status: "PAUSED" },
         success: r.ok, error: r.ok ? undefined : JSON.stringify(r.body),

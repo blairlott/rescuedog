@@ -36,7 +36,9 @@ async function refreshTokens(admin: any, conn: any) {
   });
   if (!r.ok) {
     const t = await r.text();
-    await admin.from("qbo_connections").update({ last_error: `refresh failed: ${t.slice(0, 200)}` }).eq("id", conn.id);
+    const tid = r.headers.get("intuit_tid") ?? r.headers.get("intuit-tid");
+    await admin.from("qbo_connections").update({ last_error: `refresh failed [intuit_tid=${tid}]: ${t.slice(0, 200)}` }).eq("id", conn.id);
+    console.error("qbo refresh failed", { status: r.status, intuit_tid: tid, body: t.slice(0, 500) });
     throw new Error(`refresh failed: ${t}`);
   }
   const tok: any = await r.json();
@@ -101,7 +103,10 @@ Deno.serve(async (req) => {
 
   if (!r.ok) {
     const t = await r.text();
-    return J(r.status, { error: "qbo_api_error", detail: t.slice(0, 500) });
+    const tid = r.headers.get("intuit_tid") ?? r.headers.get("intuit-tid");
+    console.error("qbo api error", { status: r.status, intuit_tid: tid, body: t.slice(0, 500) });
+    await admin.from("qbo_connections").update({ last_error: `api ${r.status} [intuit_tid=${tid}]: ${t.slice(0, 200)}` }).eq("id", conn.id);
+    return J(r.status, { error: "qbo_api_error", intuit_tid: tid, detail: t.slice(0, 500) });
   }
   const data = await r.json();
   return J(200, { report, start_date: startDate, end_date: endDate, company: conn.company_name, data });

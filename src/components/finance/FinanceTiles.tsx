@@ -25,6 +25,14 @@ function rangeDates(days: number) {
   return { start: isoDate(start), end: isoDate(end) };
 }
 
+/** Use explicit start/end if provided, else compute from rolling `days`. */
+function resolveRange(days: number, start?: string, end?: string) {
+  if (start && end) return { start, end };
+  return rangeDates(days);
+}
+
+export type TileRangeProps = { days: number; start?: string; end?: string };
+
 function Loading() { return <div className="text-xs text-muted-foreground">Loading…</div>; }
 function Empty({ msg = "No data in range" }: { msg?: string }) {
   return <div className="text-xs text-muted-foreground py-4">{msg}</div>;

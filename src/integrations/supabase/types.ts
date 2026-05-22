@@ -11891,6 +11891,9 @@ export type Database = {
         Returns: {
           ala_carte_cents: number
           aov_cents: number
+          discount_cents: number
+          gross_revenue_cents: number
+          net_revenue_cents: number
           order_count: number
           revenue_cents: number
           wholesale_cents: number

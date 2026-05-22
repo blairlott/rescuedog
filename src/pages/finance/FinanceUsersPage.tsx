@@ -39,7 +39,7 @@ export default function FinanceUsersPage() {
         .eq("role", "cfo" as any)
         .is("applied_at", null);
       if (error) { console.warn(error.message); return []; }
-      return (data ?? []) as Array<{ id: string; email: string; role: string }>;
+      return ((data ?? []) as unknown) as Array<{ id: string; email: string; role: string }>;
     },
   });
 

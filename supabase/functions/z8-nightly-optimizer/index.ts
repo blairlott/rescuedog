@@ -23,6 +23,7 @@ const J = (s: number, b: unknown) =>
 const KILL_MIN_SPEND_CENTS = 2500;        // $25
 const KILL_MIN_AGE_HOURS = 48;
 const KILL_MAX_PER_NIGHT = 5;
+const KILL_LINK_CLICK_MIN_SPEND_CENTS = 1500; // $15 + 0 link clicks → kill ad
 const SCALE_MIN_PURCHASES = 2;
 const SCALE_MIN_ROAS = 3.0;
 const SCALE_MAX_BUDGET_CENTS = 15000;     // $150
@@ -49,6 +50,7 @@ type AdRow = {
   revenue_cents: number;
   add_to_cart: number;
   initiate_checkout: number;
+  link_clicks: number;
   frequency: number;
   is_retargeting: boolean;
   is_wine_club: boolean;
@@ -85,7 +87,8 @@ async function metaFetch(path: string, token: string, init: RequestInit = {}): P
 
 async function fetchAdInsights(token: string, accountId: string): Promise<AdRow[]> {
   const fields = [
-    "ad_id", "ad_name", "adset_id", "adset_name", "spend", "frequency", "actions", "action_values",
+    "ad_id", "ad_name", "adset_id", "adset_name", "spend", "frequency",
+    "actions", "action_values", "inline_link_clicks",
   ].join(",");
   const params = new URLSearchParams({
     level: "ad",
@@ -140,6 +143,7 @@ async function fetchAdInsights(token: string, accountId: string): Promise<AdRow[
       revenue_cents: Math.round(revenue * 100),
       add_to_cart: actionCount(ins.actions, "add_to_cart") || actionCount(ins.actions, "omni_add_to_cart"),
       initiate_checkout: actionCount(ins.actions, "initiate_checkout") || actionCount(ins.actions, "omni_initiated_checkout"),
+      link_clicks: Number(ins.inline_link_clicks) || 0,
       frequency: Number(ins.frequency) || 0,
       is_retargeting: RTG_NAME_RE.test(adsetName) || RTG_NAME_RE.test(adName),
       is_wine_club: adName.startsWith(WC_NAME_PREFIX),
@@ -173,7 +177,32 @@ async function fetchAdSets(token: string, adsetIds: string[]): Promise<Map<strin
   return out;
 }
 
-async function pauseAd(token: string, adId: string) {
+// Hard guard: refuses to POST status=PAUSED to anything that we know is an ad set.
+// Z8 kill rules MUST target ads only; ad-set pauses require Blair's explicit approval.
+async function pauseAd(
+  token: string,
+  adId: string,
+  guard?: { adsetIds: Set<string>; adIds: Set<string>; admin: any; runId: string; reason: string },
+) {
+  if (guard) {
+    if (guard.adsetIds.has(adId)) {
+      await guard.admin.from("ad_execution_log").insert({
+        executor: "z8_auto",
+        actor_kind: "system",
+        platform: "meta",
+        action: "kill",
+        target_level: "adset",
+        target_id: adId,
+        success: false,
+        error_message: "kill rule attempted adset pause — blocked",
+        request_payload: { ad_id: adId, run_id: guard.runId, reason: guard.reason, blocked: true },
+      });
+      throw new Error(`kill rule attempted adset pause — blocked (id=${adId})`);
+    }
+    if (!guard.adIds.has(adId)) {
+      throw new Error(`kill rule target id not in known ad set — refusing pause (id=${adId})`);
+    }
+  }
   return metaFetch(`/${adId}`, token, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -295,17 +324,29 @@ Deno.serve(async (req) => {
 
   const logExec = async (row: {
     action: string; ad_id?: string; adset_id?: string; reason: string;
+    target_level?: "ad" | "adset"; target_id?: string;
     before?: any; after?: any; success: boolean; error?: string;
     delta_pct?: number; spend_impact_cents?: number;
     roas_at_time?: number; spend_at_time?: number;
     request?: any; response?: any;
   }) => {
+    // Default target inference: kills/rotations operate on ads; scales/rollbacks on ad sets.
+    const targetLevel = row.target_level
+      ?? (row.action === "kill" || row.action === "rotate" ? "ad"
+        : row.action === "scale" || row.action === "rollback" ? "adset"
+        : (row.ad_id ? "ad" : row.adset_id ? "adset" : undefined));
+    const targetId = row.target_id
+      ?? (targetLevel === "ad" ? (row.ad_id ?? undefined)
+        : targetLevel === "adset" ? (row.adset_id ?? undefined)
+        : undefined);
     await admin.from("ad_execution_log").insert({
       executor: "z8_auto",
       actor_kind: "system",
       platform: "meta",
       action: row.action,
       campaign_id: row.adset_id ?? row.ad_id ?? null,
+      target_level: targetLevel ?? null,
+      target_id: targetId ?? null,
       before_value: row.before ?? null,
       after_value: row.after ?? null,
       delta_pct: row.delta_pct ?? null,
@@ -400,6 +441,11 @@ Deno.serve(async (req) => {
     const adsetIds = Array.from(new Set(ads.map(a => a.adset_id).filter(Boolean)));
     const adsets = await fetchAdSets(token, adsetIds);
 
+    // Guard set: every id we know is an ad set, every id we know is an ad.
+    // pauseAd() refuses to POST status=PAUSED to anything in adsetIdsSet.
+    const adsetIdsSet = new Set<string>(adsetIds);
+    const adIdsSet = new Set<string>(ads.map(a => a.ad_id).filter(Boolean));
+
     // ---------- 3. Checkout drop-off detection (before kill) ----------
     const dropoffAdIds = new Set<string>();
     for (const a of ads) {
@@ -431,10 +477,16 @@ Deno.serve(async (req) => {
     // ---------- 4. Kill candidates (general + retargeting) ----------
     const generalKillCandidates: AdRow[] = [];
     const rtgKillCandidates: AdRow[] = [];
+    const linkClickKillCandidates: AdRow[] = [];
     for (const a of ads) {
       if (a.status !== "ACTIVE") continue;
       if (a.is_wine_club) continue;
       if (dropoffAdIds.has(a.ad_id)) continue; // skip drop-offs entirely
+      // Link-click kill: $15+ spend, 0 link clicks. Evaluated per ad. Doesn't need 48h age.
+      if (a.spend_cents >= KILL_LINK_CLICK_MIN_SPEND_CENTS && a.link_clicks === 0) {
+        linkClickKillCandidates.push(a);
+        continue;
+      }
       if (a.spend_cents < KILL_MIN_SPEND_CENTS) continue;
       if (a.purchases > 0) continue;
       if (a.age_hours < KILL_MIN_AGE_HOURS) continue;
@@ -456,6 +508,7 @@ Deno.serve(async (req) => {
     const allKills = [
       ...generalToKill.map(a => ({ ad: a, reason: "zero_purchase_kill" })),
       ...rtgKillCandidates.map(a => ({ ad: a, reason: "frequency_exhausted_kill" })),
+      ...linkClickKillCandidates.map(a => ({ ad: a, reason: "zero_link_clicks_kill" })),
     ];
 
     for (const { ad, reason } of allKills) {
@@ -466,9 +519,19 @@ Deno.serve(async (req) => {
         killedAdNames.push(ad.ad_name);
         continue;
       }
-      const r = await pauseAd(token, ad.ad_id);
+      let r: { ok: boolean; status: number; body: any };
+      try {
+        r = await pauseAd(token, ad.ad_id, {
+          adsetIds: adsetIdsSet, adIds: adIdsSet, admin, runId, reason,
+        });
+      } catch (guardErr: any) {
+        errors++;
+        summary.errors.push({ stage: "kill_guard", ad_id: ad.ad_id, err: String(guardErr?.message ?? guardErr) });
+        continue;
+      }
       await logExec({
         action: "kill", ad_id: ad.ad_id, adset_id: ad.adset_id, reason,
+        target_level: "ad", target_id: ad.ad_id,
         before: { status: "ACTIVE", spend_cents_14d: ad.spend_cents, purchases: ad.purchases, frequency: ad.frequency },
         after: { status: "PAUSED" },
         success: r.ok, error: r.ok ? undefined : JSON.stringify(r.body),

@@ -8063,6 +8063,78 @@ export type Database = {
         }
         Relationships: []
       }
+      qbo_connections: {
+        Row: {
+          access_token: string
+          access_token_expires_at: string
+          company_name: string | null
+          connected_at: string
+          connected_by: string | null
+          created_at: string
+          environment: string
+          id: string
+          last_error: string | null
+          last_refreshed_at: string | null
+          realm_id: string
+          refresh_token: string
+          refresh_token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          access_token_expires_at: string
+          company_name?: string | null
+          connected_at?: string
+          connected_by?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          last_error?: string | null
+          last_refreshed_at?: string | null
+          realm_id: string
+          refresh_token: string
+          refresh_token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          access_token_expires_at?: string
+          company_name?: string | null
+          connected_at?: string
+          connected_by?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          last_error?: string | null
+          last_refreshed_at?: string | null
+          realm_id?: string
+          refresh_token?: string
+          refresh_token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      qbo_oauth_states: {
+        Row: {
+          created_at: string
+          expires_at: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recipes: {
         Row: {
           body_html: string | null

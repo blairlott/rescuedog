@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { DEFAULT_TILE_KEYS, FINANCE_TILES, SOURCE_LABEL, TILE_BY_KEY, type FinanceTileSource } from "@/lib/financeTiles";
 import { renderTile } from "@/components/finance/FinanceTiles";
 import { FeatureRequestBox } from "@/components/admin/FeatureRequestBox";
+import { QuickBooksPanel } from "@/components/finance/QuickBooksPanel";
 
 const RANGES = [
   { label: "Last 7 days", days: 7 },
@@ -215,6 +216,8 @@ export default function FinanceDashboard() {
           description="Submit a feature request, fix, or data ask. CFO requests are flagged HIGH PRIORITY in the owner's inbox."
         />
       )}
+
+      <QuickBooksPanel days={days} />
     </div>
   );
 }

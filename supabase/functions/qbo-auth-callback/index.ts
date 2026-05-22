@@ -26,7 +26,6 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   // Validate CSRF state
-  await admin.from("qbo_oauth_states").delete().lt("expires_at", new Date().toISOString());
   const { data: st, error: stateLookupError } = await admin
     .from("qbo_oauth_states")
     .select("user_id, expires_at")

@@ -6,7 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-provision-secret",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const TARGET_EMAIL = "bob.evers@rescuedogwines.com";
@@ -16,17 +16,32 @@ const FULL_NAME = "Bob Evers";
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
 
-  const secret = Deno.env.get("LINDY_PROXY_TOKEN");
-  const provided = req.headers.get("x-provision-secret");
-  if (!secret || provided !== secret) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401, headers: { ...CORS, "content-type": "application/json" },
-    });
-  }
-
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(url, key, { auth: { persistSession: false } });
+
+  // Require an authenticated caller who is an owner/admin, or a service-role JWT.
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  if (!token) {
+    return new Response(JSON.stringify({ error: "missing auth" }), {
+      status: 401, headers: { ...CORS, "content-type": "application/json" },
+    });
+  }
+  const { data: caller } = await admin.auth.getUser(token);
+  if (!caller?.user) {
+    // Allow service-role JWT (no user but valid token via verify_jwt)
+    // verify_jwt already validated the token; if no user it's service-role.
+  } else {
+    const { data: rows } = await admin
+      .from("user_roles").select("role").eq("user_id", caller.user.id);
+    const ok = (rows || []).some(r => ["owner", "admin"].includes(String(r.role)));
+    if (!ok) {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403, headers: { ...CORS, "content-type": "application/json" },
+      });
+    }
+  }
 
   // Find existing user
   let userId: string | null = null;

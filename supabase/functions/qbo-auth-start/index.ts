@@ -12,6 +12,20 @@ const J = (s: number, b: unknown) =>
 
 const REDIRECT_URI = `${Deno.env.get("SUPABASE_URL")}/functions/v1/qbo-auth-callback`;
 const SCOPE = "com.intuit.quickbooks.accounting";
+const DISCOVERY_URL = "https://developer.api.intuit.com/.well-known/openid_configuration";
+
+let _discoveryCache: { authorization_endpoint: string; token_endpoint: string } | null = null;
+async function getIntuitEndpoints() {
+  if (_discoveryCache) return _discoveryCache;
+  const r = await fetch(DISCOVERY_URL, { headers: { Accept: "application/json" } });
+  if (!r.ok) throw new Error(`intuit discovery failed: ${r.status}`);
+  const j: any = await r.json();
+  _discoveryCache = {
+    authorization_endpoint: j.authorization_endpoint,
+    token_endpoint: j.token_endpoint,
+  };
+  return _discoveryCache;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -47,7 +61,8 @@ Deno.serve(async (req) => {
     return J(500, { error: "Could not start QuickBooks connection. Please try again." });
   }
 
-  const url = new URL("https://appcenter.intuit.com/connect/oauth2");
+  const { authorization_endpoint } = await getIntuitEndpoints();
+  const url = new URL(authorization_endpoint);
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", SCOPE);

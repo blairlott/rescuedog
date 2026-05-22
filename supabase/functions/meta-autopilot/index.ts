@@ -2,9 +2,11 @@
 // (execution error rate + trailing Purchase ROAS) before executing approved
 // ad_recommendations for platform='meta'. Logs every evaluation to
 // ad_autopilot_kill_switch_evaluations and ad_autopilot_evaluations.
-// Cooldown gate: respects meta_autopilot_auto_stopped_at + cooldown_minutes
-// so an auto-stopped pilot cannot self-restart until cooldown elapses AND a
-// human has flipped meta_autopilot_enabled back to true via the UI.
+//
+// Auto-recovery: when an auto-stop has fired, the pilot self-evaluates on every
+// cron tick after cooldown elapses. If both kill switches are healthy on the
+// current data, it re-enables itself (clears auto_stopped_at/reason) and
+// resumes execution in the same tick. Goal: minimize downtime.
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
 

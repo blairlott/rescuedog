@@ -15,6 +15,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ADMIN_URL = "https://rescuedog.lovable.app";
 const LINDY_WATCH_ADDRESS = "blair.lott@rescuedogwines.com";
+// Lindy Mail inbox watched by Lindy's email trigger — primary parse path.
+const LINDY_MAIL_ADDRESS = Deno.env.get("LINDY_MAIL_ADDRESS") ?? "default-blair.lott@lindymail.ai";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -70,7 +72,8 @@ Deno.serve(async (req) => {
       headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: "Lindy Pushback <alerts@rescuedogwines.com>",
-        to: [LINDY_WATCH_ADDRESS],
+        to: [LINDY_MAIL_ADDRESS],
+        cc: [LINDY_WATCH_ADDRESS],
         subject,
         html,
       }),

@@ -70,7 +70,8 @@ Deno.serve(async (req) => {
     const cfg: Record<string, any> = {};
     (settings ?? []).forEach((r: any) => { cfg[r.key] = r.value; });
 
-    const enabled = cfg.meta_autopilot_enabled === true;
+    const enabledInitial = cfg.meta_autopilot_enabled === true;
+    let enabled = enabledInitial;
     const minConf = getNum(cfg.meta_autopilot_confidence_min, 0.75);
     const maxBudgetPct = getNum(cfg.meta_autopilot_max_budget_change_pct, 20);
     const dailyCap = getNum(cfg.meta_autopilot_daily_action_cap, 10);
@@ -82,19 +83,23 @@ Deno.serve(async (req) => {
     const minRoas = getNum(cfg.meta_autopilot_min_roas, 2.0);
     const roasWindowDays = Math.max(1, getNum(cfg.meta_autopilot_roas_window_days, 7));
     const minActionsForEval = Math.max(1, getNum(cfg.meta_autopilot_min_actions_for_eval, 10));
-    const cooldownMinutes = Math.max(0, getNum(cfg.meta_autopilot_cooldown_minutes, 60));
+    const cooldownMinutes = Math.max(0, getNum(cfg.meta_autopilot_cooldown_minutes, 15));
     const notifyEmails: string[] = Array.isArray(cfg.meta_autopilot_notify_emails)
       ? cfg.meta_autopilot_notify_emails.filter((s: any) => typeof s === "string" && s.includes("@"))
       : [];
 
-    // Cooldown gate: if we were auto-stopped recently, refuse to run even if a
-    // human flipped enabled=true too early. Belt-and-braces with the UI guard.
-    if (cooldownMinutes > 0 && cfg.meta_autopilot_auto_stopped_at) {
+    // Cooldown gate: if we were auto-stopped recently, refuse to run until
+    // cooldown elapses. Once it elapses we attempt auto-recovery (re-evaluate
+    // kill switches and re-enable in-place if healthy).
+    let attemptAutoRestart = false;
+    if (cfg.meta_autopilot_auto_stopped_at) {
       const stoppedAt = new Date(String(cfg.meta_autopilot_auto_stopped_at)).getTime();
       const cooldownEnds = stoppedAt + cooldownMinutes * 60_000;
       if (Number.isFinite(stoppedAt) && Date.now() < cooldownEnds) {
         return J(200, { ok: true, skipped: "cooldown_active", cooldown_ends_at: new Date(cooldownEnds).toISOString() });
       }
+      // Cooldown elapsed — try to recover automatically on this tick.
+      attemptAutoRestart = true;
     }
 
     let evaluatedB2B = 0;

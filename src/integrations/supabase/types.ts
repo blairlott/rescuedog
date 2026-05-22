@@ -5136,6 +5136,7 @@ export type Database = {
           created_at: string
           directive: string
           id: string
+          kind: string
           user_id: string
         }
         Insert: {
@@ -5143,6 +5144,7 @@ export type Database = {
           created_at?: string
           directive: string
           id?: string
+          kind?: string
           user_id: string
         }
         Update: {
@@ -5150,7 +5152,47 @@ export type Database = {
           created_at?: string
           directive?: string
           id?: string
+          kind?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      graz_knowledge: {
+        Row: {
+          active: boolean
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          priority: number
+          source_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          priority?: number
+          source_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          priority?: number
+          source_url?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }

@@ -50,13 +50,15 @@ Deno.serve(async (req) => {
     const { mode, message, threadId, days = 90 } = await req.json();
 
     // TELL mode: save a strategic directive
-    if (mode === "tell") {
+    // TEACH mode: save a persistent business-context fact Graz should know
+    if (mode === "tell" || mode === "teach") {
       if (!message || typeof message !== "string") {
         return new Response(JSON.stringify({ error: "message required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      const kind = mode === "teach" ? "context" : "directive";
       const { data, error } = await supabase
         .from("graz_directives")
-        .insert({ user_id: user.id, directive: message.trim() })
+        .insert({ user_id: user.id, directive: message.trim(), kind })
         .select()
         .single();
       if (error) throw error;
@@ -68,18 +70,24 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
     const [{ data: directives }, { data: history }, ctx] = await Promise.all([
-      supabase.from("graz_directives").select("directive,created_at").eq("user_id", user.id).eq("active", true).order("created_at", { ascending: true }),
+      supabase.from("graz_directives").select("directive,kind,created_at").eq("user_id", user.id).eq("active", true).order("created_at", { ascending: true }),
       threadId
         ? supabase.from("graz_messages").select("role,content").eq("thread_id", threadId).order("created_at", { ascending: true }).limit(40)
         : Promise.resolve({ data: [] as any[] }),
       fetchContext(supabase, days),
     ]);
 
-    const directiveBlock = (directives ?? []).length
-      ? `Standing strategic directives from the user:\n${(directives as any[]).map((d, i) => `${i + 1}. ${d.directive}`).join("\n")}`
+    const all = (directives ?? []) as any[];
+    const strat = all.filter(d => (d.kind ?? "directive") === "directive");
+    const facts = all.filter(d => d.kind === "context");
+    const directiveBlock = strat.length
+      ? `Standing strategic directives from the user:\n${strat.map((d, i) => `${i + 1}. ${d.directive}`).join("\n")}`
       : "No standing directives yet.";
+    const factBlock = facts.length
+      ? `\n\nBusiness context the user has taught you (treat as ground truth unless contradicted by live data):\n${facts.map((d, i) => `${i + 1}. ${d.directive}`).join("\n")}`
+      : "";
 
-    const systemPrompt = `${SYSTEM_BASE}\n\n${directiveBlock}\n\nCurrent finance context (JSON, period = last ${days} days):\n${JSON.stringify(ctx).slice(0, 12000)}`;
+    const systemPrompt = `${SYSTEM_BASE}\n\n${directiveBlock}${factBlock}\n\nCurrent finance context (JSON, period = last ${days} days):\n${JSON.stringify(ctx).slice(0, 12000)}`;
 
     const messages = [
       { role: "system", content: systemPrompt },

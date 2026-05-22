@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Send, MessageSquare, Megaphone, Trash2, Loader2 } from "lucide-react";
+import { Sparkles, Send, MessageSquare, Megaphone, BookOpen, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 type Msg = { role: "user" | "assistant"; content: string };
-type Mode = "ask" | "tell";
+type Mode = "ask" | "tell" | "teach";
 
 export function GrazChat({ days, userId }: { days: number; userId: string | null }) {
   const qc = useQueryClient();
@@ -25,13 +25,15 @@ export function GrazChat({ days, userId }: { days: number; userId: string | null
     queryFn: async () => {
       const { data, error } = await supabase
         .from("graz_directives")
-        .select("id,directive,active,created_at")
+        .select("id,directive,active,created_at,kind")
         .eq("user_id", userId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
   });
+  const strategic = (directives as any[]).filter(d => (d.kind ?? "directive") === "directive");
+  const contextFacts = (directives as any[]).filter(d => d.kind === "context");
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -43,13 +45,15 @@ export function GrazChat({ days, userId }: { days: number; userId: string | null
     setBusy(true);
     setInput("");
 
-    if (mode === "tell") {
+    if (mode === "tell" || mode === "teach") {
       const { error } = await supabase.functions.invoke("cfo-graz-chat", {
-        body: { mode: "tell", message: text },
+        body: { mode, message: text },
       });
       setBusy(false);
       if (error) { toast.error(error.message); return; }
-      toast.success("Directive saved. Graz will apply it going forward.");
+      toast.success(mode === "tell"
+        ? "Directive saved. Graz will apply it going forward."
+        : "Got it. Graz will remember this about the business.");
       qc.invalidateQueries({ queryKey: ["graz-directives", userId] });
       return;
     }
@@ -94,6 +98,9 @@ export function GrazChat({ days, userId }: { days: number; userId: string | null
           <Button size="sm" variant={mode === "tell" ? "default" : "outline"} className="h-7 text-xs gap-1" onClick={() => setMode("tell")}>
             <Megaphone className="h-3 w-3" /> Tell
           </Button>
+          <Button size="sm" variant={mode === "teach" ? "default" : "outline"} className="h-7 text-xs gap-1" onClick={() => setMode("teach")} title="Teach Graz facts about the business">
+            <BookOpen className="h-3 w-3" /> Teach
+          </Button>
           {mode === "ask" && messages.length > 0 && (
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={newThread}>New thread</Button>
           )}
@@ -112,9 +119,16 @@ export function GrazChat({ days, userId }: { days: number; userId: string | null
             )}
             {mode === "tell" && (
               <div className="text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground mb-1">Give Graz strategic direction.</p>
+                <p className="font-semibold text-foreground mb-1">Give Graz a standing directive.</p>
                 <p>Examples: "Prioritize cash conversion over growth this quarter." · "Flag any campaign with ROAS &lt; 1.5 as a kill candidate." · "Treat shipping incidents above $50 as material."</p>
                 <p className="mt-2">Directives persist and shape every future Ask response.</p>
+              </div>
+            )}
+            {mode === "teach" && (
+              <div className="text-sm text-muted-foreground">
+                <p className="font-semibold text-foreground mb-1">Tell Graz anything about the business.</p>
+                <p>Examples: "Our glass cost is $1.20/btl and freight averages $0.95/btl." · "The wine club ships 4× a year in Mar/Jun/Sep/Dec." · "We don't sell direct to TX or UT." · "Bob owns finance, Tony owns ops."</p>
+                <p className="mt-2">Facts persist and are treated as ground truth on every Ask.</p>
               </div>
             )}
             {messages.map((m, i) => (
@@ -142,7 +156,11 @@ export function GrazChat({ days, userId }: { days: number; userId: string | null
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); } }}
-              placeholder={mode === "ask" ? "Ask Graz... (⌘/Ctrl+Enter to send)" : "Tell Graz a standing directive..."}
+              placeholder={
+                mode === "ask"  ? "Ask Graz... (⌘/Ctrl+Enter to send)" :
+                mode === "tell" ? "Tell Graz a standing directive..." :
+                                  "Tell Graz a fact about the business..."
+              }
               className="min-h-[44px] resize-none text-sm"
               rows={2}
             />
@@ -152,28 +170,55 @@ export function GrazChat({ days, userId }: { days: number; userId: string | null
           </div>
         </div>
 
-        {/* Directives sidebar */}
-        <div className="border-t md:border-t-0 md:border-l border-border p-3 bg-muted/30">
-          <div className="text-[10px] uppercase tracking-brand font-semibold text-muted-foreground mb-2">Standing directives</div>
-          {!directives.length && (
-            <div className="text-xs text-muted-foreground">None yet. Switch to <span className="font-semibold">Tell</span> to give Graz a directive.</div>
-          )}
-          <div className="space-y-1.5 max-h-[380px] overflow-y-auto">
-            {directives.map((d: any) => (
-              <div key={d.id} className={`group border border-border p-2 text-xs ${d.active ? "bg-background" : "bg-muted/50 opacity-60"}`}>
-                <div className="flex items-start gap-1">
-                  <button onClick={() => toggleDirective(d.id, d.active)} className="text-[9px] uppercase tracking-brand shrink-0 px-1 py-0.5 border border-border hover:bg-foreground hover:text-background">
-                    {d.active ? "on" : "off"}
-                  </button>
-                  <div className="flex-1 leading-snug">{d.directive}</div>
-                  <button onClick={() => deleteDirective(d.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Knowledge sidebar */}
+        <div className="border-t md:border-t-0 md:border-l border-border p-3 bg-muted/30 space-y-4 max-h-[480px] overflow-y-auto">
+          <DirectiveList
+            title="Standing directives"
+            empty={<>None yet. Switch to <span className="font-semibold">Tell</span> to give Graz a directive.</>}
+            items={strategic}
+            onToggle={toggleDirective}
+            onDelete={deleteDirective}
+          />
+          <DirectiveList
+            title="Business context"
+            empty={<>Nothing taught yet. Switch to <span className="font-semibold">Teach</span> to share business facts.</>}
+            items={contextFacts}
+            onToggle={toggleDirective}
+            onDelete={deleteDirective}
+          />
         </div>
+      </div>
+    </div>
+  );
+}
+
+function DirectiveList({
+  title, empty, items, onToggle, onDelete,
+}: {
+  title: string;
+  empty: ReactNode;
+  items: any[];
+  onToggle: (id: string, active: boolean) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-brand font-semibold text-muted-foreground mb-2">{title}</div>
+      {!items.length && <div className="text-xs text-muted-foreground">{empty}</div>}
+      <div className="space-y-1.5">
+        {items.map((d: any) => (
+          <div key={d.id} className={`group border border-border p-2 text-xs ${d.active ? "bg-background" : "bg-muted/50 opacity-60"}`}>
+            <div className="flex items-start gap-1">
+              <button onClick={() => onToggle(d.id, d.active)} className="text-[9px] uppercase tracking-brand shrink-0 px-1 py-0.5 border border-border hover:bg-foreground hover:text-background">
+                {d.active ? "on" : "off"}
+              </button>
+              <div className="flex-1 leading-snug">{d.directive}</div>
+              <button onClick={() => onDelete(d.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

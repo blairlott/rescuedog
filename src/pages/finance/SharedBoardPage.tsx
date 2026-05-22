@@ -52,6 +52,9 @@ export default function SharedBoardPage() {
   const isSnapshot = data.share_type === "snapshot" && data.snapshot;
   const tileKeys: string[] = isSnapshot ? (data.snapshot.tiles ?? []) : (data.cfo_boards?.tiles ?? []);
   const days: number = isSnapshot ? (data.snapshot.date_range_days ?? 90) : (data.cfo_boards?.date_range_days ?? 90);
+  const startDate: string | null = isSnapshot ? (data.snapshot.start_date ?? null) : (data.cfo_boards?.start_date ?? null);
+  const endDate: string | null = isSnapshot ? (data.snapshot.end_date ?? null) : (data.cfo_boards?.end_date ?? null);
+  const customRange = startDate && endDate ? { start: startDate, end: endDate } : undefined;
   const boardName = isSnapshot ? (data.snapshot.name ?? "Snapshot") : (data.cfo_boards?.name ?? "Shared board");
 
   const sortableTiles: SortableTile[] = tileKeys
@@ -62,7 +65,7 @@ export default function SharedBoardPage() {
       return {
         id: key, span: def.defaultSpan, badge: SOURCE_LABEL[def.source],
         title: def.title, badgeClass: meta.chip,
-        body: <div className="flex-1">{renderTile(key, days)}</div>,
+        body: <div className="flex-1">{renderTile(key, days, customRange)}</div>,
       } as SortableTile;
     }).filter(Boolean) as SortableTile[];
 

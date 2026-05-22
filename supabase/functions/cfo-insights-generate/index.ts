@@ -67,7 +67,21 @@ function trendShape(older: number, mid: number, curr: number): string {
   return "flat";
 }
 
-async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
+function representativeHeuristics(all: Heuristic[]): Heuristic[] {
+  const rank = { critical: 0, watch: 1, fyi: 2 } as const;
+  const byTile = new Map<string, Heuristic>();
+  for (const h of all) {
+    const current = byTile.get(h.tile_key);
+    if (!current) { byTile.set(h.tile_key, h); continue; }
+    const severityDiff = rank[h.severity] - rank[current.severity];
+    if (severityDiff < 0 || (severityDiff === 0 && Math.abs(h.delta_pct ?? 0) > Math.abs(current.delta_pct ?? 0))) {
+      byTile.set(h.tile_key, h);
+    }
+  }
+  return Array.from(byTile.values());
+}
+
+async function runHeuristics(financeClient: any, days: number): Promise<Heuristic[]> {
   const end = new Date();
   const startCurr = shiftDays(end, -days);
   const startPrev = shiftDays(end, -days * 2);
@@ -79,9 +93,9 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- VS summary heuristic (3-window historical) ----
   const [vsCurr, vsPrev, vsPrev2] = await Promise.all([
-    admin.rpc("finance_vs_summary", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
-    admin.rpc("finance_vs_summary", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
-    admin.rpc("finance_vs_summary", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
+    financeClient.rpc("finance_vs_summary", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    financeClient.rpc("finance_vs_summary", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    financeClient.rpc("finance_vs_summary", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
   ]);
   const vc = (vsCurr.data ?? [])[0];
   const vp = (vsPrev.data ?? [])[0];
@@ -120,9 +134,9 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- P&L heuristic (3-window historical) ----
   const [pnlCurr, pnlPrev, pnlPrev2] = await Promise.all([
-    admin.rpc("finance_pnl_summary", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
-    admin.rpc("finance_pnl_summary", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
-    admin.rpc("finance_pnl_summary", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
+    financeClient.rpc("finance_pnl_summary", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    financeClient.rpc("finance_pnl_summary", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    financeClient.rpc("finance_pnl_summary", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
   ]);
   const sumPnl = (rows: any[] | null) => {
     const r = rows ?? [];
@@ -156,9 +170,9 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- Ad spend by platform (per-platform + total + ROAS, 3-window) ----
   const [spCurr, spPrev, spPrev2] = await Promise.all([
-    admin.rpc("finance_spend_by_platform", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
-    admin.rpc("finance_spend_by_platform", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
-    admin.rpc("finance_spend_by_platform", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
+    financeClient.rpc("finance_spend_by_platform", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    financeClient.rpc("finance_spend_by_platform", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    financeClient.rpc("finance_spend_by_platform", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
   ]);
   const spendCurrTotal = ((spCurr.data ?? []) as any[]).reduce((s, r) => s + Number(r.spend_cents), 0);
   const spendPrevTotal = ((spPrev.data ?? []) as any[]).reduce((s, r) => s + Number(r.spend_cents), 0);
@@ -220,9 +234,9 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- Revenue by Channel (qb_revenue_ch) ----
   const [chCurr, chPrev, chPrev2] = await Promise.all([
-    admin.rpc("finance_revenue_by_channel", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
-    admin.rpc("finance_revenue_by_channel", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
-    admin.rpc("finance_revenue_by_channel", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
+    financeClient.rpc("finance_revenue_by_channel", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    financeClient.rpc("finance_revenue_by_channel", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    financeClient.rpc("finance_revenue_by_channel", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
   ]);
   const byCh = (rows: any[] | null) => Object.fromEntries(((rows ?? []) as any[]).map(r => [r.channel, Number(r.revenue_cents)]));
   const cC = byCh(chCurr.data), cP = byCh(chPrev.data), cP2 = byCh(chPrev2.data);
@@ -243,8 +257,8 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- Top Vendors (qb_top_vendors) ----
   const [vCurr, vPrev] = await Promise.all([
-    admin.rpc("finance_top_vendors", { _start: isoDate(startCurr), _end: isoDate(end),     _limit: 15 }),
-    admin.rpc("finance_top_vendors", { _start: isoDate(startPrev), _end: isoDate(endPrev), _limit: 15 }),
+    financeClient.rpc("finance_top_vendors", { _start: isoDate(startCurr), _end: isoDate(end),     _limit: 15 }),
+    financeClient.rpc("finance_top_vendors", { _start: isoDate(startPrev), _end: isoDate(endPrev), _limit: 15 }),
   ]);
   const venC = Object.fromEntries(((vCurr.data ?? []) as any[]).map(r => [r.vendor, Number(r.spend_cents)]));
   const venP = Object.fromEntries(((vPrev.data ?? []) as any[]).map(r => [r.vendor, Number(r.spend_cents)]));
@@ -266,8 +280,8 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- Cash trend (qb_cash_trend) — current vs prior net cash ----
   const [cashCurr, cashPrev] = await Promise.all([
-    admin.rpc("finance_cash_trend", { _start: isoDate(startCurr), _end: isoDate(end),     _bucket: "week" }),
-    admin.rpc("finance_cash_trend", { _start: isoDate(startPrev), _end: isoDate(endPrev), _bucket: "week" }),
+    financeClient.rpc("finance_cash_trend", { _start: isoDate(startCurr), _end: isoDate(end),     _bucket: "week" }),
+    financeClient.rpc("finance_cash_trend", { _start: isoDate(startPrev), _end: isoDate(endPrev), _bucket: "week" }),
   ]);
   const sumNet = (rows: any[] | null) => ((rows ?? []) as any[]).reduce((s, r) => s + Number(r.net_cents), 0);
   const netC = sumNet(cashCurr.data);
@@ -285,8 +299,8 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
 
   // ---- VS Waterfall (vs_waterfall) — contribution after COGS & ads ----
   const [wCurr, wPrev] = await Promise.all([
-    admin.rpc("finance_vs_waterfall", { _start: isoDate(startCurr), _end: isoDate(end)     }),
-    admin.rpc("finance_vs_waterfall", { _start: isoDate(startPrev), _end: isoDate(endPrev) }),
+    financeClient.rpc("finance_vs_waterfall", { _start: isoDate(startCurr), _end: isoDate(end)     }),
+    financeClient.rpc("finance_vs_waterfall", { _start: isoDate(startPrev), _end: isoDate(endPrev) }),
   ]);
   const wc = ((wCurr.data ?? []) as any[])[0];
   const wp = ((wPrev.data ?? []) as any[])[0];
@@ -305,17 +319,75 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
     }
   }
 
+  // ---- Wine Club MRR & churn (cc_wine_club) ----
+  const [clubCurr, clubPrev, clubPrev2] = await Promise.all([
+    financeClient.from("wine_club_memberships").select("status,joined_at,cancelled_at").or(`joined_at.lte.${isoDate(end)},cancelled_at.gte.${isoDate(startCurr)}`),
+    financeClient.from("wine_club_memberships").select("status,joined_at,cancelled_at").or(`joined_at.lte.${isoDate(endPrev)},cancelled_at.gte.${isoDate(startPrev)}`),
+    financeClient.from("wine_club_memberships").select("status,joined_at,cancelled_at").or(`joined_at.lte.${isoDate(endPrev2)},cancelled_at.gte.${isoDate(startPrev2)}`),
+  ]);
+  const clubSummary = (rows: any[] | null | undefined, windowEnd: Date, windowStart: Date) => {
+    const endMs = windowEnd.getTime();
+    const startMs = windowStart.getTime();
+    const active = (rows ?? []).filter((r) => {
+      const joined = r.joined_at ? new Date(r.joined_at).getTime() : 0;
+      const cancelled = r.cancelled_at ? new Date(r.cancelled_at).getTime() : Infinity;
+      return joined <= endMs && cancelled > endMs;
+    }).length;
+    const cancelled = (rows ?? []).filter((r) => {
+      if (!r.cancelled_at) return false;
+      const ts = new Date(r.cancelled_at).getTime();
+      return ts >= startMs && ts <= endMs;
+    }).length;
+    const churn = active + cancelled > 0 ? cancelled / (active + cancelled) : 0;
+    const mrr = active * 7500;
+    return { active, cancelled, churn, mrr };
+  };
+  const cc = clubSummary(clubCurr.data, end, startCurr);
+  const cp = clubSummary(clubPrev.data, endPrev, startPrev);
+  const cp2 = clubSummary(clubPrev2.data, endPrev2, startPrev2);
+  for (const k of ["active", "cancelled", "churn", "mrr"] as const) {
+    const d = pctChange(cc[k], cp[k]);
+    out.push({
+      tile_key: "cc_wine_club",
+      severity: d != null ? severityForAlways(Math.abs(d), k === "active" || k === "mrr") : "fyi",
+      metric: k === "mrr" ? "estimated wine-club MRR" : k === "churn" ? "wine-club churn rate" : `wine-club ${k}`,
+      current: cc[k], prior: cp[k], delta_pct: d,
+      detail: { window_days: days, kind: k, prior2: cp2[k], trend: trendShape(cp2[k], cp[k], cc[k]) },
+    });
+  }
+
+  // ---- Conversion pathways (cc_pathways) baseline from VS recurring mix ----
+  if (vc && vp) {
+    const currOrders = Number(vc.order_count ?? 0);
+    const prevOrders = Number(vp.order_count ?? 0);
+    const prev2Orders = Number(vp2?.order_count ?? 0);
+    const currRate = currOrders > 0 ? Number(vc.wine_club_cents ?? 0) / Math.max(1, Number(vc.revenue_cents ?? 0)) : 0;
+    const prevRate = prevOrders > 0 ? Number(vp.wine_club_cents ?? 0) / Math.max(1, Number(vp.revenue_cents ?? 0)) : 0;
+    const prev2Rate = prev2Orders > 0 ? Number(vp2?.wine_club_cents ?? 0) / Math.max(1, Number(vp2?.revenue_cents ?? 0)) : 0;
+    const d = pctChange(currRate, prevRate);
+    out.push({
+      tile_key: "cc_pathways",
+      severity: d != null ? severityForAlways(Math.abs(d), true) : "fyi",
+      metric: "club conversion pathway mix",
+      current: currRate, prior: prevRate, delta_pct: d,
+      detail: { window_days: days, kind: "club_mix", prior2: prev2Rate, trend: trendShape(prev2Rate, prevRate, currRate), current_orders: currOrders, prior_orders: prevOrders },
+    });
+  }
+
   return out;
 }
 
 function fallbackNarrative(h: Heuristic): { headline: string; body: string; recommended_action: string } {
-  const dir = h.delta_pct! >= 0 ? "up" : "down";
-  const pct = `${(Math.abs(h.delta_pct!) * 100).toFixed(1)}%`;
+  const delta = h.delta_pct ?? 0;
+  const dir = delta >= 0 ? "up" : "down";
+  const pct = h.delta_pct == null ? "baseline" : `${(Math.abs(delta) * 100).toFixed(1)}%`;
   const isCents = typeof h.detail.kind === "string" && /cents|revenue|expense|cogs|spend|net/.test(String(h.detail.kind));
   const f = (n: number) => isCents ? fmtCents(n) : Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
   return {
-    headline: `${h.metric} ${dir} ${pct} vs prior ${h.detail.window_days}d`,
-    body: `Now ${f(h.current)} vs prior ${f(h.prior)}. Material move outside normal range.`,
+    headline: h.delta_pct == null
+      ? `${h.metric} baseline for current ${h.detail.window_days}d window`
+      : `${h.metric} ${dir} ${pct} vs prior ${h.detail.window_days}d`,
+    body: `Now ${f(h.current)} vs prior ${f(h.prior)}. Graz is using this as the tile's historical operating read.`,
     recommended_action: dir === "down"
       ? `Investigate driver and confirm not a tracking gap.`
       : `Lock in the lift — verify it's sustainable, then scale.`,
@@ -435,9 +507,15 @@ Deno.serve(async (req) => {
   const days = Math.max(7, Math.min(365, Number(body.days ?? 90)));
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const financeClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: auth } } },
+  );
   const apiKey = Deno.env.get("LOVABLE_API_KEY")!;
 
-  const heuristics = await runHeuristics(admin, days);
+  const allHeuristics = await runHeuristics(financeClient, days);
+  const heuristics = representativeHeuristics(allHeuristics);
   if (heuristics.length === 0) {
     return J(200, { generated: 0, considered: 0, note: "No material moves detected for this window." });
   }
@@ -477,6 +555,14 @@ Deno.serve(async (req) => {
     const deltaBucket = h.delta_pct != null ? Math.sign(h.delta_pct) * Math.floor(Math.abs(h.delta_pct) * 10) / 10 : 0;
     const dedupe = await sha256Hex(`${h.tile_key}|${h.metric}|${deltaBucket}|${h.detail.window_days}|${day}`);
 
+    const { data: existing } = await admin
+      .from("cfo_insights")
+      .select("id")
+      .eq("tile_key", h.tile_key)
+      .eq("dedupe_hash", dedupe)
+      .maybeSingle();
+    if (existing) { skipped++; continue; }
+
     const nar = apiKey ? await generateNarrative(apiKey, h, knowledge) : fallbackNarrative(h);
 
     const { error } = await admin.from("cfo_insights").insert({
@@ -503,5 +589,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return J(200, { generated: written, deduped: skipped, considered: heuristics.length, days });
+  return J(200, { generated: written, deduped: skipped, considered: allHeuristics.length, surfaced: heuristics.length, days });
 });

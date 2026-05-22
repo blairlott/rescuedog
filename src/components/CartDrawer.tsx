@@ -32,6 +32,8 @@ import { RescueSpotlightCard } from "@/components/rescue/RescueSpotlightCard";
 import { ShopifyHandoffInterstitial } from "@/components/cart/ShopifyHandoffInterstitial";
 import { CartLineSizePicker } from "@/components/cart/CartLineSizePicker";
 import { addLinesAndGoToHostedCart } from "@/lib/vinoshipperInjector";
+import { refreshWineClubMembership } from "@/lib/refreshWineClubMembership";
+import { useQueryClient } from "@tanstack/react-query";
 import { recordCheckoutIntent } from "@/lib/abCheckoutIntent";
 import { VS_FLAT_SHIPPING_MIN_BOTTLES, VS_FLAT_SHIPPING_USD } from "@/lib/vinoshipperConfig";
 import { supabase } from "@/integrations/supabase/client";

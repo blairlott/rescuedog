@@ -9,7 +9,7 @@ function html(body: string, status = 200) {
     <style>body{font-family:-apple-system,sans-serif;max-width:480px;margin:80px auto;padding:24px;text-align:center}
     h1{color:#0d0d0d}p{color:#555}.ok{color:#2d8a3e}.err{color:#c30017}</style></head>
     <body>${body}<p><a href="/finance">Return to Finance Dashboard</a></p></body></html>`,
-    { status, headers: { "Content-Type": "text/html" } },
+    { status, headers: { "Content-Type": "text/html", "Cache-Control": "no-store" } },
   );
 }
 
@@ -26,8 +26,20 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   // Validate CSRF state
-  const { data: st } = await admin.from("qbo_oauth_states").select("user_id, expires_at").eq("state", state).maybeSingle();
-  if (!st) return html(`<h1 class="err">Invalid state</h1>`, 400);
+  await admin.from("qbo_oauth_states").delete().lt("expires_at", new Date().toISOString());
+  const { data: st, error: stateLookupError } = await admin
+    .from("qbo_oauth_states")
+    .select("user_id, expires_at")
+    .eq("state", state)
+    .maybeSingle();
+  if (stateLookupError) {
+    console.error("qbo oauth state lookup failed", stateLookupError.message);
+    return html(`<h1 class="err">Connection check failed</h1><p>Please start again from the Finance Dashboard.</p>`, 500);
+  }
+  if (!st) {
+    console.warn("qbo oauth invalid state", state);
+    return html(`<h1 class="err">Invalid state</h1><p>Please start again from the Finance Dashboard.</p>`, 400);
+  }
   if (new Date(st.expires_at) < new Date()) return html(`<h1 class="err">State expired — please try again</h1>`, 400);
   await admin.from("qbo_oauth_states").delete().eq("state", state);
 

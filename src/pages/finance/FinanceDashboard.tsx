@@ -242,47 +242,9 @@ export default function FinanceDashboard() {
               <span className="ml-1 inline-flex h-4 min-w-4 px-1 items-center justify-center text-[10px] font-bold bg-background text-foreground">{openInsights.length}</span>
             )}
           </Button>
-          {!usingCustom && (
-            <div className="flex items-center gap-2 h-8 px-2 border border-border bg-card">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <Select value={String(days)} onValueChange={onDaysChange}>
-                <SelectTrigger className="w-36 h-6 border-0 px-0 focus:ring-0 shadow-none text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {RANGES.map(r => <SelectItem key={r.days} value={String(r.days)}>{r.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="flex items-center gap-1 h-8 px-2 border border-border bg-card">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              type="date"
-              min="2017-01-01"
-              max={todayIso}
-              value={effectiveStart}
-              onChange={(e) => onStartChange(e.target.value)}
-              className="h-6 w-32 border-0 px-1 text-xs focus-visible:ring-0 shadow-none"
-              title="Start date"
-            />
-            <span className="text-xs text-muted-foreground">→</span>
-            <Input
-              type="date"
-              min="2017-01-01"
-              max={todayIso}
-              value={effectiveEnd}
-              onChange={(e) => onEndChange(e.target.value)}
-              className="h-6 w-32 border-0 px-1 text-xs focus-visible:ring-0 shadow-none"
-              title="End date"
-            />
-            {usingCustom && (
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={clearCustom} title="Clear custom range">
-                <X className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
-          <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={applyFullHistory} title="Pull data back to Jan 1, 2017">
-            <History className="h-3.5 w-3.5" /> 2017 → today
-          </Button>
+          <span className="text-xs text-muted-foreground hidden md:inline">
+            {effectiveStart} → {effectiveEnd}
+          </span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" className="h-8"><Plus className="h-3.5 w-3.5 mr-1" /> Add tile</Button>

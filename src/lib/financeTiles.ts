@@ -57,6 +57,7 @@ export const DEFAULT_TILE_KEYS: string[] = [
   "qb_ad_spend",
   "qb_cash_trend",
   "vs_summary",
+  "vs_waterfall",
   "cc_roas",
 ];
 

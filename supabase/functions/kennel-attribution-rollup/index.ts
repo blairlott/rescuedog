@@ -84,12 +84,20 @@ Deno.serve(async (req) => {
     // Also pull platform spend + revenue from ad_performance_facts so the
     // True ROAS dashboard shows real channel performance even when the
     // UTM-tagged attribution stream is sparse.
-    const { data: facts, error: factsErr } = await supabase
-      .from("ad_performance_facts")
-      .select("date, platform, campaign_id, spend, revenue, conversions")
-      .gte("date", sinceDate)
-      .limit(50000);
-    if (factsErr) throw factsErr;
+    // Paginate — PostgREST caps at 1000 rows per request.
+    const facts: Array<{ date: string; platform: string | null; campaign_id: string | null; spend: number; revenue: number; conversions: number }> = [];
+    const PAGE = 1000;
+    for (let from = 0; from < 50000; from += PAGE) {
+      const { data: page, error: factsErr } = await supabase
+        .from("ad_performance_facts")
+        .select("date, platform, campaign_id, spend, revenue, conversions")
+        .gte("date", sinceDate)
+        .range(from, from + PAGE - 1);
+      if (factsErr) throw factsErr;
+      if (!page || page.length === 0) break;
+      facts.push(...(page as any));
+      if (page.length < PAGE) break;
+    }
 
     type FactAgg = {
       day: string; channel: string; campaign_id: string | null;

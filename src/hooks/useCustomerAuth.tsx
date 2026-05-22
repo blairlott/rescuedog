@@ -24,31 +24,30 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
 
-  // Fire-and-forget call to ensure each authenticated user is linked to a
-  // Vinoshipper customer record. Safe to call repeatedly — the edge function
-  // is idempotent and will short-circuit if already linked.
+  // Fire-and-forget Vinoshipper bootstrap on sign-in / returning visit.
+  //   - `link-customer` is gated by sessionStorage (idempotent + ID-bound,
+  //     no need to re-link in the same browser session).
+  //   - `sync-membership` runs on EVERY auth resolution so wine club status
+  //     reflects VS truth on every visit (and recovers if the first sync
+  //     happened before VS had created the customer).
   const ensureVinoshipperLink = (uid: string) => {
-    const key = `vs_link_attempted_${uid}`;
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, "1");
+    const linkKey = `vs_link_attempted_${uid}`;
+    if (!sessionStorage.getItem(linkKey)) {
+      sessionStorage.setItem(linkKey, "1");
+      supabase.functions.invoke("vinoshipper-link-customer").catch((err) => {
+        console.warn("[vinoshipper-link-customer] failed", err);
+      });
+    }
+
+    // Always re-poll wine club membership from VS on sign-in / returning visit.
     supabase.functions
-      .invoke("vinoshipper-link-customer")
+      .invoke("vinoshipper-sync-membership")
       .then(() => {
-        // After linking, confirm wine club membership status against VS
-        // (source of truth). Non-blocking; we don't await it.
-        supabase.functions
-          .invoke("vinoshipper-sync-membership")
-          .then(() => {
-            queryClient.invalidateQueries({ queryKey: ["wine-club-membership", uid] });
-            queryClient.invalidateQueries({ queryKey: ["wine-club-gifts", uid] });
-          })
-          .catch((err) => {
-            console.warn("[vinoshipper-sync-membership] failed", err);
-          });
+        queryClient.invalidateQueries({ queryKey: ["wine-club-membership", uid] });
+        queryClient.invalidateQueries({ queryKey: ["wine-club-gifts", uid] });
       })
       .catch((err) => {
-        // Non-blocking — Vinoshipper outages must not break auth
-        console.warn("[vinoshipper-link-customer] failed", err);
+        console.warn("[vinoshipper-sync-membership] failed", err);
       });
   };
 

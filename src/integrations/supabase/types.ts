@@ -6081,6 +6081,57 @@ export type Database = {
         }
         Relationships: []
       }
+      lindy_inbox: {
+        Row: {
+          confidence: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          payload: Json
+          promoted_ref: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          reviewer_notes: string | null
+          source_url: string | null
+          status: string
+          submitted_by: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          promoted_ref?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          source_url?: string | null
+          status?: string
+          submitted_by?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          promoted_ref?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          source_url?: string | null
+          status?: string
+          submitted_by?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       local_delivery_events: {
         Row: {
           capi_status: string | null

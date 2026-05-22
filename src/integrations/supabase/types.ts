@@ -5856,6 +5856,39 @@ export type Database = {
         }
         Relationships: []
       }
+      kennel_audience_uploads: {
+        Row: {
+          email_count: number
+          error_message: string | null
+          list_name: string
+          metadata: Json
+          platform: string
+          status: string
+          upload_at: string
+          upload_id: string
+        }
+        Insert: {
+          email_count?: number
+          error_message?: string | null
+          list_name: string
+          metadata?: Json
+          platform: string
+          status?: string
+          upload_at?: string
+          upload_id?: string
+        }
+        Update: {
+          email_count?: number
+          error_message?: string | null
+          list_name?: string
+          metadata?: Json
+          platform?: string
+          status?: string
+          upload_at?: string
+          upload_id?: string
+        }
+        Relationships: []
+      }
       kennel_bid_modifiers: {
         Row: {
           computed_at: string
@@ -6005,6 +6038,36 @@ export type Database = {
           revenue_cents?: number | null
           state?: string
           tier?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      kennel_iab_segments: {
+        Row: {
+          created_at: string
+          platform_ids: Json
+          rdw_mapping: string
+          segment_id: string
+          segment_name: string
+          tier: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          platform_ids?: Json
+          rdw_mapping: string
+          segment_id: string
+          segment_name: string
+          tier: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          platform_ids?: Json
+          rdw_mapping?: string
+          segment_id?: string
+          segment_name?: string
+          tier?: number
           updated_at?: string
         }
         Relationships: []
@@ -6240,6 +6303,27 @@ export type Database = {
           platform?: string
           target_roas?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      kennel_lookalike_scores: {
+        Row: {
+          email: string
+          model_version: string
+          score: number
+          scored_at: string
+        }
+        Insert: {
+          email: string
+          model_version?: string
+          score: number
+          scored_at?: string
+        }
+        Update: {
+          email?: string
+          model_version?: string
+          score?: number
+          scored_at?: string
         }
         Relationships: []
       }

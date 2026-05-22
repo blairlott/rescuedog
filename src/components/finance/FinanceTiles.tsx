@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtCents } from "@/lib/financeTiles";
+import { useMemo, useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
 import {
   Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -176,16 +181,72 @@ export function QbTopVendorsTile({ days, start: s, end: e }: TileRangeProps) {
   const { data, isLoading } = useQuery({
     queryKey: ["finance_top_vendors", start, end],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("finance_top_vendors" as any, { _start: start, _end: end, _limit: 8 });
+      const { data, error } = await supabase.rpc("finance_top_vendors" as any, { _start: start, _end: end, _limit: 100 });
       if (error) throw error;
       return data as Array<{ vendor: string; category: string; spend_cents: number; txn_count: number }>;
     },
   });
+  const categories = useMemo(
+    () => Array.from(new Set((data ?? []).map(d => d.category || "(uncategorized)"))).sort(),
+    [data]
+  );
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
+  const toggle = (c: string) =>
+    setExcluded(prev => {
+      const n = new Set(prev);
+      n.has(c) ? n.delete(c) : n.add(c);
+      return n;
+    });
+  const filtered = useMemo(
+    () => (data ?? []).filter(d => !excluded.has(d.category || "(uncategorized)")).slice(0, 8),
+    [data, excluded]
+  );
   if (isLoading) return <Loading />;
   if (!data?.length) return <Empty />;
   return (
     <div className="space-y-1.5 text-sm">
-      {data.map(d => (
+      <div className="flex items-center justify-between pb-1">
+        <div className="text-[11px] uppercase tracking-brand text-muted-foreground">
+          {filtered.length} of {data.length} vendors
+        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 text-xs rounded-none">
+              Categories {excluded.size > 0 && `(${categories.length - excluded.size}/${categories.length})`}
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 p-2 max-h-80 overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b">
+              <button
+                className="text-[11px] uppercase tracking-brand text-muted-foreground hover:text-foreground"
+                onClick={() => setExcluded(new Set())}
+              >
+                Show all
+              </button>
+              <button
+                className="text-[11px] uppercase tracking-brand text-muted-foreground hover:text-foreground"
+                onClick={() => setExcluded(new Set(categories))}
+              >
+                Clear all
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              {categories.map(c => (
+                <label key={c} className="flex items-center gap-2 cursor-pointer text-xs py-0.5">
+                  <Checkbox
+                    checked={!excluded.has(c)}
+                    onCheckedChange={() => toggle(c)}
+                  />
+                  <span className="truncate">{c}</span>
+                </label>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+      {filtered.length === 0 && <Empty msg="All categories filtered out" />}
+      {filtered.map(d => (
         <div key={`${d.vendor}-${d.category}`} className="flex items-center justify-between border-b border-border py-1.5 last:border-0">
           <div className="min-w-0 flex-1">
             <div className="truncate font-medium">{d.vendor}</div>

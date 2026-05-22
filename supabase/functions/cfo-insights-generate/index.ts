@@ -514,7 +514,8 @@ Deno.serve(async (req) => {
   );
   const apiKey = Deno.env.get("LOVABLE_API_KEY")!;
 
-  const heuristics = await runHeuristics(financeClient, days);
+  const allHeuristics = await runHeuristics(financeClient, days);
+  const heuristics = representativeHeuristics(allHeuristics);
   if (heuristics.length === 0) {
     return J(200, { generated: 0, considered: 0, note: "No material moves detected for this window." });
   }
@@ -580,5 +581,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return J(200, { generated: written, deduped: skipped, considered: heuristics.length, days });
+  return J(200, { generated: written, deduped: skipped, considered: allHeuristics.length, surfaced: heuristics.length, days });
 });

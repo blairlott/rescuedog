@@ -21,6 +21,8 @@ import { Link } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { caseEligibleBottleCount, discountEligibleSubtotal } from "@/lib/wineBundles";
 import { memberDiscountPercent } from "@/lib/vinoshipperConfig";
+import { refreshWineClubMembership } from "@/lib/refreshWineClubMembership";
+import { useQueryClient } from "@tanstack/react-query";
 
 const STRIPE_PK = import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN as string | undefined;
 const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
@@ -181,6 +183,14 @@ export default function CheckoutPage() {
   const { items, clearCart } = useCartStore();
   const { user } = useCustomerAuth();
   const { isMember } = useIsMember();
+  const queryClient = useQueryClient();
+
+  // Vinoshipper is the source of truth for wine club membership.
+  // Re-poll on checkout entry so member pricing is accurate.
+  useEffect(() => {
+    if (!user?.id) return;
+    void refreshWineClubMembership(queryClient, user.id);
+  }, [user?.id, queryClient]);
 
   const [form, setForm] = useState<CustomerForm>(EMPTY_FORM);
   const [creating, setCreating] = useState(false);

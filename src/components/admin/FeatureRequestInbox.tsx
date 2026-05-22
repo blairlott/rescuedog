@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Inbox, Check, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Inbox, Check, Trash2, ChevronDown, ChevronUp, Flame } from "lucide-react";
 
 type FeatureRequest = {
   id: string;
@@ -12,6 +12,7 @@ type FeatureRequest = {
   area: string | null;
   request: string;
   status: string;
+  priority: string;
   admin_notes: string | null;
   created_at: string;
 };
@@ -29,7 +30,8 @@ export function FeatureRequestInbox() {
     setLoading(true);
     const { data, error } = await supabase
       .from("feature_requests")
-      .select("id,user_email,user_name,area,request,status,admin_notes,created_at")
+      .select("id,user_email,user_name,area,request,status,priority,admin_notes,created_at")
+      .order("priority", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(100);
     if (error) toast({ title: "Failed to load requests", description: error.message, variant: "destructive" });
@@ -61,6 +63,7 @@ export function FeatureRequestInbox() {
 
   const filtered = filter === "all" ? rows : rows.filter((r) => r.status === filter);
   const newCount = rows.filter((r) => r.status === "new").length;
+  const highCount = rows.filter((r) => r.priority === "high" && r.status === "new").length;
 
   return (
     <div className="border border-border bg-background">
@@ -68,6 +71,11 @@ export function FeatureRequestInbox() {
         <div className="flex items-center gap-2">
           <Inbox className="h-5 w-5 text-primary" />
           <h3 className="font-bold text-foreground">Feature Request Inbox</h3>
+          {highCount > 0 && (
+            <span className="text-xs font-bold bg-primary text-primary-foreground px-2 py-0.5 flex items-center gap-1">
+              <Flame className="h-3 w-3" /> {highCount} high
+            </span>
+          )}
           {newCount > 0 && (
             <span className="text-xs font-bold bg-primary text-primary-foreground px-2 py-0.5">
               {newCount} new
@@ -95,13 +103,18 @@ export function FeatureRequestInbox() {
           {filtered.map((r) => {
             const isOpen = openId === r.id;
             return (
-              <li key={r.id} className="p-4">
+              <li key={r.id} className={`p-4 ${r.priority === "high" ? "border-l-4 border-l-primary bg-primary/5" : ""}`}>
                 <button
                   onClick={() => setOpenId(isOpen ? null : r.id)}
                   className="w-full text-left flex items-start gap-3"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                      {r.priority === "high" && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-brand bg-primary text-primary-foreground px-1.5 py-0.5">
+                          <Flame className="h-3 w-3" /> High
+                        </span>
+                      )}
                       <span className="font-bold text-foreground">{r.user_name || r.user_email || "Unknown"}</span>
                       {r.area && <span>· {r.area}</span>}
                       <span>· {new Date(r.created_at).toLocaleString()}</span>

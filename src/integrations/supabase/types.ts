@@ -8423,6 +8423,172 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_cycles: {
+        Row: {
+          attempted_at: string | null
+          completed_at: string | null
+          created_at: string
+          cycle_number: number
+          error_code: string | null
+          error_message: string | null
+          id: string
+          idempotency_key: string
+          line_items: Json | null
+          next_retry_at: string | null
+          retry_count: number
+          scheduled_for: string
+          shipping_cents: number | null
+          status: Database["public"]["Enums"]["subscription_cycle_status"]
+          subscription_id: string
+          subtotal_cents: number | null
+          tax_cents: number | null
+          total_cents: number | null
+          updated_at: string
+          vs_order_id: string | null
+        }
+        Insert: {
+          attempted_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          cycle_number: number
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          idempotency_key: string
+          line_items?: Json | null
+          next_retry_at?: string | null
+          retry_count?: number
+          scheduled_for: string
+          shipping_cents?: number | null
+          status?: Database["public"]["Enums"]["subscription_cycle_status"]
+          subscription_id: string
+          subtotal_cents?: number | null
+          tax_cents?: number | null
+          total_cents?: number | null
+          updated_at?: string
+          vs_order_id?: string | null
+        }
+        Update: {
+          attempted_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          cycle_number?: number
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string
+          line_items?: Json | null
+          next_retry_at?: string | null
+          retry_count?: number
+          scheduled_for?: string
+          shipping_cents?: number | null
+          status?: Database["public"]["Enums"]["subscription_cycle_status"]
+          subscription_id?: string
+          subtotal_cents?: number | null
+          tax_cents?: number | null
+          total_cents?: number | null
+          updated_at?: string
+          vs_order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_cycles_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          cycle_id: string | null
+          event_type: string
+          id: string
+          payload: Json
+          subscription_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          cycle_id?: string | null
+          event_type: string
+          id?: string
+          payload?: Json
+          subscription_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          cycle_id?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_events_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_events_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_items: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          qty: number
+          rotation_rule: Json | null
+          sku: string
+          subscription_id: string
+          unit_price_cents: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position?: number
+          qty: number
+          rotation_rule?: Json | null
+          sku: string
+          subscription_id: string
+          unit_price_cents?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          qty?: number
+          rotation_rule?: Json | null
+          sku?: string
+          subscription_id?: string
+          unit_price_cents?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_items_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_signups: {
         Row: {
           created_at: string
@@ -8477,6 +8643,72 @@ export type Database = {
           tier?: string | null
           variant_id?: string | null
           wine_preferences?: string[] | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          cadence_weeks: number
+          cancel_reason: string | null
+          canceled_at: string | null
+          created_at: string
+          cycles_completed: number
+          discount_code: string | null
+          engine: Database["public"]["Enums"]["subscription_engine"]
+          id: string
+          last_ship_date: string | null
+          next_ship_date: string | null
+          notes: string | null
+          paused_until: string | null
+          ship_address: Json | null
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+          user_id: string
+          vs_customer_id: string | null
+          vs_payment_method_token: string | null
+          vs_subscription_id: string | null
+        }
+        Insert: {
+          cadence_weeks: number
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          created_at?: string
+          cycles_completed?: number
+          discount_code?: string | null
+          engine?: Database["public"]["Enums"]["subscription_engine"]
+          id?: string
+          last_ship_date?: string | null
+          next_ship_date?: string | null
+          notes?: string | null
+          paused_until?: string | null
+          ship_address?: Json | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id: string
+          vs_customer_id?: string | null
+          vs_payment_method_token?: string | null
+          vs_subscription_id?: string | null
+        }
+        Update: {
+          cadence_weeks?: number
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          created_at?: string
+          cycles_completed?: number
+          discount_code?: string | null
+          engine?: Database["public"]["Enums"]["subscription_engine"]
+          id?: string
+          last_ship_date?: string | null
+          next_ship_date?: string | null
+          notes?: string | null
+          paused_until?: string | null
+          ship_address?: Json | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+          user_id?: string
+          vs_customer_id?: string | null
+          vs_payment_method_token?: string | null
+          vs_subscription_id?: string | null
         }
         Relationships: []
       }
@@ -11131,6 +11363,19 @@ export type Database = {
         | "custom"
       experiment_status: "draft" | "running" | "paused" | "ended"
       mirror_status: "pending" | "synced" | "failed" | "disabled"
+      subscription_cycle_status:
+        | "pending"
+        | "attempting"
+        | "succeeded"
+        | "failed"
+        | "skipped"
+      subscription_engine: "self" | "vinoshipper"
+      subscription_status:
+        | "pending_first_order"
+        | "active"
+        | "paused"
+        | "past_due"
+        | "canceled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -11288,6 +11533,21 @@ export const Constants = {
       ],
       experiment_status: ["draft", "running", "paused", "ended"],
       mirror_status: ["pending", "synced", "failed", "disabled"],
+      subscription_cycle_status: [
+        "pending",
+        "attempting",
+        "succeeded",
+        "failed",
+        "skipped",
+      ],
+      subscription_engine: ["self", "vinoshipper"],
+      subscription_status: [
+        "pending_first_order",
+        "active",
+        "paused",
+        "past_due",
+        "canceled",
+      ],
     },
   },
 } as const

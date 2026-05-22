@@ -342,7 +342,7 @@ export function CcPathwaysTile({ days: _days }: { days: number }) {
   if (isLoading) return <Loading />;
   if (!data) return <Empty />;
   const rate = data.conversionRate != null ? `${(data.conversionRate * 100).toFixed(1)}%` : "—";
-  const median = data.medianDaysToJoin != null ? `${data.medianDaysToJoin}d` : "—";
+  const median = data.medianDaysToConvert != null ? `${data.medianDaysToConvert}d` : "—";
   const alc = data.alaCarte ? fmtCents(Math.round(data.alaCarte.totalRevenueCents)) : "—";
   return (
     <div className="grid grid-cols-2 gap-3">

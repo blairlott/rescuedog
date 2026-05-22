@@ -127,12 +127,12 @@ const CmsAudiencesPage = () => {
   const saveEdit = async (id: string) => {
     const e = edits[id];
     if (!e) return;
-    let parsed: Record<string, unknown> = {};
+    let parsed: unknown = {};
     try { parsed = JSON.parse(e.platform_ids || "{}"); }
     catch { toast({ title: "Invalid JSON", description: "platform_ids must be valid JSON", variant: "destructive" }); return; }
     const { error } = await supabase
       .from("kennel_iab_segments")
-      .update({ rdw_mapping: e.rdw_mapping, platform_ids: parsed })
+      .update({ rdw_mapping: e.rdw_mapping, platform_ids: parsed as any })
       .eq("segment_id", id);
     if (error) { toast({ title: "Save failed", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Saved" });

@@ -146,3 +146,65 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ------------------------------------------------------------------
+   Vinoshipper Injector — RDW brand theming (Advanced CSS Variables).
+   Docs: https://developer.vinoshipper.com/docs/injector-styling-advanced-theming
+   Brand: red #c30017, black, Nunito Sans, flat/sharp edges (0 radius).
+   Simple `theme` is intentionally NOT set in index.html so these vars win.
+   ------------------------------------------------------------------ */
+body {
+  --vs-font-family: 'Nunito Sans', system-ui, sans-serif;
+  --vs-font-weight: 400;
+  --vs-header-font-family: 'Nunito Sans', system-ui, sans-serif;
+  --vs-header-font-weight: 800;
+  --vs-badge-border-radius: 0;
+  --vs-badge-background-color: #000000;
+  --vs-badge-color: #ffffff;
+  --vs-badge-text-transform: uppercase;
+  --vs-badge-letter-spacing: 0.05em;
+}
+
+.vs-cart {
+  --vs-cart-font-family: 'Nunito Sans', system-ui, sans-serif;
+  --vs-cart-color: #000000;
+  --vs-cart-background-color: #ffffff;
+  --vs-cart-icon-color: #000000;
+
+  --vs-cart-link-color: #c30017;
+  --vs-cart-link-hover-color: #000000;
+
+  --vs-cart-contents-border-color: #e5e5e5;
+  --vs-cart-contents-item-name-font-weight: 800;
+  --vs-cart-contents-item-name-text-transform: uppercase;
+  --vs-cart-contents-item-name-letter-spacing: 0.02em;
+  --vs-cart-contents-qty-color: #000000;
+
+  /* Primary action — Checkout button */
+  --vs-cart-actions-checkout-background-color: #c30017;
+  --vs-cart-actions-checkout-color: #ffffff;
+  --vs-cart-actions-checkout-border-color: #c30017;
+  --vs-cart-actions-checkout-border-radius: 0;
+  --vs-cart-actions-checkout-font-weight: 800;
+  --vs-cart-actions-checkout-text-transform: uppercase;
+  --vs-cart-actions-checkout-hover-background-color: #000000;
+  --vs-cart-actions-checkout-hover-border-color: #000000;
+  --vs-cart-actions-checkout-hover-border-radius: 0;
+  --vs-cart-actions-checkout-hover-box-shadow: none;
+  --vs-cart-actions-checkout-hover-color: #ffffff;
+  --vs-cart-actions-checkout-active-background-color: #000000;
+  --vs-cart-actions-checkout-active-border-color: #000000;
+  --vs-cart-actions-checkout-active-border-radius: 0;
+  --vs-cart-actions-checkout-active-box-shadow: none;
+
+  /* Secondary — Continue shopping */
+  --vs-cart-actions-continue-color: #000000;
+  --vs-cart-actions-continue-border-radius: 0;
+  --vs-cart-actions-continue-hover-color: #c30017;
+  --vs-cart-actions-continue-hover-border-color: #c30017;
+  --vs-cart-actions-continue-hover-border-radius: 0;
+  --vs-cart-actions-continue-hover-box-shadow: none;
+
+  --vs-cart-footer-subtotal-font-weight: 800;
+  --vs-cart-footer-subtotal-text-transform: uppercase;
+}

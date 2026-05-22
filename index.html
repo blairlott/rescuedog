@@ -37,7 +37,9 @@
       window.document.addEventListener('vinoshipper:loaded', function () {
         try {
           window.Vinoshipper.init(2212, {
-            theme: 'red',
+            // No simple theme — we drive look via Advanced CSS Variables
+            // in src/index.css (RDW brand: red #c30017, black, Nunito Sans,
+            // sharp 0-radius). Docs note simple + advanced conflict.
             cartPosition: 'end',
             cartButton: false,
           });

@@ -444,6 +444,7 @@ export function renderTile(key: string, days: number, range?: { start?: string; 
     case "qb_top_vendors": return <QbTopVendorsTile {...p} />;
     case "vs_summary": return <VsSummaryTile {...p} />;
     case "vs_wc_vs_alc": return <VsWcVsAlcTile {...p} />;
+    case "vs_waterfall": return <VsWaterfallTile {...p} />;
     case "cc_roas": return <CcRoasTile {...p} />;
     case "cc_wine_club": return <CcWineClubTile days={days} />;
     case "cc_pathways": return <CcPathwaysTile days={days} />;

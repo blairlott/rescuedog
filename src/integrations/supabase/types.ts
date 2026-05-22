@@ -502,6 +502,8 @@ export type Database = {
           response_payload: Json | null
           spend_impact_cents: number | null
           success: boolean
+          target_id: string | null
+          target_level: string | null
         }
         Insert: {
           action: string
@@ -523,6 +525,8 @@ export type Database = {
           response_payload?: Json | null
           spend_impact_cents?: number | null
           success?: boolean
+          target_id?: string | null
+          target_level?: string | null
         }
         Update: {
           action?: string
@@ -544,6 +548,8 @@ export type Database = {
           response_payload?: Json | null
           spend_impact_cents?: number | null
           success?: boolean
+          target_id?: string | null
+          target_level?: string | null
         }
         Relationships: [
           {

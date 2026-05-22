@@ -30,6 +30,7 @@ const FinanceLogin = lazy(() => import("./pages/finance/FinanceLogin"));
 const FinanceDashboard = lazy(() => import("./pages/finance/FinanceDashboard"));
 const FinanceUsersPage = lazy(() => import("./pages/finance/FinanceUsersPage"));
 const FinanceWorkspace = lazy(() => import("./pages/finance/FinanceWorkspace"));
+const SharedBoardPage = lazy(() => import("./pages/finance/SharedBoardPage"));
 
 const Index = lazy(() => import("./pages/Index"));
 const MerchHomePage = lazy(() => import("./pages/MerchHomePage"));
@@ -216,6 +217,7 @@ function AppContent() {
         <Route path="users" element={<FinanceUsersPage />} />
         <Route path="workspace" element={<FinanceWorkspace />} />
         <Route path="workspace/:datasetId" element={<FinanceWorkspace />} />
+        <Route path="shared/:shareId" element={<SharedBoardPage />} />
       </Route>
       <Route path="/wholesale" element={<WholesalePage />} />
       <Route path="/trade-and-media" element={<WholesalePage />} />

@@ -8847,6 +8847,39 @@ export type Database = {
         }
         Relationships: []
       }
+      vinoshipper_club_curation_log: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          executed: boolean
+          id: string
+          items: Json
+          membership_id: string
+          note: string | null
+          vs_response: Json | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          executed?: boolean
+          id?: string
+          items: Json
+          membership_id: string
+          note?: string | null
+          vs_response?: Json | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          executed?: boolean
+          id?: string
+          items?: Json
+          membership_id?: string
+          note?: string | null
+          vs_response?: Json | null
+        }
+        Relationships: []
+      }
       vinoshipper_webhook_events: {
         Row: {
           event: string

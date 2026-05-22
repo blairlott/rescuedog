@@ -324,6 +324,8 @@ export async function fetchConversionPathways(): Promise<ConversionPathways> {
     gatewayChannel: string | null;
     gatewayInvoice: string | null;
     gatewayDate: string | null;
+    // Raw non-club orders kept lightweight for à la carte cohort classification
+    alaCarteRows: { d: string; cents: number; channel: string; state: string | null }[];
   };
 
   const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
@@ -357,6 +359,7 @@ export async function fetchConversionPathways(): Promise<ConversionPathways> {
           gatewayChannel: null,
           gatewayInvoice: null,
           gatewayDate: null,
+          alaCarteRows: [],
         };
         emails.set(email, agg);
       }
@@ -374,6 +377,12 @@ export async function fetchConversionPathways(): Promise<ConversionPathways> {
           agg.gatewayInvoice = r.invoice ?? null;
         }
         if (!agg.lastGuestAt || d > agg.lastGuestAt) agg.lastGuestAt = d;
+        agg.alaCarteRows.push({
+          d,
+          cents: Math.round(Number(r.gross_value ?? 0) * 100),
+          channel: channelOf(r.order_type, r.sale_location),
+          state: (r.ship_to_state ?? "").trim().toUpperCase() || null,
+        });
       }
     }
     if (rows.length < PAGE) break;
@@ -465,6 +474,91 @@ export async function fetchConversionPathways(): Promise<ConversionPathways> {
     .sort((a, b) => (a.firstClubAt < b.firstClubAt ? 1 : -1))
     .slice(0, 50);
 
+  // ---------- À la carte (non-club) sales summary ----------
+  const cohortOrders = new Map<AlaCarteCohort, number>();
+  const cohortBuyers = new Map<AlaCarteCohort, Set<string>>();
+  const cohortRevenue = new Map<AlaCarteCohort, number>();
+  const acChannelOrders = new Map<string, number>();
+  const acChannelRevenue = new Map<string, number>();
+  const acStateOrders = new Map<string, number>();
+  const acStateRevenue = new Map<string, number>();
+  let acTotalOrders = 0;
+  let acTotalRevenue = 0;
+  const acBuyers = new Set<string>();
+  const memberLikeWithAddon = new Set<string>();
+  const memberLikeTotal = new Set<string>();
+
+  for (const [email, a] of emails.entries()) {
+    const hasClub = !!a.firstClubAt;
+    const hasGuest = !!a.firstGuestAt;
+    const isConverter = hasClub && hasGuest && a.firstGuestAt! < a.firstClubAt!;
+    const isDirectMember = hasClub && !hasGuest; // joined club first; any later non-club row is an add-on
+    if (isConverter || isDirectMember || hasClub) memberLikeTotal.add(email);
+
+    for (const row of a.alaCarteRows) {
+      let cohort: AlaCarteCohort;
+      if (!hasClub) cohort = "guestOnly";
+      else if (isConverter && row.d < a.firstClubAt!) cohort = "preConversion";
+      else if (isConverter && row.d >= a.firstClubAt!) cohort = "postConversion";
+      else cohort = "directMember"; // joined first, then bought à la carte
+
+      cohortOrders.set(cohort, (cohortOrders.get(cohort) ?? 0) + 1);
+      cohortRevenue.set(cohort, (cohortRevenue.get(cohort) ?? 0) + row.cents);
+      if (!cohortBuyers.has(cohort)) cohortBuyers.set(cohort, new Set());
+      cohortBuyers.get(cohort)!.add(email);
+
+      acChannelOrders.set(row.channel, (acChannelOrders.get(row.channel) ?? 0) + 1);
+      acChannelRevenue.set(row.channel, (acChannelRevenue.get(row.channel) ?? 0) + row.cents);
+      if (row.state) {
+        acStateOrders.set(row.state, (acStateOrders.get(row.state) ?? 0) + 1);
+        acStateRevenue.set(row.state, (acStateRevenue.get(row.state) ?? 0) + row.cents);
+      }
+      acTotalOrders += 1;
+      acTotalRevenue += row.cents;
+      acBuyers.add(email);
+
+      if (cohort === "postConversion" || cohort === "directMember") {
+        memberLikeWithAddon.add(email);
+      }
+    }
+  }
+
+  const cohortOrder: AlaCarteCohort[] = [
+    "guestOnly",
+    "preConversion",
+    "postConversion",
+    "directMember",
+  ];
+  const alaCarte: AlaCarteSummary = {
+    totalOrders: acTotalOrders,
+    totalRevenueCents: acTotalRevenue,
+    uniqueBuyers: acBuyers.size,
+    aovCents: acTotalOrders > 0 ? Math.round(acTotalRevenue / acTotalOrders) : 0,
+    byCohort: cohortOrder.map((c) => ({
+      cohort: c,
+      orders: cohortOrders.get(c) ?? 0,
+      buyers: cohortBuyers.get(c)?.size ?? 0,
+      revenueCents: cohortRevenue.get(c) ?? 0,
+    })),
+    channelMix: Array.from(acChannelOrders.entries())
+      .map(([channel, orders]) => ({
+        channel,
+        orders,
+        revenueCents: acChannelRevenue.get(channel) ?? 0,
+      }))
+      .sort((a, b) => b.orders - a.orders),
+    topStates: Array.from(acStateOrders.entries())
+      .map(([state, orders]) => ({
+        state,
+        orders,
+        revenueCents: acStateRevenue.get(state) ?? 0,
+      }))
+      .sort((a, b) => b.orders - a.orders)
+      .slice(0, 8),
+    memberAddonRate:
+      memberLikeTotal.size > 0 ? memberLikeWithAddon.size / memberLikeTotal.size : 0,
+  };
+
   return {
     totalEmails: emails.size,
     converters: converters.length,
@@ -483,5 +577,6 @@ export async function fetchConversionPathways(): Promise<ConversionPathways> {
     channelMix,
     monthOfYear,
     converters_sample: sample,
+    alaCarte,
   };
 }

@@ -13,6 +13,7 @@ export interface CfoBoard {
   end_date: string | null;
   position: number;
   is_default: boolean;
+  bob_insights: string | null;
   created_at: string;
   updated_at: string;
 }

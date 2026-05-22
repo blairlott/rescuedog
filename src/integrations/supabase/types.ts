@@ -2392,6 +2392,7 @@ export type Database = {
       }
       cfo_boards: {
         Row: {
+          bob_insights: string | null
           created_at: string
           date_range_days: number
           end_date: string | null
@@ -2406,6 +2407,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bob_insights?: string | null
           created_at?: string
           date_range_days?: number
           end_date?: string | null
@@ -2420,6 +2422,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bob_insights?: string | null
           created_at?: string
           date_range_days?: number
           end_date?: string | null

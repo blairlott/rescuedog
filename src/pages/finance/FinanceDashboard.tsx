@@ -21,6 +21,7 @@ import { useCfoBoards, useCreateBoard, useUpdateBoard, useDeleteBoard, useIncomi
 import { SortableTileGrid, type SortableTile } from "@/components/finance/SortableTileGrid";
 import { ShareBoardDialog } from "@/components/finance/ShareBoardDialog";
 import { GrazChat } from "@/components/finance/GrazChat";
+import { Textarea } from "@/components/ui/textarea";
 
 const RANGES = [
   { label: "Last 7 days", days: 7 },
@@ -56,6 +57,8 @@ export default function FinanceDashboard() {
   const { data: incoming = [] } = useIncomingShares(userId, userEmail);
   const [historicalBusy, setHistoricalBusy] = useState(false);
   const [historicalProgress, setHistoricalProgress] = useState<string>("");
+  const [bobDraft, setBobDraft] = useState<string>("");
+  const [bobDirty, setBobDirty] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -77,6 +80,12 @@ export default function FinanceDashboard() {
   const board: CfoBoard | undefined = boards.find(b => b.id === activeBoardId);
   const tiles = board?.tiles ?? [];
   const days = board?.date_range_days ?? 90;
+
+  useEffect(() => {
+    if (board && !bobDirty) {
+      setBobDraft(board.bob_insights ?? "Coming Soon! Insights from Bob.");
+    }
+  }, [board?.id, board?.bob_insights, bobDirty]);
   const customStart = board?.start_date ?? null;
   const customEnd = board?.end_date ?? null;
   const usingCustom = !!(customStart && customEnd);
@@ -361,6 +370,36 @@ export default function FinanceDashboard() {
 
       {tiles.length > 0 && (
         <SortableTileGrid tiles={sortableTiles} onReorder={reorderTiles} onRemove={removeTile} />
+      )}
+
+      {board && (
+        <div className="border border-border bg-card p-4 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-brand font-semibold px-1.5 py-0.5 bg-primary/10 text-primary">Bob's Insights</span>
+              <span className="text-xs text-muted-foreground">Owner notes & strategic direction — sits alongside Graz's AI insights.</span>
+            </div>
+            {bobDirty && (
+              <Button
+                size="sm"
+                className="h-8"
+                onClick={() => {
+                  persistBoard({ bob_insights: bobDraft });
+                  setBobDirty(false);
+                  toast.success("Bob's insights saved");
+                }}
+              >
+                Save
+              </Button>
+            )}
+          </div>
+          <Textarea
+            value={bobDraft}
+            onChange={(e) => { setBobDraft(e.target.value); setBobDirty(true); }}
+            placeholder="Coming Soon! Insights from Bob."
+            className="min-h-[120px] text-sm"
+          />
+        </div>
       )}
 
       <GrazChat days={days} userId={userId} />

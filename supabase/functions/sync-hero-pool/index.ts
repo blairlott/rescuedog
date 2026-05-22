@@ -13,6 +13,8 @@ const MIN_RATIO = 1.3;
 const MAX_RATIO = 2.4;
 const EXPERIMENT_KEY = "homepage_hero_auto";
 const SLOT_KEY = "homepage_hero";
+const AI_REFORMAT_PRESET = "hero_16x9";
+const MAX_AI_REFORMATS_PER_RUN = 4; // protect against runaway cost on big pools
 
 // Lightweight dimension sniff for JPG/PNG/WEBP. Reads first ~64KB.
 async function probeDimensions(url: string): Promise<{ width: number; height: number } | null> {
@@ -80,7 +82,7 @@ Deno.serve(async (req) => {
 
   const { data: assets, error: aErr } = await supabase
     .from("media_assets")
-    .select("id, image_url, width, height, alt_text, ai_score, ai_subject")
+    .select("id, image_url, width, height, alt_text, ai_score, ai_subject, source, metadata")
     .eq("status", "approved")
     .eq("hero_eligible", true);
   if (aErr) {
@@ -89,8 +91,99 @@ Deno.serve(async (req) => {
 
   const eligible: { id: string; image_url: string; width: number; height: number; alt: string }[] = [];
   const skipped: { id: string; reason: string }[] = [];
+  const reformatted: { parent_id: string; child_id: string }[] = [];
+  let aiBudget = MAX_AI_REFORMATS_PER_RUN;
+
+  // Pre-fetch existing AI hero_16x9 children so we don't re-generate.
+  const { data: existingChildren } = await supabase
+    .from("media_assets")
+    .select("id, image_url, width, height, alt_text, status, hero_eligible, metadata")
+    .eq("source", "ai_enhanced");
+  const childByParent = new Map<string, typeof existingChildren extends (infer T)[] | null ? T : never>();
+  for (const c of existingChildren ?? []) {
+    const meta = (c.metadata ?? {}) as { parent_asset_id?: string; preset?: string };
+    if (meta.preset === AI_REFORMAT_PRESET && meta.parent_asset_id) {
+      childByParent.set(meta.parent_asset_id, c);
+    }
+  }
+
+  async function ensureAiReformat(parent: { id: string; image_url: string; alt_text: string | null }) {
+    // Reuse cached child if present.
+    const cached = childByParent.get(parent.id);
+    if (cached && cached.image_url) {
+      let w = cached.width as number | null;
+      let h = cached.height as number | null;
+      if (!w || !h) {
+        const probed = await probeDimensions(cached.image_url as string);
+        if (probed) {
+          w = probed.width; h = probed.height;
+          await supabase.from("media_assets").update({ width: w, height: h }).eq("id", cached.id);
+        }
+      }
+      if (w && h) {
+        const ratio = w / h;
+        if (w >= MIN_W && ratio >= MIN_RATIO && ratio <= MAX_RATIO) {
+          // Make sure it's promoted to approved + hero_eligible so it shows up in the pool.
+          if (cached.status !== "approved" || cached.hero_eligible !== true) {
+            await supabase.from("media_assets")
+              .update({ status: "approved", hero_eligible: true })
+              .eq("id", cached.id);
+          }
+          return { id: cached.id as string, image_url: cached.image_url as string, width: w, height: h, alt: (cached.alt_text as string) ?? parent.alt_text ?? "" };
+        }
+      }
+    }
+    if (aiBudget <= 0) return null;
+    aiBudget--;
+
+    // Call enhance-image to generate a 16:9 hero reformat.
+    const invokeRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/enhance-image`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({
+        asset_id: parent.id,
+        preset: AI_REFORMAT_PRESET,
+        variants: 1,
+        auto: true,
+      }),
+    });
+    const data = await invokeRes.json().catch(() => ({}));
+    if (!invokeRes.ok || !data?.results?.[0]?.id) {
+      console.error("hero reformat failed", parent.id, data);
+      return null;
+    }
+    const childId = data.results[0].id as string;
+    const childUrl = data.results[0].url as string;
+    const probed = await probeDimensions(childUrl);
+    const w = probed?.width ?? 0;
+    const h = probed?.height ?? 0;
+
+    // Auto-promote the AI reformat to approved + hero_eligible so it joins the pool.
+    await supabase.from("media_assets")
+      .update({
+        status: "approved",
+        hero_eligible: true,
+        width: w || null,
+        height: h || null,
+      })
+      .eq("id", childId);
+
+    reformatted.push({ parent_id: parent.id, child_id: childId });
+
+    if (!w || !h) return null;
+    const ratio = w / h;
+    if (w < MIN_W || ratio < MIN_RATIO || ratio > MAX_RATIO) return null;
+    return { id: childId, image_url: childUrl, width: w, height: h, alt: parent.alt_text ?? "" };
+  }
 
   for (const a of assets ?? []) {
+    // Skip the AI children themselves on the first pass — they're surfaced via their parent.
+    const meta = (a.metadata ?? {}) as { preset?: string };
+    const isAiHeroChild = a.source === "ai_enhanced" && meta.preset === AI_REFORMAT_PRESET;
+
     let w = a.width as number | null;
     let h = a.height as number | null;
     if (!w || !h) {
@@ -100,11 +193,23 @@ Deno.serve(async (req) => {
         await supabase.from("media_assets").update({ width: w, height: h }).eq("id", a.id);
       }
     }
-    if (!w || !h) { skipped.push({ id: a.id, reason: "no_dimensions" }); continue; }
-    const ratio = w / h;
-    if (w < MIN_W) { skipped.push({ id: a.id, reason: `too_narrow_${w}` }); continue; }
-    if (ratio < MIN_RATIO || ratio > MAX_RATIO) { skipped.push({ id: a.id, reason: `bad_ratio_${ratio.toFixed(2)}` }); continue; }
-    eligible.push({ id: a.id, image_url: a.image_url, width: w, height: h, alt: a.alt_text ?? "" });
+    const fits = !!w && !!h && w >= MIN_W && (w / h) >= MIN_RATIO && (w / h) <= MAX_RATIO;
+    if (fits) {
+      eligible.push({ id: a.id, image_url: a.image_url, width: w!, height: h!, alt: a.alt_text ?? "" });
+      continue;
+    }
+    if (isAiHeroChild) {
+      // AI child that didn't fit — skip; parent will retry on next run if needed.
+      skipped.push({ id: a.id, reason: !w || !h ? "ai_child_no_dimensions" : `ai_child_bad_geom_${w}x${h}` });
+      continue;
+    }
+    // Try AI reformat for the ineligible original.
+    const reformat = await ensureAiReformat({ id: a.id, image_url: a.image_url, alt_text: a.alt_text as string | null });
+    if (reformat) {
+      eligible.push(reformat);
+    } else {
+      skipped.push({ id: a.id, reason: !w || !h ? "no_dimensions_ai_failed" : `bad_geom_${w}x${h}_ai_failed_or_queued` });
+    }
   }
 
   // Upsert experiment.
@@ -182,6 +287,8 @@ Deno.serve(async (req) => {
       status: eligible.length >= 2 ? "running" : "paused",
       eligible_count: eligible.length,
       skipped,
+      ai_reformatted: reformatted,
+      ai_budget_remaining: aiBudget,
       need_minimum: 2,
       hint: eligible.length < 3
         ? "Add more hero-eligible images (landscape, ≥1280w) for bandit to learn meaningfully. 5-8 is ideal."

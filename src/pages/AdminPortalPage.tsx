@@ -10,6 +10,8 @@ import { ADMIN_AREAS, hasAreaAccess } from "@/lib/adminAreas";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import { AbVariantTile } from "@/components/admin/AbVariantTile";
 import { BarChart3, Bell } from "lucide-react";
+import { FeatureRequestBox } from "@/components/admin/FeatureRequestBox";
+import { FeatureRequestInbox } from "@/components/admin/FeatureRequestInbox";
 
 type RoleRow = { role: string };
 type PendingRequest = {
@@ -30,6 +32,7 @@ const AdminPortalPage = () => {
   const [checking, setChecking] = useState(true);
   const [roles, setRoles] = useState<string[] | null>(null);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string | null; name: string | null } | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -61,7 +64,7 @@ const AdminPortalPage = () => {
       if (session?.user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("must_change_password")
+          .select("must_change_password, full_name")
           .eq("id", session.user.id)
           .maybeSingle();
         if (profile?.must_change_password) {
@@ -70,6 +73,7 @@ const AdminPortalPage = () => {
         }
         const userRoles = await loadRoles(session.user.id);
         setRoles(userRoles);
+        setCurrentUser({ id: session.user.id, email: session.user.email ?? null, name: (profile as any)?.full_name ?? null });
         await loadPendingRequests(userRoles);
       } else setRoles(null);
       setChecking(false);
@@ -79,8 +83,14 @@ const AdminPortalPage = () => {
       if (session?.user) {
         const userRoles = await loadRoles(session.user.id);
         setRoles(userRoles);
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        setCurrentUser({ id: session.user.id, email: session.user.email ?? null, name: (profile as any)?.full_name ?? null });
         await loadPendingRequests(userRoles);
-      } else setRoles(null);
+      } else { setRoles(null); setCurrentUser(null); }
     });
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
@@ -269,6 +279,17 @@ const AdminPortalPage = () => {
               rebuild — no GA4 setup required.
             </p>
           </Link>
+        </div>
+
+        <div className="mt-8 grid grid-cols-1 gap-6">
+          {currentUser && (
+            <FeatureRequestBox
+              userId={currentUser.id}
+              userEmail={currentUser.email}
+              userName={currentUser.name}
+            />
+          )}
+          {roles.some((r) => ADMIN_ROLES.has(r)) && <FeatureRequestInbox />}
         </div>
       </main>
     </div>

@@ -7,7 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Calendar, BookOpen, Wine, Activity, Sparkles, RefreshCcw, Share2, Inbox, Trash2, LayoutDashboard, Radar, History, X } from "lucide-react";
+import { Plus, Calendar, BookOpen, Wine, Activity, Sparkles, RefreshCcw, Share2, Inbox, Trash2, LayoutDashboard, Radar, History, X, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { FINANCE_TILES, SOURCE_LABEL, TILE_BY_KEY, type FinanceTileSource } from "@/lib/financeTiles";
@@ -54,6 +54,8 @@ export default function FinanceDashboard() {
   const updateBoard = useUpdateBoard();
   const deleteBoard = useDeleteBoard();
   const { data: incoming = [] } = useIncomingShares(userId, userEmail);
+  const [historicalBusy, setHistoricalBusy] = useState(false);
+  const [historicalProgress, setHistoricalProgress] = useState<string>("");
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -101,6 +103,54 @@ export default function FinanceDashboard() {
   const onEndChange = (v: string) => persistBoard({ end_date: v || null, start_date: customStart ?? "2017-01-01" });
   const applyFullHistory = () => persistBoard({ start_date: "2017-01-01", end_date: todayIso });
   const clearCustom = () => persistBoard({ start_date: null, end_date: null });
+
+  const PRESETS: Array<{ label: string; start: string; end: string }> = [
+    { label: "YTD", start: `${new Date().getFullYear()}-01-01`, end: todayIso },
+    { label: "Last year", start: `${new Date().getFullYear() - 1}-01-01`, end: `${new Date().getFullYear() - 1}-12-31` },
+    { label: "Last 3 yrs", start: new Date(Date.now() - 365 * 3 * 86400000).toISOString().slice(0, 10), end: todayIso },
+    { label: "All time (2017→)", start: "2017-01-01", end: todayIso },
+  ];
+  const applyPreset = (p: { start: string; end: string }) => persistBoard({ start_date: p.start, end_date: p.end });
+
+  const refreshAllTiles = () => {
+    qc.invalidateQueries({ queryKey: ["finance_pnl_summary"] });
+    qc.invalidateQueries({ queryKey: ["finance_revenue_by_channel"] });
+    qc.invalidateQueries({ queryKey: ["finance_spend_by_platform"] });
+    qc.invalidateQueries({ queryKey: ["finance_cash_trend"] });
+    qc.invalidateQueries({ queryKey: ["finance_top_vendors"] });
+    qc.invalidateQueries({ queryKey: ["finance_cc_roas"] });
+    qc.invalidateQueries({ queryKey: ["finance_vs_summary"] });
+  };
+
+  const importAllHistory = async () => {
+    if (!confirm("Import full QuickBooks history (2017 → today)? This runs in 1-year chunks and may take a couple of minutes. Re-runs are idempotent.")) return;
+    setHistoricalBusy(true);
+    setHistoricalProgress("");
+    let totalImported = 0;
+    try {
+      const startY = 2017;
+      const endY = new Date().getFullYear();
+      for (let y = startY; y <= endY; y++) {
+        const chunkStart = `${y}-01-01`;
+        const chunkEnd = y === endY ? todayIso : `${y}-12-31`;
+        setHistoricalProgress(`Pulling ${chunkStart} → ${chunkEnd}…`);
+        const { data, error } = await supabase.functions.invoke("qbo-import-pnl", {
+          body: { start_date: chunkStart, end_date: chunkEnd },
+        });
+        if (error) throw new Error(error.message);
+        if ((data as any)?.error) throw new Error((data as any).error);
+        totalImported += (data as any)?.imported ?? 0;
+      }
+      toast.success(`Imported ${totalImported} entries`, { description: "2017 → today. Tiles refreshing." });
+      applyPreset({ start: "2017-01-01", end: todayIso });
+      refreshAllTiles();
+    } catch (e: any) {
+      toast.error("Historical import failed", { description: String(e?.message ?? e) });
+    } finally {
+      setHistoricalBusy(false);
+      setHistoricalProgress("");
+    }
+  };
 
   const grouped = useMemo(() => {
     const g: Record<FinanceTileSource, typeof FINANCE_TILES> = { quickbooks: [], vinoshipper: [], command_center: [], kennel_mirror: [] };
@@ -257,6 +307,60 @@ export default function FinanceDashboard() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Slice & Dice date band — controls every tile on the board */}
+      <div className="border border-border bg-card p-3 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1.5">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <span className="text-[10px] uppercase tracking-brand font-semibold">Slice & dice</span>
+        </div>
+        <div className="flex items-center gap-1 h-9 px-2 border border-border bg-background">
+          <Input
+            type="date"
+            min="2017-01-01"
+            max={todayIso}
+            value={effectiveStart}
+            onChange={(e) => onStartChange(e.target.value)}
+            className="h-7 w-36 border-0 px-1 text-sm focus-visible:ring-0 shadow-none"
+          />
+          <span className="text-muted-foreground">→</span>
+          <Input
+            type="date"
+            min="2017-01-01"
+            max={todayIso}
+            value={effectiveEnd}
+            onChange={(e) => onEndChange(e.target.value)}
+            className="h-7 w-36 border-0 px-1 text-sm focus-visible:ring-0 shadow-none"
+          />
+          {usingCustom && (
+            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={clearCustom} title="Clear custom range">
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-1 flex-wrap">
+          {PRESETS.map(p => (
+            <Button
+              key={p.label}
+              size="sm"
+              variant={effectiveStart === p.start && effectiveEnd === p.end ? "default" : "outline"}
+              className="h-8 text-xs"
+              onClick={() => applyPreset(p)}
+            >
+              {p.label}
+            </Button>
+          ))}
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          {historicalProgress && (
+            <span className="text-xs text-muted-foreground">{historicalProgress}</span>
+          )}
+          <Button size="sm" variant="default" className="h-8 gap-1.5" onClick={importAllHistory} disabled={historicalBusy} title="Pull every transaction from QuickBooks back to 2017">
+            {historicalBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+            Import all history (2017 → today)
+          </Button>
         </div>
       </div>
 

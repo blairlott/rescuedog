@@ -8,6 +8,7 @@ import { useIsMember } from "@/hooks/useIsMember";
 import { useWineClubTiers } from "@/hooks/useWineClub";
 import { useEffect } from "react";
 import { useCartStore } from "@/stores/cartStore";
+import { discountEligibleSubtotal } from "@/lib/wineBundles";
 
 /**
  * Cart-level Wine Club join nudge. Toggling it ON applies the 20% member
@@ -24,13 +25,14 @@ export function CartWineClubUpsell() {
   const setClubTierId = useCheckoutIntentStore((s) => s.setClubTierId);
   const { data: tiers } = useWineClubTiers();
   const items = useCartStore((s) => s.items);
-  const subtotal = items.reduce(
-    (sum, i) => sum + parseFloat(i.price?.amount ?? "0") * i.quantity,
-    0,
-  );
+  // Sampler / bundle SKUs are excluded from member discounts at checkout,
+  // so don't tease the 20% join offer if nothing in the cart qualifies.
+  const clubEligibleSubtotal = discountEligibleSubtotal(items as any);
 
   // Already a member — no need to upsell joining
   if (isMember) return null;
+  // Nothing in cart qualifies for the member discount — hide the upsell.
+  if (clubEligibleSubtotal <= 0) return null;
 
   const joining = intent === "club";
   const blockedBySubscribe = intent === "subscribe";

@@ -75,3 +75,9 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.auto-curate-media]
     verify_jwt = false
+  [functions.kennel-lookalike-score]
+    verify_jwt = false
+  [functions.kennel-google-customer-match]
+    verify_jwt = false
+  [functions.kennel-iab-segments]
+    verify_jwt = false

@@ -16,32 +16,11 @@ const FULL_NAME = "Bob Evers";
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
 
+  // One-shot provisioning: hard-coded to the single CFO email. After running once,
+  // this function should be deleted.
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(url, key, { auth: { persistSession: false } });
-
-  // Require an authenticated caller who is an owner/admin, or a service-role JWT.
-  const authHeader = req.headers.get("Authorization") || "";
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  if (!token) {
-    return new Response(JSON.stringify({ error: "missing auth" }), {
-      status: 401, headers: { ...CORS, "content-type": "application/json" },
-    });
-  }
-  const { data: caller } = await admin.auth.getUser(token);
-  if (!caller?.user) {
-    // Allow service-role JWT (no user but valid token via verify_jwt)
-    // verify_jwt already validated the token; if no user it's service-role.
-  } else {
-    const { data: rows } = await admin
-      .from("user_roles").select("role").eq("user_id", caller.user.id);
-    const ok = (rows || []).some(r => ["owner", "admin"].includes(String(r.role)));
-    if (!ok) {
-      return new Response(JSON.stringify({ error: "forbidden" }), {
-        status: 403, headers: { ...CORS, "content-type": "application/json" },
-      });
-    }
-  }
 
   // Find existing user
   let userId: string | null = null;

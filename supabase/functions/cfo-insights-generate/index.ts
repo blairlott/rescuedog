@@ -47,21 +47,45 @@ function severityFor(absPct: number, isRevenue: boolean): "critical" | "watch" |
   return null;
 }
 
+/** Like severityFor but never returns null — used for baseline historical readings
+ * so EVERY tile gets a Graz commentary, even when the period is quiet. */
+function severityForAlways(absPct: number, isRevenue: boolean): "critical" | "watch" | "fyi" {
+  return severityFor(absPct, isRevenue) ?? "fyi";
+}
+
+/** Trend label across 3 sequential equal-length windows (older → mid → current). */
+function trendShape(older: number, mid: number, curr: number): string {
+  const d1 = pctChange(mid, older);
+  const d2 = pctChange(curr, mid);
+  if (d1 == null || d2 == null) return "flat";
+  const up1 = d1 > 0.02, up2 = d2 > 0.02;
+  const dn1 = d1 < -0.02, dn2 = d2 < -0.02;
+  if (up1 && up2) return d2 > d1 ? "accelerating_up" : "steady_up";
+  if (dn1 && dn2) return d2 < d1 ? "accelerating_down" : "steady_down";
+  if (up1 && dn2) return "reversing_down";
+  if (dn1 && up2) return "reversing_up";
+  return "flat";
+}
+
 async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
   const end = new Date();
   const startCurr = shiftDays(end, -days);
   const startPrev = shiftDays(end, -days * 2);
   const endPrev = startCurr;
+  const startPrev2 = shiftDays(end, -days * 3);
+  const endPrev2 = startPrev;
 
   const out: Heuristic[] = [];
 
-  // ---- VS summary heuristic ----
-  const [vsCurr, vsPrev] = await Promise.all([
-    admin.rpc("finance_vs_summary", { _start: isoDate(startCurr), _end: isoDate(end) }),
-    admin.rpc("finance_vs_summary", { _start: isoDate(startPrev), _end: isoDate(endPrev) }),
+  // ---- VS summary heuristic (3-window historical) ----
+  const [vsCurr, vsPrev, vsPrev2] = await Promise.all([
+    admin.rpc("finance_vs_summary", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    admin.rpc("finance_vs_summary", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    admin.rpc("finance_vs_summary", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
   ]);
   const vc = (vsCurr.data ?? [])[0];
   const vp = (vsPrev.data ?? [])[0];
+  const vp2 = (vsPrev2.data ?? [])[0];
   if (vc && vp) {
     const tests: Array<{ k: string; metric: string; isRev: boolean }> = [
       { k: "revenue_cents", metric: "DTC + wholesale revenue", isRev: true },
@@ -69,30 +93,36 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
       { k: "aov_cents", metric: "average order value", isRev: false },
       { k: "wine_club_cents", metric: "wine-club revenue", isRev: true },
       { k: "wholesale_cents", metric: "wholesale revenue", isRev: true },
+      { k: "ala_carte_cents", metric: "à la carte revenue", isRev: true },
+      { k: "discount_cents", metric: "discount dollars", isRev: false },
     ];
     for (const t of tests) {
       const curr = Number(vc[t.k] ?? 0);
       const prev = Number(vp[t.k] ?? 0);
+      const prev2 = Number(vp2?.[t.k] ?? 0);
       const delta = pctChange(curr, prev);
       if (delta == null) continue;
-      const sev = severityFor(Math.abs(delta), t.isRev);
-      if (!sev) continue;
+      const sev = severityForAlways(Math.abs(delta), t.isRev);
+      const shape = trendShape(prev2, prev, curr);
       out.push({
-        tile_key: t.k === "wine_club_cents" || t.k === "wholesale_cents" ? "vs_wc_vs_alc" : "vs_summary",
+        tile_key: t.k === "wine_club_cents" || t.k === "wholesale_cents" || t.k === "ala_carte_cents"
+          ? "vs_wc_vs_alc"
+          : "vs_summary",
         severity: sev,
         metric: t.metric,
         current: curr,
         prior: prev,
         delta_pct: delta,
-        detail: { window_days: days, kind: t.k },
+        detail: { window_days: days, kind: t.k, prior2: prev2, trend: shape },
       });
     }
   }
 
-  // ---- P&L heuristic ----
-  const [pnlCurr, pnlPrev] = await Promise.all([
-    admin.rpc("finance_pnl_summary", { _start: isoDate(startCurr), _end: isoDate(end) }),
-    admin.rpc("finance_pnl_summary", { _start: isoDate(startPrev), _end: isoDate(endPrev) }),
+  // ---- P&L heuristic (3-window historical) ----
+  const [pnlCurr, pnlPrev, pnlPrev2] = await Promise.all([
+    admin.rpc("finance_pnl_summary", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    admin.rpc("finance_pnl_summary", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    admin.rpc("finance_pnl_summary", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
   ]);
   const sumPnl = (rows: any[] | null) => {
     const r = rows ?? [];
@@ -101,37 +131,43 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
     const cogs = get("cogs");
     const expense = get("expense");
     const refund = get("refund");
-    return { revenue, cogs, expense, refund, net: revenue - cogs - expense - refund };
+    const net = revenue - cogs - expense - refund;
+    const margin = revenue > 0 ? net / revenue : 0;
+    return { revenue, cogs, expense, refund, net, margin };
   };
   const pc = sumPnl(pnlCurr.data);
   const pp = sumPnl(pnlPrev.data);
-  for (const k of ["revenue", "expense", "net", "cogs"] as const) {
+  const pp2 = sumPnl(pnlPrev2.data);
+  for (const k of ["revenue", "expense", "net", "cogs", "refund", "margin"] as const) {
     const delta = pctChange(pc[k], pp[k]);
     if (delta == null) continue;
-    const sev = severityFor(Math.abs(delta), k === "revenue" || k === "net");
-    if (!sev) continue;
+    const sev = severityForAlways(Math.abs(delta), k === "revenue" || k === "net" || k === "margin");
+    const shape = trendShape(pp2[k], pp[k], pc[k]);
     out.push({
       tile_key: "qb_pnl",
       severity: sev,
-      metric: k === "net" ? "net margin" : `${k}`,
+      metric: k === "net" ? "net profit" : k === "margin" ? "net margin %" : `${k}`,
       current: pc[k],
       prior: pp[k],
       delta_pct: delta,
-      detail: { window_days: days, kind: k },
+      detail: { window_days: days, kind: k, prior2: pp2[k], trend: shape },
     });
   }
 
-  // ---- Ad spend by platform ----
-  const [spCurr, spPrev] = await Promise.all([
-    admin.rpc("finance_spend_by_platform", { _start: isoDate(startCurr), _end: isoDate(end) }),
-    admin.rpc("finance_spend_by_platform", { _start: isoDate(startPrev), _end: isoDate(endPrev) }),
+  // ---- Ad spend by platform (per-platform + total + ROAS, 3-window) ----
+  const [spCurr, spPrev, spPrev2] = await Promise.all([
+    admin.rpc("finance_spend_by_platform", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    admin.rpc("finance_spend_by_platform", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    admin.rpc("finance_spend_by_platform", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
   ]);
   const spendCurrTotal = ((spCurr.data ?? []) as any[]).reduce((s, r) => s + Number(r.spend_cents), 0);
   const spendPrevTotal = ((spPrev.data ?? []) as any[]).reduce((s, r) => s + Number(r.spend_cents), 0);
+  const spendPrev2Total = ((spPrev2.data ?? []) as any[]).reduce((s, r) => s + Number(r.spend_cents), 0);
   if (spendCurrTotal > 0 || spendPrevTotal > 0) {
     const delta = pctChange(spendCurrTotal, spendPrevTotal);
-    const sev = delta != null ? severityFor(Math.abs(delta), false) : null;
-    if (sev && delta != null) {
+    if (delta != null) {
+      const sev = severityForAlways(Math.abs(delta), false);
+      const shape = trendShape(spendPrev2Total, spendPrevTotal, spendCurrTotal);
       out.push({
         tile_key: "qb_ad_spend",
         severity: sev,
@@ -139,16 +175,36 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
         current: spendCurrTotal,
         prior: spendPrevTotal,
         delta_pct: delta,
-        detail: { window_days: days, kind: "total" },
+        detail: { window_days: days, kind: "total", prior2: spendPrev2Total, trend: shape },
+      });
+    }
+    // Per-platform spend shift
+    const byPlat = (rows: any[] | null) => Object.fromEntries(((rows ?? []) as any[]).map(r => [r.platform, Number(r.spend_cents)]));
+    const pCurr = byPlat(spCurr.data);
+    const pPrev = byPlat(spPrev.data);
+    const pPrev2 = byPlat(spPrev2.data);
+    for (const plat of Object.keys({ ...pCurr, ...pPrev })) {
+      const c = pCurr[plat] ?? 0, p = pPrev[plat] ?? 0, p2 = pPrev2[plat] ?? 0;
+      const d = pctChange(c, p);
+      if (d == null) continue;
+      if (Math.abs(d) < 0.15 && Math.max(c, p) < 50000_00) continue; // skip tiny noisy platforms
+      out.push({
+        tile_key: "qb_ad_spend",
+        severity: severityForAlways(Math.abs(d), false),
+        metric: `${plat} spend`,
+        current: c, prior: p, delta_pct: d,
+        detail: { window_days: days, kind: "platform_shift", platform: plat, prior2: p2, trend: trendShape(p2, p, c) },
       });
     }
     // ROAS shift
     const roasCurr = spendCurrTotal > 0 ? pc.revenue / spendCurrTotal : null;
     const roasPrev = spendPrevTotal > 0 ? pp.revenue / spendPrevTotal : null;
+    const roasPrev2 = spendPrev2Total > 0 ? pp2.revenue / spendPrev2Total : null;
     if (roasCurr != null && roasPrev != null) {
       const rDelta = pctChange(roasCurr, roasPrev);
-      const sev2 = rDelta != null ? severityFor(Math.abs(rDelta), true) : null;
-      if (sev2 && rDelta != null) {
+      if (rDelta != null) {
+        const sev2 = severityForAlways(Math.abs(rDelta), true);
+        const shape = roasPrev2 != null ? trendShape(roasPrev2, roasPrev, roasCurr) : "flat";
         out.push({
           tile_key: "cc_roas",
           severity: sev2,
@@ -156,9 +212,96 @@ async function runHeuristics(admin: any, days: number): Promise<Heuristic[]> {
           current: roasCurr,
           prior: roasPrev,
           delta_pct: rDelta,
-          detail: { window_days: days, kind: "roas", roas_curr: roasCurr, roas_prev: roasPrev },
+          detail: { window_days: days, kind: "roas", roas_curr: roasCurr, roas_prev: roasPrev, roas_prev2: roasPrev2, trend: shape },
         });
       }
+    }
+  }
+
+  // ---- Revenue by Channel (qb_revenue_ch) ----
+  const [chCurr, chPrev, chPrev2] = await Promise.all([
+    admin.rpc("finance_revenue_by_channel", { _start: isoDate(startCurr),  _end: isoDate(end)     }),
+    admin.rpc("finance_revenue_by_channel", { _start: isoDate(startPrev),  _end: isoDate(endPrev) }),
+    admin.rpc("finance_revenue_by_channel", { _start: isoDate(startPrev2), _end: isoDate(endPrev2)}),
+  ]);
+  const byCh = (rows: any[] | null) => Object.fromEntries(((rows ?? []) as any[]).map(r => [r.channel, Number(r.revenue_cents)]));
+  const cC = byCh(chCurr.data), cP = byCh(chPrev.data), cP2 = byCh(chPrev2.data);
+  const allCh = new Set([...Object.keys(cC), ...Object.keys(cP)]);
+  for (const ch of allCh) {
+    const c = cC[ch] ?? 0, p = cP[ch] ?? 0, p2 = cP2[ch] ?? 0;
+    const d = pctChange(c, p);
+    if (d == null) continue;
+    if (Math.max(c, p) < 100000_00 && Math.abs(d) < 0.10) continue;
+    out.push({
+      tile_key: "qb_revenue_ch",
+      severity: severityForAlways(Math.abs(d), true),
+      metric: `${ch} channel revenue`,
+      current: c, prior: p, delta_pct: d,
+      detail: { window_days: days, kind: "channel_shift", channel: ch, prior2: p2, trend: trendShape(p2, p, c) },
+    });
+  }
+
+  // ---- Top Vendors (qb_top_vendors) ----
+  const [vCurr, vPrev] = await Promise.all([
+    admin.rpc("finance_top_vendors", { _start: isoDate(startCurr), _end: isoDate(end),     _limit: 15 }),
+    admin.rpc("finance_top_vendors", { _start: isoDate(startPrev), _end: isoDate(endPrev), _limit: 15 }),
+  ]);
+  const venC = Object.fromEntries(((vCurr.data ?? []) as any[]).map(r => [r.vendor, Number(r.spend_cents)]));
+  const venP = Object.fromEntries(((vPrev.data ?? []) as any[]).map(r => [r.vendor, Number(r.spend_cents)]));
+  const venAll = Array.from(new Set([...Object.keys(venC), ...Object.keys(venP)]));
+  for (const v of venAll.slice(0, 20)) {
+    const c = venC[v] ?? 0, p = venP[v] ?? 0;
+    const d = pctChange(c, p);
+    if (d == null) continue;
+    if (Math.max(c, p) < 200000_00) continue; // material vendors only ($2k+)
+    if (Math.abs(d) < 0.20) continue;
+    out.push({
+      tile_key: "qb_top_vendors",
+      severity: severityForAlways(Math.abs(d), false),
+      metric: `${v} vendor spend`,
+      current: c, prior: p, delta_pct: d,
+      detail: { window_days: days, kind: "vendor_shift", vendor: v },
+    });
+  }
+
+  // ---- Cash trend (qb_cash_trend) — current vs prior net cash ----
+  const [cashCurr, cashPrev] = await Promise.all([
+    admin.rpc("finance_cash_trend", { _start: isoDate(startCurr), _end: isoDate(end),     _bucket: "week" }),
+    admin.rpc("finance_cash_trend", { _start: isoDate(startPrev), _end: isoDate(endPrev), _bucket: "week" }),
+  ]);
+  const sumNet = (rows: any[] | null) => ((rows ?? []) as any[]).reduce((s, r) => s + Number(r.net_cents), 0);
+  const netC = sumNet(cashCurr.data);
+  const netP = sumNet(cashPrev.data);
+  if (netC !== 0 || netP !== 0) {
+    const d = pctChange(netC, netP);
+    out.push({
+      tile_key: "qb_cash_trend",
+      severity: d != null ? severityForAlways(Math.abs(d), true) : "fyi",
+      metric: "net cash flow",
+      current: netC, prior: netP, delta_pct: d ?? 0,
+      detail: { window_days: days, kind: "net_cash" },
+    });
+  }
+
+  // ---- VS Waterfall (vs_waterfall) — contribution after COGS & ads ----
+  const [wCurr, wPrev] = await Promise.all([
+    admin.rpc("finance_vs_waterfall", { _start: isoDate(startCurr), _end: isoDate(end)     }),
+    admin.rpc("finance_vs_waterfall", { _start: isoDate(startPrev), _end: isoDate(endPrev) }),
+  ]);
+  const wc = ((wCurr.data ?? []) as any[])[0];
+  const wp = ((wPrev.data ?? []) as any[])[0];
+  if (wc && wp) {
+    for (const k of ["net_revenue_cents", "net_after_cogs_cents", "contribution_after_ads_cents", "net_after_cogs_and_ads_cents"] as const) {
+      const c = Number(wc[k] ?? 0), p = Number(wp[k] ?? 0);
+      const d = pctChange(c, p);
+      if (d == null) continue;
+      out.push({
+        tile_key: "vs_waterfall",
+        severity: severityForAlways(Math.abs(d), true),
+        metric: k.replace(/_cents$/, "").replace(/_/g, " "),
+        current: c, prior: p, delta_pct: d,
+        detail: { window_days: days, kind: k },
+      });
     }
   }
 

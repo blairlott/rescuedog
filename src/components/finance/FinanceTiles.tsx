@@ -267,6 +267,54 @@ export function VsWcVsAlcTile({ days, start, end }: TileRangeProps) {
   );
 }
 
+export function VsWaterfallTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
+  const { data, isLoading } = useQuery({
+    queryKey: ["finance_vs_waterfall", start, end],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("finance_vs_waterfall" as any, { _start: start, _end: end });
+      if (error) throw error;
+      return (data as any[])?.[0] as {
+        gross_revenue_cents: number; discount_cents: number; net_revenue_cents: number;
+        cogs_cents: number; net_after_cogs_cents: number;
+        converting_ad_spend_cents: number; net_after_cogs_and_ads_cents: number;
+        ad_conversions: number; ad_attributed_revenue_cents: number;
+      } | undefined;
+    },
+  });
+  if (isLoading) return <Loading />;
+  if (!data) return <Empty />;
+  const tiers = [
+    { label: "Gross Revenue",            v: data.gross_revenue_cents,           tone: "text-foreground",       sub: "Vinoshipper, before discounts" },
+    { label: "Net Revenue",              v: data.net_revenue_cents,             tone: "text-foreground",       sub: `− ${fmtCents(data.discount_cents)} discounts` },
+    { label: "Net after COGS",           v: data.net_after_cogs_cents,          tone: "text-foreground",       sub: `− ${fmtCents(data.cogs_cents)} COGS (QBO)` },
+    { label: "Net after COGS & Ads",     v: data.net_after_cogs_and_ads_cents,  tone: Number(data.net_after_cogs_and_ads_cents) < 0 ? "text-red-600 dark:text-red-400" : "text-foreground", sub: `− ${fmtCents(data.converting_ad_spend_cents)} ad spend · ${Number(data.ad_conversions).toLocaleString()} conv` },
+  ];
+  return (
+    <div className="flex flex-col gap-2">
+      {tiers.map((t, i) => (
+        <div key={t.label} className="border border-border p-2 flex items-baseline justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-brand text-muted-foreground">
+              {i + 1}. {t.label}
+            </div>
+            <div className="text-[11px] text-muted-foreground truncate">{t.sub}</div>
+          </div>
+          <div className={`text-lg font-bold tabular-nums whitespace-nowrap ${t.tone}`}>{fmtCents(t.v)}</div>
+        </div>
+      ))}
+      {data.ad_attributed_revenue_cents > 0 && (
+        <div className="text-[10px] text-muted-foreground">
+          Ad-attributed revenue: {fmtCents(data.ad_attributed_revenue_cents)} · platform-reported ROAS{" "}
+          {data.converting_ad_spend_cents > 0
+            ? (Number(data.ad_attributed_revenue_cents) / Number(data.converting_ad_spend_cents)).toFixed(2) + "×"
+            : "—"}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------------- Command Center read-only imports ---------------- */
 
 export function CcRoasTile({ days, start: s, end: e }: TileRangeProps) {

@@ -35,6 +35,21 @@ export default function FinanceLayout() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Force temporary-password change before showing any finance UI.
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("must_change_password")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profile?.must_change_password) {
+        navigate("/admin/change-password?next=/finance", { replace: true });
+      }
+    })();
+  }, [user, navigate]);
+
   if (!authChecked || roleLoading) {
     return <div className="min-h-dvh flex items-center justify-center text-muted-foreground">Loading…</div>;
   }

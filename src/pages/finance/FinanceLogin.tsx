@@ -25,6 +25,18 @@ export default function FinanceLogin() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("must_change_password")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (profile?.must_change_password) {
+          navigate("/admin/change-password?next=/finance", { replace: true });
+          return;
+        }
+      }
       navigate("/finance");
     } catch (err: any) {
       toast.error(err.message || "Sign in failed");

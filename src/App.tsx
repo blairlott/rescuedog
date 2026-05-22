@@ -282,6 +282,7 @@ function AppContent() {
         <Route path="intelligence" element={<CrmIntelligencePage />} />
         <Route path="customer-map" element={<CrmCustomerMapPage />} />
         <Route path="webhooks" element={<CrmWebhooksPage />} />
+        <Route path="vinoshipper-api" element={<CrmVinoshipperApiPage />} />
         <Route path="cancellations" element={<CrmCancellationsPage />} />
         <Route path="customer-service" element={<CrmCustomerServicePage />} />
         <Route path="legacy-migration" element={<CrmLegacyMigrationPage />} />

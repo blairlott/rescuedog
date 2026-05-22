@@ -144,18 +144,21 @@ Deno.serve(async (req) => {
   const auth = req.headers.get("Authorization");
   if (!auth?.startsWith("Bearer ")) return J(401, { error: "unauthorized" });
 
-  const sb = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: auth } } },
-  );
-  const { data: claims } = await sb.auth.getClaims(auth.replace("Bearer ", ""));
-  const userId = claims?.claims?.sub;
-  if (!userId) return J(401, { error: "unauthorized" });
-
-  const { data: roles } = await sb.from("user_roles").select("role").eq("user_id", userId);
-  const ok = (roles ?? []).some((r: any) => ["owner", "admin", "cfo", "executive"].includes(r.role));
-  if (!ok) return J(403, { error: "forbidden — owner/admin/cfo/executive only" });
+  const bearer = auth.replace("Bearer ", "");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  if (bearer !== serviceKey) {
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: auth } } },
+    );
+    const { data: claims } = await sb.auth.getClaims(bearer);
+    const userId = claims?.claims?.sub;
+    if (!userId) return J(401, { error: "unauthorized" });
+    const { data: roles } = await sb.from("user_roles").select("role").eq("user_id", userId);
+    const ok = (roles ?? []).some((r: any) => ["owner", "admin", "cfo", "executive"].includes(r.role));
+    if (!ok) return J(403, { error: "forbidden — owner/admin/cfo/executive only" });
+  }
 
   let body: any = {};
   try { body = await req.json(); } catch { /* */ }
@@ -220,5 +223,14 @@ Deno.serve(async (req) => {
     range: { startDate, endDate },
     company: conn.company_name,
     months: colDates.filter(Boolean),
+    debug: {
+      raw_column_titles: cols.map((c) => String(c?.ColTitle ?? "")),
+      parsed_entries: entries.length,
+      sample_entries: entries.slice(0, 3),
+      by_type: entries.reduce((acc: Record<string, number>, e) => {
+        acc[e.entry_type] = (acc[e.entry_type] ?? 0) + 1;
+        return acc;
+      }, {}),
+    },
   });
 });

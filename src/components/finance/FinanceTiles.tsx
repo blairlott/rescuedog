@@ -43,6 +43,21 @@ function Empty({ msg = "No data in range" }: { msg?: string }) {
   return <div className="text-xs text-muted-foreground py-4">{msg}</div>;
 }
 
+/**
+ * Shows a red config warning when a tile has data flowing in but key fields
+ * (vendor names, categories, subcategories, etc.) are missing/unparsed —
+ * i.e. QuickBooks is not configured to standard accounting practices.
+ */
+function QbConfigWarning({ field }: { field: string }) {
+  return (
+    <div className="border border-red-600 bg-red-50 dark:bg-red-950/30 p-2 text-[11px] text-red-700 dark:text-red-400 mb-2">
+      <strong>QuickBooks not parsing {field}.</strong> Data is flowing but {field} are blank.
+      Configure QBO to standard accounting practices (require {field} on every transaction)
+      so this tile renders accurately.
+    </div>
+  );
+}
+
 /* ---------------- QuickBooks tiles ---------------- */
 
 export function QbPnlTile({ days, start: s, end: e }: TileRangeProps) {
@@ -203,8 +218,10 @@ export function QbTopVendorsTile({ days, start: s, end: e }: TileRangeProps) {
   );
   if (isLoading) return <Loading />;
   if (!data?.length) return <Empty />;
+  const unparsed = data.every(d => !d.vendor || d.vendor === "(unspecified)");
   return (
     <div className="space-y-1.5 text-sm">
+      {unparsed && <QbConfigWarning field="vendor names" />}
       <div className="flex items-center justify-between pb-1">
         <div className="text-[11px] uppercase tracking-brand text-muted-foreground">
           {filtered.length} of {data.length} vendors

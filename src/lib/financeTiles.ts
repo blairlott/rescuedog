@@ -2,7 +2,7 @@
 // Add new tiles here — the dashboard auto-renders them and the AddTileMenu
 // auto-lists them in its dropdown grouped by `source`.
 
-export type FinanceTileSource = "quickbooks" | "vinoshipper" | "command_center";
+export type FinanceTileSource = "quickbooks" | "vinoshipper" | "command_center" | "kennel_mirror";
 
 export interface FinanceTileDef {
   key: string;
@@ -29,6 +29,14 @@ export const FINANCE_TILES: FinanceTileDef[] = [
   { key: "cc_roas",        source: "command_center", title: "Revenue / ROAS / Spend", description: "Blended marketing efficiency.",        defaultSpan: 6 },
   { key: "cc_wine_club",   source: "command_center", title: "Wine Club MRR & Churn", description: "Active members, MRR, cancellations.",   defaultSpan: 6 },
   { key: "cc_pathways",    source: "command_center", title: "Conversion Pathways",   description: "Guest→club rate and à la carte.",        defaultSpan: 6 },
+
+  // Kennel read-only mirrors
+  { key: "km_ad_command",   source: "kennel_mirror", title: "Ad Command (Mirror)",     description: "Instacart, keywords, radar alerts — read-only.", defaultSpan: 12 },
+  { key: "km_system_health",source: "kennel_mirror", title: "Kennel System Health",   description: "Live ingestion + autopilot health strip.",       defaultSpan: 12 },
+  { key: "km_cron",         source: "kennel_mirror", title: "Kennel Cron Status",     description: "Latest run state for each scheduled job.",       defaultSpan: 6 },
+  { key: "km_ingestion",    source: "kennel_mirror", title: "Ingestion Status",       description: "Last successful pull per data source.",          defaultSpan: 6 },
+  { key: "km_retention",    source: "kennel_mirror", title: "Retention Risk",         description: "Customers most likely to churn (mirror).",       defaultSpan: 6 },
+  { key: "km_pathways",     source: "kennel_mirror", title: "Conversion Pathways (Mirror)", description: "Same pathways panel as Kennel.",          defaultSpan: 6 },
 ];
 
 export const TILE_BY_KEY: Record<string, FinanceTileDef> = Object.fromEntries(
@@ -39,6 +47,7 @@ export const SOURCE_LABEL: Record<FinanceTileSource, string> = {
   quickbooks: "QuickBooks",
   vinoshipper: "Vinoshipper",
   command_center: "Command Center",
+  kennel_mirror: "Kennel (Read-only)",
 };
 
 export const DEFAULT_TILE_KEYS: string[] = [

@@ -7,6 +7,12 @@ import {
 } from "recharts";
 import { fetchConversionPathways } from "@/lib/wineClubMembers";
 import { format } from "date-fns";
+import { AdCommandTiles } from "@/components/kennel/AdCommandTiles";
+import { KennelSystemHealthStrip } from "@/components/kennel/KennelSystemHealthStrip";
+import { CronStatusPanel } from "@/components/kennel/CronStatusPanel";
+import { IngestionStatusPanel } from "@/components/kennel/IngestionStatusPanel";
+import { RetentionRiskPanel } from "@/components/kennel/RetentionRiskPanel";
+import { ConversionPathwaysPanel } from "@/components/kennel/ConversionPathwaysPanel";
 
 const PIE_COLORS = ["#c30017", "#222", "#888", "#c97a85", "#5a5a5a", "#a93a45"];
 
@@ -376,6 +382,27 @@ export function renderTile(key: string, days: number) {
     case "cc_roas": return <CcRoasTile days={days} />;
     case "cc_wine_club": return <CcWineClubTile days={days} />;
     case "cc_pathways": return <CcPathwaysTile days={days} />;
+    case "km_ad_command":    return <KennelMirror><AdCommandTiles /></KennelMirror>;
+    case "km_system_health": return <KennelMirror><KennelSystemHealthStrip /></KennelMirror>;
+    case "km_cron":          return <KennelMirror><CronStatusPanel /></KennelMirror>;
+    case "km_ingestion":     return <KennelMirror><IngestionStatusPanel /></KennelMirror>;
+    case "km_retention":     return <KennelMirror><RetentionRiskPanel /></KennelMirror>;
+    case "km_pathways":      return <KennelMirror><ConversionPathwaysPanel /></KennelMirror>;
     default: return <Empty msg={`Unknown tile: ${key}`} />;
   }
+}
+
+/* ---------------- Kennel mirror wrapper ---------------- */
+
+function KennelMirror({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      <div className="absolute top-0 right-0 z-10 px-1.5 py-0.5 text-[9px] uppercase tracking-brand bg-foreground/10 text-foreground">
+        Read-only · Kennel
+      </div>
+      <div className="pointer-events-none select-none">
+        {children}
+      </div>
+    </div>
+  );
 }

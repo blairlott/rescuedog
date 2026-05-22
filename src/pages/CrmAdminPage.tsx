@@ -92,6 +92,12 @@ export default function CrmAdminPage() {
   const approveUser = async (userId: string) => {
     const { error } = await supabase.from("profiles").update({ approved: true } as any).eq("id", userId);
     if (error) { toast.error(error.message); return; }
+    // Resolve any pending access requests for this user.
+    await supabase
+      .from("access_requests")
+      .update({ status: "approved", reviewed_at: new Date().toISOString() } as any)
+      .eq("user_id", userId)
+      .eq("status", "pending");
     toast.success("User approved");
     fetchUsers();
   };
@@ -110,6 +116,15 @@ export default function CrmAdminPage() {
       else toast.error(error.message);
       return;
     }
+    // Mark any pending access requests for this user as approved — granting
+    // a role from the Users tab is the implicit approval action.
+    await supabase
+      .from("access_requests")
+      .update({ status: "approved", reviewed_at: new Date().toISOString() } as any)
+      .eq("user_id", userId)
+      .eq("status", "pending");
+    // Also flip the profile approved flag so they clear the approval gate.
+    await supabase.from("profiles").update({ approved: true } as any).eq("id", userId);
     toast.success(`Role added`);
     fetchUsers();
     queryClient.invalidateQueries({ queryKey: ["user_role"] });

@@ -31,6 +31,15 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.setItem(key, "1");
     supabase.functions
       .invoke("vinoshipper-link-customer")
+      .then(() => {
+        // After linking, confirm wine club membership status against VS
+        // (source of truth). Non-blocking; we don't await it.
+        supabase.functions
+          .invoke("vinoshipper-sync-membership")
+          .catch((err) => {
+            console.warn("[vinoshipper-sync-membership] failed", err);
+          });
+      })
       .catch((err) => {
         // Non-blocking — Vinoshipper outages must not break auth
         console.warn("[vinoshipper-link-customer] failed", err);

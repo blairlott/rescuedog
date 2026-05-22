@@ -67,6 +67,20 @@ function trendShape(older: number, mid: number, curr: number): string {
   return "flat";
 }
 
+function representativeHeuristics(all: Heuristic[]): Heuristic[] {
+  const rank = { critical: 0, watch: 1, fyi: 2 } as const;
+  const byTile = new Map<string, Heuristic>();
+  for (const h of all) {
+    const current = byTile.get(h.tile_key);
+    if (!current) { byTile.set(h.tile_key, h); continue; }
+    const severityDiff = rank[h.severity] - rank[current.severity];
+    if (severityDiff < 0 || (severityDiff === 0 && Math.abs(h.delta_pct ?? 0) > Math.abs(current.delta_pct ?? 0))) {
+      byTile.set(h.tile_key, h);
+    }
+  }
+  return Array.from(byTile.values());
+}
+
 async function runHeuristics(financeClient: any, days: number): Promise<Heuristic[]> {
   const end = new Date();
   const startCurr = shiftDays(end, -days);

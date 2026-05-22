@@ -24,6 +24,7 @@ export const FINANCE_TILES: FinanceTileDef[] = [
   // Vinoshipper
   { key: "vs_summary",     source: "vinoshipper", title: "Vinoshipper Sales",     description: "Orders, AOV, revenue split.",             defaultSpan: 6 },
   { key: "vs_wc_vs_alc",   source: "vinoshipper", title: "Wine Club vs À la Carte", description: "Recurring vs one-off revenue.",        defaultSpan: 6 },
+  { key: "vs_waterfall",   source: "vinoshipper", title: "Revenue Waterfall (Gross → Net → After COGS & Ads)", description: "Gross, net of discounts, after COGS, after converting ad spend.", defaultSpan: 6 },
 
   // Command Center (read-only imports)
   { key: "cc_roas",        source: "command_center", title: "Revenue / ROAS / Spend", description: "Blended marketing efficiency.",        defaultSpan: 6 },

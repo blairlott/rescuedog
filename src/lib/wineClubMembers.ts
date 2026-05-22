@@ -264,6 +264,24 @@ export type ConversionPathways = {
   channelMix: { channel: string; count: number }[];
   monthOfYear: { month: string; count: number }[]; // Jan..Dec converter signups
   converters_sample: ConverterRow[]; // top 50 most recent
+  alaCarte: AlaCarteSummary;
+};
+
+export type AlaCarteCohort =
+  | "guestOnly"      // never joined the club
+  | "preConversion"  // à la carte before they joined the club
+  | "postConversion" // à la carte after joining (member add-on)
+  | "directMember";  // joined club first, à la carte later
+
+export type AlaCarteSummary = {
+  totalOrders: number;
+  totalRevenueCents: number;
+  uniqueBuyers: number;
+  aovCents: number;
+  byCohort: { cohort: AlaCarteCohort; orders: number; buyers: number; revenueCents: number }[];
+  channelMix: { channel: string; orders: number; revenueCents: number }[];
+  topStates: { state: string; orders: number; revenueCents: number }[];
+  memberAddonRate: number; // share of converters/directMembers who placed at least one post-join à la carte order
 };
 
 function median(nums: number[]): number | null {

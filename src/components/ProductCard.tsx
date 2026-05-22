@@ -59,7 +59,9 @@ export function ProductCard({ product }: ProductCardProps) {
   const priceNum = parseFloat(price.amount);
   const dollars = Math.floor(priceNum);
   const cents = Math.round((priceNum - dollars) * 100).toString().padStart(2, '0');
-  const memberPrice = priceNum * (1 - (discountPercent || 20) / 100);
+  // Always tease at 20% — the universal à la carte member rate. Avoids confusion
+  // with per-tier shipment discounts and keeps the displayed savings consistent.
+  const memberPrice = priceNum * 0.8;
 
   const handleAddToCart = async (e: React.MouseEvent, opts: { buyNow?: boolean } = {}) => {
     e.preventDefault();
@@ -211,16 +213,6 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="min-h-[1.25rem]">
           {isSampler ? (
             <p className="text-[10px] text-muted-foreground italic">Not valid with any other offer</p>
-          ) : !isMember && isWine ? (
-            <p className="text-[11px] text-muted-foreground">
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate("/club"); }}
-                className="hover:text-primary transition-colors underline-offset-2 hover:underline"
-              >
-                Join The Pack — free
-              </button>
-            </p>
           ) : null}
         </div>
 

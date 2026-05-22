@@ -128,7 +128,7 @@ export function QbRevenueChannelTile({ days, start: s, end: e }: TileRangeProps)
 
 export function QbAdSpendTile({ days, start: s, end: e }: TileRangeProps) {
   const { start, end } = resolveRange(days, s, e);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["finance_spend_by_platform", start, end],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("finance_spend_by_platform" as any, { _start: start, _end: end });
@@ -137,19 +137,39 @@ export function QbAdSpendTile({ days, start: s, end: e }: TileRangeProps) {
     },
   });
   if (isLoading) return <Loading />;
+  if (error) {
+    return (
+      <div className="border border-red-600 bg-red-50 dark:bg-red-950/30 p-3 text-xs text-red-700 dark:text-red-400">
+        <strong>Tile failed to load.</strong> {(error as Error).message}
+      </div>
+    );
+  }
   if (!data?.length) return <Empty msg="No ad spend recorded in range." />;
-  const chartData = data.map(d => ({ name: d.platform, spend: Number(d.spend_cents) / 100 }));
+  const chartData = data
+    .map(d => ({ name: d.platform || "Other", spend: Number(d.spend_cents) / 100, spendCents: Number(d.spend_cents) }))
+    .filter(d => d.spendCents > 0);
+  if (!chartData.length) return <Empty msg="No ad spend recorded in range." />;
   return (
-    <div className="h-56">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-          <Tooltip formatter={(v: any) => `$${Number(v).toLocaleString()}`} />
-          <Bar dataKey="spend" fill="#c30017" />
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="space-y-3">
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData.slice(0, 8)} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-18} textAnchor="end" height={52} />
+            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+            <Tooltip formatter={(v: any) => `$${Number(v).toLocaleString()}`} />
+            <Bar dataKey="spend" fill="hsl(var(--primary))" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="space-y-1 text-sm">
+        {chartData.slice(0, 6).map(d => (
+          <div key={d.name} className="flex items-center justify-between border-b border-border py-1 last:border-0">
+            <span className="truncate pr-3 text-muted-foreground">{d.name}</span>
+            <span className="tabular-nums font-medium">{fmtCents(d.spendCents)}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

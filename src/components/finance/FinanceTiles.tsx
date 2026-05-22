@@ -208,7 +208,11 @@ function useVsSummary(days: number, s?: string, e?: string) {
       const { data, error } = await supabase.rpc("finance_vs_summary" as any, { _start: start, _end: end });
       if (error) throw error;
       const row = (data as any[])?.[0];
-      return row as { order_count: number; revenue_cents: number; aov_cents: number; wine_club_cents: number; ala_carte_cents: number; wholesale_cents: number } | undefined;
+      return row as {
+        order_count: number; revenue_cents: number; aov_cents: number;
+        gross_revenue_cents: number; net_revenue_cents: number; discount_cents: number;
+        wine_club_cents: number; ala_carte_cents: number; wholesale_cents: number;
+      } | undefined;
     },
   });
 }
@@ -219,7 +223,10 @@ export function VsSummaryTile({ days, start, end }: TileRangeProps) {
   if (!data) return <Empty />;
   const rows = [
     { label: "Orders", v: Number(data.order_count).toLocaleString() },
-    { label: "Revenue", v: fmtCents(data.revenue_cents) },
+    { label: "Gross Revenue", v: fmtCents(data.gross_revenue_cents ?? 0) },
+    { label: "Net Revenue", v: fmtCents(data.net_revenue_cents ?? 0) },
+    { label: "Discounts", v: fmtCents(data.discount_cents ?? 0) },
+    { label: "Order Total (paid)", v: fmtCents(data.revenue_cents) },
     { label: "AOV", v: fmtCents(data.aov_cents) },
     { label: "DTC", v: fmtCents(data.ala_carte_cents + data.wine_club_cents) },
     { label: "Wholesale", v: fmtCents(data.wholesale_cents) },

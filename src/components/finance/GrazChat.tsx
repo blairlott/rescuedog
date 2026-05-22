@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -196,7 +196,7 @@ function DirectiveList({
   title, empty, items, onToggle, onDelete,
 }: {
   title: string;
-  empty: React.ReactNode;
+  empty: ReactNode;
   items: any[];
   onToggle: (id: string, active: boolean) => void;
   onDelete: (id: string) => void;

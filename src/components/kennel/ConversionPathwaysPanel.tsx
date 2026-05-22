@@ -43,7 +43,8 @@ export function ConversionPathwaysPanel() {
         "wine_club_conversion_triggers" as never,
       );
       if (error) throw error;
-      const row = Array.isArray(data) ? data[0] : data ?? null;
+      const arr = (data ?? []) as unknown as any[];
+      const row = Array.isArray(arr) ? arr[0] : arr;
       return row as null | {
         total_guests: number;
         converters: number;

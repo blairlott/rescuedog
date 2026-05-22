@@ -2340,6 +2340,95 @@ export type Database = {
         }
         Relationships: []
       }
+      cfo_board_shares: {
+        Row: {
+          board_id: string
+          created_at: string
+          created_by: string
+          id: string
+          message: string | null
+          recipient_email: string | null
+          recipient_user_id: string | null
+          revoked_at: string | null
+          share_type: Database["public"]["Enums"]["cfo_share_type"]
+          snapshot: Json | null
+          viewed_at: string | null
+        }
+        Insert: {
+          board_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          message?: string | null
+          recipient_email?: string | null
+          recipient_user_id?: string | null
+          revoked_at?: string | null
+          share_type?: Database["public"]["Enums"]["cfo_share_type"]
+          snapshot?: Json | null
+          viewed_at?: string | null
+        }
+        Update: {
+          board_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          message?: string | null
+          recipient_email?: string | null
+          recipient_user_id?: string | null
+          revoked_at?: string | null
+          share_type?: Database["public"]["Enums"]["cfo_share_type"]
+          snapshot?: Json | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_board_shares_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cfo_boards: {
+        Row: {
+          created_at: string
+          date_range_days: number
+          id: string
+          is_default: boolean
+          name: string
+          owner_id: string
+          position: number
+          slug: string
+          tiles: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_range_days?: number
+          id?: string
+          is_default?: boolean
+          name: string
+          owner_id: string
+          position?: number
+          slug: string
+          tiles?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_range_days?: number
+          id?: string
+          is_default?: boolean
+          name?: string
+          owner_id?: string
+          position?: number
+          slug?: string
+          tiles?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cfo_dashboard_layouts: {
         Row: {
           date_range_days: number
@@ -11765,6 +11854,10 @@ export type Database = {
       is_admin_or_owner: { Args: { _user_id: string }; Returns: boolean }
       is_ambassador_manager: { Args: { _user_id: string }; Returns: boolean }
       is_backend_viewer: { Args: { _user_id: string }; Returns: boolean }
+      is_board_recipient: {
+        Args: { _board_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_brand_ambassador: { Args: { _user_id: string }; Returns: boolean }
       is_cfo: { Args: { _user_id: string }; Returns: boolean }
       is_cms_editor: { Args: { _user_id: string }; Returns: boolean }
@@ -11970,6 +12063,7 @@ export type Database = {
         | "kennel_viewer"
         | "viewer"
         | "cfo"
+      cfo_share_type: "live" | "snapshot"
       discount_scope: "sitewide" | "wine" | "merch" | "sku_list" | "collection"
       discount_tier: "public" | "club_member" | "ambassador" | "vip" | "staff"
       discount_type: "percent" | "fixed" | "shipping"
@@ -12140,6 +12234,7 @@ export const Constants = {
         "viewer",
         "cfo",
       ],
+      cfo_share_type: ["live", "snapshot"],
       discount_scope: ["sitewide", "wine", "merch", "sku_list", "collection"],
       discount_tier: ["public", "club_member", "ambassador", "vip", "staff"],
       discount_type: ["percent", "fixed", "shipping"],

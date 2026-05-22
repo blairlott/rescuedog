@@ -333,6 +333,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Both kill switches are healthy (or skipped for insufficient data).
+    // If we got here in auto-restart mode, commit the recovery: flip the
+    // enabled flag back on, clear auto-stop markers, and continue executing.
+    if (attemptAutoRestart && !enabled) {
+      const restartAt = new Date().toISOString();
+      await admin.from("app_settings").upsert([
+        { key: "meta_autopilot_enabled", value: true },
+        { key: "meta_autopilot_auto_stopped_at", value: null },
+        { key: "meta_autopilot_auto_stopped_reason", value: null },
+        { key: "meta_autopilot_last_auto_restart_at", value: restartAt },
+      ], { onConflict: "key" });
+      enabled = true;
+      autoRestarted = true;
+      autoRestartReason = "kill_switches_recovered";
+      console.log("meta-autopilot auto-restarted", { restartAt, errPct: errPctOut, roas: roasOut });
+    }
+
     // Daily cap check.
     const since = new Date(); since.setUTCHours(0, 0, 0, 0);
     const { count: executedToday } = await admin.from("ad_execution_log")

@@ -179,8 +179,30 @@ function fallbackNarrative(h: Heuristic): { headline: string; body: string; reco
   };
 }
 
-async function generateNarrative(apiKey: string, h: Heuristic): Promise<{ headline: string; body: string; recommended_action: string }> {
-  const sys = `You are a sharp CFO advisor for a small DTC wine + merch business (Rescue Dog Wines). You write one-line, actionable insights in tight business English. Never use the word "synergy". Never recommend hiring consultants. Recommend concrete operator moves only.`;
+async function generateNarrative(
+  apiKey: string,
+  h: Heuristic,
+  knowledge: { directives: string[]; facts: string[] } = { directives: [], facts: [] },
+): Promise<{ headline: string; body: string; recommended_action: string }> {
+  const sys = `You are Graz, the resident CFO/COO-class strategist for Rescue Dog Wines — a small DTC wine + merch business whose mission is helping dogs find their forever home.
+
+You are writing a TILE-LEVEL STRATEGIC INSIGHT, not a metric restatement. The operator can already see the number on the tile. Your job is to tie this move to how the business is actually run this quarter:
+- What does this number mean for cash, margin, ad efficiency, wine-club retention, wholesale velocity, or fulfillment?
+- Which lever (pricing, ad mix, club cadence, COGS, wholesale push, retention) does it point at?
+- What is the one operator move that compounds — not a generic "monitor it" or "investigate".
+
+Voice: blunt, numerate, SAP-style precision. Lead with the business implication, not the raw delta. Use concrete operator language ("pull Meta spend", "tighten club skip window", "renegotiate glass", "reroute wholesale to top-3 distributors"). Never use the word "synergy". Never recommend hiring consultants or agencies. Never restate the metric without a business consequence.
+
+Treat the user's standing directives as binding. Treat taught business facts as ground truth.`;
+
+  const directiveBlock = knowledge.directives.length
+    ? `\n\nSTANDING DIRECTIVES (binding):\n${knowledge.directives.map((d, i) => `${i + 1}. ${d}`).join("\n")}`
+    : "";
+  const factBlock = knowledge.facts.length
+    ? `\n\nBUSINESS CONTEXT (ground truth):\n${knowledge.facts.map((d, i) => `${i + 1}. ${d}`).join("\n")}`
+    : "";
+  const fullSys = sys + directiveBlock + factBlock;
+
   const ctx = JSON.stringify({
     tile: h.tile_key,
     metric: h.metric,
@@ -197,8 +219,15 @@ async function generateNarrative(apiKey: string, h: Heuristic): Promise<{ headli
       body: JSON.stringify({
         model: MODEL,
         messages: [
-          { role: "system", content: sys },
-          { role: "user", content: `Write a CFO insight for this metric move. Return JSON only with keys headline (<=90 chars), body (<=200 chars), recommended_action (<=120 chars). Numbers in headline are OK. Context:\n${ctx}` },
+          { role: "system", content: fullSys },
+          { role: "user", content: `Write a strategic tile insight for this metric move on the Rescue Dog Wines finance board.
+
+Rules for the output:
+- headline (<=110 chars): lead with the BUSINESS IMPLICATION, not the raw delta. Bad: "Revenue up 12% vs prior 90d". Good: "DTC pull from wine-club shipments is masking flat à-la-carte demand".
+- body (<=240 chars): 1 sentence connecting the move to the operating model (cash, margin, club, ads, wholesale, fulfillment). Cite the numbers as proof, not as the point.
+- recommended_action (<=140 chars): ONE concrete operator move starting with a verb. Specify the lever, the target, and the timeframe. Bad: "Investigate the driver". Good: "Cut Meta prospecting 30% this week and reallocate to club-retention email".
+
+Context:\n${ctx}` },
         ],
         tools: [{
           type: "function",
@@ -274,6 +303,22 @@ Deno.serve(async (req) => {
     return J(200, { generated: 0, considered: 0, note: "No material moves detected for this window." });
   }
 
+  // Pull this user's standing directives + taught business facts so Graz's
+  // tile-level insights are framed in the operator's own strategy and ground
+  // truth — not generic CFO platitudes.
+  const { data: graz } = await admin
+    .from("graz_directives")
+    .select("directive,kind,active")
+    .eq("user_id", userId)
+    .eq("active", true);
+  const directives = ((graz ?? []) as any[])
+    .filter((d) => (d.kind ?? "directive") === "directive")
+    .map((d) => String(d.directive));
+  const facts = ((graz ?? []) as any[])
+    .filter((d) => d.kind === "context")
+    .map((d) => String(d.directive));
+  const knowledge = { directives, facts };
+
   let written = 0;
   let skipped = 0;
   for (const h of heuristics) {
@@ -282,7 +327,7 @@ Deno.serve(async (req) => {
     const deltaBucket = h.delta_pct != null ? Math.sign(h.delta_pct) * Math.floor(Math.abs(h.delta_pct) * 10) / 10 : 0;
     const dedupe = await sha256Hex(`${h.tile_key}|${h.metric}|${deltaBucket}|${h.detail.window_days}|${day}`);
 
-    const nar = apiKey ? await generateNarrative(apiKey, h) : fallbackNarrative(h);
+    const nar = apiKey ? await generateNarrative(apiKey, h, knowledge) : fallbackNarrative(h);
 
     const { error } = await admin.from("cfo_insights").insert({
       tile_key: h.tile_key,

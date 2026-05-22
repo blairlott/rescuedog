@@ -135,8 +135,8 @@ export function MetaAutopilotHealth() {
   }, [enabled, stoppedAt, killLog]);
 
   async function reEnable() {
-    if (phrase !== RE_ENABLE_PHRASE) {
-      toast.error(`Type "${RE_ENABLE_PHRASE}" exactly.`);
+    if (cooldownActive) {
+      toast.error("Cooldown still active.");
       return;
     }
     if (!ack) {

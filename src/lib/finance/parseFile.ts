@@ -77,7 +77,8 @@ export async function parseXLSX(file: File, sheetName?: string): Promise<ParsedD
 export async function parsePDF(file: File): Promise<ParsedDataset> {
   // Best-effort: extract text, split lines, treat first non-empty line as header,
   // split each line on 2+ spaces / tabs. Works for QB and Vinoshipper text exports.
-  const pdfjs: any = await import(/* @vite-ignore */ "https://esm.sh/pdfjs-dist@4.7.76/build/pdf.min.mjs");
+  // @ts-ignore - loaded from CDN at runtime
+  const pdfjs: any = await import(/* @vite-ignore */ ("https://esm.sh/pdfjs-dist@4.7.76/build/pdf.min.mjs" as string));
   pdfjs.GlobalWorkerOptions.workerSrc = "https://esm.sh/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs";
   const buf = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data: buf }).promise;

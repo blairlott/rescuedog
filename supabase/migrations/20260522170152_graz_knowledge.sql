@@ -36,3 +36,17 @@ CREATE POLICY "admins write graz knowledge"
 CREATE TRIGGER graz_knowledge_set_updated_at
   BEFORE UPDATE ON public.graz_knowledge
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Seed initial Graz brief so the persona has substance before Lindy
+-- delivers the deeper RDW history brief.
+INSERT INTO public.graz_knowledge (kind, title, content, priority) VALUES
+('brief', 'RDW one-pager (seed)', 'Rescue Dog Wines (RDW) is a small, cause-driven DTC wine + merch business. Mission: helping dogs find their forever home. Brand voice: quietly bold, never quantified-impact bragging until verified. Brand cues: red #c30017, black, grey, Nunito Sans / Avenir Next, flat sharp edges (no rounded corners), dual-brand split between high-def Rescue Dog logo (merch) and black RDW logo (wine).
+Tech: Lovable Cloud (Supabase) for DB/auth/CRM/CMS. Wine catalog in Supabase wine_products. Merch in headless Shopify (Storefront API). Wine checkout = Vinoshipper deep-link handoff for compliance + payment. Merch checkout = Shopify cart checkoutUrl in new tab. Age gate on wine routes only.
+Revenue rails: DTC wine (Vinoshipper) - Wine club (custom, replacing Vinoshipper club) - Wholesale (B2B inquiries by region) - Merch (Shopify) - Donations (501(c) form, Resend email).
+Always say "shipping included" - never "free shipping". Loyalty is access-based ("The Pack"), never % off.', 10),
+('ops', 'RDW operating rails (seed)', 'Marketing stack: Meta + Google ads (tracked in Command Center / Kennel mirrors), Klaviyo-style retention via club + lifecycle.
+Compliance: state-by-state wine shipping rules; adult-sig required; UPS weather holds in summer/winter. Wine compliance enforced at Vinoshipper checkout.
+Fulfillment: wine ships via Vinoshipper bonded warehouse; merch via Shopify-connected dropship (Printful + others).
+Ambassador program: single-tier, impact.com handles commission/1099, vanity pages + tasting events.
+Internal AI: Graz for finance/strategy; Bob for ops notes; Lindy as data + content automation agent writing into lindy_inbox.', 8)
+ON CONFLICT DO NOTHING;

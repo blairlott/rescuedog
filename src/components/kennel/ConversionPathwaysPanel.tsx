@@ -191,9 +191,88 @@ export function ConversionPathwaysPanel() {
           {triggers && (
             <TriggerAttribution t={triggers} />
           )}
+
+          {/* À la carte sales */}
+          <AlaCartePanel ac={data.alaCarte} />
         </div>
       )}
     </section>
+  );
+}
+
+const COHORT_LABEL: Record<string, string> = {
+  guestOnly: "Guest-only",
+  preConversion: "Pre-conversion",
+  postConversion: "Member add-on (converters)",
+  directMember: "Member add-on (direct joiners)",
+};
+
+function AlaCartePanel({ ac }: { ac: import("@/lib/wineClubMembers").AlaCarteSummary }) {
+  const maxCohort = Math.max(...ac.byCohort.map((c) => c.orders), 1);
+  const maxChannel = Math.max(...ac.channelMix.map((c) => c.orders), 1);
+  return (
+    <div className="border-2 border-foreground p-4 space-y-3" style={{ borderRadius: 0 }}>
+      <div className="flex items-baseline justify-between">
+        <h3 className="text-xs uppercase tracking-brand font-bold text-foreground">
+          À la carte sales · non-club one-off orders
+        </h3>
+        <div className="text-[11px] text-muted-foreground">
+          {ac.uniqueBuyers.toLocaleString()} unique buyers
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Tile label="Orders" value={ac.totalOrders.toLocaleString()} />
+        <Tile label="Revenue" value={fmtUsd(ac.totalRevenueCents)} />
+        <Tile label="AOV" value={fmtUsd(ac.aovCents)} />
+        <Tile
+          label="Member add-on rate"
+          value={fmtPct(ac.memberAddonRate)}
+          hint="members who also buy à la carte"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Card title="Orders by cohort">
+          <div className="space-y-1.5">
+            {ac.byCohort.map((c) => (
+              <div key={c.cohort} className="space-y-0.5">
+                <Bar
+                  label={COHORT_LABEL[c.cohort] ?? c.cohort}
+                  count={c.orders}
+                  max={maxCohort}
+                />
+                <div className="pl-[4.5rem] text-[10px] text-muted-foreground tabular-nums">
+                  {c.buyers.toLocaleString()} buyers · {fmtUsd(c.revenueCents)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card title="Channel mix">
+          <div className="space-y-1.5">
+            {ac.channelMix.length === 0 ? (
+              <div className="text-xs text-muted-foreground">No à la carte signal yet.</div>
+            ) : (
+              ac.channelMix.map((c) => (
+                <div key={c.channel} className="space-y-0.5">
+                  <Bar label={c.channel} count={c.orders} max={maxChannel} />
+                  <div className="pl-[4.5rem] text-[10px] text-muted-foreground tabular-nums">
+                    {fmtUsd(c.revenueCents)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        À la carte = any non-WINE_CLUB transaction. "Pre-conversion" is what fed the funnel;
+        "Member add-on" is incremental revenue layered on top of club shipments — the higher that
+        rate, the deeper your members are engaging.
+      </p>
+    </div>
   );
 }
 

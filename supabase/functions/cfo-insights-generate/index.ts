@@ -435,9 +435,14 @@ Deno.serve(async (req) => {
   const days = Math.max(7, Math.min(365, Number(body.days ?? 90)));
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const financeClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: auth } } },
+  );
   const apiKey = Deno.env.get("LOVABLE_API_KEY")!;
 
-  const heuristics = await runHeuristics(admin, days);
+  const heuristics = await runHeuristics(financeClient, days);
   if (heuristics.length === 0) {
     return J(200, { generated: 0, considered: 0, note: "No material moves detected for this window." });
   }

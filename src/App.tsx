@@ -25,6 +25,11 @@ import { KennelGuard } from "./components/kennel/KennelGuard";
 import { KennelLayout } from "./components/kennel/KennelLayout";
 import CrmLayout from "./components/crm/CrmLayout";
 import { SiteIntelTracker } from "./components/SiteIntelTracker";
+const FinanceLayout = lazy(() => import("./components/finance/FinanceLayout"));
+const FinanceLogin = lazy(() => import("./pages/finance/FinanceLogin"));
+const FinanceDashboard = lazy(() => import("./pages/finance/FinanceDashboard"));
+const FinanceUsersPage = lazy(() => import("./pages/finance/FinanceUsersPage"));
+const FinanceWorkspace = lazy(() => import("./pages/finance/FinanceWorkspace"));
 
 const Index = lazy(() => import("./pages/Index"));
 const MerchHomePage = lazy(() => import("./pages/MerchHomePage"));
@@ -163,7 +168,7 @@ function AppContent() {
   // Fire Meta Pixel PageView on every SPA route change (after initial init).
   useEffect(() => {
     if (path.startsWith("/admin") || path.startsWith("/cms") || path.startsWith("/crm") ||
-        path.startsWith("/kennel") || path.startsWith("/dropship")) return;
+        path.startsWith("/kennel") || path.startsWith("/dropship") || path.startsWith("/finance")) return;
     trackPageView();
   }, [path]);
   useEffect(() => {
@@ -176,7 +181,7 @@ function AppContent() {
   // A/B funnel: log one pageview per route change (skips internal admin tools).
   useEffect(() => {
     if (path.startsWith("/admin") || path.startsWith("/cms") || path.startsWith("/crm") ||
-        path.startsWith("/kennel") || path.startsWith("/dropship") || path.startsWith("/club/admin") || path.startsWith("/club-admin")) {
+        path.startsWith("/kennel") || path.startsWith("/dropship") || path.startsWith("/club/admin") || path.startsWith("/club-admin") || path.startsWith("/finance")) {
       return;
     }
     logAbEvent("pageview", { path });
@@ -205,6 +210,13 @@ function AppContent() {
       <Route path="/admin/request-access" element={<RequestAccessPage />} />
       <Route path="/admin/login" element={<Navigate to="/admin" replace />} />
       <Route path="/admin/change-password" element={<ForcePasswordChangePage />} />
+      <Route path="/finance/login" element={<FinanceLogin />} />
+      <Route path="/finance" element={<FinanceLayout />}>
+        <Route index element={<FinanceDashboard />} />
+        <Route path="users" element={<FinanceUsersPage />} />
+        <Route path="workspace" element={<FinanceWorkspace />} />
+        <Route path="workspace/:datasetId" element={<FinanceWorkspace />} />
+      </Route>
       <Route path="/wholesale" element={<WholesalePage />} />
       <Route path="/trade-and-media" element={<WholesalePage />} />
       <Route path="/about" element={<AboutPage />} />

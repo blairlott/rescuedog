@@ -17,6 +17,7 @@ import { QuickBooksPanel } from "@/components/finance/QuickBooksPanel";
 import { TileInsightStrip } from "@/components/finance/InsightStrip";
 import { InsightsDrawer } from "@/components/finance/InsightsDrawer";
 import { useCfoInsights } from "@/hooks/finance/useCfoInsights";
+import { useGenerateInsights } from "@/hooks/finance/useCfoInsights";
 import { useCfoBoards, useCreateBoard, useUpdateBoard, useDeleteBoard, useIncomingShares, type CfoBoard } from "@/hooks/finance/useCfoBoards";
 import { SortableTileGrid, type SortableTile } from "@/components/finance/SortableTileGrid";
 import { ShareBoardDialog } from "@/components/finance/ShareBoardDialog";
@@ -50,6 +51,10 @@ export default function FinanceDashboard() {
   const [shareOpen, setShareOpen] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
   const { data: openInsights = [] } = useCfoInsights("open");
+  const { data: doneInsights = [] } = useCfoInsights("done");
+  const { data: dismissedInsights = [] } = useCfoInsights("dismissed");
+  const generateInsights = useGenerateInsights();
+  const [autoGenAttempted, setAutoGenAttempted] = useState(false);
   const { data: boards = [] } = useCfoBoards(userId);
   const createBoard = useCreateBoard();
   const updateBoard = useUpdateBoard();
@@ -77,6 +82,19 @@ export default function FinanceDashboard() {
 
   const board: CfoBoard | undefined = boards.find(b => b.id === activeBoardId);
   const tiles = board?.tiles ?? [];
+
+  // Auto-generate insights on first load if the user has never had any.
+  // Without this, every new user sees "Coming Soon" forever because the
+  // edge function is only triggered manually from the Insights drawer.
+  useEffect(() => {
+    if (autoGenAttempted) return;
+    if (!userId || !board) return;
+    const totalEver = openInsights.length + doneInsights.length + dismissedInsights.length;
+    if (totalEver > 0) { setAutoGenAttempted(true); return; }
+    setAutoGenAttempted(true);
+    generateInsights.mutate(days);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, board?.id, openInsights.length, doneInsights.length, dismissedInsights.length]);
 
   // Auto-add vs_waterfall next to vs_summary on existing boards (one-time migration).
   useEffect(() => {

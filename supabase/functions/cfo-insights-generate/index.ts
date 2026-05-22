@@ -555,6 +555,14 @@ Deno.serve(async (req) => {
     const deltaBucket = h.delta_pct != null ? Math.sign(h.delta_pct) * Math.floor(Math.abs(h.delta_pct) * 10) / 10 : 0;
     const dedupe = await sha256Hex(`${h.tile_key}|${h.metric}|${deltaBucket}|${h.detail.window_days}|${day}`);
 
+    const { data: existing } = await admin
+      .from("cfo_insights")
+      .select("id")
+      .eq("tile_key", h.tile_key)
+      .eq("dedupe_hash", dedupe)
+      .maybeSingle();
+    if (existing) { skipped++; continue; }
+
     const nar = apiKey ? await generateNarrative(apiKey, h, knowledge) : fallbackNarrative(h);
 
     const { error } = await admin.from("cfo_insights").insert({

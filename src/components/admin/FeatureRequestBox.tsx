@@ -5,17 +5,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, Flame } from "lucide-react";
 
 interface Props {
   userId: string;
   userEmail: string | null;
   userName?: string | null;
+  priority?: "normal" | "high";
+  defaultArea?: string;
+  title?: string;
+  description?: string;
 }
 
-export function FeatureRequestBox({ userId, userEmail, userName }: Props) {
+export function FeatureRequestBox({
+  userId,
+  userEmail,
+  userName,
+  priority = "normal",
+  defaultArea,
+  title = "Submit a feature request",
+  description = "Have an idea or improvement? Send it straight to the owner.",
+}: Props) {
   const { toast } = useToast();
-  const [area, setArea] = useState("");
+  const [area, setArea] = useState(defaultArea ?? "");
   const [request, setRequest] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -29,26 +41,39 @@ export function FeatureRequestBox({ userId, userEmail, userName }: Props) {
       user_name: userName ?? null,
       area: area.trim() || null,
       request: request.trim(),
+      priority,
     });
     setSubmitting(false);
     if (error) {
       toast({ title: "Could not submit", description: error.message, variant: "destructive" });
       return;
     }
-    setArea("");
+    setArea(defaultArea ?? "");
     setRequest("");
-    toast({ title: "Feature request sent", description: "Thanks — the owner will see this in the admin inbox." });
+    toast({
+      title: "Feature request sent",
+      description: priority === "high"
+        ? "Flagged HIGH PRIORITY — the owner will see it at the top of the inbox."
+        : "Thanks — the owner will see this in the admin inbox.",
+    });
   };
 
   return (
     <div className="border border-border bg-background p-6">
       <div className="flex items-center gap-2 mb-3">
-        <Lightbulb className="h-5 w-5 text-primary" />
-        <h3 className="font-bold text-foreground">Submit a feature request</h3>
+        {priority === "high" ? (
+          <Flame className="h-5 w-5 text-primary" />
+        ) : (
+          <Lightbulb className="h-5 w-5 text-primary" />
+        )}
+        <h3 className="font-bold text-foreground">{title}</h3>
+        {priority === "high" && (
+          <span className="ml-1 text-[10px] font-bold uppercase tracking-brand bg-primary text-primary-foreground px-2 py-0.5">
+            High priority
+          </span>
+        )}
       </div>
-      <p className="text-sm text-muted-foreground mb-4">
-        Have an idea or improvement? Send it straight to the owner.
-      </p>
+      <p className="text-sm text-muted-foreground mb-4">{description}</p>
       <form onSubmit={submit} className="space-y-3">
         <div>
           <Label htmlFor="fr-area" className="text-xs uppercase tracking-brand">Area (optional)</Label>

@@ -1,0 +1,49 @@
+// Initiates the QuickBooks Online OAuth flow.
+// Returns the Intuit authorization URL for the admin to follow.
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+const J = (s: number, b: unknown) =>
+  new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
+
+const REDIRECT_URI = `${Deno.env.get("SUPABASE_URL")}/functions/v1/qbo-auth-callback`;
+const SCOPE = "com.intuit.quickbooks.accounting";
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  const auth = req.headers.get("Authorization");
+  if (!auth?.startsWith("Bearer ")) return J(401, { error: "unauthorized" });
+
+  const sb = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: auth } } },
+  );
+  const { data: claims } = await sb.auth.getClaims(auth.replace("Bearer ", ""));
+  const userId = claims?.claims?.sub;
+  if (!userId) return J(401, { error: "unauthorized" });
+
+  const { data: roles } = await sb.from("user_roles").select("role").eq("user_id", userId);
+  const ok = (roles ?? []).some((r: any) => ["owner", "admin", "cfo"].includes(r.role));
+  if (!ok) return J(403, { error: "forbidden" });
+
+  const clientId = Deno.env.get("QBO_CLIENT_ID");
+  if (!clientId) return J(500, { error: "QBO_CLIENT_ID not configured" });
+
+  const state = crypto.randomUUID();
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  await admin.from("qbo_oauth_states").insert({ state, user_id: userId });
+
+  const url = new URL("https://appcenter.intuit.com/connect/oauth2");
+  url.searchParams.set("client_id", clientId);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("scope", SCOPE);
+  url.searchParams.set("redirect_uri", REDIRECT_URI);
+  url.searchParams.set("state", state);
+
+  return J(200, { authorize_url: url.toString() });
+});

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchConversionPathways } from "@/lib/wineClubMembers";
 import { Sparkles } from "lucide-react";
+import type { ReactNode } from "react";
 
 function fmtPct(n: number) {
   if (!isFinite(n)) return "—";
@@ -175,7 +176,7 @@ function Tile({ label, value, hint }: { label: string; value: string; hint?: str
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="border-2 border-foreground p-3" style={{ borderRadius: 0 }}>
       <div className="text-[11px] uppercase tracking-brand font-bold text-foreground mb-2">{title}</div>

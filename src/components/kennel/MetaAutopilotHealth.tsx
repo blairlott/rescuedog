@@ -135,8 +135,8 @@ export function MetaAutopilotHealth() {
   }, [enabled, stoppedAt, killLog]);
 
   async function reEnable() {
-    if (phrase !== RE_ENABLE_PHRASE) {
-      toast.error(`Type "${RE_ENABLE_PHRASE}" exactly.`);
+    if (cooldownActive) {
+      toast.error("Cooldown still active.");
       return;
     }
     if (!ack) {
@@ -253,29 +253,11 @@ export function MetaAutopilotHealth() {
                 <div className="text-[11px] text-muted-foreground mb-2">
                   {cooldownActive
                     ? <>Cooldown active: <strong>{Math.ceil(cooldownRemainingMs / 60_000)} min</strong> remaining. Re-enable available at {cooldownEndsAt?.toLocaleTimeString()}.</>
-                    : <>Cooldown elapsed. To re-enable, type the phrase below exactly and acknowledge.</>}
+                    : <>Cooldown elapsed. Re-enable with one click.</>}
                 </div>
-                <input
-                  type="text"
-                  value={phrase}
-                  onChange={(e) => setPhrase(e.target.value)}
-                  placeholder={RE_ENABLE_PHRASE}
-                  disabled={cooldownActive || busy}
-                  className="w-full text-xs border-2 border-foreground px-2 py-2 bg-background disabled:opacity-50"
-                  style={{ borderRadius: 0 }}
-                />
-                <label className="flex items-start gap-2 mt-2 text-[11px] text-foreground">
-                  <input
-                    type="checkbox"
-                    checked={ack}
-                    onChange={(e) => setAck(e.target.checked)}
-                    disabled={cooldownActive || busy}
-                  />
-                  <span>I reviewed the auto-stop reason and the underlying metrics. Re-enabling now is intentional.</span>
-                </label>
                 <button
                   onClick={reEnable}
-                  disabled={cooldownActive || busy || phrase !== RE_ENABLE_PHRASE || !ack}
+                  disabled={cooldownActive || busy}
                   className="mt-2 text-[11px] uppercase tracking-brand font-bold border-2 border-primary bg-primary text-primary-foreground px-3 py-2 hover:bg-primary/90 disabled:opacity-40"
                   style={{ borderRadius: 0 }}
                 >

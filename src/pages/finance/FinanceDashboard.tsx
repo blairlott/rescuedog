@@ -20,6 +20,7 @@ import { useCfoInsights } from "@/hooks/finance/useCfoInsights";
 import { useCfoBoards, useCreateBoard, useUpdateBoard, useDeleteBoard, useIncomingShares, type CfoBoard } from "@/hooks/finance/useCfoBoards";
 import { SortableTileGrid, type SortableTile } from "@/components/finance/SortableTileGrid";
 import { ShareBoardDialog } from "@/components/finance/ShareBoardDialog";
+import { GrazChat } from "@/components/finance/GrazChat";
 
 const RANGES = [
   { label: "Last 7 days", days: 7 },
@@ -249,6 +250,8 @@ export default function FinanceDashboard() {
       {tiles.length > 0 && (
         <SortableTileGrid tiles={sortableTiles} onReorder={reorderTiles} onRemove={removeTile} />
       )}
+
+      <GrazChat days={days} userId={userId} />
 
       {userId && (
         <FeatureRequestBox

@@ -5118,6 +5118,57 @@ export type Database = {
         }
         Relationships: []
       }
+      graz_directives: {
+        Row: {
+          active: boolean
+          created_at: string
+          directive: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          directive: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          directive?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      graz_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       gtm_deploy_log: {
         Row: {
           action: string

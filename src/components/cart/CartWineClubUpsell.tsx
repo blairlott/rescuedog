@@ -8,7 +8,8 @@ import { useIsMember } from "@/hooks/useIsMember";
 import { useWineClubTiers } from "@/hooks/useWineClub";
 import { useEffect } from "react";
 import { useCartStore } from "@/stores/cartStore";
-import { discountEligibleSubtotal } from "@/lib/wineBundles";
+import { discountEligibleSubtotal, effectiveBottleCount } from "@/lib/wineBundles";
+import { useCartSettings } from "@/hooks/useCartSettings";
 
 /**
  * Cart-level Wine Club join nudge. Toggling it ON applies the 20% member
@@ -25,9 +26,14 @@ export function CartWineClubUpsell() {
   const setClubTierId = useCheckoutIntentStore((s) => s.setClubTierId);
   const { data: tiers } = useWineClubTiers();
   const items = useCartStore((s) => s.items);
+  const { fullCaseCount } = useCartSettings();
   // Sampler / bundle SKUs are excluded from member discounts at checkout,
   // so don't tease the 20% join offer if nothing in the cart qualifies.
   const clubEligibleSubtotal = discountEligibleSubtotal(items as any);
+  // Full case (12+ bottles) bumps the member rate from 20% to 25% — keep
+  // the headline in sync with CartUpsellBanner.
+  const totalBottles = effectiveBottleCount(items as any);
+  const joinPct = totalBottles >= fullCaseCount ? 25 : 20;
 
   // Already a member — no need to upsell joining
   if (isMember) return null;
@@ -61,7 +67,7 @@ export function CartWineClubUpsell() {
         <Wine className="w-5 h-5 text-primary shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-foreground">
-            Join the Wine Club & save 20% today
+            Join the Wine Club & save {joinPct}% today
           </p>
           <p className="text-[11px] text-muted-foreground">
             Applied to this order. Pick your tier after checkout · cancel anytime.

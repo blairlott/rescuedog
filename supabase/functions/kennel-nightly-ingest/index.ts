@@ -60,6 +60,8 @@ Deno.serve(async (req) => {
     { name: "meta",            fn: "kennel-ingest-meta",      body: { days } },
     { name: "google",          fn: "kennel-ingest-google",    body: { days } },
     { name: "instacart",       fn: "kennel-ingest-instacart", body: { days } },
+    { name: "google_keywords",      fn: "kennel-ingest-google-keywords",      body: { days: 30 } },
+    { name: "meta_search_terms",    fn: "kennel-ingest-meta-search-terms",    body: { days: 30 } },
     { name: "mailchimp_sync",  fn: "kennel-mailchimp-sync",   body: {} },
     { name: "winback_meta",    fn: "kennel-winback-meta-sync",   body: {} },
     { name: "winback_google",  fn: "kennel-winback-google-sync", body: {} },

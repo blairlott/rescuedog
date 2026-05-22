@@ -40,8 +40,8 @@ function Empty({ msg = "No data in range" }: { msg?: string }) {
 
 /* ---------------- QuickBooks tiles ---------------- */
 
-export function QbPnlTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
+export function QbPnlTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
   const { data, isLoading } = useQuery({
     queryKey: ["finance_pnl_summary", start, end],
     queryFn: async () => {
@@ -79,8 +79,8 @@ export function QbPnlTile({ days }: { days: number }) {
   );
 }
 
-export function QbRevenueChannelTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
+export function QbRevenueChannelTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
   const { data, isLoading } = useQuery({
     queryKey: ["finance_revenue_by_channel", start, end],
     queryFn: async () => {
@@ -106,8 +106,8 @@ export function QbRevenueChannelTile({ days }: { days: number }) {
   );
 }
 
-export function QbAdSpendTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
+export function QbAdSpendTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
   const { data, isLoading } = useQuery({
     queryKey: ["finance_spend_by_platform", start, end],
     queryFn: async () => {
@@ -134,9 +134,10 @@ export function QbAdSpendTile({ days }: { days: number }) {
   );
 }
 
-export function QbCashTrendTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
-  const bucket = days <= 31 ? "day" : days <= 120 ? "week" : "month";
+export function QbCashTrendTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
+  const spanDays = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000));
+  const bucket = spanDays <= 31 ? "day" : spanDays <= 120 ? "week" : "month";
   const { data, isLoading } = useQuery({
     queryKey: ["finance_cash_trend", start, end, bucket],
     queryFn: async () => {
@@ -170,8 +171,8 @@ export function QbCashTrendTile({ days }: { days: number }) {
   );
 }
 
-export function QbTopVendorsTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
+export function QbTopVendorsTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
   const { data, isLoading } = useQuery({
     queryKey: ["finance_top_vendors", start, end],
     queryFn: async () => {
@@ -199,8 +200,8 @@ export function QbTopVendorsTile({ days }: { days: number }) {
 
 /* ---------------- Vinoshipper tiles ---------------- */
 
-function useVsSummary(days: number) {
-  const { start, end } = rangeDates(days);
+function useVsSummary(days: number, s?: string, e?: string) {
+  const { start, end } = resolveRange(days, s, e);
   return useQuery({
     queryKey: ["finance_vs_summary", start, end],
     queryFn: async () => {
@@ -212,8 +213,8 @@ function useVsSummary(days: number) {
   });
 }
 
-export function VsSummaryTile({ days }: { days: number }) {
-  const { data, isLoading } = useVsSummary(days);
+export function VsSummaryTile({ days, start, end }: TileRangeProps) {
+  const { data, isLoading } = useVsSummary(days, start, end);
   if (isLoading) return <Loading />;
   if (!data) return <Empty />;
   const rows = [
@@ -235,8 +236,8 @@ export function VsSummaryTile({ days }: { days: number }) {
   );
 }
 
-export function VsWcVsAlcTile({ days }: { days: number }) {
-  const { data, isLoading } = useVsSummary(days);
+export function VsWcVsAlcTile({ days, start, end }: TileRangeProps) {
+  const { data, isLoading } = useVsSummary(days, start, end);
   if (isLoading) return <Loading />;
   if (!data) return <Empty />;
   const chartData = [
@@ -261,8 +262,8 @@ export function VsWcVsAlcTile({ days }: { days: number }) {
 
 /* ---------------- Command Center read-only imports ---------------- */
 
-export function CcRoasTile({ days }: { days: number }) {
-  const { start, end } = rangeDates(days);
+export function CcRoasTile({ days, start: s, end: e }: TileRangeProps) {
+  const { start, end } = resolveRange(days, s, e);
   const { data, isLoading } = useQuery({
     queryKey: ["finance_cc_roas", start, end],
     queryFn: async () => {

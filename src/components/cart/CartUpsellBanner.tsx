@@ -7,9 +7,11 @@ import { VS_FLAT_SHIPPING_USD, VS_FLAT_SHIPPING_MIN_BOTTLES } from "@/lib/vinosh
 interface CartUpsellBannerProps {
   totalBottles: number;
   cartTotal: number;
+  /** Subtotal eligible for club/case discounts (excludes sampler bundles). */
+  clubEligibleTotal?: number;
 }
 
-export function CartUpsellBanner({ totalBottles, cartTotal }: CartUpsellBannerProps) {
+export function CartUpsellBanner({ totalBottles, cartTotal, clubEligibleTotal }: CartUpsellBannerProps) {
   const { halfCaseCount, fullCaseCount, fullCaseDiscount, clubDiscount, caseDiscountCode } = useCartSettings();
   const { isMember, discountPercent } = useIsMember();
   // Members earn the higher club discount on full cases; guests get the
@@ -18,7 +20,8 @@ export function CartUpsellBanner({ totalBottles, cartTotal }: CartUpsellBannerPr
   // Universal Wine Club à la carte rate — always tease at a flat 20%
   // so the math matches the PDP member-price badges.
   const CLUB_ALACARTE_PCT = 20;
-  const clubSavings = cartTotal * (CLUB_ALACARTE_PCT / 100);
+  const eligibleForClub = clubEligibleTotal ?? cartTotal;
+  const clubSavings = eligibleForClub * (CLUB_ALACARTE_PCT / 100);
 
   return (
     <div className="space-y-2">
@@ -59,7 +62,7 @@ export function CartUpsellBanner({ totalBottles, cartTotal }: CartUpsellBannerPr
 
       {/* Wine Club savings callout — only for non-members, and only when
           there's an actual uplift over the public case rate */}
-      {cartTotal > 0 && !isMember && (
+      {eligibleForClub > 0 && !isMember && (
         <div className="flex items-start gap-2 rounded-md bg-primary/5 border border-primary/20 p-3 text-sm">
           <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
           <p className="text-foreground">

@@ -637,7 +637,7 @@ export const CartDrawer = () => {
 
                 {/* Upsell banners */}
                 <div className="mt-4">
-                  <CartUpsellBanner totalBottles={caseBottles} cartTotal={totalPrice} />
+                  <CartUpsellBanner totalBottles={caseBottles} cartTotal={totalPrice} clubEligibleTotal={discountableSubtotal} />
                 </div>
 
                 {/* Product cross-sells — always visible above the fold */}

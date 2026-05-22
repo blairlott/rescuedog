@@ -10,6 +10,7 @@ import { Plus, X, Calendar, BookOpen, Wine, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_TILE_KEYS, FINANCE_TILES, SOURCE_LABEL, TILE_BY_KEY, type FinanceTileSource } from "@/lib/financeTiles";
 import { renderTile } from "@/components/finance/FinanceTiles";
+import { FeatureRequestBox } from "@/components/admin/FeatureRequestBox";
 
 const RANGES = [
   { label: "Last 7 days", days: 7 },
@@ -24,9 +25,19 @@ export default function FinanceDashboard() {
   const [tiles, setTiles] = useState<string[]>(DEFAULT_TILE_KEYS);
   const [days, setDays] = useState<number>(90);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+    supabase.auth.getUser().then(async ({ data }) => {
+      const u = data.user;
+      setUserId(u?.id ?? null);
+      setUserEmail(u?.email ?? null);
+      if (u?.id) {
+        const { data: p } = await supabase.from("profiles").select("full_name").eq("id", u.id).maybeSingle();
+        setUserName((p as any)?.full_name ?? null);
+      }
+    });
   }, []);
 
   // Load saved layout
@@ -192,6 +203,18 @@ export default function FinanceDashboard() {
           </section>
         );
       })}
+
+      {userId && (
+        <FeatureRequestBox
+          userId={userId}
+          userEmail={userEmail}
+          userName={userName}
+          priority="high"
+          defaultArea="Finance"
+          title="Send a request to the owner"
+          description="Submit a feature request, fix, or data ask. CFO requests are flagged HIGH PRIORITY in the owner's inbox."
+        />
+      )}
     </div>
   );
 }

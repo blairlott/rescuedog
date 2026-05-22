@@ -4771,6 +4771,7 @@ export type Database = {
           area: string | null
           created_at: string
           id: string
+          priority: string
           request: string
           status: string
           updated_at: string
@@ -4783,6 +4784,7 @@ export type Database = {
           area?: string | null
           created_at?: string
           id?: string
+          priority?: string
           request: string
           status?: string
           updated_at?: string
@@ -4795,6 +4797,7 @@ export type Database = {
           area?: string | null
           created_at?: string
           id?: string
+          priority?: string
           request?: string
           status?: string
           updated_at?: string

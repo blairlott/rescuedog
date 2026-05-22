@@ -33,14 +33,14 @@ const STATUS_COLORS: Record<Draft["status"], string> = {
 };
 
 export default function CmsLindyInboxPage() {
-  const { user, loading } = useCmsAuth();
+  const { isCmsEditor, loading } = useCmsAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<Draft["status"] | "all">("pending");
   const [notes, setNotes] = useState<Record<string, string>>({});
 
-  if (!loading && !user) { navigate("/cms/login"); return null; }
+  if (!loading && !isCmsEditor) { navigate("/cms/login"); return null; }
 
   const { data: drafts = [], isLoading } = useQuery({
     queryKey: ["lindy-inbox", filter],

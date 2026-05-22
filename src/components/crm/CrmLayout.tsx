@@ -3,7 +3,7 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook, TrendingDown, FlaskConical, Headphones, ArrowLeft } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook, TrendingDown, FlaskConical, Headphones, ArrowLeft, Radar } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
 import { CrmBreadcrumbs } from "@/components/crm/CrmBreadcrumbs";
@@ -28,6 +28,7 @@ export default function CrmLayout() {
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/compliance", label: "Compliance", icon: ShieldCheck }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/leads", label: "Leads", icon: Mail }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/webhooks", label: "Webhooks", icon: Webhook }] : []),
+    ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/vinoshipper-api", label: "VS API Watcher", icon: Radar }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/cancellations", label: "Cancellations", icon: TrendingDown }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/customer-service", label: "Customer Service", icon: Headphones }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/admin/ab-results", label: "A/B Results", icon: FlaskConical }] : []),

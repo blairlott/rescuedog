@@ -99,6 +99,7 @@ const CrmLeadsPage = lazy(() => import("./pages/crm/CrmLeadsPage"));
 const CrmIntelligencePage = lazy(() => import("./pages/crm/CrmIntelligencePage"));
 const CrmCustomerMapPage = lazy(() => import("./pages/crm/CrmCustomerMapPage"));
 const CrmWebhooksPage = lazy(() => import("./pages/crm/CrmWebhooksPage"));
+const CrmVinoshipperApiPage = lazy(() => import("./pages/crm/CrmVinoshipperApiPage"));
 const CrmLegacyMigrationPage = lazy(() => import("./pages/CrmLegacyMigrationPage"));
 const CrmCancellationsPage = lazy(() => import("./pages/crm/CrmCancellationsPage"));
 const CrmCustomerServicePage = lazy(() => import("./pages/crm/CrmCustomerServicePage"));
@@ -281,6 +282,7 @@ function AppContent() {
         <Route path="intelligence" element={<CrmIntelligencePage />} />
         <Route path="customer-map" element={<CrmCustomerMapPage />} />
         <Route path="webhooks" element={<CrmWebhooksPage />} />
+        <Route path="vinoshipper-api" element={<CrmVinoshipperApiPage />} />
         <Route path="cancellations" element={<CrmCancellationsPage />} />
         <Route path="customer-service" element={<CrmCustomerServicePage />} />
         <Route path="legacy-migration" element={<CrmLegacyMigrationPage />} />

@@ -34,6 +34,7 @@ import { template as wineSubPaymentFailed } from './wine-subscription-payment-fa
 import { template as wineSubCardExpiring } from './wine-subscription-card-expiring.tsx'
 import { template as autopilotAutoStopped } from './autopilot-auto-stopped.tsx'
 import { template as accessRequestAdminNotification } from './access-request-admin-notification.tsx'
+import { template as vsApiUpdate } from './vs-api-update.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'ambassador-welcome': ambassadorWelcome,
@@ -61,4 +62,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'wine-subscription-card-expiring': wineSubCardExpiring,
   'autopilot-auto-stopped': autopilotAutoStopped,
   'access-request-admin-notification': accessRequestAdminNotification,
+  'vs-api-update': vsApiUpdate,
 }

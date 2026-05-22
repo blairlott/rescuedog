@@ -324,17 +324,29 @@ Deno.serve(async (req) => {
 
   const logExec = async (row: {
     action: string; ad_id?: string; adset_id?: string; reason: string;
+    target_level?: "ad" | "adset"; target_id?: string;
     before?: any; after?: any; success: boolean; error?: string;
     delta_pct?: number; spend_impact_cents?: number;
     roas_at_time?: number; spend_at_time?: number;
     request?: any; response?: any;
   }) => {
+    // Default target inference: kills/rotations operate on ads; scales/rollbacks on ad sets.
+    const targetLevel = row.target_level
+      ?? (row.action === "kill" || row.action === "rotate" ? "ad"
+        : row.action === "scale" || row.action === "rollback" ? "adset"
+        : (row.ad_id ? "ad" : row.adset_id ? "adset" : undefined));
+    const targetId = row.target_id
+      ?? (targetLevel === "ad" ? (row.ad_id ?? undefined)
+        : targetLevel === "adset" ? (row.adset_id ?? undefined)
+        : undefined);
     await admin.from("ad_execution_log").insert({
       executor: "z8_auto",
       actor_kind: "system",
       platform: "meta",
       action: row.action,
       campaign_id: row.adset_id ?? row.ad_id ?? null,
+      target_level: targetLevel ?? null,
+      target_id: targetId ?? null,
       before_value: row.before ?? null,
       after_value: row.after ?? null,
       delta_pct: row.delta_pct ?? null,

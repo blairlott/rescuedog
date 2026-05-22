@@ -251,6 +251,8 @@ export default function FinanceDashboard() {
         <SortableTileGrid tiles={sortableTiles} onReorder={reorderTiles} onRemove={removeTile} />
       )}
 
+      <GrazChat days={days} userId={userId} />
+
       {userId && (
         <FeatureRequestBox
           userId={userId}

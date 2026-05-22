@@ -11905,13 +11905,17 @@ export type Database = {
         Returns: {
           ad_attributed_revenue_cents: number
           ad_conversions: number
+          ala_carte_net_cents: number
           cogs_cents: number
+          contribution_after_ads_cents: number
           converting_ad_spend_cents: number
           discount_cents: number
           gross_revenue_cents: number
           net_after_cogs_and_ads_cents: number
           net_after_cogs_cents: number
           net_revenue_cents: number
+          wholesale_net_cents: number
+          wine_club_net_cents: number
         }[]
       }
       get_public_impact_totals: {

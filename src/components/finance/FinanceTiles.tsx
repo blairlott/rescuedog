@@ -276,39 +276,56 @@ export function VsWaterfallTile({ days, start: s, end: e }: TileRangeProps) {
       if (error) throw error;
       return (data as any[])?.[0] as {
         gross_revenue_cents: number; discount_cents: number; net_revenue_cents: number;
+        ala_carte_net_cents: number; wine_club_net_cents: number; wholesale_net_cents: number;
         cogs_cents: number; net_after_cogs_cents: number;
-        converting_ad_spend_cents: number; net_after_cogs_and_ads_cents: number;
+        converting_ad_spend_cents: number; contribution_after_ads_cents: number;
+        net_after_cogs_and_ads_cents: number;
         ad_conversions: number; ad_attributed_revenue_cents: number;
       } | undefined;
     },
   });
   if (isLoading) return <Loading />;
   if (!data) return <Empty />;
-  const tiers = [
-    { label: "Gross Revenue",            v: data.gross_revenue_cents,           tone: "text-foreground",       sub: "Vinoshipper, before discounts" },
-    { label: "Net Revenue",              v: data.net_revenue_cents,             tone: "text-foreground",       sub: `− ${fmtCents(data.discount_cents)} discounts` },
-    { label: "Net after COGS",           v: data.net_after_cogs_cents,          tone: "text-foreground",       sub: `− ${fmtCents(data.cogs_cents)} COGS (QBO)` },
-    { label: "Net after COGS & Ads",     v: data.net_after_cogs_and_ads_cents,  tone: Number(data.net_after_cogs_and_ads_cents) < 0 ? "text-red-600 dark:text-red-400" : "text-foreground", sub: `− ${fmtCents(data.converting_ad_spend_cents)} ad spend · ${Number(data.ad_conversions).toLocaleString()} conv` },
+  const finalNeg = Number(data.net_after_cogs_and_ads_cents) < 0;
+  const contribNeg = Number(data.contribution_after_ads_cents) < 0;
+  // Standard accounting waterfall, top-to-bottom. Subtotals are bold.
+  type Row = { label: string; v: number; sub?: string; subtotal?: boolean; tone?: string; indent?: boolean };
+  const rows: Row[] = [
+    { label: "À la Carte Orders",                v: data.ala_carte_net_cents,         sub: "Net of discounts",                                              indent: true },
+    { label: "Conversion-Attributed Orders",     v: data.ad_attributed_revenue_cents, sub: `${Number(data.ad_conversions).toLocaleString()} conv · Meta + Google (subset of above)`, indent: true },
+    { label: "Wine Club Shipments",              v: data.wine_club_net_cents,         sub: "Net of discounts",                                              indent: true },
+    ...(Number(data.wholesale_net_cents) > 0
+      ? [{ label: "Wholesale", v: data.wholesale_net_cents, sub: "Net of discounts", indent: true } as Row]
+      : []),
+    { label: "Net Revenue (Vinoshipper)",        v: data.net_revenue_cents,           sub: `Gross ${fmtCents(data.gross_revenue_cents)} − ${fmtCents(data.discount_cents)} discounts`, subtotal: true },
+    { label: "Contribution after Ad Spend",      v: data.contribution_after_ads_cents, sub: `− ${fmtCents(data.converting_ad_spend_cents)} converting ad spend`, subtotal: true, tone: contribNeg ? "text-red-600 dark:text-red-400" : undefined },
+    { label: "Net Profit (after COGS & Ads)",    v: data.net_after_cogs_and_ads_cents, sub: `− ${fmtCents(data.cogs_cents)} COGS (QBO)`,                    subtotal: true, tone: finalNeg ? "text-red-600 dark:text-red-400" : undefined },
   ];
   return (
-    <div className="flex flex-col gap-2">
-      {tiers.map((t, i) => (
-        <div key={t.label} className="border border-border p-2 flex items-baseline justify-between gap-3">
+    <div className="flex flex-col gap-1.5">
+      {rows.map((r) => (
+        <div
+          key={r.label}
+          className={`flex items-baseline justify-between gap-3 px-2 py-1.5 ${
+            r.subtotal ? "border-t-2 border-foreground bg-muted/30" : "border-b border-border/50"
+          } ${r.indent ? "pl-4" : ""}`}
+        >
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-brand text-muted-foreground">
-              {i + 1}. {t.label}
+            <div className={`text-[11px] uppercase tracking-brand ${r.subtotal ? "font-bold text-foreground" : "text-muted-foreground"}`}>
+              {r.label}
             </div>
-            <div className="text-[11px] text-muted-foreground truncate">{t.sub}</div>
+            {r.sub && <div className="text-[10px] text-muted-foreground truncate">{r.sub}</div>}
           </div>
-          <div className={`text-lg font-bold tabular-nums whitespace-nowrap ${t.tone}`}>{fmtCents(t.v)}</div>
+          <div className={`tabular-nums whitespace-nowrap ${r.subtotal ? "text-lg font-bold" : "text-sm font-semibold"} ${r.tone ?? "text-foreground"}`}>
+            {fmtCents(r.v)}
+          </div>
         </div>
       ))}
-      {data.ad_attributed_revenue_cents > 0 && (
-        <div className="text-[10px] text-muted-foreground">
-          Ad-attributed revenue: {fmtCents(data.ad_attributed_revenue_cents)} · platform-reported ROAS{" "}
-          {data.converting_ad_spend_cents > 0
-            ? (Number(data.ad_attributed_revenue_cents) / Number(data.converting_ad_spend_cents)).toFixed(2) + "×"
-            : "—"}
+      {data.converting_ad_spend_cents > 0 && (
+        <div className="text-[10px] text-muted-foreground pt-1">
+          Platform-reported ROAS:{" "}
+          {(Number(data.ad_attributed_revenue_cents) / Number(data.converting_ad_spend_cents)).toFixed(2)}× ·
+          Conversion-attributed lines reflect Meta + Google only.
         </div>
       )}
     </div>

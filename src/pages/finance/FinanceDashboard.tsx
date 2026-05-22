@@ -6,7 +6,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, X, Calendar } from "lucide-react";
+import { Plus, X, Calendar, BookOpen, Wine, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_TILE_KEYS, FINANCE_TILES, SOURCE_LABEL, TILE_BY_KEY, type FinanceTileSource } from "@/lib/financeTiles";
 import { renderTile } from "@/components/finance/FinanceTiles";
@@ -78,29 +78,44 @@ export default function FinanceDashboard() {
     return g;
   }, []);
 
+  const SOURCE_META: Record<FinanceTileSource, { icon: typeof BookOpen; chip: string }> = {
+    quickbooks: { icon: BookOpen, chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+    vinoshipper: { icon: Wine, chip: "bg-primary/10 text-primary" },
+    command_center: { icon: Activity, chip: "bg-foreground/10 text-foreground" },
+  };
+
+  const sections: FinanceTileSource[] = ["quickbooks", "vinoshipper", "command_center"];
+  const tilesBySource = sections.reduce<Record<FinanceTileSource, string[]>>((acc, src) => {
+    acc[src] = tiles.filter(k => TILE_BY_KEY[k]?.source === src);
+    return acc;
+  }, { quickbooks: [], vinoshipper: [], command_center: [] });
+
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="px-6 py-6 space-y-8 max-w-[1600px] mx-auto">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-end gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Finance Dashboard</h1>
-          <p className="text-sm text-muted-foreground">QuickBooks · Vinoshipper · Command Center</p>
+          <h1 className="text-2xl font-bold leading-tight">Overview</h1>
+          <p className="text-sm text-muted-foreground">Live financial pulse across QuickBooks, Vinoshipper, and the Command Center.</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <Select value={String(days)} onValueChange={onDaysChange}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {RANGES.map(r => <SelectItem key={r.days} value={String(r.days)}>{r.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2 h-9 px-3 border border-border bg-card">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Select value={String(days)} onValueChange={onDaysChange}>
+              <SelectTrigger className="w-40 h-7 border-0 px-0 focus:ring-0 shadow-none"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {RANGES.map(r => <SelectItem key={r.days} value={String(r.days)}>{r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add report</Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuContent align="end" className="w-80">
               {(Object.keys(grouped) as FinanceTileSource[]).map(src => (
                 <div key={src}>
-                  <DropdownMenuLabel>{SOURCE_LABEL[src]}</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-brand">{SOURCE_LABEL[src]}</DropdownMenuLabel>
                   {grouped[src].map(t => (
                     <DropdownMenuItem
                       key={t.key}
@@ -120,33 +135,63 @@ export default function FinanceDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-        {tiles.map(key => {
-          const def = TILE_BY_KEY[key];
-          if (!def) return null;
-          const span = def.defaultSpan;
-          const colClass = span === 12 ? "lg:col-span-12" : span === 6 ? "lg:col-span-6" : span === 4 ? "lg:col-span-4" : "lg:col-span-3";
-          return (
-            <div key={key} className={`border border-border bg-card p-4 ${colClass}`}>
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="text-[10px] uppercase tracking-brand text-muted-foreground">{SOURCE_LABEL[def.source]}</div>
-                  <h3 className="font-bold">{def.title}</h3>
-                </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeTile(key)} title="Remove">
-                  <X className="h-3.5 w-3.5" />
-                </Button>
+      {tiles.length === 0 && (
+        <div className="border border-dashed border-border bg-card p-12 text-center">
+          <div className="text-sm font-semibold">Your dashboard is empty</div>
+          <p className="text-sm text-muted-foreground mt-1">Click "Add report" to pull in KPIs from QuickBooks, Vinoshipper, or the Command Center.</p>
+        </div>
+      )}
+
+      {/* Sectioned tile groups */}
+      {sections.map(src => {
+        const keys = tilesBySource[src];
+        if (!keys.length) return null;
+        const meta = SOURCE_META[src];
+        const SrcIcon = meta.icon;
+        return (
+          <section key={src} className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className={`h-7 w-7 flex items-center justify-center ${meta.chip}`}>
+                <SrcIcon className="h-4 w-4" />
               </div>
-              {renderTile(key, days)}
+              <h2 className="text-sm font-bold uppercase tracking-brand">{SOURCE_LABEL[src]}</h2>
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-[10px] uppercase tracking-brand text-muted-foreground">{keys.length} {keys.length === 1 ? "tile" : "tiles"}</span>
             </div>
-          );
-        })}
-        {tiles.length === 0 && (
-          <div className="lg:col-span-12 border border-dashed border-border p-8 text-center text-muted-foreground">
-            No tiles yet. Click "Add report" to compose your dashboard.
-          </div>
-        )}
-      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+              {keys.map(key => {
+                const def = TILE_BY_KEY[key];
+                if (!def) return null;
+                const span = def.defaultSpan;
+                const colClass = span === 12 ? "lg:col-span-12" : span === 6 ? "lg:col-span-6" : span === 4 ? "lg:col-span-4" : "lg:col-span-3";
+                return (
+                  <div
+                    key={key}
+                    className={`group border border-border bg-card p-4 hover:border-foreground/30 transition-colors ${colClass}`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="min-w-0">
+                        <div className={`inline-block px-1.5 py-0.5 text-[9px] uppercase tracking-brand mb-1 ${meta.chip}`}>{SOURCE_LABEL[def.source]}</div>
+                        <h3 className="font-bold leading-tight truncate">{def.title}</h3>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeTile(key)}
+                        title="Remove tile"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    {renderTile(key, days)}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

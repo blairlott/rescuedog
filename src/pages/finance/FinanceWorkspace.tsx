@@ -71,52 +71,61 @@ export default function FinanceWorkspace() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr_240px] gap-4">
+    <div className="px-6 py-6 max-w-[1600px] mx-auto">
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold leading-tight">Workspace</h1>
+        <p className="text-sm text-muted-foreground">Upload financial data, pivot it, and save views you can pin or schedule.</p>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr_260px] gap-4">
         {/* Left: datasets */}
-        <aside className="space-y-2">
+        <aside className="border border-border bg-card p-3 space-y-2 h-fit sticky top-[72px]">
           <div className="flex items-center justify-between">
             <h2 className="text-xs uppercase tracking-brand font-semibold">Datasets</h2>
-            <Button size="sm" variant="ghost" onClick={() => setUploadOpen(true)}><Plus className="h-4 w-4" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setUploadOpen(true)}><Plus className="h-4 w-4" /></Button>
           </div>
           {!datasets.length && (
             <div className="text-xs text-muted-foreground p-3 border border-dashed border-border">
               Upload a CSV, XLSX, or PDF to get started.
             </div>
           )}
-          {datasets.map((d) => (
-            <button
-              key={d.id}
-              onClick={() => navigate(`/finance/workspace/${d.id}`)}
-              className={`w-full text-left p-2 border ${activeId === d.id ? "border-primary bg-primary/5" : "border-border hover:border-foreground/30"}`}
-            >
-              <div className="flex items-center gap-1.5 text-sm font-semibold truncate">
-                <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" />{d.name}
-              </div>
-              <div className="text-[10px] uppercase tracking-brand text-muted-foreground mt-0.5">
-                {d.row_count} rows · {d.visibility}
-              </div>
-            </button>
-          ))}
+          <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-1">
+            {datasets.map((d) => (
+              <button
+                key={d.id}
+                onClick={() => navigate(`/finance/workspace/${d.id}`)}
+                className={`w-full text-left p-2 border transition-colors ${activeId === d.id ? "border-primary bg-primary/5" : "border-transparent hover:bg-muted"}`}
+              >
+                <div className="flex items-center gap-1.5 text-sm font-semibold truncate">
+                  <FileSpreadsheet className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />{d.name}
+                </div>
+                <div className="text-[10px] uppercase tracking-brand text-muted-foreground mt-0.5">
+                  {d.row_count} rows · {d.visibility}
+                </div>
+              </button>
+            ))}
+          </div>
         </aside>
 
         {/* Center: workspace */}
         <main className="space-y-4 min-w-0">
           {active ? (
-            <>
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <h1 className="text-xl font-bold">{active.name}</h1>
+            <div className="border border-border bg-card">
+              <div className="flex items-center justify-between gap-2 p-4 border-b border-border">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold truncate">{active.name}</h2>
                   <p className="text-xs text-muted-foreground">
-                    {active.row_count.toLocaleString()} rows · {active.column_meta.length} cols · {active.visibility}
+                    {active.row_count.toLocaleString()} rows · {active.column_meta.length} cols ·
+                    <span className={`ml-1 px-1.5 py-0.5 text-[10px] uppercase tracking-brand ${active.visibility === "shared" ? "bg-primary/10 text-primary" : "bg-foreground/10"}`}>
+                      {active.visibility}
+                    </span>
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                   <Button size="sm" variant="outline" onClick={() => setSaveOpen(true)}><Save className="h-4 w-4 mr-1" />Save view</Button>
-                  <Button size="sm" variant="ghost" onClick={handleDeleteDataset}><Trash2 className="h-4 w-4" /></Button>
+                  <Button size="sm" variant="ghost" onClick={handleDeleteDataset} title="Delete dataset"><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </div>
-              <Tabs defaultValue="pivot">
+              <Tabs defaultValue="pivot" className="p-4">
                 <TabsList>
                   <TabsTrigger value="pivot">Pivot table</TabsTrigger>
                   <TabsTrigger value="chart">Chart</TabsTrigger>
@@ -128,9 +137,9 @@ export default function FinanceWorkspace() {
                   <ChartBuilder rows={rows} columns={active.column_meta} config={chart} onChange={setChart} />
                 </TabsContent>
               </Tabs>
-            </>
+            </div>
           ) : (
-            <div className="border border-dashed border-border p-12 text-center text-muted-foreground">
+            <div className="border border-dashed border-border bg-card p-12 text-center text-muted-foreground">
               <FileSpreadsheet className="h-10 w-10 mx-auto mb-3 opacity-50" />
               <p className="font-semibold">No dataset selected</p>
               <p className="text-sm">Upload financial data to start building pivots and charts.</p>
@@ -140,7 +149,7 @@ export default function FinanceWorkspace() {
         </main>
 
         {/* Right: saved views */}
-        <aside className="space-y-2">
+        <aside className="border border-border bg-card p-3 space-y-2 h-fit sticky top-[72px]">
           <h2 className="text-xs uppercase tracking-brand font-semibold">Saved views</h2>
           <SavedViewsPanel datasetId={activeId} onLoad={loadView} />
         </aside>

@@ -34,16 +34,39 @@ export default function FinanceLogin() {
   };
 
   return (
-    <div className="min-h-dvh bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2">
-            <DollarSign className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold">Finance Portal</h1>
+    <div className="min-h-dvh bg-muted/30 grid lg:grid-cols-2">
+      {/* Brand panel */}
+      <div className="hidden lg:flex flex-col justify-between p-12 bg-foreground text-background">
+        <div className="flex items-center gap-2">
+          <div className="h-9 w-9 bg-primary text-primary-foreground flex items-center justify-center">
+            <DollarSign className="h-5 w-5" />
           </div>
-          <p className="text-muted-foreground text-sm">CFO dashboard sign-in</p>
+          <div className="leading-tight">
+            <div className="text-[11px] uppercase tracking-brand opacity-70">Rescue Dog</div>
+            <div className="font-bold">Finance Portal</div>
+          </div>
         </div>
-        <form onSubmit={submit} className="space-y-4 bg-card border border-border p-6">
+        <div className="space-y-4 max-w-md">
+          <h2 className="text-3xl font-bold leading-tight">A single pane of glass for every dollar.</h2>
+          <p className="text-sm opacity-80">QuickBooks, Vinoshipper, and the Command Center — pivots, charts, and saved views, all in one private workspace.</p>
+        </div>
+        <div className="text-xs opacity-60">© Rescue Dog Wines · Finance access by invitation only.</div>
+      </div>
+
+      {/* Form panel */}
+      <div className="flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-6">
+          <div className="lg:hidden text-center space-y-2">
+            <div className="flex items-center justify-center gap-2">
+              <DollarSign className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold">Finance Portal</h1>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold">Sign in</h1>
+            <p className="text-sm text-muted-foreground">Access your CFO dashboard.</p>
+          </div>
+          <form onSubmit={submit} className="space-y-4 bg-card border border-border p-6">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
@@ -70,7 +93,8 @@ export default function FinanceLogin() {
               Forgot password?
             </button>
           </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -51,6 +51,52 @@ export interface VsCartLine {
 }
 
 /**
+ * Apply a coupon code to a Vinoshipper cart via the public REST API.
+ *
+ * Vinoshipper's Injector exposes no client-side `applyCode()` method
+ * (see https://developer.vinoshipper.com/docs/injector-methods), and the
+ * hosted checkout URL does not read a `promo_code` query param — only
+ * `meta_*` keys passed via `cartUrlParams` are honored, and those are
+ * pure metadata, not discounts.
+ *
+ * The only documented programmatic way to apply a discount before handoff
+ * is POST /api/v3/cart/{cartId}/coupon
+ * (https://developer.vinoshipper.com/reference/addcoupon).
+ *
+ * Failures (invalid code, ineligible cart, network error, CORS) are
+ * swallowed so they never block the customer from reaching checkout —
+ * the worst case is the code simply isn't applied and the customer can
+ * re-enter it manually on the Vinoshipper page.
+ */
+export async function applyVinoshipperCoupon(
+  cartId: string,
+  code: string,
+): Promise<boolean> {
+  if (!cartId || !code) return false;
+  try {
+    const res = await fetch(
+      `https://vinoshipper.com/api/v3/cart/${encodeURIComponent(cartId)}/coupon`,
+      {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ code }),
+      },
+    );
+    if (!res.ok) {
+      console.warn("[vinoshipper] coupon apply failed", res.status, code);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn("[vinoshipper] coupon apply error", e);
+    return false;
+  }
+}
+
+/**
  * Push every line into the Vinoshipper cart sequentially, then open it.
  * Throws if the injector never loaded or any add fails.
  */
@@ -80,6 +126,12 @@ export async function addLinesAndGoToHostedCart(
    * If omitted, we open a new tab ourselves.
    */
   preOpenedPopup?: Window | null,
+  /**
+   * Optional promo/discount code to apply to the cart before handoff.
+   * Applied via the documented coupon REST endpoint after lines are
+   * added but before the redirect.
+   */
+  promoCode?: string | null,
 ): Promise<void> {
   const popup = preOpenedPopup ?? (typeof window !== "undefined" ? window.open("about:blank", "_blank") : null);
   const vs = await waitForVinoshipper(10000);
@@ -100,6 +152,13 @@ export async function addLinesAndGoToHostedCart(
   const cartId = cart && (cart.cartId || cart.id || cart.uuid);
   if (cartId && !checkoutUrl.searchParams.has("cartId")) {
     checkoutUrl.searchParams.set("cartId", cartId);
+  }
+  // Apply any promo/discount code via the documented REST endpoint.
+  // We do this after products are added (so cart subtotal/qty rules can
+  // evaluate) and before the redirect (so totals are correct on the
+  // hosted page). Non-blocking — failures fall through.
+  if (promoCode && cartId) {
+    await applyVinoshipperCoupon(String(cartId), promoCode);
   }
   checkoutUrl.searchParams.set("ret", window.location.href);
   const finalUrl = vs.getLinkParams ? await vs.getLinkParams(checkoutUrl) : checkoutUrl;

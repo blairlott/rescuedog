@@ -115,6 +115,8 @@ Deno.serve(async (req) => {
     let spendOut = 0;
     let salesOut = 0;
     let notificationSent = false;
+    let autoRestarted = false;
+    let autoRestartReason: string | null = null;
     const killSwitchLog: Array<Record<string, unknown>> = [];
 
     const logKillSwitch = async (row: {
@@ -156,7 +158,7 @@ Deno.serve(async (req) => {
     const writeEvaluation = async (finalEnabled: boolean) => {
       await admin.from("ad_autopilot_evaluations").insert({
         platform: "meta",
-        enabled_before: enabled,
+        enabled_before: enabledInitial,
         enabled_after: finalEnabled,
         error_pct: errPctOut,
         error_sample: errSampleOut,
@@ -179,6 +181,8 @@ Deno.serve(async (req) => {
           cooldown_minutes: cooldownMinutes,
           allowed,
           kill_switches: killSwitchLog,
+          auto_restarted: autoRestarted,
+          auto_restart_reason: autoRestartReason,
           ...autoStopDetail,
         },
       });
@@ -232,7 +236,7 @@ Deno.serve(async (req) => {
       } catch (e) { console.warn("meta autopilot notification failed", e); }
     };
 
-    if (!enabled) {
+    if (!enabled && !attemptAutoRestart) {
       await writeEvaluation(false);
       return J(200, { ok: true, skipped: "autopilot_disabled" });
     }

@@ -111,7 +111,12 @@ Deno.serve(async (req) => {
         external_id: externalId,
         thread_ts: threadTs,
         submitted_by: ev.user ?? "unknown",
-        status: "pending",
+        // Anything Blair/Lovable posts in #lindy-lovable is considered
+        // already approved by virtue of being in Slack — skip the second
+        // approval click in /cms/lindy-inbox.
+        status: "approved",
+        reviewed_at: new Date().toISOString(),
+        reviewer_notes: "[auto-approved: posted in #lindy-lovable]",
         payload: {
           channel: ev.channel,
           channel_name: "lindy-lovable",

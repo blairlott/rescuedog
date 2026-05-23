@@ -2097,6 +2097,107 @@ export type Database = {
         }
         Relationships: []
       }
+      bandit_arms: {
+        Row: {
+          arm_key: string
+          channel: string
+          created_at: string
+          exposures: number
+          id: string
+          label: string | null
+          last_reward_at: string | null
+          metadata: Json
+          reward_value: number
+          rewards: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          arm_key: string
+          channel?: string
+          created_at?: string
+          exposures?: number
+          id?: string
+          label?: string | null
+          last_reward_at?: string | null
+          metadata?: Json
+          reward_value?: number
+          rewards?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          arm_key?: string
+          channel?: string
+          created_at?: string
+          exposures?: number
+          id?: string
+          label?: string | null
+          last_reward_at?: string | null
+          metadata?: Json
+          reward_value?: number
+          rewards?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bandit_rewards: {
+        Row: {
+          arm_id: string
+          context: Json
+          id: string
+          observed_at: string
+          reward: number
+          source: string | null
+        }
+        Insert: {
+          arm_id: string
+          context?: Json
+          id?: string
+          observed_at?: string
+          reward: number
+          source?: string | null
+        }
+        Update: {
+          arm_id?: string
+          context?: Json
+          id?: string
+          observed_at?: string
+          reward?: number
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bandit_rewards_arm_id_fkey"
+            columns: ["arm_id"]
+            isOneToOne: false
+            referencedRelation: "bandit_arms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bandit_state: {
+        Row: {
+          id: string
+          policy: string
+          state: Json
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          policy?: string
+          state?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          policy?: string
+          state?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bm_finance_entries: {
         Row: {
           account_code: string | null

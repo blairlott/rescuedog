@@ -1,6 +1,7 @@
 # Project Memory
 
 ## Core
+- Slack `#lindy-lovable` (channel C0B5KT989GT) is the primary comms channel between Lovable and Lindy. Read it directly via the SLACK_BOT_TOKEN — do NOT ask Blair to relay messages. Post status/asks there in the same turn as the work.
 - Stack: Vinoshipper = wine checkout + payments (compliance + card-on-file). Shopify (rescuedoggear / gear.rescuedog.com) = LIVE merch catalog + merch checkout. Lovable Cloud (Supabase) = auth/CRM/wine-club/CMS. WordPress on Cloudways = legacy content + wine copy joined by SKU.
 - Forked unified cart: wine items → Vinoshipper deep-link checkout, merch items → Shopify hosted checkout. Customer is told they complete two transactions. ALL wine orders (à la carte + club) still flow through Vinoshipper. No Stripe.
 - Wine club ("The Pack"): 14 tiers, FREE to join, cancel anytime. Member pricing: 20% off à la carte wine for logged-in members; 20% off monthly/quarterly shipments; 25% off the yearly case shipment.

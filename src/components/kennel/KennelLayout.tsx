@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History, Activity, Sparkles, ShoppingBag, ShoppingCart, Search, Radar, Bot, Flame, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History, Activity, Sparkles, ShoppingBag, ShoppingCart, Search, Radar, Bot, Flame, ArrowLeft, ShieldCheck, Webhook, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -27,6 +27,10 @@ const NAV = [
   { to: "/kennel/autonomy", label: "Autonomy", icon: Bot, end: false, viewerOk: false },
   { to: "/kennel/z8", label: "Z8 Optimizer", icon: ShieldAlert, end: false, viewerOk: true },
   { to: "/kennel/site-intel", label: "Site Intel", icon: Flame, end: false, viewerOk: true },
+  { to: "/kennel/compliance", label: "Compliance", icon: ShieldCheck, end: false, viewerOk: false },
+  { to: "/kennel/webhooks", label: "Webhooks", icon: Webhook, end: false, viewerOk: false },
+  { to: "/kennel/vinoshipper-api", label: "VS API Watcher", icon: Radar, end: false, viewerOk: false },
+  { to: "/kennel/cancellations", label: "Cancellations", icon: TrendingDown, end: false, viewerOk: false },
 ];
 
 export function KennelLayout() {

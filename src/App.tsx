@@ -328,6 +328,10 @@ function AppContent() {
         <Route path="autonomy" element={<KennelAutonomyPage />} />
         <Route path="z8" element={<KennelZ8Page />} />
         <Route path="site-intel" element={<KennelSiteIntelPage />} />
+        <Route path="compliance" element={<CrmCompliancePage />} />
+        <Route path="webhooks" element={<CrmWebhooksPage />} />
+        <Route path="vinoshipper-api" element={<CrmVinoshipperApiPage />} />
+        <Route path="cancellations" element={<CrmCancellationsPage />} />
       </Route>
       <Route path="/intelligence" element={<KennelGuard><ExecutiveCommandCenter /></KennelGuard>} />
       <Route path="*" element={<NotFound />} />

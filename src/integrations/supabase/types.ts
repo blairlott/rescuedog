@@ -6632,15 +6632,18 @@ export type Database = {
           confidence: string | null
           created_at: string
           error_message: string | null
+          external_id: string | null
           id: string
           payload: Json
           promoted_ref: string | null
           reviewed_at: string | null
           reviewer_id: string | null
           reviewer_notes: string | null
+          source: string | null
           source_url: string | null
           status: string
           submitted_by: string | null
+          thread_ts: string | null
           type: string
           updated_at: string
         }
@@ -6648,15 +6651,18 @@ export type Database = {
           confidence?: string | null
           created_at?: string
           error_message?: string | null
+          external_id?: string | null
           id?: string
           payload?: Json
           promoted_ref?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           reviewer_notes?: string | null
+          source?: string | null
           source_url?: string | null
           status?: string
           submitted_by?: string | null
+          thread_ts?: string | null
           type: string
           updated_at?: string
         }
@@ -6664,15 +6670,18 @@ export type Database = {
           confidence?: string | null
           created_at?: string
           error_message?: string | null
+          external_id?: string | null
           id?: string
           payload?: Json
           promoted_ref?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           reviewer_notes?: string | null
+          source?: string | null
           source_url?: string | null
           status?: string
           submitted_by?: string | null
+          thread_ts?: string | null
           type?: string
           updated_at?: string
         }

@@ -78,6 +78,7 @@ const CmsEmailsPage = lazy(() => import("./pages/CmsEmailsPage"));
 const CmsFormsPage = lazy(() => import("./pages/CmsFormsPage"));
 const CmsMediaPage = lazy(() => import("./pages/CmsMediaPage"));
 const CmsLindyInboxPage = lazy(() => import("./pages/CmsLindyInboxPage"));
+const KennelBanditPage = lazy(() => import("./pages/kennel/KennelBanditPage"));
 const CmsAudiencesPage = lazy(() => import("./pages/CmsAudiencesPage"));
 const WineClubAdminPage = lazy(() => import("./pages/WineClubAdminPage"));
 const WineClubLoginPage = lazy(() => import("./pages/WineClubLoginPage"));
@@ -285,7 +286,7 @@ function AppContent() {
       <Route path="/cms/emails" element={<CmsEmailsPage />} />
       <Route path="/cms/forms" element={<CmsFormsPage />} />
       <Route path="/cms/media" element={<CmsMediaPage />} />
-      <Route path="/cms/lindy-inbox" element={<CmsLindyInboxPage />} />
+      <Route path="/cms/lindy-inbox" element={<Navigate to="/kennel/inbox" replace />} />
       <Route path="/cms/audiences" element={<CmsAudiencesPage />} />
       <Route path="/crm" element={<CrmLayout />}>
         <Route index element={<CrmDashboard />} />
@@ -310,6 +311,8 @@ function AppContent() {
       <Route path="/kennel" element={<KennelGuard><KennelLayout /></KennelGuard>}>
         <Route index element={<KennelDashboard />} />
         <Route path="backlog" element={<KennelBacklogPage />} />
+        <Route path="inbox" element={<CmsLindyInboxPage />} />
+        <Route path="bandit" element={<KennelBanditPage />} />
         <Route path="true-roas" element={<KennelTrueRoasPage />} />
         <Route path="capi" element={<KennelCapiPage />} />
         <Route path="recommendations" element={<KennelRecommendationsPage />} />

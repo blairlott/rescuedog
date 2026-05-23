@@ -8,7 +8,9 @@ import { useQuery } from "@tanstack/react-query";
 
 const NAV = [
   { to: "/kennel", label: "Dashboard", icon: LayoutDashboard, end: true, viewerOk: true },
+  { to: "/kennel/inbox", label: "Lindy Inbox", icon: Inbox, end: false, viewerOk: false },
   { to: "/kennel/backlog", label: "Backlog", icon: Inbox, end: false, viewerOk: false },
+  { to: "/kennel/bandit", label: "Bandit (MABWiser)", icon: Bot, end: false, viewerOk: false },
   { to: "/kennel/true-roas", label: "True ROAS", icon: TrendingUp, end: false, viewerOk: true },
   { to: "/kennel/capi", label: "Meta CAPI", icon: Send, end: false, viewerOk: false },
   { to: "/kennel/recommendations", label: "Recommendations", icon: Lightbulb, end: false, viewerOk: false },

@@ -1,6 +1,10 @@
 project_id = "eskqaxmypgvwtsffcbsw"
 
 [functions]
+  [functions.slack-events]
+    verify_jwt = false
+  [functions.slack-post]
+    verify_jwt = true
   [functions.auth-email-hook]
     verify_jwt = false
   [functions.compliance-audit]

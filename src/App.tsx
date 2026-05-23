@@ -295,13 +295,13 @@ function AppContent() {
         <Route path="dropship" element={<Navigate to="/dropship" replace />} />
         <Route path="margin" element={<CrmMarginPage />} />
         <Route path="ambassadors" element={<CrmAmbassadorsPage />} />
-        <Route path="compliance" element={<CrmCompliancePage />} />
         <Route path="leads" element={<CrmLeadsPage />} />
         <Route path="intelligence" element={<CrmIntelligencePage />} />
         <Route path="customer-map" element={<CrmCustomerMapPage />} />
-        <Route path="webhooks" element={<CrmWebhooksPage />} />
-        <Route path="vinoshipper-api" element={<CrmVinoshipperApiPage />} />
-        <Route path="cancellations" element={<CrmCancellationsPage />} />
+        <Route path="compliance" element={<Navigate to="/kennel/compliance" replace />} />
+        <Route path="webhooks" element={<Navigate to="/kennel/webhooks" replace />} />
+        <Route path="vinoshipper-api" element={<Navigate to="/kennel/vinoshipper-api" replace />} />
+        <Route path="cancellations" element={<Navigate to="/kennel/cancellations" replace />} />
         <Route path="customer-service" element={<CrmCustomerServicePage />} />
         <Route path="legacy-migration" element={<CrmLegacyMigrationPage />} />
       </Route>

@@ -135,6 +135,7 @@ const KennelPlatformRadarPage = lazy(() => import("./pages/kennel/KennelPlatform
 const KennelAutonomyPage = lazy(() => import("./pages/kennel/KennelAutonomyPage"));
 const KennelZ8Page = lazy(() => import("./pages/kennel/KennelZ8Page"));
 const KennelSiteIntelPage = lazy(() => import("./pages/kennel/KennelSiteIntelPage"));
+const KennelBacklogPage = lazy(() => import("./pages/kennel/KennelBacklogPage"));
 const ExecutiveCommandCenter = lazy(() => import("./pages/intelligence/ExecutiveCommandCenter"));
 const ForcePasswordChangePage = lazy(() => import("./pages/ForcePasswordChangePage"));
 
@@ -308,6 +309,7 @@ function AppContent() {
       <Route path="/dropship" element={<DropshipDashboard />} />
       <Route path="/kennel" element={<KennelGuard><KennelLayout /></KennelGuard>}>
         <Route index element={<KennelDashboard />} />
+        <Route path="backlog" element={<KennelBacklogPage />} />
         <Route path="true-roas" element={<KennelTrueRoasPage />} />
         <Route path="capi" element={<KennelCapiPage />} />
         <Route path="recommendations" element={<KennelRecommendationsPage />} />

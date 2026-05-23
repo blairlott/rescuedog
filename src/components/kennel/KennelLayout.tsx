@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History, Activity, Sparkles, ShoppingBag, ShoppingCart, Search, Radar, Bot, Flame, ArrowLeft, ShieldCheck, Webhook, TrendingDown } from "lucide-react";
+import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History, Activity, Sparkles, ShoppingBag, ShoppingCart, Search, Radar, Bot, Flame, ArrowLeft, ShieldCheck, Webhook, TrendingDown, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const NAV = [
   { to: "/kennel", label: "Dashboard", icon: LayoutDashboard, end: true, viewerOk: true },
+  { to: "/kennel/backlog", label: "Backlog", icon: Inbox, end: false, viewerOk: false },
   { to: "/kennel/true-roas", label: "True ROAS", icon: TrendingUp, end: false, viewerOk: true },
   { to: "/kennel/capi", label: "Meta CAPI", icon: Send, end: false, viewerOk: false },
   { to: "/kennel/recommendations", label: "Recommendations", icon: Lightbulb, end: false, viewerOk: false },

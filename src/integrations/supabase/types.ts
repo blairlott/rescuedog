@@ -6634,6 +6634,7 @@ export type Database = {
           error_message: string | null
           external_id: string | null
           id: string
+          owner: string
           payload: Json
           promoted_ref: string | null
           reviewed_at: string | null
@@ -6646,6 +6647,10 @@ export type Database = {
           thread_ts: string | null
           type: string
           updated_at: string
+          workflow_note: string | null
+          workflow_status: string
+          workflow_updated_at: string | null
+          workflow_updated_by: string | null
         }
         Insert: {
           confidence?: string | null
@@ -6653,6 +6658,7 @@ export type Database = {
           error_message?: string | null
           external_id?: string | null
           id?: string
+          owner?: string
           payload?: Json
           promoted_ref?: string | null
           reviewed_at?: string | null
@@ -6665,6 +6671,10 @@ export type Database = {
           thread_ts?: string | null
           type: string
           updated_at?: string
+          workflow_note?: string | null
+          workflow_status?: string
+          workflow_updated_at?: string | null
+          workflow_updated_by?: string | null
         }
         Update: {
           confidence?: string | null
@@ -6672,6 +6682,7 @@ export type Database = {
           error_message?: string | null
           external_id?: string | null
           id?: string
+          owner?: string
           payload?: Json
           promoted_ref?: string | null
           reviewed_at?: string | null
@@ -6684,6 +6695,10 @@ export type Database = {
           thread_ts?: string | null
           type?: string
           updated_at?: string
+          workflow_note?: string | null
+          workflow_status?: string
+          workflow_updated_at?: string | null
+          workflow_updated_by?: string | null
         }
         Relationships: []
       }
@@ -12225,6 +12240,44 @@ export type Database = {
           section_key: string
           views: number
         }[]
+      }
+      update_backlog_item: {
+        Args: {
+          _id: string
+          _note?: string
+          _owner?: string
+          _workflow_status?: string
+        }
+        Returns: {
+          confidence: string | null
+          created_at: string
+          error_message: string | null
+          external_id: string | null
+          id: string
+          owner: string
+          payload: Json
+          promoted_ref: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          reviewer_notes: string | null
+          source: string | null
+          source_url: string | null
+          status: string
+          submitted_by: string | null
+          thread_ts: string | null
+          type: string
+          updated_at: string
+          workflow_note: string | null
+          workflow_status: string
+          workflow_updated_at: string | null
+          workflow_updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "lindy_inbox"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       validate_discount_code: {
         Args: {

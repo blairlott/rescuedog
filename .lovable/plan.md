@@ -1,63 +1,104 @@
 
-## Reality check vs the spec
+## Goal
 
-Five things in the prompt don't match what's actually in the project. Confirm how you want each handled before I build:
+1. Loop Lindy in on Slack to co-design the best "build while Blair is offline" method.
+2. Ship a live **`/kennel/backlog`** page so the approved queue is visible in The Kennel (not buried in /cms).
+3. Start knocking items off the top of the stack.
 
-1. **No Claude/Anthropic key in the project.** The standing rule is to default to Lovable AI Gateway (Gemini/GPT-5 family) — no extra key needed, billed through the workspace. I'll use `google/gemini-2.5-pro` for the scoring pass unless you say otherwise.
-2. **`vs_transactions.cartType` doesn't exist.** The real column is `order_type`. Finance already excludes wine club/wholesale with `upper(order_type) NOT IN ('WINE_CLUB','WHOLESALE')` — I'll use that same rule.
-3. **`vs_abandoned_carts` schema differs from the spec.** Real columns: `buyer_email` (not `email`), `ship_state` (not `state`), `cart_value` (not `order_total`), and **no `referrer_url`**. I'll map: email→`buyer_email`, state→`ship_state`, order_total→`cart_value`, and drop `referrer_url` (also not present on `vs_transactions`).
-4. **No `google-ads-customer-match` route on `google-ads-proxy` yet.** The proxy exists but doesn't have a Customer Match upload route. I'll add it (Google Ads API v17 `OfflineUserDataJobService`, CRM userlist, SHA-256 hashed emails).
-5. **"Z2 Meta upload"** = existing `meta-audience-sync` edge function. I'll wire the dashboard's "Upload to Meta Now" button to that.
+---
 
-Also flagging: scoring every abandoned cart through an LLM one-by-one is slow and expensive. I'll batch (200 emails per LLM call, parallelized) and cap the run at the most recent ~10k abandoned carts per pass. Tell me if you want a different cap.
+## Step 1 — Ask Lindy on Slack (one message, this turn)
 
-## What I'll build
+Post this in `#lindy-lovable` via the slack-events bot path (or `lindy-promote` reverse channel if it's the path Lindy listens on). Message body:
 
-### 1. Edge function `kennel-lookalike-score`
-- Pulls paid DTC buyers from `vs_transactions` (excluding WINE_CLUB and WHOLESALE) and computes per-email features: order count, total spend cents, days since first order, state tier weight (T1=1.2 / T2=1.0 / T3=0.8 using the existing Kennel tier list), bottles total.
-- Pulls abandoned carts whose `buyer_email` isn't in the buyer set; same feature shape (counts default to 0, days_since_first_order = null).
-- Sends batches of 200 prospects to Lovable AI with a summarized buyer profile (means + state distribution) and asks for `[{email, score}]` via tool calling (structured output, not freeform JSON).
-- Upserts into `kennel_lookalike_scores(email, score, scored_at, model_version)`.
-- Scheduled weekly Sun 03:00 ET (08:00 UTC standard / 07:00 UTC DST — I'll use `0 8 * * 0` and document the DST drift).
+> Lindy — Blair approved 13 items in /cms/lindy-inbox. Lovable only builds when prompted in-chat, so the backlog is static while he's offline.
+>
+> Three options to make this autonomous. Which fits your runtime best?
+>
+> **A. Lindy executes non-code items herself** (GTM tags, ad-set changes, Mailchimp, sheets, emails). Code items wait for Blair. Lowest risk, fastest unblock.
+>
+> **B. Lindy pings Lovable chat via API** for code items — needs a Lovable inbound webhook + per-prompt budget cap.
+>
+> **C. GitHub PR workflow** — Lindy opens PRs from approved items; Blair (or a CI bot) merges; Lovable rebuilds from main.
+>
+> For each, tell me: (1) which categories you'll own, (2) what guardrails you want (budget cap, allowlist of areas, max items/day), (3) what signal you need back from Lovable (status row in `lindy_inbox`, Slack thread reply, email).
+>
+> Default if no answer in 24h: A + B (Lindy auto-runs her items; code items queue with a daily digest to Blair).
 
-### 2. Edge function `kennel-google-customer-match`
-- Pulls buyers + top 20% of `kennel_lookalike_scores`, SHA-256 hashes lowercased+trimmed emails, dedupes.
-- Calls the new Customer Match route on `google-ads-proxy` (Bearer = existing `LINDY_PROXY_TOKEN` secret — I'll **not** hardcode the token from the prompt).
-- Adds the Customer Match route directly to `google-ads-proxy` using existing Google Ads secrets (`GOOGLE_ADS_*`) — creates/updates a CRM userlist named `kennel_buyers_plus_lookalikes` and runs an `OfflineUserDataJob` of ADDs.
-- Logs every run to `kennel_audience_uploads`. On failure, status='failed' + dispatches an alert via existing `kennel-alert-dispatch` to `blair.lott@rescuedogwines.com`.
-- Scheduled monthly on the 1st at 09:30 ET.
+We wait for Lindy's reply in `lindy_inbox` (it'll land as `slack_message` and auto-approve) before wiring any executor.
 
-### 3. `kennel_iab_segments` table + GET endpoint
-- Table with the six seed rows from the spec.
-- Admin-only writes via RLS (`is_admin_or_owner`). Public-readable through a small edge function `kennel-iab-segments` (GET) that returns the full mapping JSON so DSPs can fetch it without auth burden.
+---
 
-### 4. Admin panel page `/cms/audiences`
-- Score distribution histogram (10 buckets), totals card (total scored, top-20% count, median, last scored).
-- Audience upload log table (sortable by date).
-- Editable IAB segment table (inline admin edits to `platform_ids` jsonb + `rdw_mapping`).
-- Three quick-action buttons that invoke the corresponding edge functions and toast results.
+## Step 2 — Build `/kennel/backlog` (live view)
 
-### Guardrails baked in
-- Never persist or upload raw emails — all platform calls hash first.
-- `kennel_lookalike_scores` RLS: admin/exec/ad_ops read only, no public exposure.
-- Every upload writes to `kennel_audience_uploads` *before* returning success.
-- Failed uploads → status='failed' + alert email.
+A Kennel-only page (admin/ad-ops/owner gated; **not** visible to CMS editors — per Blair's Slack note about hiding from low-level CMS).
 
-## Tables added
-- `kennel_lookalike_scores` (email, score, scored_at, model_version)
-- `kennel_audience_uploads` (platform, list_name, email_count, upload_at, status, error_message)
-- `kennel_iab_segments` (segment_id, segment_name, tier, rdw_mapping, platform_ids)
+**Sections (top to bottom):**
 
-## Edge functions added / changed
-- **New:** `kennel-lookalike-score`, `kennel-google-customer-match`, `kennel-iab-segments`
-- **Changed:** `google-ads-proxy` — adds `customer-match` route (CRM userlist + OfflineUserDataJob)
-- **Reused:** `meta-audience-sync` (for the "Upload to Meta Now" button), `kennel-alert-dispatch` (for failure alerts)
+1. **Header strip** — total approved count, count by priority, "Last refreshed" timestamp.
+2. **Filters** — area chips (`kennel | cms | admin | all`), priority (`high | normal | low`), source (`lindy | slack | human`), search box over title/body.
+3. **Card list** — each row:
+   - Priority pill (red=high, grey=normal)
+   - Title + area + submitted timestamp + submitter
+   - Collapsed body (expand-on-click; first 220 chars preview)
+   - Status badge: `approved | in_progress | done | blocked | needs_blair`
+   - Owner: Lindy / Lovable / Blair (auto-suggested from area + content)
+   - Action buttons: **Start** (sets in_progress), **Mark Done**, **Block** (with note), **Push back to Lindy**, **Copy prompt** (for pasting into Lovable chat)
+4. **"What's actually moving" rail** (sidebar) — items where `status='in_progress'` with last-update time.
+5. **Daily digest button** — emails Blair a Markdown summary of yesterday's done/blocked/started.
 
-## Cron
-- `0 8 * * 0` → `kennel-lookalike-score` weekly
-- `30 14 1 * *` → `kennel-google-customer-match` monthly (1st at 09:30 ET standard)
+**Data model additions to `lindy_inbox`:**
+- `workflow_status` enum: `approved | in_progress | done | blocked | needs_blair` (separate from review `status` so we don't lose the approval signal)
+- `owner` text: `lindy | lovable | blair | unassigned`
+- `workflow_updated_at` timestamptz
+- Index on `(workflow_status, created_at)`
 
-## Out of scope / open questions
-1. **Confirm Lovable AI** for the scorer instead of Claude (recommended — no new keys, billed via workspace).
-2. **Confirm batch cap** of 10k most-recent abandoned carts per weekly run.
-3. The hardcoded bearer token in your prompt — I'll use the existing `LINDY_PROXY_TOKEN` secret instead of writing the literal into code. OK?
+**Routing & access:**
+- New route `/kennel/backlog` in `src/App.tsx`
+- New page `src/pages/kennel/KennelBacklogPage.tsx`
+- Add nav link in Kennel sidebar; gate via `can_view_kennel(auth.uid())`
+- Hide the existing `/cms/lindy-inbox` link from CMS sidebar for non-admin roles (per Blair's Slack instruction); page stays reachable by URL for admins only.
+
+---
+
+## Step 3 — Start working items top-down
+
+Once the page is live, I'll begin executing the items I can do directly in Lovable. Priority order from the backlog:
+
+1. **#5 RLS on `lindy_inbox` for anon** — already done today; mark `done`.
+2. **#8 Grant Lindy CMS admin access** — confirm `lindy@…` user has `cms_editor` role; small migration if not. (Owner: Lovable)
+3. **#9 Fix /cms/lindy-inbox UI — human-readable cards** — refactor the page to match the new backlog card design we're shipping for /kennel/backlog. (Owner: Lovable)
+4. **#7 Blair email deliverability** — check Resend logs for `blair.lott@rescuedogwines.com` and report. (Owner: Lovable, diagnostic only)
+5. **#1 & #4 GTM GCLID tags** (`GTM-5DBQXWP7`, `GTM-NHTH66HM`) — **Lindy-owned**, marked `needs_lindy` in the backlog. I can't deploy GTM containers; surface as blocked-on-Lindy.
+6. **#2 Evergreen Max Volume activation** — **Lindy-owned** (Meta ad set edits). Surface as blocked-on-Lindy.
+7. **#6 Tiered seed audience scoring**, **#10 MABWiser bandit**, **#12 Segflow**, **#13 IAB taxonomy** — design specs needed first. Park as `needs_blair` until he scopes.
+
+Each item I touch in this batch: I update `workflow_status` in `lindy_inbox`, post a one-liner Slack thread reply to Lindy, and append a Changelog entry to the Lindy manual per the core memory rule.
+
+---
+
+## Technical details
+
+- **Migration**: add `workflow_status`, `owner`, `workflow_updated_at` columns + index to `public.lindy_inbox`; backfill `workflow_status='approved'` where `status='approved'`. RLS: admins/kennel viewers can read; only admins can update workflow fields.
+- **RPC** `update_backlog_item(_id uuid, _status text, _owner text, _note text)` — security definer, admin-only, writes `workflow_status`, optional Slack thread reply via a new `slack-post` edge function.
+- **Edge function** `slack-post` (new) — posts to `#lindy-lovable` using the existing `SLACK_BOT_TOKEN`, so backlog actions echo into Slack for Lindy.
+- **Frontend**: `useBacklogItems()` hook with React Query polling every 30s + Realtime subscription to `lindy_inbox`.
+- **Hide CMS link**: in `src/components/cms/CmsNav.tsx` (or wherever the Lindy Inbox link lives), filter the link out unless `roles` includes `owner|admin`.
+
+---
+
+## Out of scope for this plan
+
+- Actually building the Lovable-API inbound webhook (Option B) until Lindy confirms.
+- Touching wine/merch catalog code.
+- Any GTM/Meta API writes (those are Lindy's lane).
+
+---
+
+## Done criteria
+
+- Slack message sent to Lindy and landed in `lindy_inbox` for audit.
+- `/kennel/backlog` renders 13 cards, filters work, status updates persist, Realtime refresh works.
+- `/cms/lindy-inbox` no longer appears in CMS nav for non-admin CMS roles.
+- Items #5 and #8 marked `done`; #1/#2/#4 marked `needs_lindy`; #6/#10/#12/#13 marked `needs_blair`; #7 has a diagnostic note attached.
+- Changelog entries appended to `/mnt/documents/Lindy_User_Manual_and_Roadmap.docx`.

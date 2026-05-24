@@ -121,6 +121,33 @@ export default function KennelSettingsPage() {
     } finally { setBusyAction(null); }
   };
 
+  const toggleSlackHour = (hour: number) => {
+    const next = slackHours.includes(hour)
+      ? slackHours.filter((h) => h !== hour)
+      : [...slackHours, hour].sort((a, b) => a - b);
+    setSlackHours(next);
+    saveSetting("slack_digest_hours_utc", next);
+  };
+
+  const triggerSlackDigestNow = async () => {
+    setBusyAction("slack-digest");
+    try {
+      const { data, error } = await supabase.functions.invoke("slack-digest", { body: { force: true } });
+      if (error) throw error;
+      toast.success(`Digest posted (${(data as any)?.count ?? 0} items)`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Digest failed");
+    } finally { setBusyAction(null); }
+  };
+
+  // ET hour label for a UTC hour (assumes ET=UTC-4; close enough for display).
+  const utcToEtLabel = (h: number) => {
+    const et = (h - 4 + 24) % 24;
+    const ampm = et >= 12 ? "p" : "a";
+    const display = ((et + 11) % 12) + 1;
+    return `${display}${ampm} ET`;
+  };
+
   return (
     <div className="p-6 max-w-[1400px] space-y-8" style={BRAND_FONT}>
       <header className="flex items-center justify-between">

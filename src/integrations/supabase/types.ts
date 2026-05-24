@@ -6263,6 +6263,51 @@ export type Database = {
         }
         Relationships: []
       }
+      kennel_job_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          inputs: Json
+          job_name: string
+          results: Json
+          started_at: string
+          status: string
+          triggered_by: string
+          triggered_by_user: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          inputs?: Json
+          job_name: string
+          results?: Json
+          started_at?: string
+          status?: string
+          triggered_by?: string
+          triggered_by_user?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          inputs?: Json
+          job_name?: string
+          results?: Json
+          started_at?: string
+          status?: string
+          triggered_by?: string
+          triggered_by_user?: string | null
+        }
+        Relationships: []
+      }
       kennel_keyword_ideas: {
         Row: {
           ad_group_id: string

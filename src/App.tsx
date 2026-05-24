@@ -119,6 +119,7 @@ const KennelDashboard = lazy(() => import("./pages/kennel/KennelDashboard"));
 const KennelRecommendationsPage = lazy(() => import("./pages/kennel/KennelRecommendationsPage"));
 const KennelSettingsPage = lazy(() => import("./pages/kennel/KennelSettingsPage"));
 const KennelLogPage = lazy(() => import("./pages/kennel/KennelLogPage"));
+const KennelSlackDigestLogPage = lazy(() => import("./pages/kennel/KennelSlackDigestLogPage"));
 const KennelChannelsPage = lazy(() => import("./pages/kennel/KennelChannelsPage"));
 const KennelTrueRoasPage = lazy(() => import("./pages/kennel/KennelTrueRoasPage"));
 const KennelCapiPage = lazy(() => import("./pages/kennel/KennelCapiPage"));

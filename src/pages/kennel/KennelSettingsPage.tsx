@@ -408,6 +408,50 @@ export default function KennelSettingsPage() {
         </p>
       </section>
 
+      <section className="border border-border bg-card p-5 space-y-4" style={SHARP}>
+        <div>
+          <h2 className="text-sm uppercase font-bold tracking-brand flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4" /> Slack escalation
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+            When unhandled Lindy inbox items exceed the threshold, the digest also posts a
+            loud <span className="font-bold">:rotating_light: ESCALATION</span> message in
+            <span className="font-bold"> #lindy-lovable</span> and @-mentions the people below.
+            Throttled so it doesn't spam.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label className="text-xs uppercase tracking-brand">Threshold (unhandled items)</Label>
+            <Input type="number" min={1} style={SHARP} className="mt-2"
+              value={slackEscalation.threshold}
+              onChange={(e) => setSlackEscalation((p) => ({ ...p, threshold: Number(e.target.value) }))}
+              onBlur={saveEscalation}
+            />
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-brand">Throttle (minutes between escalations)</Label>
+            <Input type="number" min={5} style={SHARP} className="mt-2"
+              value={slackEscalation.throttleMin}
+              onChange={(e) => setSlackEscalation((p) => ({ ...p, throttleMin: Number(e.target.value) }))}
+              onBlur={saveEscalation}
+            />
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-brand">Slack user IDs to @-mention</Label>
+            <Input style={SHARP} className="mt-2"
+              placeholder="U12345, U67890"
+              value={slackEscalation.userIds}
+              onChange={(e) => setSlackEscalation((p) => ({ ...p, userIds: e.target.value }))}
+              onBlur={saveEscalation}
+            />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          User IDs start with <code>U…</code>. Find them in Slack profile → More → Copy member ID.
+        </p>
+      </section>
+
       <section className="border border-border bg-card p-5 space-y-3" style={SHARP}>
         <h2 className="text-sm uppercase font-bold tracking-brand">Per-channel guardrails</h2>
         <table className="w-full text-sm">

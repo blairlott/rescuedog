@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Lock } from "lucide-react";
+import { Shield, Lock, Users } from "lucide-react";
 import { ADMIN_AREAS, hasAreaAccess } from "@/lib/adminAreas";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import { AbVariantTile } from "@/components/admin/AbVariantTile";
@@ -209,8 +209,8 @@ const AdminPortalPage = () => {
                   <li className="opacity-75">+ {pendingRequests.length - 5} more</li>
                 )}
               </ul>
-              <Link to="/crm/admin" className="inline-block mt-2 text-primary hover:underline text-xs font-bold uppercase tracking-wide">
-                Review in CRM → Users
+              <Link to="/admin/users" className="inline-block mt-2 text-primary hover:underline text-xs font-bold uppercase tracking-wide">
+                Review → User Management
               </Link>
             </div>
           </div>
@@ -280,6 +280,22 @@ const AdminPortalPage = () => {
             </p>
           </Link>
         </div>
+
+        {roles.some((r) => ADMIN_ROLES.has(r)) && (
+          <div className="mt-4">
+            <Link
+              to="/admin/users"
+              className="group block border border-border bg-background p-6 hover:border-primary transition-colors"
+            >
+              <Users className="h-6 w-6 text-primary mb-3" />
+              <h3 className="font-bold text-foreground mb-1">User Management</h3>
+              <p className="text-sm text-muted-foreground">
+                Approve signups, invite team members, assign roles, and review pending
+                access requests across CRM, CMS, Kennel, and Finance.
+              </p>
+            </Link>
+          </div>
+        )}
 
         <div className="mt-8 grid grid-cols-1 gap-6">
           {currentUser && (

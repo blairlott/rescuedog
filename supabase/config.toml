@@ -89,3 +89,5 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.gclid-oci-loop]
     verify_jwt = false
+  [functions.lindy-inbox]
+    verify_jwt = false

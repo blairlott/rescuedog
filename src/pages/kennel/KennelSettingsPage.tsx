@@ -330,6 +330,49 @@ export default function KennelSettingsPage() {
         </p>
       </section>
 
+      <section className="border border-border bg-card p-5 space-y-4" style={SHARP}>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 className="text-sm uppercase font-bold tracking-brand flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" /> Lovable Slack check-ins
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+              Pick which hours (UTC) Lovable posts a digest of unhandled Lindy inbox items to
+              <span className="font-bold"> #lindy-lovable</span>. The cron runs hourly and only posts during selected hours.
+            </p>
+          </div>
+          <Button size="sm" variant="outline" style={SHARP}
+            disabled={busyAction === "slack-digest"} onClick={triggerSlackDigestNow}>
+            <Send className="h-3 w-3 mr-1" /> Post digest now
+          </Button>
+        </div>
+        <div className="grid grid-cols-6 md:grid-cols-12 gap-1">
+          {Array.from({ length: 24 }, (_, h) => {
+            const active = slackHours.includes(h);
+            return (
+              <button
+                key={h}
+                type="button"
+                onClick={() => toggleSlackHour(h)}
+                style={SHARP}
+                className={`text-[10px] py-2 px-1 border transition-colors ${
+                  active
+                    ? "bg-primary text-primary-foreground border-primary font-bold"
+                    : "bg-background border-border text-muted-foreground hover:border-foreground"
+                }`}
+                title={`${h.toString().padStart(2, "0")}:00 UTC — ${utcToEtLabel(h)}`}
+              >
+                <div>{h.toString().padStart(2, "0")}</div>
+                <div className="text-[9px] opacity-70">{utcToEtLabel(h)}</div>
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Selected: {slackHours.length === 0 ? "none (digest disabled)" : slackHours.map((h) => `${h.toString().padStart(2,"0")}:00 UTC`).join(", ")}
+        </p>
+      </section>
+
       <section className="border border-border bg-card p-5 space-y-3" style={SHARP}>
         <h2 className="text-sm uppercase font-bold tracking-brand">Per-channel guardrails</h2>
         <table className="w-full text-sm">

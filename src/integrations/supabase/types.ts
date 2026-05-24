@@ -12239,6 +12239,7 @@ export type Database = {
       compute_segflow_signals: {
         Args: never
         Returns: {
+          cart_abandoner: number
           changed: number
           churn_risk: number
           first_timer_no_repeat: number

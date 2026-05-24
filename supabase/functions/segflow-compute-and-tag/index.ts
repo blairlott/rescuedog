@@ -58,18 +58,55 @@ Deno.serve(async (req) => {
   const dryRun: boolean = !!body.dry_run;
   const maxPushes: number = Math.min(Number(body.max_pushes ?? 2000), 10000);
 
+  const triggeredBy: "cron" | "manual" | "api" =
+    body.triggered_by === "cron" ? "cron" :
+    body.manual ? "manual" : (isService ? "cron" : "api");
+
+  // Start run log
+  const startedAtMs = Date.now();
+  const startedAtIso = new Date(startedAtMs).toISOString();
+  const { data: runRow } = await admin
+    .from("kennel_job_runs")
+    .insert({
+      job_name: "segflow_compute_and_tag",
+      status: "running",
+      triggered_by: triggeredBy,
+      inputs: { dry_run: dryRun, max_pushes: maxPushes },
+    })
+    .select("id")
+    .single();
+  const runId = runRow?.id as string | undefined;
+
+  const finalize = async (status: "ok" | "partial" | "error", results: unknown, errorMsg?: string) => {
+    if (!runId) return;
+    const finishedAt = new Date();
+    await admin.from("kennel_job_runs").update({
+      status,
+      results: results as any,
+      error: errorMsg ?? null,
+      finished_at: finishedAt.toISOString(),
+      duration_ms: finishedAt.getTime() - startedAtMs,
+    }).eq("id", runId);
+  };
+
   // 1) Recompute signals
-  const startedAt = new Date().toISOString();
+  const startedAt = startedAtIso;
   const sinceMark = new Date(Date.now() - 60_000).toISOString(); // diffs since 1min ago
   const { data: stats, error: compErr } = await admin.rpc("compute_segflow_signals");
-  if (compErr) return J(500, { error: "compute_failed", details: compErr.message });
+  if (compErr) {
+    await finalize("error", { stage: "compute" }, compErr.message);
+    return J(500, { error: "compute_failed", details: compErr.message });
+  }
   const summary = Array.isArray(stats) ? stats[0] : stats;
 
   // 2) Pull changed rows
   const { data: diffs, error: diffErr } = await admin.rpc("segflow_signal_diffs", {
     _since: sinceMark,
   });
-  if (diffErr) return J(500, { error: "diff_failed", details: diffErr.message });
+  if (diffErr) {
+    await finalize("error", { stage: "diff" }, diffErr.message);
+    return J(500, { error: "diff_failed", details: diffErr.message });
+  }
 
   const changed = (diffs ?? []).slice(0, maxPushes);
 
@@ -116,14 +153,16 @@ Deno.serve(async (req) => {
     }
   }
 
-  return J(200, {
-    ok: failed === 0,
+  const completedAt = new Date().toISOString();
+  const resultPayload = {
     dry_run: dryRun,
     started_at: startedAt,
-    completed_at: new Date().toISOString(),
+    completed_at: completedAt,
     compute: summary,
     diff_count: changed.length,
     pushed, skipped, failed,
     errors: errors.slice(0, 25),
-  });
+  };
+  await finalize(failed === 0 ? "ok" : "partial", resultPayload);
+  return J(200, { ok: failed === 0, ...resultPayload });
 });

@@ -90,7 +90,24 @@ Deno.serve(async (req) => {
   }
 
   const startedAt = new Date().toISOString();
+  const startedAtMs = Date.parse(startedAt);
   const results: any[] = [];
+
+  // Detect trigger source
+  const triggeredBy: "cron" | "manual" | "api" = isServiceRole ? "cron" : "manual";
+
+  // Open run log
+  const { data: runRow } = await admin
+    .from("kennel_job_runs")
+    .insert({
+      job_name: "tiered_seeds_monthly",
+      status: "running",
+      triggered_by: triggeredBy,
+      inputs: { tiers: TIER_KEYS },
+    })
+    .select("id")
+    .single();
+  const runId = runRow?.id as string | undefined;
 
   for (const key of TIER_KEYS) {
     try {
@@ -135,6 +152,23 @@ Deno.serve(async (req) => {
 
   await dispatchAlert(summary, results);
 
+  if (runId) {
+    const finishedAt = new Date();
+    await admin.from("kennel_job_runs").update({
+      status: failures.length === 0 ? "ok" : (failures.length === results.length ? "error" : "partial"),
+      results: {
+        total_matched: totalMatched,
+        total_pushed: totalPushed,
+        failures: failures.length,
+        tier_results: results,
+        summary,
+      },
+      error: failures.length ? failures.map((f) => `${f.segment_key}: ${f.error}`).join("; ") : null,
+      finished_at: finishedAt.toISOString(),
+      duration_ms: finishedAt.getTime() - startedAtMs,
+    }).eq("id", runId);
+  }
+
   return new Response(
     JSON.stringify({
       ok: failures.length === 0,
@@ -144,6 +178,7 @@ Deno.serve(async (req) => {
       total_pushed: totalPushed,
       failures: failures.length,
       results,
+      run_id: runId ?? null,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );

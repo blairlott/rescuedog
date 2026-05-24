@@ -12403,6 +12403,15 @@ export type Database = {
           redemption_id: string
         }[]
       }
+      resolve_iab_platform_ids: {
+        Args: { _platform?: string; _rdw_mapping: string }
+        Returns: {
+          platform_id: string
+          segment_id: string
+          segment_name: string
+          tier: number
+        }[]
+      }
       run_meta_segment_sql: {
         Args: { _limit?: number; _sql: string }
         Returns: {

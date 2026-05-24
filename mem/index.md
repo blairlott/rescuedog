@@ -94,3 +94,6 @@
 - [Legacy GTM](mem://tech/legacy-gtm) — Legacy WP rescuedogwines.com GTM container (GTM-NHTH66HM), owned by Lindy
 - [Slack Participation Cadence](mem://features/slack-participation-cadence) — Be an active in-thread participant in #lindy-lovable, match cadence to flow
 - [Legacy + A/B Migration](mem://features/legacy-and-ab-migration) — All new features must ship on legacy where feasible; A/B test both sites
+- [Rescue Dog Month](mem://features/rescue-dog-month) — October is RDW's flagship awareness/sales month; pre-stage campaigns by mid-September
+- [Revenue × ROAS Mandate](mem://features/mission-and-roas-mandate) — Both levers up; reject volume-at-any-margin and margin-at-any-volume
+- [Work the Queue Standing Order](mem://features/work-the-queue-standing-order) — Proactively work lindy_inbox without per-batch confirmation

@@ -91,3 +91,5 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.lindy-inbox]
     verify_jwt = false
+  [functions.lindy-media]
+    verify_jwt = false

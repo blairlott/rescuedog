@@ -4,7 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const CHANNEL = "C0B5KT989GT";
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
   const slackToken = Deno.env.get("SLACK_BOT_TOKEN");
   if (!slackToken) return new Response("no SLACK_BOT_TOKEN", { status: 500 });
 
@@ -13,6 +13,28 @@ Deno.serve(async (_req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false } },
   );
+
+  // Honor configurable schedule unless explicitly forced.
+  let force = false;
+  try {
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+    force = body?.force === true;
+  } catch { /* ignore */ }
+
+  if (!force) {
+    const { data: setting } = await admin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "slack_digest_hours_utc")
+      .maybeSingle();
+    const hours: number[] = Array.isArray(setting?.value) ? setting!.value as number[] : [14, 18, 22, 6];
+    const currentHour = new Date().getUTCHours();
+    if (!hours.includes(currentHour)) {
+      return new Response(JSON.stringify({ ok: true, skipped: true, currentHour, hours }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
 
   // Unhandled = approved but no workflow_status of done/in_progress
   const { data: items, error } = await admin

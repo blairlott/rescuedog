@@ -10,7 +10,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ShieldAlert, Power, UserPlus, Eye, Bell, Camera, Send } from "lucide-react";
+import { ShieldAlert, Power, UserPlus, Eye, Bell, Camera, Send, MessageSquare } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 
@@ -32,6 +32,7 @@ export default function KennelSettingsPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState("");
   const [smsRecipients, setSmsRecipients] = useState("");
+  const [slackHours, setSlackHours] = useState<number[]>([14, 18, 22, 6]);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const { data: roleInfo } = useUserRole();
   const isOwner = !!roleInfo?.isOwner;
@@ -48,6 +49,8 @@ export default function KennelSettingsPage() {
     const recips = sMap["alert_recipients"] ?? {};
     setEmailRecipients(Array.isArray(recips.email) ? recips.email.join(", ") : "");
     setSmsRecipients(Array.isArray(recips.sms) ? recips.sms.join(", ") : "");
+    const hrs = sMap["slack_digest_hours_utc"];
+    if (Array.isArray(hrs)) setSlackHours(hrs.filter((h: any) => Number.isInteger(h) && h >= 0 && h <= 23));
     const nameById = Object.fromEntries((c ?? []).map((x: any) => [x.id, x.name]));
     setGuardrails(((g as Guardrail[]) ?? []).map((x) => ({ ...x, channel_name: nameById[x.channel_id] })));
     setLoading(false);
@@ -116,6 +119,33 @@ export default function KennelSettingsPage() {
     } catch (e: any) {
       toast.error(e.message ?? "Send failed");
     } finally { setBusyAction(null); }
+  };
+
+  const toggleSlackHour = (hour: number) => {
+    const next = slackHours.includes(hour)
+      ? slackHours.filter((h) => h !== hour)
+      : [...slackHours, hour].sort((a, b) => a - b);
+    setSlackHours(next);
+    saveSetting("slack_digest_hours_utc", next);
+  };
+
+  const triggerSlackDigestNow = async () => {
+    setBusyAction("slack-digest");
+    try {
+      const { data, error } = await supabase.functions.invoke("slack-digest", { body: { force: true } });
+      if (error) throw error;
+      toast.success(`Digest posted (${(data as any)?.count ?? 0} items)`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Digest failed");
+    } finally { setBusyAction(null); }
+  };
+
+  // ET hour label for a UTC hour (assumes ET=UTC-4; close enough for display).
+  const utcToEtLabel = (h: number) => {
+    const et = (h - 4 + 24) % 24;
+    const ampm = et >= 12 ? "p" : "a";
+    const display = ((et + 11) % 12) + 1;
+    return `${display}${ampm} ET`;
   };
 
   return (
@@ -297,6 +327,49 @@ export default function KennelSettingsPage() {
         </div>
         <p className="text-xs text-muted-foreground">
           Baseline capture runs automatically at 08:00 UTC. SMS requires the Twilio connector to be authorized.
+        </p>
+      </section>
+
+      <section className="border border-border bg-card p-5 space-y-4" style={SHARP}>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 className="text-sm uppercase font-bold tracking-brand flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" /> Lovable Slack check-ins
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+              Pick which hours (UTC) Lovable posts a digest of unhandled Lindy inbox items to
+              <span className="font-bold"> #lindy-lovable</span>. The cron runs hourly and only posts during selected hours.
+            </p>
+          </div>
+          <Button size="sm" variant="outline" style={SHARP}
+            disabled={busyAction === "slack-digest"} onClick={triggerSlackDigestNow}>
+            <Send className="h-3 w-3 mr-1" /> Post digest now
+          </Button>
+        </div>
+        <div className="grid grid-cols-6 md:grid-cols-12 gap-1">
+          {Array.from({ length: 24 }, (_, h) => {
+            const active = slackHours.includes(h);
+            return (
+              <button
+                key={h}
+                type="button"
+                onClick={() => toggleSlackHour(h)}
+                style={SHARP}
+                className={`text-[10px] py-2 px-1 border transition-colors ${
+                  active
+                    ? "bg-primary text-primary-foreground border-primary font-bold"
+                    : "bg-background border-border text-muted-foreground hover:border-foreground"
+                }`}
+                title={`${h.toString().padStart(2, "0")}:00 UTC — ${utcToEtLabel(h)}`}
+              >
+                <div>{h.toString().padStart(2, "0")}</div>
+                <div className="text-[9px] opacity-70">{utcToEtLabel(h)}</div>
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Selected: {slackHours.length === 0 ? "none (digest disabled)" : slackHours.map((h) => `${h.toString().padStart(2,"0")}:00 UTC`).join(", ")}
         </p>
       </section>
 

@@ -160,8 +160,8 @@ export default function KennelSegflowPage() {
       {/* Audience counts */}
       <div>
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Audience counts</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {["reorder_nudge", "churn_risk", "winback", "none"].map((sig) => (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+          {[...SIGNAL_ORDER, "none"].map((sig) => (
             <div key={sig} className="rounded-none border border-border bg-card p-4">
               <Badge variant="outline" className={`rounded-none ${SIGNAL_TONE[sig] ?? ""}`}>{sig}</Badge>
               <div className="mt-2 text-2xl font-semibold">{(c?.bySignal?.[sig] ?? 0).toLocaleString()}</div>
@@ -169,6 +169,8 @@ export default function KennelSegflowPage() {
           ))}
         </div>
       </div>
+
+      <OffersEditor />
 
       {/* Mailchimp push status */}
       <div>

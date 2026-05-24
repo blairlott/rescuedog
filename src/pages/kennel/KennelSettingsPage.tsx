@@ -10,7 +10,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ShieldAlert, Power, UserPlus, Eye, Bell, Camera, Send } from "lucide-react";
+import { ShieldAlert, Power, UserPlus, Eye, Bell, Camera, Send, MessageSquare } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 
@@ -32,6 +32,7 @@ export default function KennelSettingsPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState("");
   const [smsRecipients, setSmsRecipients] = useState("");
+  const [slackHours, setSlackHours] = useState<number[]>([14, 18, 22, 6]);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const { data: roleInfo } = useUserRole();
   const isOwner = !!roleInfo?.isOwner;
@@ -48,6 +49,8 @@ export default function KennelSettingsPage() {
     const recips = sMap["alert_recipients"] ?? {};
     setEmailRecipients(Array.isArray(recips.email) ? recips.email.join(", ") : "");
     setSmsRecipients(Array.isArray(recips.sms) ? recips.sms.join(", ") : "");
+    const hrs = sMap["slack_digest_hours_utc"];
+    if (Array.isArray(hrs)) setSlackHours(hrs.filter((h: any) => Number.isInteger(h) && h >= 0 && h <= 23));
     const nameById = Object.fromEntries((c ?? []).map((x: any) => [x.id, x.name]));
     setGuardrails(((g as Guardrail[]) ?? []).map((x) => ({ ...x, channel_name: nameById[x.channel_id] })));
     setLoading(false);

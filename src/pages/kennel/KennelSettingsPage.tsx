@@ -33,15 +33,26 @@ export default function KennelSettingsPage() {
   const [emailRecipients, setEmailRecipients] = useState("");
   const [smsRecipients, setSmsRecipients] = useState("");
   const [slackHours, setSlackHours] = useState<number[]>([14, 18, 22, 6]);
+  const [slackEscalation, setSlackEscalation] = useState({
+    threshold: 10,
+    throttleMin: 240,
+    userIds: "",
+  });
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const { data: roleInfo } = useUserRole();
   const isOwner = !!roleInfo?.isOwner;
 
   const load = async () => {
-    const [{ data: s }, { data: g }, { data: c }] = await Promise.all([
+    const [{ data: s }, { data: g }, { data: c }, { data: a }] = await Promise.all([
       supabase.from("ad_settings").select("key,value"),
       supabase.from("ad_guardrails").select("*"),
       supabase.from("ad_channels").select("id,name"),
+      supabase.from("app_settings").select("key,value").in("key", [
+        "slack_digest_hours_utc",
+        "slack_escalation_threshold",
+        "slack_escalation_throttle_minutes",
+        "slack_escalation_user_ids",
+      ]),
     ]);
     const sMap: Record<string, any> = {};
     (s as SettingRow[] ?? []).forEach((r) => (sMap[r.key] = r.value));
@@ -49,8 +60,17 @@ export default function KennelSettingsPage() {
     const recips = sMap["alert_recipients"] ?? {};
     setEmailRecipients(Array.isArray(recips.email) ? recips.email.join(", ") : "");
     setSmsRecipients(Array.isArray(recips.sms) ? recips.sms.join(", ") : "");
-    const hrs = sMap["slack_digest_hours_utc"];
+    const aMap: Record<string, any> = {};
+    (a as SettingRow[] ?? []).forEach((r) => (aMap[r.key] = r.value));
+    const hrs = aMap["slack_digest_hours_utc"];
     if (Array.isArray(hrs)) setSlackHours(hrs.filter((h: any) => Number.isInteger(h) && h >= 0 && h <= 23));
+    setSlackEscalation({
+      threshold: Number(aMap["slack_escalation_threshold"] ?? 10),
+      throttleMin: Number(aMap["slack_escalation_throttle_minutes"] ?? 240),
+      userIds: Array.isArray(aMap["slack_escalation_user_ids"])
+        ? aMap["slack_escalation_user_ids"].join(", ")
+        : "",
+    });
     const nameById = Object.fromEntries((c ?? []).map((x: any) => [x.id, x.name]));
     setGuardrails(((g as Guardrail[]) ?? []).map((x) => ({ ...x, channel_name: nameById[x.channel_id] })));
     setLoading(false);
@@ -61,6 +81,11 @@ export default function KennelSettingsPage() {
     const { error } = await supabase.from("ad_settings").upsert({ key, value }, { onConflict: "key" });
     if (error) toast.error(error.message);
     else { setSettings((p) => ({ ...p, [key]: value })); toast.success("Saved"); }
+  };
+  const saveAppSetting = async (key: string, value: any) => {
+    const { error } = await supabase.from("app_settings").upsert({ key, value }, { onConflict: "key" });
+    if (error) toast.error(error.message);
+    else toast.success("Saved");
   };
   const saveGuardrail = async (g: Guardrail) => {
     const { error } = await supabase.from("ad_guardrails").update({
@@ -126,7 +151,17 @@ export default function KennelSettingsPage() {
       ? slackHours.filter((h) => h !== hour)
       : [...slackHours, hour].sort((a, b) => a - b);
     setSlackHours(next);
-    saveSetting("slack_digest_hours_utc", next);
+    saveAppSetting("slack_digest_hours_utc", next);
+  };
+
+  const saveEscalation = async () => {
+    const ids = slackEscalation.userIds
+      .split(",").map((s) => s.trim()).filter(Boolean);
+    await Promise.all([
+      saveAppSetting("slack_escalation_threshold", Math.max(1, Number(slackEscalation.threshold) || 10)),
+      saveAppSetting("slack_escalation_throttle_minutes", Math.max(5, Number(slackEscalation.throttleMin) || 240)),
+      saveAppSetting("slack_escalation_user_ids", ids),
+    ]);
   };
 
   const triggerSlackDigestNow = async () => {

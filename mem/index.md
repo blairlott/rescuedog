@@ -93,3 +93,4 @@
 - [Slack Status Protocol](mem://features/slack-status-protocol) — Every Slack poll posts shipped-systems outline + next 3–5 builds; ping Lindy for optimizations when queue empties
 - [Legacy GTM](mem://tech/legacy-gtm) — Legacy WP rescuedogwines.com GTM container (GTM-NHTH66HM), owned by Lindy
 - [Slack Participation Cadence](mem://features/slack-participation-cadence) — Be an active in-thread participant in #lindy-lovable, match cadence to flow
+- [Legacy + A/B Migration](mem://features/legacy-and-ab-migration) — All new features must ship on legacy where feasible; A/B test both sites

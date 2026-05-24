@@ -85,3 +85,5 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.kennel-iab-segments]
     verify_jwt = false
+  [functions.slack-interactivity]
+    verify_jwt = false

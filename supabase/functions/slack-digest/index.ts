@@ -63,10 +63,41 @@ Deno.serve(async (req) => {
     ? `:white_check_mark: Lovable scheduled check (${now}): inbox clear, nothing queued.`
     : `:mag: Lovable scheduled check (${now}) — *${count}* item(s) waiting${count > lines.length ? ` (showing top ${lines.length})` : ""}:\n${lines.join("\n")}\n\n_Blair: open Lovable chat and say "work the queue" to action these._`;
 
+  const blocks: any[] = [
+    { type: "section", text: { type: "mrkdwn", text } },
+  ];
+  if (count > 0) {
+    blocks.push({
+      type: "actions",
+      block_id: "lindy_queue_actions",
+      elements: [
+        {
+          type: "button",
+          style: "primary",
+          text: { type: "plain_text", text: `:hammer_and_wrench: Work the queue (${count})` },
+          action_id: "work_queue",
+          value: String(count),
+          confirm: {
+            title: { type: "plain_text", text: "Claim queue?" },
+            text: { type: "mrkdwn", text: `Mark all *${count}* unhandled items as in-progress and assign to Lovable.` },
+            confirm: { type: "plain_text", text: "Claim" },
+            deny: { type: "plain_text", text: "Cancel" },
+          },
+        },
+        {
+          type: "button",
+          text: { type: "plain_text", text: ":zzz: Snooze escalation" },
+          action_id: "snooze_queue",
+          value: "snooze",
+        },
+      ],
+    });
+  }
+
   const res = await fetch("https://slack.com/api/chat.postMessage", {
     method: "POST",
     headers: { "Authorization": `Bearer ${slackToken}`, "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify({ channel: CHANNEL, text }),
+    body: JSON.stringify({ channel: CHANNEL, text, blocks }),
   });
   const j = await res.json();
 

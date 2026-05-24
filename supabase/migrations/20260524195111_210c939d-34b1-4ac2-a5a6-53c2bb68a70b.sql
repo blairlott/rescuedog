@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anon can read lindy_inbox for polling" ON public.lindy_inbox;

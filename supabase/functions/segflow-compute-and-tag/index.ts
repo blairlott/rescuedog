@@ -15,12 +15,13 @@ const J = (s: number, b: unknown) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const SIGNAL_TAGS: Record<string, string> = {
-  reorder_nudge: "signal:reorder_nudge",
-  churn_risk:    "signal:churn_risk",
-  winback:       "signal:winback",
+const DEFAULT_SIGNAL_TAGS: Record<string, string> = {
+  reorder_nudge:         "signal:reorder_nudge",
+  churn_risk:            "signal:churn_risk",
+  winback:               "signal:winback",
+  first_timer_no_repeat: "signal:first_timer_no_repeat",
+  cart_abandoner:        "signal:cart_abandoner",
 };
-const ALL_TAGS = Object.values(SIGNAL_TAGS);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

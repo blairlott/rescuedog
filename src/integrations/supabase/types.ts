@@ -7914,6 +7914,59 @@ export type Database = {
         }
         Relationships: []
       }
+      oci_gclid_matches: {
+        Row: {
+          conversion_action_id: string | null
+          conversion_value: number
+          currency: string
+          email: string | null
+          error_message: string | null
+          gclid: string
+          id: string
+          intent_id: string | null
+          invoice: string
+          matched_at: string
+          status: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          conversion_action_id?: string | null
+          conversion_value: number
+          currency?: string
+          email?: string | null
+          error_message?: string | null
+          gclid: string
+          id?: string
+          intent_id?: string | null
+          invoice: string
+          matched_at?: string
+          status?: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          conversion_action_id?: string | null
+          conversion_value?: number
+          currency?: string
+          email?: string | null
+          error_message?: string | null
+          gclid?: string
+          id?: string
+          intent_id?: string | null
+          invoice?: string
+          matched_at?: string
+          status?: string
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oci_gclid_matches_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "ab_checkout_intents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oci_upload_log: {
         Row: {
           conversion_action_id: string

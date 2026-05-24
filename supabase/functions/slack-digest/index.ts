@@ -16,9 +16,11 @@ Deno.serve(async (req) => {
 
   // Honor configurable schedule unless explicitly forced.
   let force = false;
+  let bodySource: string | null = null;
   try {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     force = body?.force === true;
+    bodySource = typeof body?.source === "string" ? body.source : null;
   } catch { /* ignore */ }
 
   if (!force) {
@@ -30,6 +32,11 @@ Deno.serve(async (req) => {
     const hours: number[] = Array.isArray(setting?.value) ? setting!.value as number[] : [14, 18, 22, 6];
     const currentHour = new Date().getUTCHours();
     if (!hours.includes(currentHour)) {
+      await admin.from("slack_digest_log").insert({
+        item_count: 0, posted: false, skipped: true, escalated: false, forced: false,
+        reason: `off-hour (UTC ${currentHour}, allowed ${JSON.stringify(hours)})`,
+        source: bodySource ?? "cron",
+      });
       return new Response(JSON.stringify({ ok: true, skipped: true, currentHour, hours }), {
         headers: { "Content-Type": "application/json" },
       });
@@ -154,6 +161,18 @@ Deno.serve(async (req) => {
   } catch (e) {
     escalationSkipReason = `error:${(e as Error).message}`;
   }
+
+  await admin.from("slack_digest_log").insert({
+    item_count: count,
+    posted: !!j.ok,
+    skipped: false,
+    escalated,
+    forced: force,
+    reason: j.ok
+      ? (escalated ? "posted + escalated" : (escalationSkipReason ?? "posted"))
+      : `slack_error:${j.error}`,
+    source: bodySource ?? (force ? "manual" : "cron"),
+  });
 
   return new Response(JSON.stringify({ ok: j.ok, count, escalated, escalationSkipReason }), {
     headers: { "Content-Type": "application/json" },

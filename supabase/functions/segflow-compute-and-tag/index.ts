@@ -15,12 +15,13 @@ const J = (s: number, b: unknown) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const SIGNAL_TAGS: Record<string, string> = {
-  reorder_nudge: "signal:reorder_nudge",
-  churn_risk:    "signal:churn_risk",
-  winback:       "signal:winback",
+const DEFAULT_SIGNAL_TAGS: Record<string, string> = {
+  reorder_nudge:         "signal:reorder_nudge",
+  churn_risk:            "signal:churn_risk",
+  winback:               "signal:winback",
+  first_timer_no_repeat: "signal:first_timer_no_repeat",
+  cart_abandoner:        "signal:cart_abandoner",
 };
-const ALL_TAGS = Object.values(SIGNAL_TAGS);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -110,6 +111,19 @@ Deno.serve(async (req) => {
 
   const changed = (diffs ?? []).slice(0, maxPushes);
 
+  // Load offer mapping (signal -> mailchimp_tag overrides + offer details)
+  const { data: offerRows } = await admin
+    .from("segflow_offers")
+    .select("signal, mailchimp_tag, mailchimp_journey, offer_sku, offer_url, active");
+  const SIGNAL_TAGS: Record<string, string> = { ...DEFAULT_SIGNAL_TAGS };
+  const OFFER_BY_SIGNAL: Record<string, any> = {};
+  for (const o of (offerRows ?? [])) {
+    if (!o?.active) continue;
+    if (o.mailchimp_tag) SIGNAL_TAGS[o.signal] = o.mailchimp_tag;
+    OFFER_BY_SIGNAL[o.signal] = o;
+  }
+  const ALL_TAGS = Object.values(SIGNAL_TAGS);
+
   // 3) Push tags to Mailchimp (skip if dryRun)
   let pushed = 0, skipped = 0, failed = 0;
   const errors: any[] = [];
@@ -120,6 +134,7 @@ Deno.serve(async (req) => {
       // Remove every other signal tag; add the current one (if any).
       const tagsRemoved = ALL_TAGS.filter((t) => t !== newTag);
       const tagsAdded = newTag ? [newTag] : [];
+      const offer = OFFER_BY_SIGNAL[row.signal] ?? null;
 
       try {
         const res = await syncMailchimpMember({
@@ -132,6 +147,9 @@ Deno.serve(async (req) => {
             SEGFLOW: row.signal,
             LAST_ORDER: row.last_order_at,
             ORDER_COUNT: row.order_count,
+            OFFERSKU: offer?.offer_sku ?? "",
+            OFFERURL: offer?.offer_url ?? "",
+            MCJOURNEY: offer?.mailchimp_journey ?? "",
           },
         });
 

@@ -8996,6 +8996,51 @@ export type Database = {
           },
         ]
       }
+      segflow_offers: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          mailchimp_journey: string | null
+          mailchimp_tag: string
+          notes: string | null
+          offer_price_cents: number | null
+          offer_sku: string | null
+          offer_title: string
+          offer_url: string | null
+          signal: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          mailchimp_journey?: string | null
+          mailchimp_tag: string
+          notes?: string | null
+          offer_price_cents?: number | null
+          offer_sku?: string | null
+          offer_title: string
+          offer_url?: string | null
+          signal: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          mailchimp_journey?: string | null
+          mailchimp_tag?: string
+          notes?: string | null
+          offer_price_cents?: number | null
+          offer_sku?: string | null
+          offer_title?: string
+          offer_url?: string | null
+          signal?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       segflow_signals: {
         Row: {
           computed_at: string
@@ -12196,6 +12241,7 @@ export type Database = {
         Returns: {
           changed: number
           churn_risk: number
+          first_timer_no_repeat: number
           reorder_nudge: number
           total_emails: number
           unchanged: number

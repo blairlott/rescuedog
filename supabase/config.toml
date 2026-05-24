@@ -87,3 +87,5 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.slack-interactivity]
     verify_jwt = false
+  [functions.gclid-oci-loop]
+    verify_jwt = false

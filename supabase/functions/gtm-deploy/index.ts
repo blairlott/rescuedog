@@ -112,6 +112,14 @@ async function signalKennel(versionId: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Shared-secret gate. Without this, anyone could inject JS into the production GTM container.
+  const adminSecret = Deno.env.get("GTM_DEPLOY_ADMIN_SECRET");
+  const presented = req.headers.get("x-admin-secret") ?? "";
+  if (!adminSecret || presented.length === 0 || presented !== adminSecret) {
+    return json({ ok: false, error: "unauthorized" }, 401);
+  }
+
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   let token: string;

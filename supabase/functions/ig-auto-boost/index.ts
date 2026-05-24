@@ -179,39 +179,52 @@ Deno.serve(async (req) => {
     }
     const adset_id: string = adsetRes.body.id;
 
-    // Resolve IG post -> mirrored FB page post id, then create AdCreative
-    // using object_story_id (the only payload Meta accepts for IG-native boosts).
-    let fbPostId: string;
-    try {
-      if (!META_PAGE_TOKEN) throw new Error("META_PAGE_ACCESS_TOKEN not set");
-      fbPostId = await getFacebookPostId(post_id, String(cfg.fb_page_id), META_PAGE_TOKEN);
-    } catch (e) {
-      const msg = (e as Error).message;
-      await admin.from("ig_boost_log").insert({
-        post_id, triggered_by, trigger_value, test_variant: v.variant,
-        campaign_id, adset_id, status: "killed",
-        kill_reason: `creative_failed: ${msg.slice(0, 400)}`,
-        daily_budget_cents: newBudgetCents,
-      });
-      results.push({ variant: v.variant, ok: false, step: "fb_post_lookup", error: msg });
-      return json({ ok: false, post_id, campaign_id, variants: results }, 200);
+    // ---- AdCreative: try IG-native first, fall back to FB-mirror lookup ----
+    // IG-native path (Graph v19+): no FB mirror needed. Requires ig_user_id
+    // in ig_boost_config and that the IG account is linked to the FB page.
+    // Payload shape that Meta accepts WITHOUT triggering "Ambiguous Promoted
+    // Object Fields" (1487929): object_story_spec MUST omit link_data/video_data,
+    // and source_instagram_media_id carries the post.
+    let creative_id: string | null = null;
+    const creativeAttempts: any[] = [];
+
+    const igNativeRes = await metaPost(`${acct}/adcreatives`, {
+      name: `IGBoost_${post_id}_${v.suffix}_creative`,
+      object_story_spec: {
+        page_id: String(cfg.fb_page_id),
+        instagram_user_id: String(cfg.ig_user_id),
+      },
+      source_instagram_media_id: post_id,
+    });
+    creativeAttempts.push({ path: "ig_native", ok: igNativeRes.ok, status: igNativeRes.status, body: igNativeRes.body });
+    if (igNativeRes.ok && igNativeRes.body?.id) {
+      creative_id = igNativeRes.body.id;
+    } else if (META_PAGE_TOKEN) {
+      // Fallback: resolve IG media -> mirrored FB page post id -> object_story_id
+      try {
+        const fbPostId = await getFacebookPostId(post_id, String(cfg.fb_page_id), META_PAGE_TOKEN);
+        const mirrorRes = await metaPost(`${acct}/adcreatives`, {
+          name: `IGBoost_${post_id}_${v.suffix}_creative_mirror`,
+          object_story_id: fbPostId,
+        });
+        creativeAttempts.push({ path: "fb_mirror", ok: mirrorRes.ok, status: mirrorRes.status, body: mirrorRes.body });
+        if (mirrorRes.ok && mirrorRes.body?.id) creative_id = mirrorRes.body.id;
+      } catch (e) {
+        creativeAttempts.push({ path: "fb_mirror_lookup", ok: false, error: (e as Error).message });
+      }
     }
 
-    const creativeRes = await metaPost(`${acct}/adcreatives`, {
-      name: `IGBoost_${post_id}_${v.suffix}_creative`,
-      object_story_id: fbPostId,
-    });
-    if (!creativeRes.ok) {
+    if (!creative_id) {
+      const reason = `creative_create_failed_all_paths: ${JSON.stringify(creativeAttempts).slice(0, 800)}`;
       await admin.from("ig_boost_log").insert({
         post_id, triggered_by, trigger_value, test_variant: v.variant,
         campaign_id, adset_id, status: "killed",
-        kill_reason: `creative_create_failed: ${JSON.stringify(creativeRes.body).slice(0, 400)}`,
+        kill_reason: reason,
         daily_budget_cents: newBudgetCents,
       });
-      results.push({ variant: v.variant, ok: false, step: "creative", ...creativeRes });
+      results.push({ variant: v.variant, ok: false, step: "creative", attempts: creativeAttempts });
       return json({ ok: false, post_id, campaign_id, variants: results }, 502);
     }
-    const creative_id: string = creativeRes.body.id;
 
     const adRes = await metaPost(`${acct}/ads`, {
       name: `IGBoost_${post_id}_${v.variant}`,

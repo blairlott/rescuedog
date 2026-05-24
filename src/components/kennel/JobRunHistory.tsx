@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -98,8 +98,8 @@ export function JobRunHistory({ jobName, title, limit = 25 }: { jobName: string;
               const open = openIds.has(r.id);
               const summary = summarize(r);
               return (
-                <>
-                  <tr key={r.id} className="border-t border-border hover:bg-muted/30">
+                <Fragment key={r.id}>
+                  <tr className="border-t border-border hover:bg-muted/30">
                     <td className="px-2 py-2 align-top">
                       <button onClick={() => toggle(r.id)} className="text-muted-foreground hover:text-foreground">
                         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -114,7 +114,7 @@ export function JobRunHistory({ jobName, title, limit = 25 }: { jobName: string;
                     <td className="px-3 py-2 align-top text-xs">{summary}</td>
                   </tr>
                   {open && (
-                    <tr key={`${r.id}-detail`} className="border-t border-border bg-muted/20">
+                    <tr className="border-t border-border bg-muted/20">
                       <td></td>
                       <td colSpan={5} className="px-3 py-3">
                         <div className="grid gap-3 md:grid-cols-2">
@@ -136,7 +136,7 @@ export function JobRunHistory({ jobName, title, limit = 25 }: { jobName: string;
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>

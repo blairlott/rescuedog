@@ -3,8 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Play, RefreshCw, Zap } from "lucide-react";
+import { Loader2, Play, RefreshCw, Zap, Save } from "lucide-react";
 import { JobRunHistory } from "@/components/kennel/JobRunHistory";
 
 type SignalRow = {
@@ -27,7 +29,30 @@ const SIGNAL_TONE: Record<string, string> = {
   reorder_nudge: "bg-blue-500/15 text-blue-700 border-blue-500/40",
   churn_risk: "bg-amber-500/15 text-amber-700 border-amber-500/40",
   winback: "bg-purple-500/15 text-purple-700 border-purple-500/40",
+  first_timer_no_repeat: "bg-emerald-500/15 text-emerald-700 border-emerald-500/40",
+  cart_abandoner: "bg-pink-500/15 text-pink-700 border-pink-500/40",
   none: "bg-muted text-muted-foreground border-border",
+};
+
+const SIGNAL_ORDER = [
+  "first_timer_no_repeat",
+  "cart_abandoner",
+  "reorder_nudge",
+  "churn_risk",
+  "winback",
+] as const;
+
+type OfferRow = {
+  id: string;
+  signal: string;
+  offer_title: string;
+  offer_sku: string | null;
+  offer_url: string | null;
+  offer_price_cents: number | null;
+  mailchimp_tag: string;
+  mailchimp_journey: string | null;
+  notes: string | null;
+  active: boolean;
 };
 
 function fmt(ts: string | null) {

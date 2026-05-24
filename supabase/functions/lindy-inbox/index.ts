@@ -104,7 +104,9 @@ Deno.serve(async (req) => {
     if (source) q = q.eq("source", source);
     if (since) q = q.gte("created_at", since);
     if (workflow) q = q.eq("workflow_status", workflow);
-    if (unread) q = q.or("workflow_status.is.null,workflow_status.eq.open");
+    // "unread" = anything not yet worked. Includes null, 'open', and 'queued'
+    // (slack-events auto-flags new Slack messages as 'queued').
+    if (unread) q = q.or("workflow_status.is.null,workflow_status.eq.open,workflow_status.eq.queued");
 
     const { data, error } = await q;
     if (error) return j({ error: "query_failed", details: error.message, ...diag(req, url) }, 500);

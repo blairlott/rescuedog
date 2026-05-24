@@ -3,7 +3,7 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook, TrendingDown, FlaskConical, Headphones, ArrowLeft, Radar } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook, TrendingDown, FlaskConical, Headphones, ArrowLeft, Radar, Menu, X } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
 import { CrmBreadcrumbs } from "@/components/crm/CrmBreadcrumbs";
@@ -16,6 +16,7 @@ export default function CrmLayout() {
   const location = useLocation();
   const { data: roleInfo, isLoading: roleLoading } = useUserRole();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const navItems = [
     { to: "/crm", label: "Dashboard", icon: LayoutDashboard },
@@ -70,9 +71,13 @@ export default function CrmLayout() {
     );
   }
 
-  return (
-    <div className="h-dvh bg-background flex overflow-hidden">
-      <aside className="w-56 border-r border-border bg-card flex flex-col shrink-0">
+  // Close mobile nav on route change
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
+  const sidebarContent = (
+    <>
         <div className="p-4 border-b border-border">
           <h2 className="font-bold text-foreground text-sm tracking-brand uppercase">Sales CRM</h2>
           <p className="text-xs text-muted-foreground truncate mt-1">{roleInfo?.profile?.full_name || user.email}</p>
@@ -87,7 +92,7 @@ export default function CrmLayout() {
           <ArrowLeft className="h-3.5 w-3.5" />
           Admin Hub
         </Link>
-        <nav className="flex-1 p-2 space-y-1">
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
             return (
@@ -125,9 +130,45 @@ export default function CrmLayout() {
             <LogOut className="h-4 w-4" /> Sign Out
           </Button>
         </div>
+    </>
+  );
+
+  return (
+    <div className="h-dvh bg-background flex overflow-hidden">
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-56 border-r border-border bg-card flex-col shrink-0">
+        {sidebarContent}
       </aside>
-      <main className="flex-1 overflow-auto flex flex-col">
-        <header className="h-12 border-b border-border bg-card flex items-center px-4 gap-3 shrink-0">
+
+      {/* Mobile drawer */}
+      {mobileNavOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <aside className="relative w-64 max-w-[80%] border-r border-border bg-card flex flex-col h-full">
+            <button
+              onClick={() => setMobileNavOpen(false)}
+              className="absolute top-3 right-3 p-1 rounded hover:bg-muted z-10"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
+      <main className="flex-1 overflow-auto flex flex-col min-w-0">
+        <header className="h-12 border-b border-border bg-card flex items-center px-3 md:px-4 gap-2 md:gap-3 shrink-0">
+          <button
+            onClick={() => setMobileNavOpen(true)}
+            className="md:hidden p-1.5 rounded hover:bg-muted"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
           <CrmBreadcrumbs />
           <div className="ml-auto flex items-center gap-2">
             <CrmCommandPalette />

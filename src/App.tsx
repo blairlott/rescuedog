@@ -140,6 +140,7 @@ const KennelZ8Page = lazy(() => import("./pages/kennel/KennelZ8Page"));
 const KennelSiteIntelPage = lazy(() => import("./pages/kennel/KennelSiteIntelPage"));
 const KennelBacklogPage = lazy(() => import("./pages/kennel/KennelBacklogPage"));
 const KennelSegflowPage = lazy(() => import("./pages/kennel/KennelSegflowPage"));
+const KennelTieredSeedsPage = lazy(() => import("./pages/kennel/KennelTieredSeedsPage"));
 const ExecutiveCommandCenter = lazy(() => import("./pages/intelligence/ExecutiveCommandCenter"));
 const ForcePasswordChangePage = lazy(() => import("./pages/ForcePasswordChangePage"));
 
@@ -339,6 +340,7 @@ function AppContent() {
         <Route path="z8" element={<KennelZ8Page />} />
         <Route path="site-intel" element={<KennelSiteIntelPage />} />
         <Route path="segflow" element={<KennelSegflowPage />} />
+        <Route path="tiered-seeds" element={<KennelTieredSeedsPage />} />
         <Route path="compliance" element={<CrmCompliancePage />} />
         <Route path="webhooks" element={<CrmWebhooksPage />} />
         <Route path="vinoshipper-api" element={<CrmVinoshipperApiPage />} />

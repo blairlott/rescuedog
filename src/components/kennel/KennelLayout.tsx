@@ -32,6 +32,7 @@ const NAV = [
   { to: "/kennel/z8", label: "Z8 Optimizer", icon: ShieldAlert, end: false, viewerOk: true },
   { to: "/kennel/site-intel", label: "Site Intel", icon: Flame, end: false, viewerOk: true },
   { to: "/kennel/segflow", label: "Segflow Hybrid", icon: Send, end: false, viewerOk: false },
+  { to: "/kennel/tiered-seeds", label: "Tiered Seeds", icon: Target, end: false, viewerOk: false },
   { to: "/kennel/compliance", label: "Compliance", icon: ShieldCheck, end: false, viewerOk: false },
   { to: "/kennel/webhooks", label: "Webhooks", icon: Webhook, end: false, viewerOk: false },
   { to: "/kennel/vinoshipper-api", label: "VS API Watcher", icon: Radar, end: false, viewerOk: false },

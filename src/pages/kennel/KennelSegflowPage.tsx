@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Play, RefreshCw, Zap } from "lucide-react";
+import { JobRunHistory } from "@/components/kennel/JobRunHistory";
 
 type SignalRow = {
   email: string;
@@ -217,6 +218,8 @@ export default function KennelSegflowPage() {
           </table>
         </div>
       </div>
+
+      <JobRunHistory jobName="segflow_compute_and_tag" title="Segflow run history" />
     </div>
   );
 }

@@ -250,3 +250,125 @@ export default function KennelSegflowPage() {
     </div>
   );
 }
+
+function OffersEditor() {
+  const { toast } = useToast();
+  const [drafts, setDrafts] = useState<Record<string, Partial<OfferRow>>>({});
+  const [savingSig, setSavingSig] = useState<string | null>(null);
+
+  const offers = useQuery({
+    queryKey: ["segflow-offers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("segflow_offers" as any)
+        .select("*");
+      if (error) throw error;
+      return (data as unknown as OfferRow[]) ?? [];
+    },
+  });
+
+  const bySignal: Record<string, OfferRow | undefined> = {};
+  for (const o of offers.data ?? []) bySignal[o.signal] = o;
+
+  const setField = (sig: string, key: keyof OfferRow, val: any) => {
+    setDrafts((d) => ({ ...d, [sig]: { ...(d[sig] ?? {}), [key]: val } }));
+  };
+
+  const save = async (sig: string) => {
+    const base = bySignal[sig];
+    const draft = drafts[sig] ?? {};
+    if (!base) return;
+    setSavingSig(sig);
+    try {
+      const patch: any = {};
+      for (const k of ["offer_title", "offer_sku", "offer_url", "offer_price_cents", "mailchimp_tag", "mailchimp_journey", "notes", "active"]) {
+        if (k in draft) patch[k] = (draft as any)[k];
+      }
+      if (patch.offer_price_cents !== undefined && patch.offer_price_cents !== null && patch.offer_price_cents !== "") {
+        patch.offer_price_cents = Number(patch.offer_price_cents);
+      }
+      const { error } = await supabase.from("segflow_offers" as any).update(patch).eq("id", base.id);
+      if (error) throw error;
+      toast({ title: "Offer saved", description: sig });
+      setDrafts((d) => { const n = { ...d }; delete n[sig]; return n; });
+      offers.refetch();
+    } catch (e: any) {
+      toast({ title: "Save failed", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setSavingSig(null);
+    }
+  };
+
+  const get = (sig: string, key: keyof OfferRow): any => {
+    const d = drafts[sig];
+    if (d && key in d) return (d as any)[key];
+    return (bySignal[sig] as any)?.[key] ?? "";
+  };
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Signal offers (Mailchimp anchors)</h2>
+        <Button variant="outline" size="sm" onClick={() => offers.refetch()}>
+          <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Reload
+        </Button>
+      </div>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Each signal sets a Mailchimp tag and a target offer (anchor SKU + URL). Edit here to swap creative or seasonal anchors without redeploying. New first-timer / cart-abandoner default to the 6-Bottle Sampler.
+      </p>
+      <div className="overflow-x-auto rounded-none border border-border">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2">Signal</th>
+              <th className="px-3 py-2">Active</th>
+              <th className="px-3 py-2">Mailchimp tag</th>
+              <th className="px-3 py-2">Journey</th>
+              <th className="px-3 py-2">Offer title</th>
+              <th className="px-3 py-2">SKU</th>
+              <th className="px-3 py-2">URL</th>
+              <th className="px-3 py-2">Price ¢</th>
+              <th className="px-3 py-2">Notes</th>
+              <th className="px-3 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {offers.isLoading && (
+              <tr><td colSpan={10} className="px-3 py-6 text-center text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin" /> Loading…</td></tr>
+            )}
+            {!offers.isLoading && SIGNAL_ORDER.map((sig) => {
+              const row = bySignal[sig];
+              if (!row) return (
+                <tr key={sig} className="border-t border-border">
+                  <td className="px-3 py-2"><Badge variant="outline" className={`rounded-none ${SIGNAL_TONE[sig] ?? ""}`}>{sig}</Badge></td>
+                  <td className="px-3 py-2 text-muted-foreground" colSpan={9}>No offer mapping seeded.</td>
+                </tr>
+              );
+              const dirty = !!drafts[sig];
+              return (
+                <tr key={sig} className="border-t border-border align-top">
+                  <td className="px-3 py-2"><Badge variant="outline" className={`rounded-none ${SIGNAL_TONE[sig] ?? ""}`}>{sig}</Badge></td>
+                  <td className="px-3 py-2">
+                    <Switch checked={!!get(sig, "active")} onCheckedChange={(v) => setField(sig, "active", v)} />
+                  </td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-40" value={get(sig, "mailchimp_tag") ?? ""} onChange={(e) => setField(sig, "mailchimp_tag", e.target.value)} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-36" value={get(sig, "mailchimp_journey") ?? ""} onChange={(e) => setField(sig, "mailchimp_journey", e.target.value)} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-56" value={get(sig, "offer_title") ?? ""} onChange={(e) => setField(sig, "offer_title", e.target.value)} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-36 font-mono text-xs" value={get(sig, "offer_sku") ?? ""} onChange={(e) => setField(sig, "offer_sku", e.target.value)} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-64 font-mono text-xs" value={get(sig, "offer_url") ?? ""} onChange={(e) => setField(sig, "offer_url", e.target.value)} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-24" type="number" value={get(sig, "offer_price_cents") ?? ""} onChange={(e) => setField(sig, "offer_price_cents", e.target.value)} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-64" value={get(sig, "notes") ?? ""} onChange={(e) => setField(sig, "notes", e.target.value)} /></td>
+                  <td className="px-3 py-2">
+                    <Button size="sm" variant={dirty ? "default" : "outline"} disabled={!dirty || savingSig === sig} onClick={() => save(sig)}>
+                      {savingSig === sig ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

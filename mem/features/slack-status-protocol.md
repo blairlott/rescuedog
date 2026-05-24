@@ -7,3 +7,5 @@ Every time I poll Slack (#lindy-lovable, C0B5KT989GT), post a high-level outline
 
 **Why:** Blair wants the team to always see current scope + momentum without digging.
 **How to apply:** Re-use the format from the 2026-05-24 status post; refresh "in flight / next up" each poll from current task tracker + recent migrations/edge functions.
+
+**Addendum (2026-05-24):** When pinging Lindy for optimization ideas, frame the ask around **increasing ROAS and scaling net profits** — not vanity metrics, not engagement-for-its-own-sake. Every proposed optimization must answer "how does this lift ROAS or grow net margin?" before it gets queued.

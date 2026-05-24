@@ -8951,6 +8951,60 @@ export type Database = {
           },
         ]
       }
+      segflow_signals: {
+        Row: {
+          computed_at: string
+          created_at: string
+          days_since_order: number | null
+          email: string
+          last_order_at: string | null
+          ltv_cents: number
+          mailchimp_tag: string | null
+          order_count: number
+          previous_signal: string | null
+          push_error: string | null
+          push_status: string | null
+          pushed_at: string | null
+          signal: string
+          signal_changed_at: string
+          updated_at: string
+        }
+        Insert: {
+          computed_at?: string
+          created_at?: string
+          days_since_order?: number | null
+          email: string
+          last_order_at?: string | null
+          ltv_cents?: number
+          mailchimp_tag?: string | null
+          order_count?: number
+          previous_signal?: string | null
+          push_error?: string | null
+          push_status?: string | null
+          pushed_at?: string | null
+          signal: string
+          signal_changed_at?: string
+          updated_at?: string
+        }
+        Update: {
+          computed_at?: string
+          created_at?: string
+          days_since_order?: number | null
+          email?: string
+          last_order_at?: string | null
+          ltv_cents?: number
+          mailchimp_tag?: string | null
+          order_count?: number
+          previous_signal?: string | null
+          push_error?: string | null
+          push_status?: string | null
+          pushed_at?: string | null
+          signal?: string
+          signal_changed_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       seo_audit_runs: {
         Row: {
           completed_at: string | null
@@ -12092,6 +12146,17 @@ export type Database = {
           zip: string
         }[]
       }
+      compute_segflow_signals: {
+        Args: never
+        Returns: {
+          changed: number
+          churn_risk: number
+          reorder_nudge: number
+          total_emails: number
+          unchanged: number
+          winback: number
+        }[]
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -12348,6 +12413,18 @@ export type Database = {
           phone: string
           state: string
           zip: string
+        }[]
+      }
+      segflow_signal_diffs: {
+        Args: { _since: string }
+        Returns: {
+          email: string
+          last_order_at: string
+          ltv_cents: number
+          mailchimp_tag: string
+          order_count: number
+          previous_signal: string
+          signal: string
         }[]
       }
       simulate_loyalty_earn: {

@@ -9199,6 +9199,45 @@ export type Database = {
         }
         Relationships: []
       }
+      slack_digest_log: {
+        Row: {
+          created_at: string
+          escalated: boolean
+          forced: boolean
+          id: string
+          item_count: number
+          posted: boolean
+          ran_at: string
+          reason: string | null
+          skipped: boolean
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          escalated?: boolean
+          forced?: boolean
+          id?: string
+          item_count?: number
+          posted?: boolean
+          ran_at?: string
+          reason?: string | null
+          skipped?: boolean
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          escalated?: boolean
+          forced?: boolean
+          id?: string
+          item_count?: number
+          posted?: boolean
+          ran_at?: string
+          reason?: string | null
+          skipped?: boolean
+          source?: string | null
+        }
+        Relationships: []
+      }
       state_margin_tiers: {
         Row: {
           multiplier: number

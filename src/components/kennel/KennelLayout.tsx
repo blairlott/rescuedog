@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History, Activity, Sparkles, ShoppingBag, ShoppingCart, Search, Radar, Bot, Flame, ArrowLeft, ShieldCheck, Webhook, TrendingDown, Inbox } from "lucide-react";
+import { LayoutDashboard, Lightbulb, Settings, LogOut, Megaphone, ScrollText, Network, ChevronRight, Home, TrendingUp, Send, Menu, X, ShieldAlert, Key, Target, History, Activity, Sparkles, ShoppingBag, ShoppingCart, Search, Radar, Bot, Flame, ArrowLeft, ShieldCheck, Webhook, TrendingDown, Inbox, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -21,6 +21,7 @@ const NAV = [
   { to: "/kennel/self-health", label: "Self-health", icon: Activity, end: false, viewerOk: true },
   { to: "/kennel/proposals", label: "Proposals", icon: Sparkles, end: false, viewerOk: false },
   { to: "/kennel/settings", label: "Settings", icon: Settings, end: false, viewerOk: false },
+  { to: "/kennel/slack-digest-log", label: "Slack digest log", icon: MessageSquare, end: false, viewerOk: false },
   { to: "/kennel/integrations", label: "Integrations", icon: Key, end: false, viewerOk: false },
   { to: "/kennel/media-buying", label: "Media Buying", icon: ShoppingBag, end: false, viewerOk: false },
   { to: "/kennel/creative-studio", label: "Creative Studio", icon: Sparkles, end: false, viewerOk: false },

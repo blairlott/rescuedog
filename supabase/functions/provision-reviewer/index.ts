@@ -102,6 +102,16 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
   try {
+    // Shared-secret gate. Only callers with the admin secret may provision accounts.
+    const adminSecret = Deno.env.get('PROVISION_ADMIN_SECRET')
+    const presented = req.headers.get('x-admin-secret') ?? ''
+    if (!adminSecret || presented.length === 0 || presented !== adminSecret) {
+      return new Response(
+        JSON.stringify({ error: 'unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const url = Deno.env.get('SUPABASE_URL')!
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const admin = createClient(url, serviceKey)

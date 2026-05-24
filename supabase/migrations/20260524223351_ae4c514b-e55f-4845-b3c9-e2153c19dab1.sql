@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anyone can read active codes" ON public.discount_codes;

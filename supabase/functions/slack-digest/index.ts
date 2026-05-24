@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       if (escalated) {
         await admin
           .from("app_settings")
-          .upsert({ key: "slack_escalation_last_at", value: JSON.stringify(new Date().toISOString()) as any }, { onConflict: "key" });
+          .upsert({ key: "slack_escalation_last_at", value: new Date().toISOString() as any }, { onConflict: "key" });
       } else {
         escalationSkipReason = `slack_error:${ej.error}`;
       }

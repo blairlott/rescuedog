@@ -10,6 +10,8 @@ import { PostPurchaseUpsell } from "@/components/PostPurchaseUpsell";
 import { recordExperimentRevenueForVisitor } from "@/lib/experimentRevenue";
 import { trackPurchase } from "@/lib/metaPixel";
 import { supabase } from "@/integrations/supabase/client";
+import { useCartStore } from "@/stores/cartStore";
+import { ShoppingCart } from "lucide-react";
 
 const PENDING_WINE_CONFIRM_KEY = "rdw_pending_wine_confirm";
 type WineConfirmState = "idle" | "polling" | "confirmed" | "missing";
@@ -27,6 +29,22 @@ export default function ThankYouPage() {
   // see a webhook within ~30s, nudge them back into the wine checkout.
   const [wineConfirm, setWineConfirm] = useState<WineConfirmState>("idle");
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+
+  // Surface any items still sitting in the local cart — wine OR merch.
+  // If the customer bailed mid-checkout and lands back on /thank-you
+  // (refresh, back button, return URL), we remind them what's unfinished.
+  const cartItems = useCartStore((s) => s.items);
+  const pendingWineItems = cartItems.filter(
+    (i) => i.product.node.productKind === "wine",
+  );
+  const pendingMerchItems = cartItems.filter(
+    (i) => i.product.node.productKind !== "wine",
+  );
+  const pendingWineCount = pendingWineItems.reduce((s, i) => s + i.quantity, 0);
+  const pendingMerchCount = pendingMerchItems.reduce((s, i) => s + i.quantity, 0);
+  const reopenCart = () => {
+    try { window.dispatchEvent(new CustomEvent("rdw:open-cart")); } catch {}
+  };
 
   useEffect(() => {
     let raw: string | null = null;
@@ -168,6 +186,38 @@ export default function ThankYouPage() {
                 className="uppercase tracking-brand text-xs font-bold"
               >
                 Complete wine purchase →
+              </Button>
+            </aside>
+          )}
+
+          {(pendingWineCount > 0 || pendingMerchCount > 0) && (
+            <aside className="border border-primary bg-primary/5 p-5 my-6 text-left">
+              <div className="flex items-center gap-2 mb-2">
+                <ShoppingCart className="h-5 w-5 text-primary" />
+                <p className="font-bold uppercase tracking-brand text-sm">
+                  You still have items waiting to check out
+                </p>
+              </div>
+              <ul className="text-sm text-muted-foreground leading-relaxed mb-4 list-disc pl-5">
+                {pendingWineCount > 0 && (
+                  <li>
+                    {pendingWineCount} wine bottle{pendingWineCount === 1 ? "" : "s"} —
+                    finish with our compliance partner.
+                  </li>
+                )}
+                {pendingMerchCount > 0 && (
+                  <li>
+                    {pendingMerchCount} merch item{pendingMerchCount === 1 ? "" : "s"} —
+                    finish on our merch checkout.
+                  </li>
+                )}
+              </ul>
+              <Button
+                size="sm"
+                onClick={reopenCart}
+                className="uppercase tracking-brand text-xs font-bold"
+              >
+                Open my cart →
               </Button>
             </aside>
           )}

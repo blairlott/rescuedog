@@ -20,7 +20,7 @@ export async function proposeRestructure(args: ProposeArgs) {
     _title: args.title,
     _summary: args.summary,
     _target_kind: args.target_kind,
-    _target_payload: args.target_payload ?? {},
+    _target_payload: (args.target_payload ?? {}) as any,
     _rationale: args.rationale ?? null,
     _risk_level: args.risk_level ?? "medium",
     _source: args.source ?? "ui",

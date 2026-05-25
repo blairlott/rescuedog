@@ -5,7 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import {
   DollarSign, LogOut, LayoutDashboard, Users, ArrowLeft, FlaskConical,
-  ChevronLeft, ChevronRight, Menu,
+  ChevronLeft, ChevronRight, Menu, Send,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -79,6 +79,7 @@ export default function FinanceLayout() {
   const navItems = [
     { to: "/finance", label: "Overview", icon: LayoutDashboard, match: (p: string) => p === "/finance" },
     { to: "/finance/workspace", label: "Workspace", icon: FlaskConical, match: (p: string) => p.startsWith("/finance/workspace") },
+    { to: "/kennel/segflow", label: "SegFlow", icon: Send, match: (p: string) => p.startsWith("/kennel/segflow") },
     ...(canManageUsers ? [{ to: "/finance/users", label: "Access", icon: Users, match: (p: string) => p === "/finance/users" }] : []),
   ];
   const current = navItems.find(n => n.match(location.pathname)) ?? navItems[0];

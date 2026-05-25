@@ -113,6 +113,7 @@ const CrmVinoshipperApiPage = lazy(() => import("./pages/crm/CrmVinoshipperApiPa
 const CrmLegacyMigrationPage = lazy(() => import("./pages/CrmLegacyMigrationPage"));
 const CrmCancellationsPage = lazy(() => import("./pages/crm/CrmCancellationsPage"));
 const CrmCustomerServicePage = lazy(() => import("./pages/crm/CrmCustomerServicePage"));
+const CrmRestructuresPage = lazy(() => import("./pages/crm/CrmRestructuresPage"));
 const RewardsTermsPage = lazy(() => import("./pages/RewardsTermsPage"));
 const RewardsPage = lazy(() => import("./pages/RewardsPage"));
 const PoliciesPage = lazy(() => import("./pages/PoliciesPage"));
@@ -310,6 +311,7 @@ function AppContent() {
         <Route path="vinoshipper-api" element={<Navigate to="/kennel/vinoshipper-api" replace />} />
         <Route path="cancellations" element={<Navigate to="/kennel/cancellations" replace />} />
         <Route path="customer-service" element={<CrmCustomerServicePage />} />
+        <Route path="restructures" element={<CrmRestructuresPage />} />
         <Route path="legacy-migration" element={<CrmLegacyMigrationPage />} />
       </Route>
       <Route path="/dropship" element={<DropshipDashboard />} />

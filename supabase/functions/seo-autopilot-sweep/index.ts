@@ -5,6 +5,7 @@
 // 4. Inserts pending recommendations linked to a single seo_audit_runs row.
 // Recommendations require human approval before any code change is applied.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { verifyCronSecret, logCronRun } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,11 +58,11 @@ async function suggest(apiKey: string, path: string, title: string | null, desc:
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const cronSecret = Deno.env.get("CRON_SECRET");
-  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+  if (!(await verifyCronSecret(req, "seo-autopilot-sweep"))) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
+  try {
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -128,7 +129,13 @@ Deno.serve(async (req) => {
     completed_at: new Date().toISOString(),
   }).eq("id", runId);
 
+  await logCronRun("seo-autopilot-sweep", "ok", { httpStatus: 200, metadata: { run_id: runId, created } });
   return new Response(JSON.stringify({ ok: true, run_id: runId, created, results }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+  } catch (e) {
+    const msg = (e as Error)?.message ?? String(e);
+    await logCronRun("seo-autopilot-sweep", "error", { httpStatus: 500, error: msg });
+    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 });

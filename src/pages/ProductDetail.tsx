@@ -446,8 +446,8 @@ const ProductDetail = () => {
                 </Select>
               </div>
 
-              {/* Subscribe & Save — excluded for sampler bundles and non-wine */}
-              {!isSamplerBundle && !isMerch && (
+              {/* Subscribe & Save — temporarily disabled, will rewire after next publish */}
+              {false && !isSamplerBundle && !isMerch && (
                 <SubscribeAndSave
                   price={parseFloat(selectedVariant?.price.amount || product.priceRange.minVariantPrice.amount) * quantity}
                   onSubscriptionChange={(isSub, freq) => {

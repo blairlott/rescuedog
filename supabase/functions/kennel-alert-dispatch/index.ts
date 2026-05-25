@@ -1,6 +1,7 @@
 // Single entry point for Kennel ops alerts. Fans out to Resend (email) + Twilio (SMS).
 // Body: { event_type, channel?, action, spend_impact_cents?, confidence?, deep_link?, message? }
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { verifyCronSecret } from "../_shared/cronAlert.ts";
 const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -159,6 +160,10 @@ async function sendSms(to: string[], body: string, payload: any): Promise<{ ok: 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
+
+  if (!(await verifyCronSecret(req, "kennel-alert-dispatch"))) {
+    return json({ error: "unauthorized" }, 401);
+  }
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }

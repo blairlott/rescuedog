@@ -274,7 +274,10 @@ Deno.serve(async (req) => {
     req.headers.get('cf-connecting-ip') ??
     null;
   let signatureValid: boolean | null = null;
-  if (SHARED_SECRET) {
+  if (!SHARED_SECRET) {
+    return ok({ error: 'server_misconfigured: VINOSHIPPER_WEBHOOK_SECRET not set' }, 500);
+  }
+  {
     const url = new URL(req.url);
     const token = url.searchParams.get('token') ?? req.headers.get('x-webhook-token');
     signatureValid = token === SHARED_SECRET;

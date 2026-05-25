@@ -2,6 +2,7 @@ import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import { checkSharedSecret } from '../_shared/cronAlert.ts'
 
 const SITE_NAME = 'Rescue Dog Wines'
 const SENDER_DOMAIN = 'notify.partner.rescuedog.com'

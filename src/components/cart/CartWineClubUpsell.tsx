@@ -86,19 +86,16 @@ export function CartWineClubUpsell() {
       </div>
 
       {!user && (
-        <div className="mt-2 pt-2 border-t border-primary/20 flex gap-1.5">
+        <div className="mt-2 pt-2 border-t border-primary/20">
           <Link
             to="/login"
-            className="flex-1 text-center border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted"
+            className="block w-full text-center border border-primary bg-primary text-primary-foreground px-2 py-1 text-[11px] font-medium hover:bg-primary/90"
           >
-            Sign In
+            Sign In to Join
           </Link>
-          <Link
-            to="/signup"
-            className="flex-1 text-center border border-primary bg-primary text-primary-foreground px-2 py-1 text-[11px] font-medium hover:bg-primary/90"
-          >
-            Create Account
-          </Link>
+          <p className="mt-1 text-[10px] text-muted-foreground text-center">
+            New customer? Your account is created at checkout.
+          </p>
         </div>
       )}
 

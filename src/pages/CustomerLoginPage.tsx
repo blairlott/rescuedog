@@ -165,11 +165,8 @@ const CustomerLoginPage = () => {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link to={`/signup${nextQs}`} className="text-primary font-semibold hover:underline">
-              Create one
-            </Link>
+          <p className="text-center text-xs text-muted-foreground">
+            New here? Your account is created automatically when you place your first order.
           </p>
         </div>
       </main>

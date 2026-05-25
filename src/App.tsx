@@ -53,7 +53,6 @@ const CompareHubPage = lazy(() => import("./pages/CompareHubPage"));
 const BrandComparePage = lazy(() => import("./pages/BrandComparePage"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage"));
 const CustomerLoginPage = lazy(() => import("./pages/CustomerLoginPage"));
-const CustomerSignupPage = lazy(() => import("./pages/CustomerSignupPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const CustomerResetPasswordPage = lazy(() => import("./pages/CustomerResetPasswordPage"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
@@ -265,7 +264,7 @@ function AppContent() {
       <Route path="/e/:slug" element={<AmbassadorEventPublicPage />} />
       <Route path="/subscribe" element={<SubscribePage />} />
       <Route path="/login" element={<CustomerLoginPage />} />
-      <Route path="/signup" element={<CustomerSignupPage />} />
+      <Route path="/signup" element={<Navigate to="/login" replace />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<CustomerResetPasswordPage />} />
       <Route path="/account" element={<AccountPage />} />

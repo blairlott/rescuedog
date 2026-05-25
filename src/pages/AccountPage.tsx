@@ -490,7 +490,7 @@ const AccountPage = () => {
                     <Button
                       className="gap-2"
                       onClick={() => {
-                        const url = `${window.location.origin}/signup?ref=${profile?.referral_code}`;
+                        const url = `${window.location.origin}/?ref=${profile?.referral_code}`;
                         navigator.clipboard.writeText(url);
                         toast.success("Referral link copied!");
                       }}

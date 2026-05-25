@@ -102,6 +102,20 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
      */
     handoff: NonNullable<Props["pendingMerchHandoff"]>;
   }>(null);
+  // After hand-off to Vinoshipper's hosted cart we cannot trust that the
+  // customer actually paid until we receive an ORDER webhook back. Show a
+  // waiting screen and poll the server until confirmation arrives — only
+  // THEN clear wine from cart, mark abandonment converted, and reveal the
+  // merch handoff CTA. If the customer never completes, wine stays in
+  // their cart so they're routed straight back to it.
+  const [awaitingPayment, setAwaitingPayment] = useState<null | {
+    handoffAt: string;
+    email: string;
+    bottles: number;
+    total: number;
+    handoff: Props["pendingMerchHandoff"] | null;
+  }>(null);
+  const [awaitingTimedOut, setAwaitingTimedOut] = useState(false);
   const [shipMethod, setShipMethod] = useState<"home" | "ups_ap">("home");
   const [accessPoint, setAccessPoint] = useState<AccessPoint | null>(null);
   const [accessPoints, setAccessPoints] = useState<AccessPoint[]>([]);
@@ -365,34 +379,19 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
       recordCheckoutIntent({ email: form.email || user?.email || null, cartId: null });
       await addLinesAndGoToHostedCart(vsLines, popup, activePromoCode);
       try { localStorage.setItem("rdw_returning_customer", "true"); } catch {}
-      await markAbandonment("converted");
 
-      // Clear wine items from local cart — they've been handed off to
-      // Vinoshipper's hosted cart, so leaving them here causes the wine
-      // to stick in our cart drawer after the user pays on VS. Keep merch
-      // intact for the step-2 Shopify handoff.
-      const wineLines = items.filter((i) => i.product.node.productKind === "wine");
-      if (wineLines.length === items.length) {
-        clearCart();
-      } else {
-        wineLines.forEach((i) => removeItem(i.variantId));
-      }
-
-      // If merch is also in the cart, swap to the merch handoff screen so
-      // the customer has a one-tap path back to finish merch after wine.
-      if (pendingMerchHandoff) {
-        setMerchHandoffReady({
-          orderId: `VS-PENDING-${Date.now()}`,
-          total,
-          bottles: totalBottles,
-          handoff: pendingMerchHandoff,
-        });
-      } else {
-        onOpenChange(false);
-        toast.success("Secure payment opened", {
-          description: "Finish your wine order on the Vinoshipper tab.",
-        });
-      }
+      // DO NOT clear cart or claim success yet — the customer has only
+      // been handed off to the secure payment tab. Switch into a waiting
+      // state and let the poll effect confirm via the Vinoshipper
+      // webhook before we touch their cart.
+      setAwaitingPayment({
+        handoffAt: new Date().toISOString(),
+        email: (form.email || user?.email || "").trim().toLowerCase(),
+        bottles: totalBottles,
+        total,
+        handoff: pendingMerchHandoff ?? null,
+      });
+      setAwaitingTimedOut(false);
     } catch (err: any) {
       try { popup?.close(); } catch {}
       console.error("[vs-handoff] failed", err);
@@ -531,8 +530,103 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
 
   // Reset the handoff screen whenever the modal is reopened fresh.
   useEffect(() => {
-    if (!open) setMerchHandoffReady(null);
+    if (!open) {
+      setMerchHandoffReady(null);
+      setAwaitingPayment(null);
+      setAwaitingTimedOut(false);
+    }
   }, [open]);
+
+  /**
+   * Server-side confirmation poll for the wine handoff.
+   *
+   * While `awaitingPayment` is set we poll an edge function every 5s
+   * (for up to 10 min) that checks `vinoshipper_webhook_logs` for an
+   * ORDER:APPROVED/CREATED event matching this customer's email since
+   * the handoff timestamp. Only when a real webhook lands do we:
+   *   - clear wine items from the cart,
+   *   - mark the abandonment converted,
+   *   - transition into the merch handoff CTA (or close + toast).
+   *
+   * If the timeout elapses or the customer closes the modal first, the
+   * wine items remain in the local cart so they're sent straight back
+   * to their shopping cart to retry.
+   */
+  useEffect(() => {
+    if (!awaitingPayment) return;
+    let cancelled = false;
+    const startedMs = new Date(awaitingPayment.handoffAt).getTime();
+    const TIMEOUT_MS = 10 * 60 * 1000;
+    const POLL_MS = 5_000;
+
+    const onConfirmed = async () => {
+      if (cancelled) return;
+      try { await markAbandonment("converted"); } catch { /* non-fatal */ }
+      const wineLines = items.filter((i) => i.product.node.productKind === "wine");
+      if (wineLines.length === items.length) {
+        clearCart();
+      } else {
+        wineLines.forEach((i) => removeItem(i.variantId));
+      }
+      const handoff = awaitingPayment.handoff;
+      const fakeOrderId = `VS-${Date.now()}`;
+      onWineOrderPlaced?.({
+        orderId: fakeOrderId,
+        total: awaitingPayment.total,
+        bottles: awaitingPayment.bottles,
+      });
+      if (handoff) {
+        setMerchHandoffReady({
+          orderId: fakeOrderId,
+          total: awaitingPayment.total,
+          bottles: awaitingPayment.bottles,
+          handoff,
+        });
+        setAwaitingPayment(null);
+      } else {
+        setAwaitingPayment(null);
+        onOpenChange(false);
+        toast.success("Wine order confirmed", {
+          description: "We received your Vinoshipper order confirmation.",
+        });
+      }
+    };
+
+    const poll = async () => {
+      if (cancelled) return;
+      if (Date.now() - startedMs > TIMEOUT_MS) {
+        setAwaitingTimedOut(true);
+        return;
+      }
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          "vinoshipper-confirm-recent-order",
+          { body: { email: awaitingPayment.email, since: awaitingPayment.handoffAt } },
+        );
+        if (!cancelled && !error && (data as any)?.confirmed) {
+          await onConfirmed();
+          return;
+        }
+      } catch (e) {
+        console.warn("[vs-confirm] poll failed", e);
+      }
+      if (!cancelled) setTimeout(poll, POLL_MS);
+    };
+
+    // First check after a short delay so the webhook has a chance to land
+    // for instant-pay returning customers (Shop Pay / saved card).
+    const t = setTimeout(poll, 3_000);
+    return () => { cancelled = true; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [awaitingPayment?.handoffAt]);
+
+  const handleReturnToCart = () => {
+    // Wine items are still in the cart — closing the modal returns the
+    // shopper to the cart drawer where they can retry or remove items.
+    setAwaitingPayment(null);
+    setAwaitingTimedOut(false);
+    onOpenChange(false);
+  };
 
   /**
    * Pass through the Shopify cart checkoutUrl as-is.
@@ -575,7 +669,67 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] p-0 flex flex-col">
-        {merchHandoffReady ? (
+        {awaitingPayment ? (
+          <div className="p-6 space-y-5">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Lock className="h-5 w-5" />
+              <span className="text-xs font-semibold uppercase tracking-[0.2em]">
+                Waiting for Vinoshipper
+              </span>
+            </div>
+            <div className="space-y-1">
+              <h2 className="font-display text-xl">Finish your wine order</h2>
+              <p className="text-sm text-muted-foreground">
+                Your secure payment tab is open on vinoshipper.com. As soon
+                as your order is approved we'll confirm it here automatically —
+                you don't need to do anything else in this window.
+              </p>
+            </div>
+            {!awaitingTimedOut ? (
+              <div className="flex items-center gap-3 border border-border bg-muted/30 p-3 text-xs">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span>Listening for your payment confirmation…</span>
+              </div>
+            ) : (
+              <div className="border border-border bg-muted/30 p-3 text-xs space-y-2">
+                <div className="font-semibold">We haven't seen your order yet.</div>
+                <p className="text-muted-foreground">
+                  If you didn't complete payment on Vinoshipper, your wine is
+                  still in your cart — just return and try again.
+                </p>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleReturnToCart}
+              >
+                Return to cart
+              </Button>
+              {awaitingTimedOut && (
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={() => {
+                    setAwaitingTimedOut(false);
+                    setAwaitingPayment((p) =>
+                      p ? { ...p, handoffAt: new Date().toISOString() } : p,
+                    );
+                  }}
+                >
+                  Keep waiting
+                </Button>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground text-center">
+              If you've already paid, this will update on its own within a
+              minute. You can safely close this window — we'll email you a
+              confirmation either way.
+            </p>
+          </div>
+        ) : merchHandoffReady ? (
           (() => {
             const handoff = merchHandoffReady.handoff;
             return (
@@ -894,16 +1048,18 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
           </div>
         )}
 
-        <label className="flex items-start gap-2 text-xs text-muted-foreground">
-          <Checkbox
-            checked={ageOk}
-            onCheckedChange={(c) => setAgeOk(!!c)}
-          />
-          <span>
-            I confirm I am 21 or older and an adult will be available to sign
-            for delivery.
-          </span>
-        </label>
+        {/* Age 21+ confirmation is enforced site-wide by the age gate
+            (see mem://features/age-verification). The redundant in-modal
+            checkbox was removed at the customer's request. */}
+        {!isAgeVerified() && (
+          <label className="flex items-start gap-2 text-xs text-muted-foreground">
+            <Checkbox checked={ageOk} onCheckedChange={(c) => setAgeOk(!!c)} />
+            <span>
+              I confirm I am 21 or older and an adult will be available to
+              sign for delivery.
+            </span>
+          </label>
+        )}
 
         <WineShippingPolicy variant="full" />
         </div>

@@ -693,7 +693,7 @@ export const CartDrawer = () => {
                     </Button>
                   </div>
                 )}
-                <CartWineClubUpsell />
+                {/* <CartWineClubUpsell /> — temporarily disabled, needs more testing */}
                 {showNudge && (
                   <div className="text-xs bg-brand-gold/10 border border-brand-gold/30 px-3 py-2 flex items-center justify-between">
                     <span>

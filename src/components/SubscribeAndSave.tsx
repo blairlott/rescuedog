@@ -72,11 +72,10 @@ export function SubscribeAndSave({ price, onSubscriptionChange }: SubscribeAndSa
       {!user && (
         <div className="px-4 pb-4 pt-0 space-y-2 border-t border-border/50">
           <p className="text-xs text-muted-foreground">
-            Subscribe & Save requires an account so we can securely store your payment method on Vinoshipper, verify age 21+, and let you manage shipments. Guest checkout is available for one-time purchases.
+            Subscribe & Save requires an account so we can securely store your payment method on Vinoshipper, verify age 21+, and let you manage shipments. Your account is created at checkout — sign in if you already have one.
           </p>
           <div className="flex gap-2">
             <Button asChild size="sm" variant="outline" className="flex-1"><Link to={`/login?next=${next}`}>Sign In</Link></Button>
-            <Button asChild size="sm" className="flex-1"><Link to={`/signup?next=${next}`}>Create Account</Link></Button>
           </div>
         </div>
       )}

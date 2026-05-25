@@ -70,10 +70,13 @@ export default function AmbassadorSignupPage() {
         <Header />
         <main className="flex-1 max-w-md mx-auto py-16 px-4 text-center">
           <h1 className="text-2xl font-bold uppercase mb-4">Sign In to Apply</h1>
-          <p className="text-muted-foreground mb-6">You need an account to become a Rescue Ambassador.</p>
+          <p className="text-muted-foreground mb-6">
+            You need an account to become a Rescue Ambassador. Accounts are created when you place
+            your first wine order — sign in if you already have one.
+          </p>
           <div className="flex flex-col gap-3">
-            <Button asChild><Link to={`/signup?next=/ambassador/signup`}>Create Account</Link></Button>
-            <Button asChild variant="outline"><Link to={`/login?next=/ambassador/signup`}>Sign In</Link></Button>
+            <Button asChild><Link to={`/login?next=/ambassador/signup`}>Sign In</Link></Button>
+            <Button asChild variant="outline"><Link to="/shop">Shop Wine</Link></Button>
           </div>
         </main>
         <Footer />

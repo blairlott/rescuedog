@@ -50,6 +50,12 @@ export default function CrmLayout() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Close mobile nav on route change — must be declared before any conditional return
+  // to keep hook order stable across renders.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
   if (loading || roleLoading) return <div className="min-h-dvh flex items-center justify-center text-muted-foreground">Loading...</div>;
   if (!user) return null;
 
@@ -70,11 +76,6 @@ export default function CrmLayout() {
       </div>
     );
   }
-
-  // Close mobile nav on route change
-  useEffect(() => {
-    setMobileNavOpen(false);
-  }, [location.pathname]);
 
   const sidebarContent = (
     <>

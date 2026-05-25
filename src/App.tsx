@@ -53,7 +53,6 @@ const CompareHubPage = lazy(() => import("./pages/CompareHubPage"));
 const BrandComparePage = lazy(() => import("./pages/BrandComparePage"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage"));
 const CustomerLoginPage = lazy(() => import("./pages/CustomerLoginPage"));
-const CustomerSignupPage = lazy(() => import("./pages/CustomerSignupPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const CustomerResetPasswordPage = lazy(() => import("./pages/CustomerResetPasswordPage"));
 const AccountPage = lazy(() => import("./pages/AccountPage"));
@@ -92,6 +91,7 @@ const AdminFlagsPage = lazy(() => import("./pages/AdminFlagsPage"));
 const AdminPortalPage = lazy(() => import("./pages/AdminPortalPage"));
 const AdminAbResultsPage = lazy(() => import("./pages/AdminAbResultsPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
+const AdminCustomersPage = lazy(() => import("./pages/admin/AdminCustomersPage"));
 const RequestAccessPage = lazy(() => import("./pages/RequestAccessPage"));
 const SellOnSitePage = lazy(() => import("./pages/SellOnSitePage"));
 const AmbassadorsLandingPage = lazy(() => import("./pages/AmbassadorsLandingPage"));
@@ -217,6 +217,7 @@ function AppContent() {
       <Route path="/admin" element={<AdminPortalPage />} />
       <Route path="/admin/ab-results" element={<AdminAbResultsPage />} />
       <Route path="/admin/users" element={<AdminUsersPage />} />
+      <Route path="/admin/customers" element={<AdminCustomersPage />} />
       <Route path="/admin/request-access" element={<RequestAccessPage />} />
       <Route path="/admin/login" element={<Navigate to="/admin" replace />} />
       <Route path="/admin/change-password" element={<ForcePasswordChangePage />} />
@@ -265,7 +266,7 @@ function AppContent() {
       <Route path="/e/:slug" element={<AmbassadorEventPublicPage />} />
       <Route path="/subscribe" element={<SubscribePage />} />
       <Route path="/login" element={<CustomerLoginPage />} />
-      <Route path="/signup" element={<CustomerSignupPage />} />
+      <Route path="/signup" element={<Navigate to="/login" replace />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<CustomerResetPasswordPage />} />
       <Route path="/account" element={<AccountPage />} />

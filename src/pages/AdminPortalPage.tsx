@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Lock, Users } from "lucide-react";
+import { Shield, Lock, Users, UserCircle } from "lucide-react";
 import { ADMIN_AREAS, hasAreaAccess } from "@/lib/adminAreas";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import { AbVariantTile } from "@/components/admin/AbVariantTile";
@@ -288,10 +288,27 @@ const AdminPortalPage = () => {
               className="group block border border-border bg-background p-6 hover:border-primary transition-colors"
             >
               <Users className="h-6 w-6 text-primary mb-3" />
-              <h3 className="font-bold text-foreground mb-1">User Management</h3>
+              <h3 className="font-bold text-foreground mb-1">Staff Users</h3>
               <p className="text-sm text-muted-foreground">
                 Approve signups, invite team members, assign roles, and review pending
                 access requests across CRM, CMS, Kennel, and Finance.
+              </p>
+            </Link>
+          </div>
+        )}
+
+        {roles.some((r) => ADMIN_ROLES.has(r)) && (
+          <div className="mt-4">
+            <Link
+              to="/admin/customers"
+              className="group block border border-border bg-background p-6 hover:border-primary transition-colors"
+            >
+              <UserCircle className="h-6 w-6 text-primary mb-3" />
+              <h3 className="font-bold text-foreground mb-1">Customers</h3>
+              <p className="text-sm text-muted-foreground">
+                Mirror of the Vinoshipper customer list. Search, segment by club status and state,
+                and refresh on demand. Foundation for Subscribe &amp; Save, AI wine-club curation,
+                and ad audience exports.
               </p>
             </Link>
           </div>

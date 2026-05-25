@@ -2,6 +2,7 @@
 // new/changing ad platforms relevant to a small wine brand. Emits platform_radar_alerts.
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { checkSharedSecret } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,7 +29,12 @@ Be conservative — only surface items with real evidence. Prefer specificity ov
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const isCron = req.headers.get("x-cron-secret") === Deno.env.get("KENNEL_INGEST_SECRET");
+    const isCron = await checkSharedSecret(req, {
+      functionName: "platform-radar-scan",
+      envVar: "KENNEL_INGEST_SECRET",
+      headers: ["x-cron-secret"],
+      alertOnFail: false,
+    });
     const auth = req.headers.get("Authorization") ?? "";
     if (!isCron) {
       if (!auth.startsWith("Bearer ")) return J(401, { error: "Unauthorized" });

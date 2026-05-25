@@ -278,8 +278,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   // Auth
-  const cronSecret = req.headers.get("x-cron-secret");
-  const isCron = !!cronSecret && cronSecret === Deno.env.get("KENNEL_INGEST_SECRET");
+  const isCron = await checkSharedSecret(req, {
+    functionName: "z8-nightly-optimizer",
+    envVar: "KENNEL_INGEST_SECRET",
+    headers: ["x-cron-secret"],
+    alertOnFail: false,
+  });
   const auth = req.headers.get("Authorization") ?? "";
 
   const admin = createClient(

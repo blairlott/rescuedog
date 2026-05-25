@@ -73,9 +73,12 @@ Deno.serve(async (req) => {
   // Auth: ad-ops user JWT.
   const authHeader = req.headers.get("Authorization") ?? "";
   // Auth: cron secret (for kennel-oci-backlog-alert auto-flush) OR ad-ops JWT.
-  const ingestSecret = Deno.env.get("KENNEL_INGEST_SECRET")?.trim();
-  const providedSecret = req.headers.get("x-kennel-cron-secret")?.trim();
-  const cronAuthorized = !!ingestSecret && providedSecret === ingestSecret;
+  const cronAuthorized = await checkSharedSecret(req, {
+    functionName: "vinoshipper-conversions-backfill",
+    envVar: "KENNEL_INGEST_SECRET",
+    headers: ["x-kennel-cron-secret", "x-cron-secret"],
+    alertOnFail: false,
+  });
   if (!cronAuthorized) {
     const jwt = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
     if (!jwt) return json({ error: "unauthorized" }, 401);

@@ -198,9 +198,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   // Auth: allow cron via shared ingest secret OR authenticated ad-ops user.
-  const ingestSecret = Deno.env.get("KENNEL_INGEST_SECRET")?.trim();
-  const providedSecret = req.headers.get("x-kennel-cron-secret")?.trim();
-  const cronAuthorized = !!ingestSecret && providedSecret === ingestSecret;
+  const cronAuthorized = await checkSharedSecret(req, {
+    functionName: "kennel-optimizer",
+    envVar: "KENNEL_INGEST_SECRET",
+    headers: ["x-kennel-cron-secret", "x-cron-secret"],
+    alertOnFail: false,
+  });
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 

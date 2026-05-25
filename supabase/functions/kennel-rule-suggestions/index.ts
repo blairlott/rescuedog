@@ -6,6 +6,7 @@
 //
 // Auth: KENNEL_INGEST_SECRET in x-kennel-cron-secret OR ad-ops JWT.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { checkSharedSecret } from "../_shared/cronAlert.ts";
 const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), {
@@ -44,9 +45,12 @@ const SCHEMA = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const ingestSecret = Deno.env.get("KENNEL_INGEST_SECRET")?.trim();
-  const providedSecret = req.headers.get("x-kennel-cron-secret")?.trim();
-  const cronAuthorized = !!ingestSecret && providedSecret === ingestSecret;
+  const cronAuthorized = await checkSharedSecret(req, {
+    functionName: "kennel-rule-suggestions",
+    envVar: "KENNEL_INGEST_SECRET",
+    headers: ["x-kennel-cron-secret", "x-cron-secret"],
+    alertOnFail: false,
+  });
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,

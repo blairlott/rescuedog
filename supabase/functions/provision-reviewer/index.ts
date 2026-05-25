@@ -103,9 +103,13 @@ Deno.serve(async (req) => {
 
   try {
     // Shared-secret gate. Only callers with the admin secret may provision accounts.
-    const adminSecret = Deno.env.get('PROVISION_ADMIN_SECRET')
-    const presented = req.headers.get('x-admin-secret') ?? ''
-    if (!adminSecret || presented.length === 0 || presented !== adminSecret) {
+    const authorized = await checkSharedSecret(req, {
+      functionName: 'provision-reviewer',
+      envVar: 'PROVISION_ADMIN_SECRET',
+      headers: ['x-admin-secret', 'x-cron-secret'],
+      alertOnFail: true,
+    })
+    if (!authorized) {
       return new Response(
         JSON.stringify({ error: 'unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

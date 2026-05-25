@@ -628,17 +628,7 @@ export const CartDrawer = () => {
                           </div>
                         </div>
                       </div>
-                      {(() => {
-                        const t = item.product.node.title.toLowerCase();
-                        const isSampler = t.includes("sampler") || t.includes("sample") || t.includes("6-bottle") || t.includes("6 bottle");
-                        return isSampler ? null : (
-                          <CartSubscribeToggle
-                            price={parseFloat(item.price.amount)}
-                            quantity={item.quantity}
-                            cartSubtotal={totalPrice}
-                          />
-                        );
-                      })()}
+                      {/* Subscribe & Save — temporarily disabled, will rewire after next publish */}
                     </div>
                   ))}
                 </div>

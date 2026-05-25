@@ -130,8 +130,6 @@ export default function ThankYouPage() {
     }
   }, [orderId, total, bottles]);
 
-  const dogsHelped = Math.max(1, Math.floor(bottles / 4));
-
   // "Pending" if we're still waiting on the wine webhook, we never saw it,
   // or there are still un-checked-out items sitting in the cart.
   const isPending =
@@ -212,9 +210,11 @@ export default function ThankYouPage() {
             <div className="border border-primary/30 bg-primary/5 p-4 mb-8">
               <Heart className="h-6 w-6 text-primary mx-auto mb-2" />
               <p className="text-sm">
-                <strong>You just helped {dogsHelped} rescue dog{dogsHelped === 1 ? "" : "s"}.</strong>
+                <strong>Thank you for supporting our rescue mission.</strong>
                 <br />
-                <span className="text-muted-foreground">50% of profits support animal rescue partners across the country.</span>
+                <span className="text-muted-foreground">
+                  Every bottle helps dogs find their forever home.
+                </span>
               </p>
             </div>
           )}

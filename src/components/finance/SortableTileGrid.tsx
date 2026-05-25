@@ -68,13 +68,13 @@ function Cell({ tile, onRemove, readOnly }: { tile: SortableTile; onRemove?: (id
               {...attributes}
               {...listeners}
               aria-label="Drag to reorder"
-              className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+              className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             >
               <GripVertical className="h-3.5 w-3.5" />
             </button>
           )}
           {!readOnly && onRemove && (
-            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => onRemove(tile.id)} title="Remove tile">
+            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" onClick={() => onRemove(tile.id)} title="Remove tile">
               <X className="h-3.5 w-3.5" />
             </Button>
           )}

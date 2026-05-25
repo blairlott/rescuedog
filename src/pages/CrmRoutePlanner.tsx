@@ -5,7 +5,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { US_STATES } from "@/lib/usStates";
-import { GOOGLE_MAPS_API_KEY } from "@/lib/googleMaps";
+import { assertAllowedMapsReferrer } from "@/lib/googleMaps";
+import { geocodeAddress, computeOptimizedRoute } from "@/lib/googleMapsClient";
 import { MapPin, Navigation, ExternalLink, Search, Clock, ArrowDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,6 +34,8 @@ export default function CrmRoutePlanner() {
   const [optimizing, setOptimizing] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const upsertAccount = useUpsertAccount();
+
+  useEffect(() => { assertAllowedMapsReferrer(); }, []);
 
   const addressable = useMemo(
     () => accounts.filter((a) => a.street_address && a.city && a.state),
@@ -74,18 +77,12 @@ export default function CrmRoutePlanner() {
     for (const account of toGeocode) {
       const addr = getAddress(account);
       try {
-        const res = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${GOOGLE_MAPS_API_KEY}`
-        );
-        const data = await res.json();
-        if (data.results?.[0]?.geometry?.location) {
-          const { lat, lng } = data.results[0].geometry.location;
-          await upsertAccount.mutateAsync({ id: account.id, account_name: account.account_name, latitude: lat, longitude: lng });
+        const hit = await geocodeAddress(addr);
+        if (hit) {
+          await upsertAccount.mutateAsync({ id: account.id, account_name: account.account_name, latitude: hit.lat, longitude: hit.lng });
           geocoded++;
         }
-      } catch {
-        // skip failed geocodes
-      }
+      } catch { /* skip failed geocodes */ }
     }
 
     if (geocoded > 0) toast.success(`Geocoded ${geocoded} account${geocoded > 1 ? "s" : ""}`);
@@ -108,33 +105,26 @@ export default function CrmRoutePlanner() {
     const middleWaypoints = startAddress ? waypoints : waypoints.slice(1, -1);
 
     try {
-      const waypointParam = middleWaypoints.length > 0
-        ? `&waypoints=optimize:true|${middleWaypoints.map((w) => encodeURIComponent(w)).join("|")}`
-        : "";
-
-      const res = await fetch(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}${waypointParam}&key=${GOOGLE_MAPS_API_KEY}`
-      );
-      const data = await res.json();
-
-      if (data.status !== "OK") {
-        // Fallback: open in Google Maps directly
-        toast.error("Directions API unavailable from browser. Opening Google Maps instead.");
+      const route = await computeOptimizedRoute({ origin, destination, intermediates: middleWaypoints });
+      if (!route) {
+        toast.error("Routes API unavailable. Opening Google Maps instead.");
         openInGoogleMaps();
         setOptimizing(false);
         return;
       }
 
-      const route = data.routes[0];
-      const legs: DirectionsLeg[] = route.legs;
-      const totalDist = legs.reduce((s: number, l: DirectionsLeg) => s + l.distance.value, 0);
-      const totalDur = legs.reduce((s: number, l: DirectionsLeg) => s + l.duration.value, 0);
+      const legs: DirectionsLeg[] = route.legs.map((l) => ({
+        distance: { text: `${(l.distanceMeters / 1609.34).toFixed(1)} mi`, value: l.distanceMeters },
+        duration: { text: formatDuration(l.durationSeconds), value: l.durationSeconds },
+        start_address: l.startAddress,
+        end_address: l.endAddress,
+      }));
 
       setRouteResult({
         legs,
-        totalDistance: `${(totalDist / 1609.34).toFixed(1)} mi`,
-        totalDuration: formatDuration(totalDur),
-        optimizedOrder: route.waypoint_order || [],
+        totalDistance: `${(route.totalDistanceMeters / 1609.34).toFixed(1)} mi`,
+        totalDuration: formatDuration(route.totalDurationSeconds),
+        optimizedOrder: route.optimizedWaypointOrder,
       });
 
       toast.success("Route optimized!");

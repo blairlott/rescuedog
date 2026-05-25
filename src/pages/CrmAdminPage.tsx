@@ -19,6 +19,7 @@ import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
 import { TestEmailsCard } from "@/components/crm/TestEmailsCard";
 import { DepletionUploadCard } from "@/components/crm/DepletionUploadCard";
 import { AccessRequestsTab } from "@/components/crm/AccessRequestsTab";
+import { isStaffEmail } from "@/lib/staffEmail";
 
 interface UserWithRoles {
   id: string;
@@ -75,7 +76,14 @@ export default function CrmAdminPage() {
       if (u) u.roles.push(r.role as AppRole);
     });
 
-    setUsers(Array.from(userMap.values()));
+    // Staff-only view: a profile counts as staff if it has at least one role
+    // assigned OR uses a staff-domain email. Customer accounts (legacy
+    // customer signups, Vinoshipper-mirrored buyers, etc.) live in
+    // /admin/customers and must not appear here.
+    const staffOnly = Array.from(userMap.values()).filter(
+      (u) => u.roles.length > 0 || isStaffEmail(u.email),
+    );
+    setUsers(staffOnly);
     setLoading(false);
   };
 
@@ -233,8 +241,11 @@ export default function CrmAdminPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">User Management</h1>
-          <p className="text-sm text-muted-foreground">Approve signups, create users, and assign roles.</p>
+          <h1 className="text-2xl font-bold text-foreground">Staff Users</h1>
+          <p className="text-sm text-muted-foreground">
+            Invite staff, approve access, and assign roles. Customer accounts live in{" "}
+            <a href="/admin/customers" className="underline">Admin → Customers</a>.
+          </p>
         </div>
         <Button onClick={() => setCreateOpen(true)} className="gap-1">
           <UserPlus className="h-4 w-4" /> Create User

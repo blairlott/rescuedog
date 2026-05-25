@@ -195,6 +195,19 @@ export default function ThankYouPage() {
               "Thanks for ordering — your bottles are on the way. A confirmation email is being sent to you now."}
           </p>
 
+          {/* Receipt sourcing note — always visible. Our /thank-you page is
+              a landing/handoff, NOT the official receipt. Vinoshipper (wine)
+              and Shopify (merch) each send their own confirmation + receipt
+              directly from their checkout, so customers know to watch their
+              inbox there rather than wait on us. */}
+          <p className="text-xs text-muted-foreground leading-relaxed mb-8 border-t border-border pt-4">
+            <strong className="text-foreground">Where's my receipt?</strong> Your final order confirmations and
+            itemized receipts are sent directly by our checkout partners — <strong>Vinoshipper</strong> for wine
+            (compliance, age verification, and shipping) and <strong>Shopify</strong> for merch. Check the inbox of
+            the email you used at checkout (and your spam folder, just in case). This page is a quick status summary,
+            not the official receipt.
+          </p>
+
           {bottles > 0 && (
             <div className="border border-primary/30 bg-primary/5 p-4 mb-8">
               <Heart className="h-6 w-6 text-primary mx-auto mb-2" />

@@ -195,12 +195,11 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="min-h-[2.75rem]">
             <p className="text-foreground">
               <span className="text-[10px] align-top leading-none">$</span>
-              <span className="text-base font-semibold">{Math.floor(memberPrice)}</span>
-              <span className="text-[10px] align-top leading-none">.{Math.round((memberPrice - Math.floor(memberPrice)) * 100).toString().padStart(2, '0')}</span>
-              <span className="text-[10px] text-muted-foreground line-through ml-2">${priceNum.toFixed(2)}</span>
+              <span className="text-base font-semibold">{dollars}</span>
+              <span className="text-[10px] align-top leading-none">.{cents}</span>
             </p>
             <p className="text-[10px] uppercase tracking-brand text-primary font-bold">
-              {isMember ? "Your Member Price" : "Wine Club Member Price (20% off)"}
+              Club: ${memberPrice.toFixed(2)} (20% off)
             </p>
           </div>
         ) : (

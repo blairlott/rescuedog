@@ -84,7 +84,11 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   const resetCheckoutIntent = useCheckoutIntentStore((s) => s.reset);
   const clubTierId = useCheckoutIntentStore((s) => s.clubTierId);
 
-  const [ageOk, setAgeOk] = useState(() => isAgeVerified());
+  // Age 21+ is enforced site-wide by the age gate
+  // (mem://features/age-verification). Anyone who reaches this modal has
+  // already cleared it, so we treat ageOk as true and skip the redundant
+  // in-modal checkbox + CTA disable.
+  const ageOk = true;
   const [submitting, setSubmitting] = useState(false);
   // After wine succeeds, if merch is pending, we show a handoff screen
   // instead of immediately closing + navigating away. The CTA on that
@@ -1049,17 +1053,8 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
         )}
 
         {/* Age 21+ confirmation is enforced site-wide by the age gate
-            (see mem://features/age-verification). The redundant in-modal
-            checkbox was removed at the customer's request. */}
-        {!isAgeVerified() && (
-          <label className="flex items-start gap-2 text-xs text-muted-foreground">
-            <Checkbox checked={ageOk} onCheckedChange={(c) => setAgeOk(!!c)} />
-            <span>
-              I confirm I am 21 or older and an adult will be available to
-              sign for delivery.
-            </span>
-          </label>
-        )}
+            (mem://features/age-verification). In-modal checkbox removed
+            per customer request — it was redundant. */}
 
         <WineShippingPolicy variant="full" />
         </div>

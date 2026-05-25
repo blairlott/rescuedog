@@ -10272,6 +10272,117 @@ export type Database = {
         }
         Relationships: []
       }
+      vs_customer_sync_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          errors: number
+          finished_at: string | null
+          id: string
+          inserted: number
+          pages: number
+          seen: number
+          started_at: string
+          triggered_by: string
+          updated: number
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          inserted?: number
+          pages?: number
+          seen?: number
+          started_at?: string
+          triggered_by?: string
+          updated?: number
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          inserted?: number
+          pages?: number
+          seen?: number
+          started_at?: string
+          triggered_by?: string
+          updated?: number
+        }
+        Relationships: []
+      }
+      vs_customers: {
+        Row: {
+          address: string | null
+          business_name: string | null
+          city: string | null
+          club_name: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          first_name: string | null
+          id: string
+          is_club_member: boolean
+          last_name: string | null
+          last_synced_at: string
+          phone: string | null
+          raw: Json | null
+          state: string | null
+          tags: Json
+          updated_at: string
+          vs_created_at: string | null
+          vs_customer_id: string
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_name?: string | null
+          city?: string | null
+          club_name?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          is_club_member?: boolean
+          last_name?: string | null
+          last_synced_at?: string
+          phone?: string | null
+          raw?: Json | null
+          state?: string | null
+          tags?: Json
+          updated_at?: string
+          vs_created_at?: string | null
+          vs_customer_id: string
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_name?: string | null
+          city?: string | null
+          club_name?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          is_club_member?: boolean
+          last_name?: string | null
+          last_synced_at?: string
+          phone?: string | null
+          raw?: Json | null
+          state?: string | null
+          tags?: Json
+          updated_at?: string
+          vs_created_at?: string | null
+          vs_customer_id?: string
+          zip?: string | null
+        }
+        Relationships: []
+      }
       vs_poll_log: {
         Row: {
           capi_purchases_sent: number

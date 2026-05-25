@@ -48,6 +48,7 @@
 - [Email Test Mode](mem://features/email-test-mode) — Pre-launch routing of all form emails to Blair+Lindy; S&S exempt; editable at /cms/forms
 - [CRM Core](mem://features/crm) — Sales CRM dashboard structure and features
 - [CRM Access Management](mem://features/crm-auth) — Mandatory admin approval for CRM access
+- [Auth Separation](mem://features/auth-separation) — Customer auth (/login, /signup) and back-office auth (/admin, /crm, /cms, /finance, /club/admin) must not overlap; staff emails (`@rescuedogwines.com`) rejected from customer flows via `src/lib/staffEmail.ts`
 - [CRM Maps](mem://features/crm-maps) — Leaflet and Google Maps integration for CRM
 - [CRM Staleness](mem://features/crm-staleness-tracking) — Activity tracking logic based on last order
 - [Referral Rewards](mem://features/referral-rewards-logic) — Points-based system requiring manual CRM approval

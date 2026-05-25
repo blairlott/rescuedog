@@ -57,9 +57,17 @@
     </script>
     <script src="https://vinoshipper.com/injector/index.js" async></script>
     <script>
-      // Belt-and-suspenders: forcibly remove any Vinoshipper UI the
-      // injector adds to the page. Our app owns the cart UX — VS's
-      // slide-out cart must never appear to the customer.
+      // Belt-and-suspenders: HIDE any Vinoshipper UI the injector adds
+      // to the page. Our app owns the cart UX — VS's slide-out cart
+      // must never appear to the customer.
+      //
+      // IMPORTANT: We HIDE instead of REMOVE because the injector keeps
+      // internal references to its own DOM nodes (e.g. cart container)
+      // and calls things like `el.classList.toggle(...)` on them during
+      // onProductAdd → cartOpen flows. Removing the nodes makes those
+      // references undefined and crashes the injector with
+      // "Cannot read properties of undefined (reading 'classList')",
+      // which surfaces to the customer as "Wine checkout unavailable".
       (function () {
         var SELECTORS = [
           '[id*="vinoshipper" i]',
@@ -70,13 +78,21 @@
           'iframe[src*="vinoshipper.com"]',
         ];
         var SEL = SELECTORS.join(',');
+        var STYLE_ID = 'rdw-vs-hide-style';
+        if (!document.getElementById(STYLE_ID)) {
+          var st = document.createElement('style');
+          st.id = STYLE_ID;
+          // Visually neutralize without detaching from DOM.
+          st.textContent = SEL + ' { position: fixed !important; left: -99999px !important; top: -99999px !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important; z-index: -1 !important; }';
+          (document.head || document.documentElement).appendChild(st);
+        }
         function nuke(root) {
           try {
             (root || document).querySelectorAll(SEL).forEach(function (el) {
-              // Allow our own VS-prefixed CSS variable container (none today),
-              // but kill anything VS injected into the DOM tree.
               if (el.closest && el.closest('[data-rdw-keep-vs]')) return;
-              el.remove();
+              // Hide (don't remove) so injector's internal refs stay valid.
+              el.setAttribute('aria-hidden', 'true');
+              el.setAttribute('data-rdw-vs-hidden', 'true');
             });
           } catch (e) { /* ignore */ }
         }

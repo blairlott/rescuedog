@@ -35,6 +35,7 @@ import { template as wineSubCardExpiring } from './wine-subscription-card-expiri
 import { template as autopilotAutoStopped } from './autopilot-auto-stopped.tsx'
 import { template as accessRequestAdminNotification } from './access-request-admin-notification.tsx'
 import { template as vsApiUpdate } from './vs-api-update.tsx'
+import { template as vsOrderConfirmationFollowup } from './vs-order-confirmation-followup.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'ambassador-welcome': ambassadorWelcome,
@@ -63,4 +64,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'autopilot-auto-stopped': autopilotAutoStopped,
   'access-request-admin-notification': accessRequestAdminNotification,
   'vs-api-update': vsApiUpdate,
+  'vs-order-confirmation-followup': vsOrderConfirmationFollowup,
 }

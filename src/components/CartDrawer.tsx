@@ -467,12 +467,16 @@ export const CartDrawer = () => {
       return;
     }
     if (hasWine && !hasMerch) {
-      // Use the same in-app Vinoshipper checkout modal as dual checkout —
-      // consistent UX, no external popup, and the modal already handles
-      // wine-only when pendingMerchHandoff is null.
-      logCheckoutEvent("wine_checkout_started", { flow: "inline_modal" });
-      setIsOpen(false);
-      setVsCheckoutOpen(true);
+      // ONE-CLICK wine checkout: pre-open the VS popup synchronously
+      // inside this user gesture, then hand off to the injector. Skips
+      // the in-app modal entirely — age was already verified at site
+      // entry, and VS's hosted cart collects ship-to + payment.
+      logCheckoutEvent("wine_checkout_started", { flow: "direct_hosted_cart" });
+      const popup =
+        typeof window !== "undefined"
+          ? window.open("about:blank", "_blank")
+          : null;
+      void handleCheckoutWines(popup);
       return;
     }
     // Both: surface the compliance explainer first so the customer isn't

@@ -30,6 +30,12 @@ import { effectiveBottleCount, caseEligibleBottleCount, discountEligibleSubtotal
 import { useCartSettings } from "@/hooks/useCartSettings";
 import { getSignupPromo, markSignupPromoUsed } from "@/lib/signupPromo";
 import { WineShippingPolicy } from "@/components/cart/WineShippingPolicy";
+import { isAgeVerified } from "@/lib/ageVerification";
+
+// localStorage key for cross-session prefill of buyer email/zip so the
+// VS hosted cart can recognize returning customers via Shop Pay / saved
+// card associations without re-typing.
+const BUYER_PROFILE_KEY = "rdw_buyer_profile";
 
 interface Props {
   open: boolean;
@@ -78,7 +84,7 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   const resetCheckoutIntent = useCheckoutIntentStore((s) => s.reset);
   const clubTierId = useCheckoutIntentStore((s) => s.clubTierId);
 
-  const [ageOk, setAgeOk] = useState(false);
+  const [ageOk, setAgeOk] = useState(() => isAgeVerified());
   const [submitting, setSubmitting] = useState(false);
   // After wine succeeds, if merch is pending, we show a handoff screen
   // instead of immediately closing + navigating away. The CTA on that
@@ -115,6 +121,44 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
     cvc: "123",
   });
   const navigate = useNavigate();
+
+  // Rehydrate buyer profile (email + zip + name + address) from prior
+  // checkouts so returning users don't re-type. Runs once on mount.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(BUYER_PROFILE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Partial<typeof form>;
+      setForm((p) => ({
+        ...p,
+        email: saved.email || user?.email || p.email,
+        name: saved.name || p.name,
+        address: saved.address || p.address,
+        city: saved.city || p.city,
+        state: saved.state || p.state,
+        zip: saved.zip || p.zip,
+      }));
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist buyer profile whenever the customer edits the form (debounced
+  // implicitly by React re-renders). Never persists card data.
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        BUYER_PROFILE_KEY,
+        JSON.stringify({
+          email: form.email,
+          name: form.name,
+          address: form.address,
+          city: form.city,
+          state: form.state,
+          zip: form.zip,
+        }),
+      );
+    } catch { /* ignore */ }
+  }, [form.email, form.name, form.address, form.city, form.state, form.zip]);
 
   // Autofill ship-to from membership address once available
   useEffect(() => {
@@ -520,6 +564,27 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
     );
   };
 
+  // Auto-redirect countdown for the merch handoff (step 2). Saves the
+  // customer an extra click — after 3s we same-tab redirect to Shopify
+  // checkout. The "Continue to merch checkout" button remains as a manual
+  // fallback in case they want to act sooner. NOTE: same-tab nav is used
+  // because popup auto-open (without a fresh gesture) is reliably blocked.
+  const [merchAutoCountdown, setMerchAutoCountdown] = useState<number>(3);
+  useEffect(() => {
+    if (!merchHandoffReady) {
+      setMerchAutoCountdown(3);
+      return;
+    }
+    if (merchAutoCountdown <= 0) {
+      const handoff = merchHandoffReady.handoff;
+      const url = buildPrefilledMerchUrl(handoff.checkoutUrl);
+      window.location.href = url;
+      return;
+    }
+    const t = setTimeout(() => setMerchAutoCountdown((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [merchHandoffReady, merchAutoCountdown]);
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] p-0 flex flex-col">
@@ -562,10 +627,10 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
               onClick={handleContinueToMerch}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
-              Continue to merch checkout
+              Continue to merch checkout{merchAutoCountdown > 0 ? ` (${merchAutoCountdown})` : ""}
             </Button>
             <p className="text-[11px] text-muted-foreground text-center">
-              Opens in a new tab. If you don't complete it now, we'll email you a one-tap link to finish later.
+              We'll redirect you automatically in {merchAutoCountdown}s, or tap above to go now. If you don't complete it, we'll email a one-tap link to finish later.
             </p>
           </div>
             );

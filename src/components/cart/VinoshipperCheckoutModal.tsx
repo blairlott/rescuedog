@@ -384,18 +384,40 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
       await addLinesAndGoToHostedCart(vsLines, popup, activePromoCode);
       try { localStorage.setItem("rdw_returning_customer", "true"); } catch {}
 
-      // DO NOT clear cart or claim success yet — the customer has only
-      // been handed off to the secure payment tab. Switch into a waiting
-      // state and let the poll effect confirm via the Vinoshipper
-      // webhook before we touch their cart.
-      setAwaitingPayment({
-        handoffAt: new Date().toISOString(),
-        email: (form.email || user?.email || "").trim().toLowerCase(),
-        bottles: totalBottles,
+      // OPTIMISTIC handoff: as soon as the secure payment tab is open
+      // we treat the wine half as "in the customer's hands" and
+      // immediately advance to the merch handoff CTA (or close + toast).
+      // The Vinoshipper webhook still reconciles the final order — but
+      // the customer never waits on our UI for that round-trip, and they
+      // can always move on to the Shopify merch checkout right away.
+      try { await markAbandonment("converted"); } catch { /* non-fatal */ }
+      if (isSignupPromoActive) markSignupPromoUsed();
+      const wineLines = items.filter((i) => i.product.node.productKind === "wine");
+      if (wineLines.length === items.length) {
+        clearCart();
+      } else {
+        wineLines.forEach((i) => removeItem(i.variantId));
+      }
+      const handoffOrderId = `VS-${Date.now()}`;
+      onWineOrderPlaced?.({
+        orderId: handoffOrderId,
         total,
-        handoff: pendingMerchHandoff ?? null,
+        bottles: totalBottles,
       });
-      setAwaitingTimedOut(false);
+      resetCheckoutIntent();
+      if (pendingMerchHandoff) {
+        setMerchHandoffReady({
+          orderId: handoffOrderId,
+          total,
+          bottles: totalBottles,
+          handoff: pendingMerchHandoff,
+        });
+      } else {
+        onOpenChange(false);
+        toast.success("Wine order in progress", {
+          description: "Finish payment in the new tab — we'll email your confirmation.",
+        });
+      }
     } catch (err: any) {
       try { popup?.close(); } catch {}
       console.error("[vs-handoff] failed", err);

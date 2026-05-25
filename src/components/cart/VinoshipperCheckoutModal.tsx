@@ -564,26 +564,13 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
     );
   };
 
-  // Auto-redirect countdown for the merch handoff (step 2). Saves the
-  // customer an extra click — after 3s we same-tab redirect to Shopify
-  // checkout. The "Continue to merch checkout" button remains as a manual
-  // fallback in case they want to act sooner. NOTE: same-tab nav is used
-  // because popup auto-open (without a fresh gesture) is reliably blocked.
-  const [merchAutoCountdown, setMerchAutoCountdown] = useState<number>(3);
-  useEffect(() => {
-    if (!merchHandoffReady) {
-      setMerchAutoCountdown(3);
-      return;
-    }
-    if (merchAutoCountdown <= 0) {
-      const handoff = merchHandoffReady.handoff;
-      const url = buildPrefilledMerchUrl(handoff.checkoutUrl);
-      window.location.href = url;
-      return;
-    }
-    const t = setTimeout(() => setMerchAutoCountdown((n) => n - 1), 1000);
-    return () => clearTimeout(t);
-  }, [merchHandoffReady, merchAutoCountdown]);
+  // NOTE: We previously auto-redirected same-tab to the Shopify cart
+  // checkoutUrl after a 3s countdown. That broke for customers whose
+  // Shopify domain (gear.rescuedog.com) refused the same-tab connection,
+  // leaving them stranded on a browser error page with no way back.
+  // The merch handoff now requires a manual click (which opens a new tab
+  // via a fresh user gesture), so the user always retains the modal as a
+  // fallback if Shopify fails to load.
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -627,10 +614,10 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
               onClick={handleContinueToMerch}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
-              Continue to merch checkout{merchAutoCountdown > 0 ? ` (${merchAutoCountdown})` : ""}
+              Continue to merch checkout
             </Button>
             <p className="text-[11px] text-muted-foreground text-center">
-              We'll redirect you automatically in {merchAutoCountdown}s, or tap above to go now. If you don't complete it, we'll email a one-tap link to finish later.
+              Opens in a new tab. If you don't complete it, we'll email a one-tap link to finish later.
             </p>
           </div>
             );

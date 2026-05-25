@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { verifyCronSecret, logCronRun } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,8 +47,7 @@ async function auditTopic(prompt: string, apiKey: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const cronSecret = Deno.env.get("CRON_SECRET");
-  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+  if (!(await verifyCronSecret(req, "compliance-audit"))) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
@@ -59,12 +59,14 @@ Deno.serve(async (req) => {
   let triggered_by = "cron";
   try { const body = await req.json(); if (body?.triggered_by) triggered_by = body.triggered_by; } catch {}
 
+  try {
   const { data: audit, error: aErr } = await supabase
     .from("compliance_audits")
     .insert({ status: "running", source: "lovable_ai", triggered_by, topic_count: TOPICS.length })
     .select()
     .single();
   if (aErr || !audit) {
+    await logCronRun("compliance-audit", "error", { httpStatus: 500, error: aErr?.message ?? "audit insert failed" });
     return new Response(JSON.stringify({ error: aErr?.message ?? "audit insert failed" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -102,7 +104,13 @@ Deno.serve(async (req) => {
     ok_count: ok, warn_count: warn, fail_count: fail,
   }).eq("id", audit.id);
 
+  await logCronRun("compliance-audit", "ok", { httpStatus: 200, metadata: { audit_id: audit.id, ok, warn, fail } });
   return new Response(JSON.stringify({ audit_id: audit.id, ok, warn, fail }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+  } catch (e) {
+    const msg = (e as Error)?.message ?? String(e);
+    await logCronRun("compliance-audit", "error", { httpStatus: 500, error: msg });
+    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 });

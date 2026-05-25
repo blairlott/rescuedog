@@ -669,7 +669,67 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] p-0 flex flex-col">
-        {merchHandoffReady ? (
+        {awaitingPayment ? (
+          <div className="p-6 space-y-5">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Lock className="h-5 w-5" />
+              <span className="text-xs font-semibold uppercase tracking-[0.2em]">
+                Waiting for Vinoshipper
+              </span>
+            </div>
+            <div className="space-y-1">
+              <h2 className="font-display text-xl">Finish your wine order</h2>
+              <p className="text-sm text-muted-foreground">
+                Your secure payment tab is open on vinoshipper.com. As soon
+                as your order is approved we'll confirm it here automatically —
+                you don't need to do anything else in this window.
+              </p>
+            </div>
+            {!awaitingTimedOut ? (
+              <div className="flex items-center gap-3 border border-border bg-muted/30 p-3 text-xs">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span>Listening for your payment confirmation…</span>
+              </div>
+            ) : (
+              <div className="border border-border bg-muted/30 p-3 text-xs space-y-2">
+                <div className="font-semibold">We haven't seen your order yet.</div>
+                <p className="text-muted-foreground">
+                  If you didn't complete payment on Vinoshipper, your wine is
+                  still in your cart — just return and try again.
+                </p>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleReturnToCart}
+              >
+                Return to cart
+              </Button>
+              {awaitingTimedOut && (
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={() => {
+                    setAwaitingTimedOut(false);
+                    setAwaitingPayment((p) =>
+                      p ? { ...p, handoffAt: new Date().toISOString() } : p,
+                    );
+                  }}
+                >
+                  Keep waiting
+                </Button>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground text-center">
+              If you've already paid, this will update on its own within a
+              minute. You can safely close this window — we'll email you a
+              confirmation either way.
+            </p>
+          </div>
+        ) : merchHandoffReady ? (
           (() => {
             const handoff = merchHandoffReady.handoff;
             return (

@@ -464,6 +464,13 @@ const ProductDetail = () => {
                 </div>
               )}
 
+              {isSamplerBundle && !isMerch && (
+                <div className="border border-primary bg-primary/5 p-3 text-sm flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span><strong className="text-foreground uppercase tracking-brand text-xs">Shipping Included</strong> — this 6-bottle sampler ships free to your door.</span>
+                </div>
+              )}
+
               {isClubExclusive && (
                 <div className={`border p-3 text-sm flex items-center gap-2 ${locked ? 'border-primary bg-primary/5' : 'border-brand-gold/40 bg-brand-gold/5'}`}>
                   <Lock className="h-4 w-4 text-primary flex-shrink-0" />

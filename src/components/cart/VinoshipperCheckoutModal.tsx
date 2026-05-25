@@ -627,10 +627,10 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
               onClick={handleContinueToMerch}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
-              Continue to merch checkout
+              Continue to merch checkout{merchAutoCountdown > 0 ? ` (${merchAutoCountdown})` : ""}
             </Button>
             <p className="text-[11px] text-muted-foreground text-center">
-              Opens in a new tab. If you don't complete it now, we'll email you a one-tap link to finish later.
+              We'll redirect you automatically in {merchAutoCountdown}s, or tap above to go now. If you don't complete it, we'll email a one-tap link to finish later.
             </p>
           </div>
             );

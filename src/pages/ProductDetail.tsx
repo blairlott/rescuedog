@@ -311,20 +311,15 @@ const ProductDetail = () => {
 
                   {showMemberTeaser ? (
                     <div>
-                      <p className="text-2xl font-bold text-primary">
-                        ${teaserUnitPrice.toFixed(2)}
-                        <span className="text-sm text-muted-foreground line-through ml-2 font-normal">
-                          ${variantPrice.toFixed(2)}
-                        </span>
+                      <p className="text-2xl font-semibold tracking-tight text-primary">
+                        ${variantPrice.toFixed(2)}
                       </p>
                       <p className="text-[11px] uppercase tracking-brand text-primary font-bold mt-1">
-                        {isMember
-                          ? `Your Member Price (${teaserDiscountPct}% off)`
-                          : `Wine Club Member Price (${teaserDiscountPct}% off) — applied at checkout`}
+                        Club: ${teaserUnitPrice.toFixed(2)} ({teaserDiscountPct}% off)
                       </p>
                     </div>
                   ) : (
-                  <p className="text-2xl font-semibold tracking-tight text-primary">${variantPrice.toFixed(2)}</p>
+                    <p className="text-2xl font-semibold tracking-tight text-primary">${variantPrice.toFixed(2)}</p>
                   )}
                 </div>
 

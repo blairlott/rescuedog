@@ -845,6 +845,10 @@ export const CartDrawer = () => {
       }
       onWineOrderPlaced={({ orderId }) => {
         logCheckoutEvent("dual_wine_completed", { order_id: orderId });
+        // Make sure the cart sidebar drawer does not pop back open once
+        // the wine order is confirmed — the modal handles the success
+        // state (merch handoff or toast) on its own.
+        setIsOpen(false);
       }}
     />
     <DualCheckoutConfirm

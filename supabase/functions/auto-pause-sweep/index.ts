@@ -7,6 +7,7 @@
 // NOTE: keeps platform calls best-effort. If a platform API isn't wired,
 // it logs a 'skipped' event rather than failing.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { verifyCronSecret } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,6 +56,12 @@ async function metaPause(token: string, entityId: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  if (!(await verifyCronSecret(req, "auto-pause-sweep"))) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,

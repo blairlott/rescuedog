@@ -30,15 +30,15 @@ export function logAbEvent(
   opts: { path?: string; valueCents?: number } = {},
 ): void {
   try {
-    void supabase.from("ab_events").insert({
-      event_type,
-      site_variant: getVariant(),
-      ab_test: AB_META.AB_TEST_ID,
-      session_id: getSessionId(),
-      path:
+    void supabase.rpc("log_ab_event", {
+      _event_type: event_type,
+      _site_variant: getVariant(),
+      _ab_test: AB_META.AB_TEST_ID,
+      _session_id: getSessionId(),
+      _path:
         opts.path ??
         (typeof window !== "undefined" ? window.location.pathname : null),
-      value_cents: opts.valueCents ?? null,
+      _value_cents: opts.valueCents ?? null,
     });
   } catch (e) {
     if (typeof console !== "undefined") console.warn("[ab-event] failed", e);

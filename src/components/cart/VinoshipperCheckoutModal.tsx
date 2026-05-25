@@ -379,34 +379,19 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
       recordCheckoutIntent({ email: form.email || user?.email || null, cartId: null });
       await addLinesAndGoToHostedCart(vsLines, popup, activePromoCode);
       try { localStorage.setItem("rdw_returning_customer", "true"); } catch {}
-      await markAbandonment("converted");
 
-      // Clear wine items from local cart — they've been handed off to
-      // Vinoshipper's hosted cart, so leaving them here causes the wine
-      // to stick in our cart drawer after the user pays on VS. Keep merch
-      // intact for the step-2 Shopify handoff.
-      const wineLines = items.filter((i) => i.product.node.productKind === "wine");
-      if (wineLines.length === items.length) {
-        clearCart();
-      } else {
-        wineLines.forEach((i) => removeItem(i.variantId));
-      }
-
-      // If merch is also in the cart, swap to the merch handoff screen so
-      // the customer has a one-tap path back to finish merch after wine.
-      if (pendingMerchHandoff) {
-        setMerchHandoffReady({
-          orderId: `VS-PENDING-${Date.now()}`,
-          total,
-          bottles: totalBottles,
-          handoff: pendingMerchHandoff,
-        });
-      } else {
-        onOpenChange(false);
-        toast.success("Secure payment opened", {
-          description: "Finish your wine order on the Vinoshipper tab.",
-        });
-      }
+      // DO NOT clear cart or claim success yet — the customer has only
+      // been handed off to the secure payment tab. Switch into a waiting
+      // state and let the poll effect confirm via the Vinoshipper
+      // webhook before we touch their cart.
+      setAwaitingPayment({
+        handoffAt: new Date().toISOString(),
+        email: (form.email || user?.email || "").trim().toLowerCase(),
+        bottles: totalBottles,
+        total,
+        handoff: pendingMerchHandoff ?? null,
+      });
+      setAwaitingTimedOut(false);
     } catch (err: any) {
       try { popup?.close(); } catch {}
       console.error("[vs-handoff] failed", err);

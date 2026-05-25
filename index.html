@@ -56,6 +56,45 @@
       }, false);
     </script>
     <script src="https://vinoshipper.com/injector/index.js" async></script>
+    <script>
+      // Belt-and-suspenders: forcibly remove any Vinoshipper UI the
+      // injector adds to the page. Our app owns the cart UX — VS's
+      // slide-out cart must never appear to the customer.
+      (function () {
+        var SELECTORS = [
+          '[id*="vinoshipper" i]',
+          '[class*="vinoshipper" i]',
+          '[id^="vs-"]',
+          '[class^="vs-"]',
+          '[class*=" vs-"]',
+          'iframe[src*="vinoshipper.com"]',
+        ];
+        var SEL = SELECTORS.join(',');
+        function nuke(root) {
+          try {
+            (root || document).querySelectorAll(SEL).forEach(function (el) {
+              // Allow our own VS-prefixed CSS variable container (none today),
+              // but kill anything VS injected into the DOM tree.
+              if (el.closest && el.closest('[data-rdw-keep-vs]')) return;
+              el.remove();
+            });
+          } catch (e) { /* ignore */ }
+        }
+        nuke();
+        if (typeof MutationObserver !== 'undefined') {
+          var mo = new MutationObserver(function (mutations) {
+            for (var i = 0; i < mutations.length; i++) {
+              var m = mutations[i];
+              if (m.addedNodes && m.addedNodes.length) {
+                nuke(document);
+                break;
+              }
+            }
+          });
+          mo.observe(document.documentElement, { childList: true, subtree: true });
+        }
+      })();
+    </script>
   </head>
 
   <body>

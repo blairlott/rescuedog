@@ -371,6 +371,26 @@ Deno.serve(async (req) => {
         testMode,
       });
 
+      // Follow-up "back to RescueDogWines" email — one-time per invoice.
+      // Sent inline so customers land back on our site after the VS hosted checkout.
+      if (!testMode && cust.email) {
+        try {
+          await admin.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "vs-order-confirmation-followup",
+              recipientEmail: cust.email,
+              idempotencyKey: `vs-followup-${orderId}`,
+              templateData: {
+                name: cust.firstName ?? null,
+                invoice: orderId,
+              },
+            },
+          });
+        } catch (e) {
+          console.error("vs-order-confirmation-followup send failed (non-fatal)", e);
+        }
+      }
+
       // Subscribe event with projected $400 LTV — wine club signups only
       if (isClub && !testMode) {
         const subRaw = STATIC_CLUB_LTV_CENTS;

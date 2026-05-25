@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Play, RefreshCw, Zap, Save } from "lucide-react";
 import { JobRunHistory } from "@/components/kennel/JobRunHistory";
+import { useUserRole } from "@/hooks/useUserRole";
 
 type SignalRow = {
   email: string;
@@ -64,6 +65,8 @@ function fmt(ts: string | null) {
 export default function KennelSegflowPage() {
   const { toast } = useToast();
   const [running, setRunning] = useState(false);
+  const { data: roleInfo } = useUserRole();
+  const canEdit = !!roleInfo?.isAdOps;
 
   const counts = useQuery({
     queryKey: ["segflow-counts"],
@@ -134,12 +137,20 @@ export default function KennelSegflowPage() {
           <Button variant="outline" size="sm" onClick={() => { counts.refetch(); recent.refetch(); }}>
             <RefreshCw className="mr-1.5 h-4 w-4" /> Refresh
           </Button>
-          <Button size="sm" onClick={runNow} disabled={running}>
-            {running ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Play className="mr-1.5 h-4 w-4" />}
-            Run now
-          </Button>
+          {canEdit && (
+            <Button size="sm" onClick={runNow} disabled={running}>
+              {running ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Play className="mr-1.5 h-4 w-4" />}
+              Run now
+            </Button>
+          )}
         </div>
       </div>
+
+      {!canEdit && (
+        <div className="rounded-none border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+          Read-only view. Contact an Ad Ops manager to run jobs or edit signal offers.
+        </div>
+      )}
 
       {/* Status row */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -170,7 +181,7 @@ export default function KennelSegflowPage() {
         </div>
       </div>
 
-      <OffersEditor />
+      <OffersEditor canEdit={canEdit} />
 
       {/* Mailchimp push status */}
       <div>
@@ -251,7 +262,7 @@ export default function KennelSegflowPage() {
   );
 }
 
-function OffersEditor() {
+function OffersEditor({ canEdit }: { canEdit: boolean }) {
   const { toast } = useToast();
   const [drafts, setDrafts] = useState<Record<string, Partial<OfferRow>>>({});
   const [savingSig, setSavingSig] = useState<string | null>(null);
@@ -349,19 +360,21 @@ function OffersEditor() {
                 <tr key={sig} className="border-t border-border align-top">
                   <td className="px-3 py-2"><Badge variant="outline" className={`rounded-none ${SIGNAL_TONE[sig] ?? ""}`}>{sig}</Badge></td>
                   <td className="px-3 py-2">
-                    <Switch checked={!!get(sig, "active")} onCheckedChange={(v) => setField(sig, "active", v)} />
+                    <Switch checked={!!get(sig, "active")} onCheckedChange={(v) => setField(sig, "active", v)} disabled={!canEdit} />
                   </td>
-                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-40" value={get(sig, "mailchimp_tag") ?? ""} onChange={(e) => setField(sig, "mailchimp_tag", e.target.value)} /></td>
-                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-36" value={get(sig, "mailchimp_journey") ?? ""} onChange={(e) => setField(sig, "mailchimp_journey", e.target.value)} /></td>
-                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-56" value={get(sig, "offer_title") ?? ""} onChange={(e) => setField(sig, "offer_title", e.target.value)} /></td>
-                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-36 font-mono text-xs" value={get(sig, "offer_sku") ?? ""} onChange={(e) => setField(sig, "offer_sku", e.target.value)} /></td>
-                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-64 font-mono text-xs" value={get(sig, "offer_url") ?? ""} onChange={(e) => setField(sig, "offer_url", e.target.value)} /></td>
-                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-24" type="number" value={get(sig, "offer_price_cents") ?? ""} onChange={(e) => setField(sig, "offer_price_cents", e.target.value)} /></td>
-                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-64" value={get(sig, "notes") ?? ""} onChange={(e) => setField(sig, "notes", e.target.value)} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-40" value={get(sig, "mailchimp_tag") ?? ""} onChange={(e) => setField(sig, "mailchimp_tag", e.target.value)} readOnly={!canEdit} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-36" value={get(sig, "mailchimp_journey") ?? ""} onChange={(e) => setField(sig, "mailchimp_journey", e.target.value)} readOnly={!canEdit} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-56" value={get(sig, "offer_title") ?? ""} onChange={(e) => setField(sig, "offer_title", e.target.value)} readOnly={!canEdit} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-36 font-mono text-xs" value={get(sig, "offer_sku") ?? ""} onChange={(e) => setField(sig, "offer_sku", e.target.value)} readOnly={!canEdit} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-64 font-mono text-xs" value={get(sig, "offer_url") ?? ""} onChange={(e) => setField(sig, "offer_url", e.target.value)} readOnly={!canEdit} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-24" type="number" value={get(sig, "offer_price_cents") ?? ""} onChange={(e) => setField(sig, "offer_price_cents", e.target.value)} readOnly={!canEdit} /></td>
+                  <td className="px-3 py-2"><Input className="rounded-none h-8 w-64" value={get(sig, "notes") ?? ""} onChange={(e) => setField(sig, "notes", e.target.value)} readOnly={!canEdit} /></td>
                   <td className="px-3 py-2">
-                    <Button size="sm" variant={dirty ? "default" : "outline"} disabled={!dirty || savingSig === sig} onClick={() => save(sig)}>
-                      {savingSig === sig ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                    </Button>
+                    {canEdit && (
+                      <Button size="sm" variant={dirty ? "default" : "outline"} disabled={!dirty || savingSig === sig} onClick={() => save(sig)}>
+                        {savingSig === sig ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                      </Button>
+                    )}
                   </td>
                 </tr>
               );

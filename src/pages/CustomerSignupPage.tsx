@@ -14,6 +14,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useEffect } from "react";
+import { isStaffEmail, STAFF_EMAIL_MESSAGE } from "@/lib/staffEmail";
 
 const CustomerSignupPage = () => {
   const { user } = useCustomerAuth();
@@ -49,6 +50,10 @@ const CustomerSignupPage = () => {
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isStaffEmail(formData.email)) {
+      toast.error(STAFF_EMAIL_MESSAGE);
+      return;
+    }
     if (!ageConfirm) {
       toast.error("You must confirm you are 21+ to create an account");
       return;

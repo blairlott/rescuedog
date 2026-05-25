@@ -1,14 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Heart, Users, Gift, Percent } from "lucide-react";
+import { CheckCircle2, Heart, Users, Gift, Percent, AlertTriangle, Loader2 } from "lucide-react";
 import { useIsMember } from "@/hooks/useIsMember";
 import { PostPurchaseUpsell } from "@/components/PostPurchaseUpsell";
 import { recordExperimentRevenueForVisitor } from "@/lib/experimentRevenue";
 import { trackPurchase } from "@/lib/metaPixel";
+import { supabase } from "@/integrations/supabase/client";
+
+const PENDING_WINE_CONFIRM_KEY = "rdw_pending_wine_confirm";
+type WineConfirmState = "idle" | "polling" | "confirmed" | "missing";
 
 export default function ThankYouPage() {
   const [params] = useSearchParams();
@@ -17,6 +21,58 @@ export default function ThankYouPage() {
   const bottles = Number(params.get("bottles") || 0);
   const { isMember } = useIsMember();
   const lastStore = (typeof window !== "undefined" && sessionStorage.getItem("lastStorePath")) || "/wines";
+
+  // Poll Vinoshipper-confirm edge function to see whether the customer
+  // actually completed the wine purchase after we handed off. If we don't
+  // see a webhook within ~30s, nudge them back into the wine checkout.
+  const [wineConfirm, setWineConfirm] = useState<WineConfirmState>("idle");
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    let raw: string | null = null;
+    try { raw = localStorage.getItem(PENDING_WINE_CONFIRM_KEY); } catch {}
+    if (!raw) return;
+    let parsed: { email?: string; handoffAt?: string } | null = null;
+    try { parsed = JSON.parse(raw); } catch {}
+    if (!parsed?.email || !parsed.handoffAt) return;
+
+    setPendingEmail(parsed.email);
+    setWineConfirm("polling");
+    let cancelled = false;
+    let attempts = 0;
+    const MAX = 10;
+    const INTERVAL = 3000;
+
+    const poll = async () => {
+      while (!cancelled && attempts < MAX) {
+        attempts++;
+        try {
+          const { data, error } = await supabase.functions.invoke(
+            "vinoshipper-confirm-recent-order",
+            { body: { email: parsed!.email, since: parsed!.handoffAt } },
+          );
+          if (!cancelled && !error && (data as any)?.confirmed) {
+            setWineConfirm("confirmed");
+            try { localStorage.removeItem(PENDING_WINE_CONFIRM_KEY); } catch {}
+            return;
+          }
+        } catch (e) {
+          console.warn("[wine-confirm] poll failed", e);
+        }
+        await new Promise((r) => setTimeout(r, INTERVAL));
+      }
+      if (!cancelled) setWineConfirm("missing");
+    };
+
+    poll();
+    return () => { cancelled = true; };
+  }, []);
+
+  const resumeWineCheckout = () => {
+    // Reopen cart drawer — the wine items were cleared on optimistic
+    // handoff, so route them back to the shop to re-add.
+    window.location.href = "/wines";
+  };
 
   // Fire conversion events (GA4 + Meta CAPI hook is set up via metaAttribution)
   useEffect(() => {
@@ -84,6 +140,37 @@ export default function ThankYouPage() {
           )}
 
           {orderId && <PostPurchaseUpsell orderId={orderId} />}
+
+          {wineConfirm === "polling" && (
+            <aside className="border border-border bg-muted/30 p-4 my-6 text-left flex items-center gap-3">
+              <Loader2 className="h-4 w-4 animate-spin text-primary flex-shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                Confirming your wine order with our compliance partner…
+              </p>
+            </aside>
+          )}
+
+          {wineConfirm === "missing" && (
+            <aside className="border border-primary bg-primary/5 p-5 my-6 text-left">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-5 w-5 text-primary" />
+                <p className="font-bold uppercase tracking-brand text-sm">
+                  Your wine order isn't confirmed yet
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                We didn't see a completed wine payment{pendingEmail ? ` for ${pendingEmail}` : ""}.
+                If you closed the secure payment tab, you can pick up where you left off.
+              </p>
+              <Button
+                size="sm"
+                onClick={resumeWineCheckout}
+                className="uppercase tracking-brand text-xs font-bold"
+              >
+                Complete wine purchase →
+              </Button>
+            </aside>
+          )}
 
           {/* Pack savings retro-look — non-members only, wine orders */}
           {!isMember && bottles > 0 && total && Number(total) > 0 && (

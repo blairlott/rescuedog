@@ -159,7 +159,8 @@ Deno.serve(async (req) => {
       const vs = byId.get(String(vsId));
       if (!vs) { unmatched.push(row.handle); continue; }
       const newPrice = extractCents(vs, "regular");
-      const newClub = extractCents(vs, "club");
+      // Club price is always 20% off retail (business rule, not from VS).
+      const newClub = newPrice != null ? Math.round(newPrice * 0.80) : null;
       const newStock = extractInStock(vs);
       if (newPrice == null) { missingPrice.push(row.handle); continue; }
 

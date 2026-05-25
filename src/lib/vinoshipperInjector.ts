@@ -145,7 +145,14 @@ export async function addLinesAndGoToHostedCart(
   }
   for (const line of lines) {
     if (!Number.isFinite(line.productId) || line.quantity <= 0) continue;
-    await vs.onProductAdd(line.productId, line.quantity);
+    try {
+      await vs.onProductAdd(line.productId, line.quantity);
+    } catch (e) {
+      // The injector internally calls cartOpen after add, which can throw
+      // if its slide-out DOM was hidden/removed. The server-side cart was
+      // still updated, so swallow and continue to the hosted checkout URL.
+      console.warn("[vinoshipper] onProductAdd post-step threw, continuing", e);
+    }
   }
   // Pull the server-side cart id the injector just created.
   const checkoutUrl = vs.getCartCheckout?.() ?? new URL("/cart", "https://vinoshipper.com");

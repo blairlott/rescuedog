@@ -127,9 +127,13 @@ export const CartDrawer = () => {
   const showNudge = !isMerchRoute && !shippingIncluded && bottlesNeeded > 0 && bottlesNeeded <= 2 && totalItems > 0;
   // Wine: 6–11 bottles qualify for the flat $9.99 ladder rung. Signals that
   // shipping just dropped to a flat fee and 12+ unlocks free shipping.
+  // Sampler bundles already include shipping, so suppress the flat-fee
+  // callout when a bundle is in the cart — it would be misleading.
+  const hasSamplerBundle = wineItems.some(i => isBundleHandle(i.product.node.handle));
   const showFlatShippingNote =
     !isMerchRoute &&
     !shippingIncluded &&
+    !hasSamplerBundle &&
     totalBottlesEffective >= VS_FLAT_SHIPPING_MIN_BOTTLES &&
     totalItems > 0;
   const showMerchNudge = isMerchRoute && !shippingIncluded && dollarsNeeded > 0 && dollarsNeeded <= 25 && totalItems > 0;

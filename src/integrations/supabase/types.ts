@@ -12639,6 +12639,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      log_ab_event: {
+        Args: {
+          _ab_test?: string
+          _event_type: string
+          _path?: string
+          _session_id?: string
+          _site_variant: string
+          _value_cents?: number
+        }
+        Returns: undefined
+      }
       mark_restructure_executed: {
         Args: { _id: string; _result?: Json; _success: boolean }
         Returns: undefined

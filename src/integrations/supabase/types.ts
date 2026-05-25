@@ -3322,6 +3322,36 @@ export type Database = {
           },
         ]
       }
+      cron_run_log: {
+        Row: {
+          error_message: string | null
+          function_name: string
+          http_status: number | null
+          id: string
+          metadata: Json
+          run_at: string
+          status: string
+        }
+        Insert: {
+          error_message?: string | null
+          function_name: string
+          http_status?: number | null
+          id?: string
+          metadata?: Json
+          run_at?: string
+          status: string
+        }
+        Update: {
+          error_message?: string | null
+          function_name?: string
+          http_status?: number | null
+          id?: string
+          metadata?: Json
+          run_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       customer_cohorts: {
         Row: {
           acquisition_month: string | null

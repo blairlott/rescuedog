@@ -5,6 +5,7 @@
 // approve them from the Creative Studio AI Review panel.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { verifyCronSecret, logCronRun } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,8 +42,7 @@ async function invokeEnhance(asset_id: string, preset: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const cronSecret = Deno.env.get("CRON_SECRET");
-  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+  if (!(await verifyCronSecret(req, "auto-curate-media"))) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
@@ -98,12 +98,14 @@ Deno.serve(async (req) => {
       results.push(entry);
     }
 
+    await logCronRun("auto-curate-media", "ok", { httpStatus: 200, metadata: { processed: results.length } });
     return new Response(JSON.stringify({ ok: true, processed: results.length, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("auto-curate-media error", msg);
+    await logCronRun("auto-curate-media", "error", { httpStatus: 500, error: msg });
     return new Response(JSON.stringify({ ok: false, error: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

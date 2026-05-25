@@ -220,3 +220,26 @@ body {
 }
 .finance-workspace h3 { font-size: 13px; }
 .finance-workspace section > div > div { border-radius: 0; }
+
+/* ============================================================
+ * Hide Vinoshipper's slide-out cart UI entirely.
+ * Our app owns the cart UX and hands off straight to VS's
+ * hosted checkout URL — VS's own drawer must never appear on
+ * top of our cart drawer or checkout modal.
+ * The injector ignores its own cartOpenOnAdd/showCart flags in
+ * some builds, so we belt-and-suspender it with CSS that
+ * targets every known wrapper VS renders.
+ * ============================================================ */
+#vs-cart-wrapper,
+#vs-cart,
+.vs-cart-wrapper,
+.vs-cart,
+.vs-cart-overlay,
+.vs-cart-backdrop,
+[id^="vs-cart"],
+[class^="vs-cart"],
+[class*=" vs-cart"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

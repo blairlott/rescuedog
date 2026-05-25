@@ -103,6 +103,7 @@ Deno.serve(async (req) => {
     }
   }
 
+  await logCronRun("ai-creative-variants", "ok", { httpStatus: 200, metadata: { count: created.length } });
   return new Response(JSON.stringify({ ok: true, count: created.length, created }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });

@@ -177,10 +177,11 @@ Deno.serve(async (req) => {
         diff.in_stock = { from: row.in_stock, to: newStock };
         dirty = true;
       }
-      if (!dirty) continue;
-      changes.push(diff);
+      if (dirty) changes.push(diff);
 
       if (!dryRun) {
+        // Always stamp last_synced_at on matched rows to prove freshness,
+        // even when no field changed.
         const patch: Record<string, unknown> = {
           price_cents: newPrice,
           in_stock: newStock,

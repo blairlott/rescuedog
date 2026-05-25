@@ -42,6 +42,13 @@
             // sharp 0-radius). Docs note simple + advanced conflict.
             cartPosition: 'end',
             cartButton: false,
+            // Suppress Vinoshipper's own slide-out cart UI entirely.
+            // Our app drives the cart UX and hands off straight to the
+            // hosted checkout URL — we never want VS's drawer to appear
+            // on top of ours (it confused customers post-order).
+            cartOpenOnAdd: false,
+            cartOpenOnLoad: false,
+            showCart: false,
           });
         } catch (e) {
           console.error('[Vinoshipper] init failed', e);

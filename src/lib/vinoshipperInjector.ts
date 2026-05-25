@@ -108,7 +108,8 @@ export async function addLinesAndOpenCart(lines: VsCartLine[]): Promise<void> {
     // Sequential — VS does not document concurrency safety on onProductAdd.
     await vs.onProductAdd(line.productId, line.quantity);
   }
-  vs.cartOpen();
+  // Intentionally do NOT call vs.cartOpen() — our app owns the cart UX,
+  // we never want Vinoshipper's slide-out drawer to appear.
 }
 
 /**

@@ -102,6 +102,20 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
      */
     handoff: NonNullable<Props["pendingMerchHandoff"]>;
   }>(null);
+  // After hand-off to Vinoshipper's hosted cart we cannot trust that the
+  // customer actually paid until we receive an ORDER webhook back. Show a
+  // waiting screen and poll the server until confirmation arrives — only
+  // THEN clear wine from cart, mark abandonment converted, and reveal the
+  // merch handoff CTA. If the customer never completes, wine stays in
+  // their cart so they're routed straight back to it.
+  const [awaitingPayment, setAwaitingPayment] = useState<null | {
+    handoffAt: string;
+    email: string;
+    bottles: number;
+    total: number;
+    handoff: Props["pendingMerchHandoff"] | null;
+  }>(null);
+  const [awaitingTimedOut, setAwaitingTimedOut] = useState(false);
   const [shipMethod, setShipMethod] = useState<"home" | "ups_ap">("home");
   const [accessPoint, setAccessPoint] = useState<AccessPoint | null>(null);
   const [accessPoints, setAccessPoints] = useState<AccessPoint[]>([]);

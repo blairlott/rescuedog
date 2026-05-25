@@ -9,7 +9,7 @@
 // Auth: shared cron secret OR admin/owner JWT (verifyCronSecret accepts JWT
 // fallback for internal calls).
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-import { verifyCronSecret, logCronRun } from "../_shared/cronAlert.ts";
+import { checkSharedSecret, logCronRun } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,7 +78,29 @@ async function fetchVsCatalog(auth: string, producerId: string | null) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  if (!(await verifyCronSecret(req, "vinoshipper-sync-prices"))) {
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  // Auth: admin/owner JWT OR service-role bearer OR x-cron-secret header.
+  const authHeader = req.headers.get("Authorization") || "";
+  let isAuthorized = false;
+  if (await checkSharedSecret(req, { functionName: "vinoshipper-sync-prices", envVar: "CRON_SECRET", headers: ["x-cron-secret"], alertOnFail: false })) {
+    isAuthorized = true;
+  } else if (authHeader.includes(SERVICE)) {
+    isAuthorized = true;
+  } else if (authHeader) {
+    const userClient = createClient(SUPABASE_URL, ANON, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user } } = await userClient.auth.getUser();
+    if (user) {
+      const { data: ok } = await userClient.rpc("is_admin_or_owner", { _user_id: user.id });
+      if (ok) isAuthorized = true;
+    }
+  }
+  if (!isAuthorized) {
+    await logCronRun("vinoshipper-sync-prices", "auth_fail", { httpStatus: 401, error: "unauthorized" });
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -103,11 +125,7 @@ Deno.serve(async (req) => {
     returnSample = body?.return_sample === true;
   } catch { /* GET / no body */ }
 
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { persistSession: false } },
-  );
+  const admin = createClient(SUPABASE_URL, SERVICE, { auth: { persistSession: false } });
 
   try {
     const { url, list } = await fetchVsCatalog(auth, producerId);

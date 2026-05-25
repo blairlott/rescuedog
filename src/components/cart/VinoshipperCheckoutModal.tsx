@@ -1048,16 +1048,18 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
           </div>
         )}
 
-        <label className="flex items-start gap-2 text-xs text-muted-foreground">
-          <Checkbox
-            checked={ageOk}
-            onCheckedChange={(c) => setAgeOk(!!c)}
-          />
-          <span>
-            I confirm I am 21 or older and an adult will be available to sign
-            for delivery.
-          </span>
-        </label>
+        {/* Age 21+ confirmation is enforced site-wide by the age gate
+            (see mem://features/age-verification). The redundant in-modal
+            checkbox was removed at the customer's request. */}
+        {!isAgeVerified() && (
+          <label className="flex items-start gap-2 text-xs text-muted-foreground">
+            <Checkbox checked={ageOk} onCheckedChange={(c) => setAgeOk(!!c)} />
+            <span>
+              I confirm I am 21 or older and an adult will be available to
+              sign for delivery.
+            </span>
+          </label>
+        )}
 
         <WineShippingPolicy variant="full" />
         </div>

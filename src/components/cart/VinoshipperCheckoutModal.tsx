@@ -383,6 +383,19 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
       recordCheckoutIntent({ email: form.email || user?.email || null, cartId: null });
       await addLinesAndGoToHostedCart(vsLines, popup, activePromoCode);
       try { localStorage.setItem("rdw_returning_customer", "true"); } catch {}
+      // Stash the handoff so /thank-you can poll Vinoshipper for the
+      // matching webhook and nudge the customer if they didn't finish.
+      try {
+        localStorage.setItem(
+          "rdw_pending_wine_confirm",
+          JSON.stringify({
+            email: (form.email || user?.email || "").trim().toLowerCase(),
+            handoffAt: new Date().toISOString(),
+            bottles: totalBottles,
+            total,
+          }),
+        );
+      } catch { /* ignore */ }
 
       // OPTIMISTIC handoff: as soon as the secure payment tab is open
       // we treat the wine half as "in the customer's hands" and

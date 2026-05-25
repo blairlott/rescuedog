@@ -262,13 +262,13 @@ export default function FinanceDashboard() {
   };
 
   return (
-    <div className="finance-workspace px-6 py-5 space-y-5 max-w-[1700px] mx-auto">
+    <div className="finance-workspace px-3 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5 max-w-[1700px] mx-auto">
       {/* Sticky toolbar */}
-      <div className="sticky top-14 z-20 -mx-6 px-6 py-3 bg-card border-b border-border flex flex-wrap items-center gap-2">
+      <div className="sticky top-14 z-20 -mx-3 sm:-mx-6 px-3 sm:px-6 py-3 bg-card border-b border-border flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <LayoutDashboard className="h-4 w-4 text-muted-foreground shrink-0" />
           <Select value={activeBoardId ?? ""} onValueChange={setActiveBoardId}>
-            <SelectTrigger className="h-8 w-48 text-sm font-bold border-border">
+            <SelectTrigger className="h-8 w-36 sm:w-48 text-sm font-bold border-border">
               <SelectValue placeholder="Select board" />
             </SelectTrigger>
             <SelectContent>
@@ -278,24 +278,24 @@ export default function FinanceDashboard() {
             </SelectContent>
           </Select>
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={newBoard} title="New board"><Plus className="h-4 w-4" /></Button>
-          {board && <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={renameCurrent}>Rename</Button>}
+          {board && <Button size="sm" variant="ghost" className="h-8 text-xs hidden sm:inline-flex" onClick={renameCurrent}>Rename</Button>}
           {board && boards.length > 1 && <Button size="icon" variant="ghost" className="h-8 w-8" onClick={deleteCurrent} title="Delete board"><Trash2 className="h-4 w-4" /></Button>}
         </div>
         <div className="ml-auto flex items-center gap-2 flex-wrap">
-          <Button size="sm" variant="outline" className="h-8 gap-1.5 relative" onClick={() => setShowInbox(!showInbox)}>
-            <Inbox className="h-3.5 w-3.5" /> Shared with me
+          <Button size="sm" variant="outline" className="h-8 gap-1.5 relative px-2 sm:px-3" onClick={() => setShowInbox(!showInbox)} title="Shared with me">
+            <Inbox className="h-3.5 w-3.5" /><span className="hidden sm:inline">Shared with me</span>
             {incoming.length > 0 && (
               <span className="ml-1 inline-flex h-4 min-w-4 px-1 items-center justify-center text-[10px] font-bold bg-primary text-primary-foreground">{incoming.length}</span>
             )}
           </Button>
-          <Button size="sm" variant="outline" className="h-8 gap-1.5" disabled={!board} onClick={() => setShareOpen(true)}>
-            <Share2 className="h-3.5 w-3.5" /> Push view
+          <Button size="sm" variant="outline" className="h-8 gap-1.5 px-2 sm:px-3" disabled={!board} onClick={() => setShareOpen(true)} title="Push view">
+            <Share2 className="h-3.5 w-3.5" /><span className="hidden sm:inline">Push view</span>
           </Button>
-          <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => qc.invalidateQueries()} title="Refresh all tiles">
-            <RefreshCcw className="h-3.5 w-3.5" /> Refresh
+          <Button size="sm" variant="outline" className="h-8 gap-1.5 px-2 sm:px-3" onClick={() => qc.invalidateQueries()} title="Refresh all tiles">
+            <RefreshCcw className="h-3.5 w-3.5" /><span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button size="sm" variant={openInsights.length ? "default" : "outline"} className="h-8 gap-1.5 relative" onClick={() => setInsightsOpen(true)}>
-            <Sparkles className="h-3.5 w-3.5" /> Insights
+          <Button size="sm" variant={openInsights.length ? "default" : "outline"} className="h-8 gap-1.5 relative px-2 sm:px-3" onClick={() => setInsightsOpen(true)} title="Insights">
+            <Sparkles className="h-3.5 w-3.5" /><span className="hidden sm:inline">Insights</span>
             {openInsights.length > 0 && (
               <span className="ml-1 inline-flex h-4 min-w-4 px-1 items-center justify-center text-[10px] font-bold bg-background text-foreground">{openInsights.length}</span>
             )}
@@ -305,9 +305,9 @@ export default function FinanceDashboard() {
           </span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" className="h-8"><Plus className="h-3.5 w-3.5 mr-1" /> Add tile</Button>
+              <Button size="sm" className="h-8 px-2 sm:px-3"><Plus className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Add tile</span></Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 max-h-[70vh] overflow-y-auto">
+            <DropdownMenuContent align="end" className="w-[calc(100vw-1.5rem)] sm:w-80 max-h-[70vh] overflow-y-auto">
               {(Object.keys(grouped) as FinanceTileSource[]).map(src => (
                 <div key={src}>
                   <DropdownMenuLabel className="text-[10px] uppercase tracking-brand">{SOURCE_LABEL[src]}</DropdownMenuLabel>
@@ -331,31 +331,31 @@ export default function FinanceDashboard() {
       </div>
 
       {/* Slice & Dice date band — controls every tile on the board */}
-      <div className="border border-border bg-card p-3 flex flex-wrap items-center gap-3">
+      <div className="border border-border bg-card p-3 flex flex-wrap items-center gap-2 sm:gap-3">
         <div className="flex items-center gap-1.5">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <span className="text-[10px] uppercase tracking-brand font-semibold">Slice & dice</span>
         </div>
-        <div className="flex items-center gap-1 h-9 px-2 border border-border bg-background">
+        <div className="flex items-center gap-1 h-9 px-2 border border-border bg-background w-full sm:w-auto">
           <Input
             type="date"
             min="2017-01-01"
             max={todayIso}
             value={effectiveStart}
             onChange={(e) => onStartChange(e.target.value)}
-            className="h-7 w-36 border-0 px-1 text-sm focus-visible:ring-0 shadow-none"
+            className="h-7 w-full sm:w-36 border-0 px-1 text-sm focus-visible:ring-0 shadow-none"
           />
-          <span className="text-muted-foreground">→</span>
+          <span className="text-muted-foreground shrink-0">→</span>
           <Input
             type="date"
             min="2017-01-01"
             max={todayIso}
             value={effectiveEnd}
             onChange={(e) => onEndChange(e.target.value)}
-            className="h-7 w-36 border-0 px-1 text-sm focus-visible:ring-0 shadow-none"
+            className="h-7 w-full sm:w-36 border-0 px-1 text-sm focus-visible:ring-0 shadow-none"
           />
           {usingCustom && (
-            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={clearCustom} title="Clear custom range">
+            <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={clearCustom} title="Clear custom range">
               <X className="h-3 w-3" />
             </Button>
           )}
@@ -373,13 +373,14 @@ export default function FinanceDashboard() {
             </Button>
           ))}
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="sm:ml-auto flex items-center gap-2 w-full sm:w-auto">
           {historicalProgress && (
-            <span className="text-xs text-muted-foreground">{historicalProgress}</span>
+            <span className="text-xs text-muted-foreground truncate">{historicalProgress}</span>
           )}
-          <Button size="sm" variant="default" className="h-8 gap-1.5" onClick={importAllHistory} disabled={historicalBusy} title="Pull every transaction from QuickBooks back to 2017">
+          <Button size="sm" variant="default" className="h-8 gap-1.5 w-full sm:w-auto" onClick={importAllHistory} disabled={historicalBusy} title="Pull every transaction from QuickBooks back to 2017">
             {historicalBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-            Import all history (2017 → today)
+            <span className="sm:hidden">Import history</span>
+            <span className="hidden sm:inline">Import all history (2017 → today)</span>
           </Button>
         </div>
       </div>

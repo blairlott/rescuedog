@@ -5,8 +5,9 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import {
   DollarSign, LogOut, LayoutDashboard, Users, ArrowLeft, FlaskConical,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Menu,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 /**
  * Stripped-down chrome for the finance portal. CFOs do NOT get the admin
@@ -19,6 +20,7 @@ export default function FinanceLayout() {
   const [user, setUser] = useState<any>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { data: roleInfo, isLoading: roleLoading } = useUserRole();
 
   useEffect(() => {
@@ -82,11 +84,36 @@ export default function FinanceLayout() {
   const current = navItems.find(n => n.match(location.pathname)) ?? navItems[0];
   const initial = (roleInfo.profile?.full_name || user.email || "?").trim().charAt(0).toUpperCase();
 
+  const renderNav = (compact: boolean, onNavigate?: () => void) => (
+    <>
+      {navItems.map(item => {
+        const active = item.match(location.pathname);
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            onClick={onNavigate}
+            title={compact ? item.label : undefined}
+            className={`mx-2 flex items-center gap-3 px-3 h-10 text-sm transition-colors ${
+              active
+                ? "bg-primary/10 text-primary border-l-2 border-primary font-semibold"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground border-l-2 border-transparent"
+            } ${compact ? "justify-center" : ""}`}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            {!compact && <span>{item.label}</span>}
+          </Link>
+        );
+      })}
+    </>
+  );
+
   return (
     <div className="min-h-dvh bg-muted/30 flex">
-      {/* Sidebar */}
+      {/* Desktop sidebar (hidden on mobile) */}
       <aside
-        className={`${collapsed ? "w-[68px]" : "w-60"} shrink-0 border-r border-border bg-card flex flex-col transition-[width] duration-200 sticky top-0 h-dvh`}
+        className={`hidden md:flex ${collapsed ? "w-[68px]" : "w-60"} shrink-0 border-r border-border bg-card flex-col transition-[width] duration-200 sticky top-0 h-dvh`}
       >
         <div className={`flex items-center gap-2 px-4 h-14 border-b border-border ${collapsed ? "justify-center px-0" : ""}`}>
           <div className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center shrink-0">
@@ -99,27 +126,7 @@ export default function FinanceLayout() {
             </div>
           )}
         </div>
-        <nav className="flex-1 py-3 space-y-0.5">
-          {navItems.map(item => {
-            const active = item.match(location.pathname);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                title={collapsed ? item.label : undefined}
-                className={`mx-2 flex items-center gap-3 px-3 h-10 text-sm transition-colors ${
-                  active
-                    ? "bg-primary/10 text-primary border-l-2 border-primary font-semibold"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground border-l-2 border-transparent"
-                } ${collapsed ? "justify-center" : ""}`}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
-        </nav>
+        <nav className="flex-1 py-3 space-y-0.5">{renderNav(collapsed)}</nav>
         <div className="border-t border-border p-2 space-y-1">
           {showAdminBack && (
             <Button variant="ghost" size="sm" className={`w-full ${collapsed ? "justify-center px-0" : "justify-start"}`} asChild>
@@ -142,10 +149,37 @@ export default function FinanceLayout() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b border-border bg-card flex items-center gap-3 px-6 sticky top-0 z-30">
-          <div>
+        <header className="h-14 border-b border-border bg-card flex items-center gap-2 px-3 sm:px-6 sticky top-0 z-30">
+          {/* Mobile nav trigger */}
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden h-9 w-9 shrink-0" aria-label="Open navigation">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+              <div className="flex items-center gap-2 px-4 h-14 border-b border-border">
+                <div className="h-8 w-8 bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+                  <DollarSign className="h-4 w-4" />
+                </div>
+                <div className="leading-tight">
+                  <div className="text-[11px] uppercase tracking-brand text-muted-foreground">Rescue Dog</div>
+                  <div className="font-bold text-sm">Finance</div>
+                </div>
+              </div>
+              <nav className="py-3 space-y-0.5">{renderNav(false, () => setMobileNavOpen(false))}</nav>
+              {showAdminBack && (
+                <div className="border-t border-border p-2">
+                  <Button variant="ghost" size="sm" className="w-full justify-start" asChild onClick={() => setMobileNavOpen(false)}>
+                    <Link to="/admin"><ArrowLeft className="h-4 w-4" /><span className="ml-2">Admin Hub</span></Link>
+                  </Button>
+                </div>
+              )}
+            </SheetContent>
+          </Sheet>
+          <div className="min-w-0">
             <div className="text-[10px] uppercase tracking-brand text-muted-foreground leading-none">Finance Portal</div>
-            <div className="font-bold text-sm leading-tight">{current.label}</div>
+            <div className="font-bold text-sm leading-tight truncate">{current.label}</div>
           </div>
           <div className="ml-auto flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
@@ -155,9 +189,10 @@ export default function FinanceLayout() {
             <Button
               variant="ghost"
               size="sm"
+              className="px-2 sm:px-3"
               onClick={async () => { await supabase.auth.signOut(); navigate("/finance/login"); }}
             >
-              <LogOut className="h-4 w-4 mr-1" /> Sign out
+              <LogOut className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Sign out</span>
             </Button>
           </div>
         </header>

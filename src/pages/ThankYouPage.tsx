@@ -133,17 +133,33 @@ export default function ThankYouPage() {
 
   const dogsHelped = Math.max(1, Math.floor(bottles / 4));
 
+  // "Pending" if we're still waiting on the wine webhook, we never saw it,
+  // or there are still un-checked-out items sitting in the cart.
+  const isPending =
+    wineConfirm === "polling" ||
+    wineConfirm === "missing" ||
+    pendingWineCount > 0 ||
+    pendingMerchCount > 0;
+
   return (
     <div className="min-h-dvh flex flex-col">
-      <Seo title="Thank You" path="/thank-you" noindex description="Order confirmed — thanks for helping rescue dogs." />
+      <Seo title={isPending ? "Order Pending" : "Thank You"} path="/thank-you" noindex description="Order status — thanks for helping rescue dogs." />
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 max-w-2xl text-center">
-          <CheckCircle2 className="h-16 w-16 text-primary mx-auto mb-4" />
-          <h1 className="font-display text-3xl md:text-4xl font-bold uppercase mb-2">Order Confirmed</h1>
+          {isPending ? (
+            <AlertTriangle className="h-16 w-16 text-primary mx-auto mb-4" />
+          ) : (
+            <CheckCircle2 className="h-16 w-16 text-primary mx-auto mb-4" />
+          )}
+          <h1 className="font-display text-3xl md:text-4xl font-bold uppercase mb-2">
+            {isPending ? "Order Pending" : "Order Confirmed"}
+          </h1>
           {orderId && <p className="text-muted-foreground mb-2">Order #{orderId}</p>}
           <p className="text-foreground leading-relaxed mb-8">
-            Thanks for ordering — your bottles are on the way. A confirmation email is being sent to you now.
+            {isPending
+              ? "Thanks for ordering — part of your order still needs to be completed. See the details below to finish up."
+              : "Thanks for ordering — your bottles are on the way. A confirmation email is being sent to you now."}
           </p>
 
           {bottles > 0 && (

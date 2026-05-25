@@ -84,7 +84,11 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   const resetCheckoutIntent = useCheckoutIntentStore((s) => s.reset);
   const clubTierId = useCheckoutIntentStore((s) => s.clubTierId);
 
-  const [ageOk, setAgeOk] = useState(() => isAgeVerified());
+  // Age 21+ is enforced site-wide by the age gate
+  // (mem://features/age-verification). Anyone who reaches this modal has
+  // already cleared it, so we treat ageOk as true and skip the redundant
+  // in-modal checkbox + CTA disable.
+  const ageOk = true;
   const [submitting, setSubmitting] = useState(false);
   // After wine succeeds, if merch is pending, we show a handoff screen
   // instead of immediately closing + navigating away. The CTA on that

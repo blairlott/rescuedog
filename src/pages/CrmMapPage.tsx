@@ -6,7 +6,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { US_STATES } from "@/lib/usStates";
-import { GOOGLE_MAPS_API_KEY } from "@/lib/googleMaps";
+import { assertAllowedMapsReferrer } from "@/lib/googleMaps";
+import { geocodeAddress } from "@/lib/googleMapsClient";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
@@ -42,6 +43,8 @@ export default function CrmMapPage() {
   const { data: roleInfo } = useUserRole();
 
   const myName = roleInfo?.profile?.full_name || "";
+
+  useEffect(() => { assertAllowedMapsReferrer(); }, []);
 
   const { data: accounts = [] } = useSalesAccounts({
     state: stateFilter || undefined,
@@ -131,13 +134,9 @@ export default function CrmMapPage() {
     for (const account of unmapped) {
       const addr = [account.street_address, account.city, account.state, account.zip].filter(Boolean).join(", ");
       try {
-        const res = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${GOOGLE_MAPS_API_KEY}`
-        );
-        const data = await res.json();
-        if (data.results?.[0]?.geometry?.location) {
-          const { lat, lng } = data.results[0].geometry.location;
-          await upsertAccount.mutateAsync({ id: account.id, account_name: account.account_name, latitude: lat, longitude: lng });
+        const hit = await geocodeAddress(addr);
+        if (hit) {
+          await upsertAccount.mutateAsync({ id: account.id, account_name: account.account_name, latitude: hit.lat, longitude: hit.lng });
           success++;
         }
       } catch { /* skip */ }

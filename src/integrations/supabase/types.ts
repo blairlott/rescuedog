@@ -12581,6 +12581,7 @@ export type Database = {
           signal: string
         }[]
       }
+      setup_gated_cron_jobs: { Args: { _secret: string }; Returns: Json }
       simulate_loyalty_earn: {
         Args: { _client_request_id?: string; _subtotal_cents: number }
         Returns: {

@@ -3,6 +3,7 @@
 // instacart-ads-execute contract so the autopilot loop is symmetric.
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { checkSharedSecret } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,8 +26,12 @@ type Body = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const cronSecret = req.headers.get("x-cron-secret");
-    const isCron = !!cronSecret && cronSecret === Deno.env.get("KENNEL_INGEST_SECRET");
+    const isCron = await checkSharedSecret(req, {
+      functionName: "meta-ads-execute",
+      envVar: "KENNEL_INGEST_SECRET",
+      headers: ["x-cron-secret"],
+      alertOnFail: false,
+    });
     const auth = req.headers.get("Authorization") ?? "";
 
     const admin = createClient(

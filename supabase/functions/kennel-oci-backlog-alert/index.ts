@@ -4,6 +4,7 @@
 // event so Lindy / ad-ops sees it. Read-only against vs_transactions and
 // oci_upload_log; never writes uploads itself.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { checkSharedSecret } from "../_shared/cronAlert.ts";
 const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), {
@@ -20,8 +21,12 @@ Deno.serve(async (req) => {
 
   // Auth: cron secret OR ad-ops user.
   const ingestSecret = Deno.env.get("KENNEL_INGEST_SECRET")?.trim();
-  const providedSecret = req.headers.get("x-kennel-cron-secret")?.trim();
-  const cronAuthorized = !!ingestSecret && providedSecret === ingestSecret;
+  const cronAuthorized = await checkSharedSecret(req, {
+    functionName: "kennel-oci-backlog-alert",
+    envVar: "KENNEL_INGEST_SECRET",
+    headers: ["x-kennel-cron-secret", "x-cron-secret"],
+    alertOnFail: false,
+  });
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,

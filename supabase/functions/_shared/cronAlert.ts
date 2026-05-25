@@ -54,14 +54,55 @@ export async function logCronRun(
 
 /** Returns true if the request has a valid x-cron-secret; otherwise logs+alerts and returns false. */
 export async function verifyCronSecret(req: Request, functionName: string): Promise<boolean> {
-  const cronSecret = Deno.env.get("CRON_SECRET");
-  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
-    await logCronRun(functionName, "auth_fail", {
+  return checkSharedSecret(req, {
+    functionName,
+    envVar: "CRON_SECRET",
+    headers: ["x-cron-secret"],
+    alertOnFail: true,
+  });
+}
+
+export type SharedSecretOpts = {
+  /** Function name used for the cron_run_log entry / Slack alert. */
+  functionName: string;
+  /** Env var that holds the expected secret value. */
+  envVar: string;
+  /** Accepted request header names. First entry is canonical. Defaults to ["x-cron-secret"]. */
+  headers?: string[];
+  /**
+   * When true, a failed check writes an `auth_fail` row + Slack alert.
+   * Set to false when the caller has a JWT fallback path and a missing/invalid
+   * header is NOT yet a failure (only becomes one if JWT also fails).
+   */
+  alertOnFail?: boolean;
+};
+
+/**
+ * Single source of truth for shared-secret auth across every cron / admin-gated
+ * edge function. Trims both sides, rejects empty env vars, supports multiple
+ * accepted header names for backward compatibility with already-scheduled cron
+ * jobs that use legacy header names (e.g. `x-kennel-cron-secret`,
+ * `x-admin-secret`).
+ *
+ * Returns true when one of the headers presents the expected secret.
+ */
+export async function checkSharedSecret(req: Request, opts: SharedSecretOpts): Promise<boolean> {
+  const expected = Deno.env.get(opts.envVar)?.trim();
+  const headerNames = opts.headers && opts.headers.length > 0 ? opts.headers : ["x-cron-secret"];
+
+  let presented = "";
+  for (const h of headerNames) {
+    const v = req.headers.get(h)?.trim();
+    if (v) { presented = v; break; }
+  }
+
+  const ok = !!expected && presented.length > 0 && presented === expected;
+  if (!ok && opts.alertOnFail) {
+    await logCronRun(opts.functionName, "auth_fail", {
       httpStatus: 401,
-      error: "missing or invalid x-cron-secret",
+      error: `missing or invalid ${headerNames[0]} (env ${opts.envVar})`,
       metadata: { ua: req.headers.get("user-agent") ?? null },
     });
-    return false;
   }
-  return true;
+  return ok;
 }

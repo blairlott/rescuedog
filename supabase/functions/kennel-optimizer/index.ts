@@ -2,6 +2,7 @@
 // auto-pause for Instacart Ads (extensible to other platforms).
 // Cron-driven. Idempotent per (date + entity + rule) via idempotency_key.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { checkSharedSecret } from "../_shared/cronAlert.ts";
 const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 const INSTACART_BASE = "https://api.ads.instacart.com/api/v3";
 const INSTACART_TOKEN_URL = "https://api.ads.instacart.com/oauth/token";
@@ -198,9 +199,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   // Auth: allow cron via shared ingest secret OR authenticated ad-ops user.
-  const ingestSecret = Deno.env.get("KENNEL_INGEST_SECRET")?.trim();
-  const providedSecret = req.headers.get("x-kennel-cron-secret")?.trim();
-  const cronAuthorized = !!ingestSecret && providedSecret === ingestSecret;
+  const cronAuthorized = await checkSharedSecret(req, {
+    functionName: "kennel-optimizer",
+    envVar: "KENNEL_INGEST_SECRET",
+    headers: ["x-kennel-cron-secret", "x-cron-secret"],
+    alertOnFail: false,
+  });
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 

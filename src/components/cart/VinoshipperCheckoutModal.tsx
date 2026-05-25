@@ -545,7 +545,11 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
 
   // Reset the handoff screen whenever the modal is reopened fresh.
   useEffect(() => {
-    if (!open) setMerchHandoffReady(null);
+    if (!open) {
+      setMerchHandoffReady(null);
+      setAwaitingPayment(null);
+      setAwaitingTimedOut(false);
+    }
   }, [open]);
 
   /**

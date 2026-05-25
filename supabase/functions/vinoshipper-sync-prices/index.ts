@@ -25,12 +25,14 @@ type RawProduct = Record<string, any>;
 function extractCents(p: RawProduct, kind: "regular" | "club"): number | null {
   const candidates: any[] = kind === "regular"
     ? [
+        p?.price?.unitPrice, p?.price?.msrp, p?.price?.price,
         p?.pricing?.regular, p?.pricing?.consumer, p?.pricing?.retail, p?.pricing?.price,
         p?.prices?.regular, p?.prices?.consumer, p?.prices?.retail,
         p?.detail?.price, p?.summary?.price, p?.price, p?.unitPrice, p?.retailPrice,
         p?.priceBreaks?.[0]?.price,
       ]
     : [
+        p?.price?.clubPrice, p?.price?.memberPrice, p?.price?.club,
         p?.pricing?.club, p?.pricing?.member, p?.pricing?.wineClub,
         p?.prices?.club, p?.prices?.member, p?.prices?.wineClub,
         p?.detail?.clubPrice, p?.summary?.clubPrice, p?.clubPrice, p?.memberPrice,
@@ -38,6 +40,7 @@ function extractCents(p: RawProduct, kind: "regular" | "club"): number | null {
       ];
   for (const v of candidates) {
     if (v == null) continue;
+    if (typeof v === "object") continue;
     const n = typeof v === "string" ? parseFloat(v) : Number(v);
     if (!Number.isFinite(n) || n <= 0) continue;
     // Heuristic: VS returns dollars (e.g. 29.99). Anything < 1000 we treat as dollars.
@@ -49,6 +52,8 @@ function extractCents(p: RawProduct, kind: "regular" | "club"): number | null {
 function extractInStock(p: RawProduct): boolean {
   const status = String(p?.status ?? p?.summary?.status ?? "").toUpperCase();
   if (status === "SOLD_OUT" || status === "HIDDEN" || status === "INACTIVE" || status === "DRAFT") return false;
+  if (p?.inventory?.soldOut === true) return false;
+  if (typeof p?.inventory?.amount === "number" && p.inventory.amount <= 0) return false;
   if (status === "LIVE" || status === "ACTIVE" || status === "AVAILABLE") return true;
   if (typeof p?.inStock === "boolean") return p.inStock;
   if (typeof p?.available === "boolean") return p.available;

@@ -12,6 +12,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useEffect } from "react";
+import { isStaffEmail, STAFF_EMAIL_MESSAGE } from "@/lib/staffEmail";
 
 const CustomerLoginPage = () => {
   const { user } = useCustomerAuth();
@@ -32,6 +33,10 @@ const CustomerLoginPage = () => {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isStaffEmail(email)) {
+      toast.error(STAFF_EMAIL_MESSAGE);
+      return;
+    }
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });

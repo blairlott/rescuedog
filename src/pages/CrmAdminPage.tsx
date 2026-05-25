@@ -19,6 +19,7 @@ import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
 import { TestEmailsCard } from "@/components/crm/TestEmailsCard";
 import { DepletionUploadCard } from "@/components/crm/DepletionUploadCard";
 import { AccessRequestsTab } from "@/components/crm/AccessRequestsTab";
+import { isStaffEmail } from "@/lib/staffEmail";
 
 interface UserWithRoles {
   id: string;
@@ -75,7 +76,14 @@ export default function CrmAdminPage() {
       if (u) u.roles.push(r.role as AppRole);
     });
 
-    setUsers(Array.from(userMap.values()));
+    // Staff-only view: a profile counts as staff if it has at least one role
+    // assigned OR uses a staff-domain email. Customer accounts (legacy
+    // customer signups, Vinoshipper-mirrored buyers, etc.) live in
+    // /admin/customers and must not appear here.
+    const staffOnly = Array.from(userMap.values()).filter(
+      (u) => u.roles.length > 0 || isStaffEmail(u.email),
+    );
+    setUsers(staffOnly);
     setLoading(false);
   };
 

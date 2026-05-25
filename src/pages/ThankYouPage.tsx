@@ -140,6 +140,20 @@ export default function ThankYouPage() {
     pendingWineCount > 0 ||
     pendingMerchCount > 0;
 
+  // Two distinct pending shapes — communicate them differently:
+  //   • "system_delay"  → we're actively polling the compliance partner;
+  //                       the customer may have finished and we just
+  //                       haven't seen the webhook yet (often <2 min).
+  //   • "needs_action"  → customer still has items in the cart, or our
+  //                       polling window expired without a webhook —
+  //                       they likely need to finish checkout themselves.
+  const pendingReason: "none" | "system_delay" | "needs_action" =
+    !isPending
+      ? "none"
+      : pendingWineCount > 0 || pendingMerchCount > 0 || wineConfirm === "missing"
+        ? "needs_action"
+        : "system_delay";
+
   return (
     <div className="min-h-dvh flex flex-col">
       <Seo title={isPending ? "Order Pending" : "Thank You"} path="/thank-you" noindex description="Order status — thanks for helping rescue dogs." />
@@ -159,9 +173,26 @@ export default function ThankYouPage() {
           </h1>
           {orderId && <p className="text-muted-foreground mb-2">Order #{orderId}</p>}
           <p className="text-foreground leading-relaxed mb-8">
-            {isPending
-              ? "Thanks for ordering — part of your order still needs to be completed. See the details below to finish up."
-              : "Thanks for ordering — your bottles are on the way. A confirmation email is being sent to you now."}
+            {pendingReason === "system_delay" && (
+              <>
+                Thanks for ordering. We're confirming your order with our payment &amp; compliance partner —
+                this usually clears within a couple of minutes. If you've already completed payment, you're all set;
+                your confirmation email will arrive shortly. No need to refresh.
+              </>
+            )}
+            {pendingReason === "needs_action" && (
+              <>
+                Thanks for ordering. We don't yet see a completed payment for part of your order. This can happen for
+                two reasons:
+                {" "}
+                <strong>(1) a brief system delay</strong> from our payment &amp; compliance partner — give it a minute
+                and refresh; or
+                {" "}
+                <strong>(2) checkout wasn't finished</strong> — use the button below to complete it now.
+              </>
+            )}
+            {pendingReason === "none" &&
+              "Thanks for ordering — your bottles are on the way. A confirmation email is being sent to you now."}
           </p>
 
           {bottles > 0 && (

@@ -2,6 +2,7 @@
 // Uses OAuth refresh-token flow. Self-discovers account/workspace/All-Pages trigger.
 // Creates GCLID URL variable + HTML tag, versions, publishes, signals Kennel.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { checkSharedSecret } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -6,6 +6,7 @@
 // Kill switch: row 1 of public.z8_kill_switch must be enabled=true.
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { checkSharedSecret } from "../_shared/cronAlert.ts";
 
 const META_API_VERSION = "v20.0";
 const META_GRAPH = `https://graph.facebook.com/${META_API_VERSION}`;

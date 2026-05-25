@@ -18,6 +18,7 @@ import {
   buildGoogleAdsHeaders,
   isAuthError,
 } from "../_shared/googleAdsAuth.ts";
+import { checkSharedSecret } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -241,8 +241,11 @@ export default function CrmAdminPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">User Management</h1>
-          <p className="text-sm text-muted-foreground">Approve signups, create users, and assign roles.</p>
+          <h1 className="text-2xl font-bold text-foreground">Staff Users</h1>
+          <p className="text-sm text-muted-foreground">
+            Invite staff, approve access, and assign roles. Customer accounts live in{" "}
+            <a href="/admin/customers" className="underline">Admin → Customers</a>.
+          </p>
         </div>
         <Button onClick={() => setCreateOpen(true)} className="gap-1">
           <UserPlus className="h-4 w-4" /> Create User

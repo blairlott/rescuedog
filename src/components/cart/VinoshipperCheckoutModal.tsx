@@ -564,6 +564,27 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
     );
   };
 
+  // Auto-redirect countdown for the merch handoff (step 2). Saves the
+  // customer an extra click — after 3s we same-tab redirect to Shopify
+  // checkout. The "Continue to merch checkout" button remains as a manual
+  // fallback in case they want to act sooner. NOTE: same-tab nav is used
+  // because popup auto-open (without a fresh gesture) is reliably blocked.
+  const [merchAutoCountdown, setMerchAutoCountdown] = useState<number>(3);
+  useEffect(() => {
+    if (!merchHandoffReady) {
+      setMerchAutoCountdown(3);
+      return;
+    }
+    if (merchAutoCountdown <= 0) {
+      const handoff = merchHandoffReady.handoff;
+      const url = buildPrefilledMerchUrl(handoff.checkoutUrl);
+      window.location.href = url;
+      return;
+    }
+    const t = setTimeout(() => setMerchAutoCountdown((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [merchHandoffReady, merchAutoCountdown]);
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] p-0 flex flex-col">

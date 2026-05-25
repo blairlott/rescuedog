@@ -538,6 +538,97 @@ export function VinoshipperCheckoutModal({ open, onOpenChange, pendingMerchHando
   }, [open]);
 
   /**
+   * Server-side confirmation poll for the wine handoff.
+   *
+   * While `awaitingPayment` is set we poll an edge function every 5s
+   * (for up to 10 min) that checks `vinoshipper_webhook_logs` for an
+   * ORDER:APPROVED/CREATED event matching this customer's email since
+   * the handoff timestamp. Only when a real webhook lands do we:
+   *   - clear wine items from the cart,
+   *   - mark the abandonment converted,
+   *   - transition into the merch handoff CTA (or close + toast).
+   *
+   * If the timeout elapses or the customer closes the modal first, the
+   * wine items remain in the local cart so they're sent straight back
+   * to their shopping cart to retry.
+   */
+  useEffect(() => {
+    if (!awaitingPayment) return;
+    let cancelled = false;
+    const startedMs = new Date(awaitingPayment.handoffAt).getTime();
+    const TIMEOUT_MS = 10 * 60 * 1000;
+    const POLL_MS = 5_000;
+
+    const onConfirmed = async () => {
+      if (cancelled) return;
+      try { await markAbandonment("converted"); } catch { /* non-fatal */ }
+      const wineLines = items.filter((i) => i.product.node.productKind === "wine");
+      if (wineLines.length === items.length) {
+        clearCart();
+      } else {
+        wineLines.forEach((i) => removeItem(i.variantId));
+      }
+      const handoff = awaitingPayment.handoff;
+      const fakeOrderId = `VS-${Date.now()}`;
+      onWineOrderPlaced?.({
+        orderId: fakeOrderId,
+        total: awaitingPayment.total,
+        bottles: awaitingPayment.bottles,
+      });
+      if (handoff) {
+        setMerchHandoffReady({
+          orderId: fakeOrderId,
+          total: awaitingPayment.total,
+          bottles: awaitingPayment.bottles,
+          handoff,
+        });
+        setAwaitingPayment(null);
+      } else {
+        setAwaitingPayment(null);
+        onOpenChange(false);
+        toast.success("Wine order confirmed", {
+          description: "We received your Vinoshipper order confirmation.",
+        });
+      }
+    };
+
+    const poll = async () => {
+      if (cancelled) return;
+      if (Date.now() - startedMs > TIMEOUT_MS) {
+        setAwaitingTimedOut(true);
+        return;
+      }
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          "vinoshipper-confirm-recent-order",
+          { body: { email: awaitingPayment.email, since: awaitingPayment.handoffAt } },
+        );
+        if (!cancelled && !error && (data as any)?.confirmed) {
+          await onConfirmed();
+          return;
+        }
+      } catch (e) {
+        console.warn("[vs-confirm] poll failed", e);
+      }
+      if (!cancelled) setTimeout(poll, POLL_MS);
+    };
+
+    // First check after a short delay so the webhook has a chance to land
+    // for instant-pay returning customers (Shop Pay / saved card).
+    const t = setTimeout(poll, 3_000);
+    return () => { cancelled = true; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [awaitingPayment?.handoffAt]);
+
+  const handleReturnToCart = () => {
+    // Wine items are still in the cart — closing the modal returns the
+    // shopper to the cart drawer where they can retry or remove items.
+    setAwaitingPayment(null);
+    setAwaitingTimedOut(false);
+    onOpenChange(false);
+  };
+
+  /**
    * Pass through the Shopify cart checkoutUrl as-is.
    *
    * NOTE: Modern Shopify cart URLs (`/cart/c/<token>`) do NOT support

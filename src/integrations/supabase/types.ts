@@ -8876,6 +8876,72 @@ export type Database = {
         }
         Relationships: []
       }
+      restructure_proposals: {
+        Row: {
+          category: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_notes: string | null
+          executed_at: string | null
+          execution_result: Json | null
+          expires_at: string
+          id: string
+          proposed_by: string | null
+          rationale: string | null
+          risk_level: string
+          source: string
+          status: string
+          summary: string
+          target_kind: string
+          target_payload: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          executed_at?: string | null
+          execution_result?: Json | null
+          expires_at?: string
+          id?: string
+          proposed_by?: string | null
+          rationale?: string | null
+          risk_level?: string
+          source?: string
+          status?: string
+          summary: string
+          target_kind: string
+          target_payload?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          executed_at?: string | null
+          execution_result?: Json | null
+          expires_at?: string
+          id?: string
+          proposed_by?: string | null
+          rationale?: string | null
+          risk_level?: string
+          source?: string
+          status?: string
+          summary?: string
+          target_kind?: string
+          target_payload?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       retailer_suggestions: {
         Row: {
           city: string | null
@@ -12332,6 +12398,36 @@ export type Database = {
           winback: number
         }[]
       }
+      decide_restructure: {
+        Args: { _action: string; _id: string; _notes?: string }
+        Returns: {
+          category: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_notes: string | null
+          executed_at: string | null
+          execution_result: Json | null
+          expires_at: string
+          id: string
+          proposed_by: string | null
+          rationale: string | null
+          risk_level: string
+          source: string
+          status: string
+          summary: string
+          target_kind: string
+          target_payload: Json
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "restructure_proposals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -12543,6 +12639,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      mark_restructure_executed: {
+        Args: { _id: string; _result?: Json; _success: boolean }
+        Returns: undefined
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -12553,6 +12653,19 @@ export type Database = {
         Returns: number
       }
       platform_radar_open_count: { Args: never; Returns: number }
+      propose_restructure: {
+        Args: {
+          _category: string
+          _rationale?: string
+          _risk_level?: string
+          _source?: string
+          _summary: string
+          _target_kind: string
+          _target_payload?: Json
+          _title: string
+        }
+        Returns: string
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {

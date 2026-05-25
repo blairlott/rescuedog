@@ -4,14 +4,13 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Heart, Users, Gift, Percent, AlertTriangle, Loader2 } from "lucide-react";
+import { CheckCircle2, Heart, Users, Gift, Percent, AlertTriangle, Loader2, ShoppingCart, Hourglass } from "lucide-react";
 import { useIsMember } from "@/hooks/useIsMember";
 import { PostPurchaseUpsell } from "@/components/PostPurchaseUpsell";
 import { recordExperimentRevenueForVisitor } from "@/lib/experimentRevenue";
 import { trackPurchase } from "@/lib/metaPixel";
 import { supabase } from "@/integrations/supabase/client";
 import { useCartStore } from "@/stores/cartStore";
-import { ShoppingCart } from "lucide-react";
 
 const PENDING_WINE_CONFIRM_KEY = "rdw_pending_wine_confirm";
 type WineConfirmState = "idle" | "polling" | "confirmed" | "missing";
@@ -148,7 +147,10 @@ export default function ThankYouPage() {
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 max-w-2xl text-center">
           {isPending ? (
-            <AlertTriangle className="h-16 w-16 text-primary mx-auto mb-4" />
+            <div className="relative inline-block mx-auto mb-4">
+              <ShoppingCart className="h-16 w-16 text-primary" />
+              <Hourglass className="h-7 w-7 text-primary absolute -top-1 -right-2 bg-background p-0.5" />
+            </div>
           ) : (
             <CheckCircle2 className="h-16 w-16 text-primary mx-auto mb-4" />
           )}

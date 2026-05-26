@@ -300,6 +300,7 @@ function AppContent() {
       <Route path="/cms/lindy-inbox" element={<Navigate to="/kennel/inbox" replace />} />
       <Route path="/cms/audiences" element={<CmsAudiencesPage />} />
       <Route path="/cms/heroes" element={<CmsHeroesPage />} />
+      <Route path="/cms/opportunities" element={<CmsOpportunitiesPage />} />
       <Route path="/crm" element={<CrmLayout />}>
         <Route index element={<CrmDashboard />} />
         <Route path="account/:id" element={<CrmAccountDetail />} />

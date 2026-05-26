@@ -435,6 +435,7 @@ const CmsDashboard = () => {
           <span className="text-muted-foreground">Quick links:</span>
           <a href="/cms/experiments" className="text-primary hover:underline">Experiments &amp; Personalization →</a>
           <a href="/cms/heroes" className="text-primary hover:underline">Hero Variants →</a>
+          <a href="/cms/opportunities" className="text-primary hover:underline">Optimization Queue →</a>
         </div>
       </div>
 

@@ -1,0 +1,1 @@
+DELETE FROM public.hero_variants WHERE id = '4fd346f2-64aa-4e9b-8de5-2aceb21b92b2';

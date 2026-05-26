@@ -295,7 +295,7 @@ Deno.serve(async (req) => {
 
       const { data: order, error: orderErr } = await supabase.from("orders").insert({
         order_number: orderNumber,
-        user_id: data.user_id ?? null,
+        user_id: safeUserId,
         customer_email: data.customer.email,
         customer_first_name: data.customer.first_name,
         customer_last_name: data.customer.last_name,

@@ -3122,6 +3122,39 @@ export type Database = {
           },
         ]
       }
+      contact_submissions: {
+        Row: {
+          created_at: string
+          email: string
+          hear_about: string | null
+          id: string
+          interests: string[]
+          message: string
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          hear_about?: string | null
+          id?: string
+          interests?: string[]
+          message: string
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          hear_about?: string | null
+          id?: string
+          interests?: string[]
+          message?: string
+          name?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
       content_index: {
         Row: {
           author: string | null

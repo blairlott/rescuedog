@@ -726,7 +726,9 @@ const CmsDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 };
 

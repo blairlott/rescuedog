@@ -143,6 +143,22 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
+  // Debug: confirm which OAuth client + refresh token tail are configured.
+  if (req.method === "GET") {
+    const url = new URL(req.url);
+    if (url.searchParams.get("debug") === "creds") {
+      const cid = Deno.env.get("GOOGLE_CLIENT_ID") ?? "";
+      const sec = Deno.env.get("GOOGLE_CLIENT_SECRET") ?? "";
+      const rt  = Deno.env.get("GTM_REFRESH_TOKEN") ?? "";
+      const tail = (s: string, n = 8) => s ? `…${s.slice(-n)} (len ${s.length})` : "MISSING";
+      return json({
+        google_client_id: tail(cid, 16),
+        google_client_secret: tail(sec, 6),
+        gtm_refresh_token: tail(rt, 8),
+      });
+    }
+  }
+
   let token: string;
   try {
     token = await getAccessToken();

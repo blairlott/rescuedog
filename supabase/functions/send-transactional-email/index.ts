@@ -37,6 +37,7 @@ const INTERNAL_TEMPLATES = new Set<string>([
   'reviewer-invite',
   'access-request-admin-notification',
 ])
+INTERNAL_TEMPLATES.add('contact-form-admin-notification')
 
 function buildSupportFooterHtml(): string {
   return `

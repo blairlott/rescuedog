@@ -36,6 +36,8 @@ import { template as autopilotAutoStopped } from './autopilot-auto-stopped.tsx'
 import { template as accessRequestAdminNotification } from './access-request-admin-notification.tsx'
 import { template as vsApiUpdate } from './vs-api-update.tsx'
 import { template as vsOrderConfirmationFollowup } from './vs-order-confirmation-followup.tsx'
+import { template as contactFormConfirmation } from './contact-form-confirmation.tsx'
+import { template as contactFormAdminNotification } from './contact-form-admin-notification.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'ambassador-welcome': ambassadorWelcome,
@@ -65,4 +67,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'access-request-admin-notification': accessRequestAdminNotification,
   'vs-api-update': vsApiUpdate,
   'vs-order-confirmation-followup': vsOrderConfirmationFollowup,
+  'contact-form-confirmation': contactFormConfirmation,
+  'contact-form-admin-notification': contactFormAdminNotification,
 }

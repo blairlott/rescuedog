@@ -12,28 +12,51 @@ const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 
 type Surface = "wine" | "merch";
 
+// BRAND GUARDRAILS (do not violate):
+// - Mission framing: "helping dogs find their forever home." Qualitative only.
+// - NEVER use "free shipping" — always "shipping included".
+// - NEVER show counters, totals, or quantified impact (no "X homes funded", no meals, no tickers).
+// - Loyalty = access-based ("The Pack"), never % off.
+// - Voice: warm, confident, understated. No exclamation marks. No emojis.
 const COPY_TEMPLATES: Record<Surface, Array<{ eyebrow: string; headline: string; sub: string; cta_label: string; cta_href: string }>> = {
   wine: [
-    { eyebrow: "Lodi Cabernet · 50% of profits to rescue", headline: "Pour for<br/>the pack.", sub: "Award-winning, sustainably grown Lodi wines. Every bottle helps a rescue dog find a forever home.", cta_label: "Shop Wines", cta_href: "/wines" },
-    { eyebrow: "Shipping included on 12+ bottles", headline: "Wine that gives<br/>back. Literally.", sub: "Half our profits go to animal rescue. Goes great with friends, food, and a dog at your feet.", cta_label: "Shop the Cabernet", cta_href: "/wines" },
-    { eyebrow: "Wine Club · members-only releases", headline: "Save dogs.<br/>Sip the proof.", sub: "Join the Wine Club for member pricing, exclusive releases, and a direct line to the rescues we fund.", cta_label: "Join the Wine Club", cta_href: "/wine-club" },
+    { eyebrow: "Lodi Cabernet · helping dogs find their forever home", headline: "Pour for<br/>the pack.", sub: "Award-winning, sustainably grown Lodi wines. Every bottle helps a rescue dog find a forever home.", cta_label: "Shop Wines", cta_href: "/wines" },
+    { eyebrow: "Shipping included on 12+ bottles", headline: "Wine that gives<br/>back. Quietly.", sub: "A portion of every bottle supports animal rescue. Goes great with friends, food, and a dog at your feet.", cta_label: "Shop the Cabernet", cta_href: "/wines" },
+    { eyebrow: "The Pack · members-only releases", headline: "Join the<br/>Pack.", sub: "Members get first access to small-lot releases, library wines, and a direct line to the rescues we support.", cta_label: "Join the Wine Club", cta_href: "/wine-club" },
+    { eyebrow: "Sustainably grown · Lodi, California", headline: "Estate wines.<br/>Rescued hearts.", sub: "Hand-tended vineyards. Honest winemaking. A mission to help dogs find their forever home.", cta_label: "Shop Wines", cta_href: "/wines" },
   ],
   merch: [
-    { eyebrow: "Gear that gives back · 50% of profits to rescue", headline: "Wear the cause.<br/>Spoil the pup.", sub: "Apparel, drinkware and pet gear designed in California, built to support animal rescue every day.", cta_label: "Shop Merch", cta_href: "/merch#products" },
-    { eyebrow: "Made for rescue families", headline: "Soft tees.<br/>Big tails.", sub: "Every shirt, mug and bandana helps fund the rescues bringing dogs home.", cta_label: "Shop Merch", cta_href: "/merch#products" },
+    { eyebrow: "Gear that gives back", headline: "Wear the cause.<br/>Spoil the pup.", sub: "Apparel, drinkware and pet gear designed in California — built to support animal rescue every day.", cta_label: "Shop Merch", cta_href: "/merch#products" },
+    { eyebrow: "Made for rescue families", headline: "Soft tees.<br/>Big tails.", sub: "Every shirt, mug and bandana helps dogs find their forever home.", cta_label: "Shop Merch", cta_href: "/merch#products" },
+    { eyebrow: "Shipping included on orders 50+", headline: "Dressed for<br/>the rescue.", sub: "Heavyweight cotton, embroidered Rescue Dog mark. Built to last, built to give back.", cta_label: "Shop Merch", cta_href: "/merch#products" },
   ],
 };
 
+// Universal brand guardrails appended to every image prompt.
+const BRAND_RULES = [
+  "BRAND GUARDRAILS — must follow strictly:",
+  "- Photoreal editorial lifestyle photography only. No illustrations, no 3D renders, no AI-looking glow.",
+  "- Color palette: warm naturals + Rescue Dog red (#c30017) as a single restrained accent (a wine label, a tee, a leash). Black and grey supporting. No purple, no teal, no neon.",
+  "- Composition leaves clean negative space on the LEFT third for headline text overlay. Subject lives in the right two thirds.",
+  "- ABSOLUTELY NO text, words, letters, logos, watermarks, signage, or typography rendered in the image.",
+  "- Dogs must look like real adoptable rescue mixes (mutts, pit mixes, hounds, scruffy terriers) — not pedigree show dogs.",
+  "- People: diverse, candid, real-bodied. No staged stock-photo grins. No models younger than mid-20s.",
+  "- Aesthetic: warm golden-hour or soft window light, fine grain, shallow depth of field, 35mm editorial feel. Sharp, flat, honest — never glossy or over-stylized.",
+  "- 16:9 horizontal, cinematic.",
+].join(" ");
+
 const IMAGE_PROMPTS: Record<Surface, string[]> = {
   wine: [
-    "Cinematic wide photograph of friends toasting Rescue Dog Wines red wine on a sunlit Lodi California vineyard patio at golden hour, a friendly rescue dog at their feet, warm tones, shallow depth of field, lifestyle editorial style, 16:9",
-    "Photorealistic editorial shot of a backyard dinner with charcuterie, a bottle of Rescue Dog Wines Cabernet Sauvignon center frame, friends laughing, rescue dog under the table, warm golden hour light, 16:9",
-    "Lifestyle photo of a couple sharing red wine on a porch overlooking a vineyard at sunset with their rescue dog beside them, soft warm light, cinematic, 16:9",
+    "Cinematic wide photograph of friends toasting red wine on a sunlit Lodi California vineyard patio at golden hour, a scruffy rescue mutt at their feet, warm earthy tones, shallow depth of field, editorial lifestyle.",
+    "Photoreal editorial shot of a backyard harvest dinner, a single dark red wine bottle on a weathered wood table, friends in conversation, a rescue pit mix resting underneath, warm golden hour light, restrained palette.",
+    "Lifestyle photograph of a couple sharing red wine on a farmhouse porch overlooking Lodi vineyard rows at sunset, their rescue hound beside them, warm naturals, cinematic 35mm feel.",
+    "Editorial photograph of weathered hands pouring red wine into a single glass on a vineyard barrel, golden backlight, a rescue dog out of focus in the background, warm restrained tones.",
   ],
   merch: [
-    "Warm lifestyle photograph of a woman wearing a black tee with a small embroidered Rescue Dog Wines logo on the left chest, sitting outdoors with her rescue dog, golden hour, candid, editorial, 16:9",
-    "Cinematic photo of a young woman in a worn-in tee with a small left-chest embroidered Rescue Dog Wines logo, holding a ceramic dog bowl in a sunlit kitchen, rescue dog looking up attentively, warm tones, 16:9",
-    "Editorial lifestyle photo of a woman in a fitted tee with a small left-chest embroidered Rescue Dog Wines logo, walking her rescue dog down a vineyard row at sunset, dust in the air, warm golden hour, 16:9",
+    "Warm lifestyle photograph of a woman in her 30s wearing a plain black heavyweight cotton tee with a small embroidered mark on the left chest, sitting on a porch with her scruffy rescue mutt, golden hour, candid, editorial.",
+    "Photoreal editorial shot of a man in a worn-in charcoal tee with a small left-chest embroidered mark, kneeling to refill a ceramic dog bowl in a sunlit California kitchen, a rescue pit mix waiting attentively, warm naturals.",
+    "Editorial lifestyle photograph of a woman in a fitted black tee with a small left-chest embroidered mark, walking her rescue hound down a vineyard row at sunset, dust in the warm light, candid, restrained palette.",
+    "Photoreal close-up of a rescue mutt wearing a simple red bandana (Rescue Dog red #c30017) on a sunlit California front step, owner's denim legs and worn boots in soft focus behind, warm editorial tones.",
   ],
 };
 
@@ -81,7 +104,8 @@ function dataUrlToBytes(dataUrl: string): { bytes: Uint8Array; contentType: stri
 }
 
 async function generateOneForSurface(surface: Surface, supabase: any, createdBy: string | null) {
-  const prompt = pick(IMAGE_PROMPTS[surface]);
+  const scene = pick(IMAGE_PROMPTS[surface]);
+  const prompt = `${scene} ${BRAND_RULES}`;
   const dataUrl = await generateImage(prompt);
   const { bytes, contentType, ext } = dataUrlToBytes(dataUrl);
   const path = `${surface}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Shield, LogOut } from "lucide-react";
+import { Shield, LogOut, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ADMIN_AREAS, hasAreaAccess } from "@/lib/adminAreas";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,9 +51,21 @@ export function AdminTopNav({ roles }: AdminTopNavProps) {
           })}
         </nav>
 
-        <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-1.5 shrink-0">
-          <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Sign out</span>
-        </Button>
+        <div className="flex items-center gap-1 shrink-0">
+          {roles.includes("owner") && (
+            <Link
+              to="/admin/secrets-access"
+              className="flex items-center gap-1.5 px-2 py-2 text-sm uppercase tracking-brand text-muted-foreground hover:text-foreground"
+              title="Secrets & Token Access (owner only)"
+            >
+              <KeyRound className="h-4 w-4" />
+              <span className="hidden lg:inline">Secrets</span>
+            </Link>
+          )}
+          <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-1.5">
+            <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Sign out</span>
+          </Button>
+        </div>
       </div>
     </header>
   );

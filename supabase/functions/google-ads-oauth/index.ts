@@ -63,6 +63,7 @@ Deno.serve(async (req) => {
         client_id_tail: cid.slice(-12),
         client_id_len: cid.length,
         client_secret_prefix: sec.slice(0, 6),
+        client_secret_tail: sec.slice(-4),
         client_secret_len: sec.length,
         client_secret_has_whitespace: /\s/.test(sec),
         redirect_uri: REDIRECT_URI,

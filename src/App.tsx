@@ -7,6 +7,7 @@ import { useCartSync } from "@/hooks/useCartSync";
 import { useAbandonedCartSnapshot } from "@/hooks/useAbandonedCartSnapshot";
 import { lazy, Suspense, useEffect } from "react";
 import { captureFbclid, captureGclid } from "@/lib/metaAttribution";
+import { initOutboundLinkDecorator } from "@/lib/outboundLinkDecorator";
 import { initMetaPixel, trackPageView } from "@/lib/metaPixel";
 import { initVariantHandshake } from "@/lib/abVariant";
 import { logAbEvent } from "@/lib/abEvents";
@@ -164,6 +165,9 @@ function AppContent() {
     // until the browser is idle — keeps them off the critical render path.
     captureFbclid();
     captureGclid();
+    // Decorate outbound Vinoshipper links with gclid/fbclid/utm so VS-hosted
+    // checkout starts with the click context Google Ads + Meta CAPI need.
+    initOutboundLinkDecorator();
     const ric: (cb: () => void) => number =
       (window as any).requestIdleCallback?.bind(window) ??
       ((cb: () => void) => window.setTimeout(cb, 200) as unknown as number);

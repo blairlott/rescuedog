@@ -66,7 +66,10 @@ const SubscribePage = () => {
     setIsSubmitting(true);
     try {
       const tier = tiers.find(t => t.id === selectedTier);
+      const id = crypto.randomUUID();
+      const discountPercent = Math.round(((tier!.originalPrice - tier!.pricePerShipment) / tier!.originalPrice) * 100);
       const { error } = await supabase.from("subscription_signups").insert({
+        id,
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
@@ -74,10 +77,39 @@ const SubscribePage = () => {
         subscription_type: "curated_box",
         tier: selectedTier,
         frequency,
-        discount_percent: Math.round(((tier!.originalPrice - tier!.pricePerShipment) / tier!.originalPrice) * 100),
+        discount_percent: discountPercent,
       } as any);
 
       if (error) throw error;
+
+      // Fire-and-forget: admin notification + customer confirmation.
+      void supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "subscription-signup-admin-notification",
+          recipientEmail: "info@rescuedogwines.com",
+          idempotencyKey: `subscription-admin-${id}`,
+          templateData: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            tier: selectedTier,
+            frequency,
+            subscriptionType: "curated_box",
+            discountPercent,
+            submissionId: id,
+          },
+        },
+      });
+      void supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "subscription-signup-confirmation",
+          recipientEmail: formData.email,
+          idempotencyKey: `subscription-confirm-${id}`,
+          templateData: { firstName: formData.firstName, tier: selectedTier, frequency },
+        },
+      });
+
       setIsSubmitted(true);
       toast.success("Subscription request submitted! We'll be in touch soon.");
     } catch (err) {

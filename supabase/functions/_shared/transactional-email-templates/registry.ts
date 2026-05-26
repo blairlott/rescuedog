@@ -38,6 +38,12 @@ import { template as vsApiUpdate } from './vs-api-update.tsx'
 import { template as vsOrderConfirmationFollowup } from './vs-order-confirmation-followup.tsx'
 import { template as contactFormConfirmation } from './contact-form-confirmation.tsx'
 import { template as contactFormAdminNotification } from './contact-form-admin-notification.tsx'
+import { template as marketplaceApplicationConfirmation } from './marketplace-application-confirmation.tsx'
+import { template as marketplaceApplicationAdminNotification } from './marketplace-application-admin-notification.tsx'
+import { template as retailerSuggestionConfirmation } from './retailer-suggestion-confirmation.tsx'
+import { template as retailerSuggestionAdminNotification } from './retailer-suggestion-admin-notification.tsx'
+import { template as subscriptionSignupConfirmation } from './subscription-signup-confirmation.tsx'
+import { template as subscriptionSignupAdminNotification } from './subscription-signup-admin-notification.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'ambassador-welcome': ambassadorWelcome,
@@ -69,4 +75,10 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'vs-order-confirmation-followup': vsOrderConfirmationFollowup,
   'contact-form-confirmation': contactFormConfirmation,
   'contact-form-admin-notification': contactFormAdminNotification,
+  'marketplace-application-confirmation': marketplaceApplicationConfirmation,
+  'marketplace-application-admin-notification': marketplaceApplicationAdminNotification,
+  'retailer-suggestion-confirmation': retailerSuggestionConfirmation,
+  'retailer-suggestion-admin-notification': retailerSuggestionAdminNotification,
+  'subscription-signup-confirmation': subscriptionSignupConfirmation,
+  'subscription-signup-admin-notification': subscriptionSignupAdminNotification,
 }

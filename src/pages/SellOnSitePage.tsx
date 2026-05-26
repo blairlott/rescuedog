@@ -62,9 +62,52 @@ export default function SellOnSitePage() {
       agreed_to_terms: true,
       fulfills_from_us: true,
     };
-    const { error } = await supabase.from("marketplace_partner_applications").insert(payload);
+    const id = crypto.randomUUID();
+    const { error } = await supabase
+      .from("marketplace_partner_applications")
+      .insert({ ...payload, id } as any);
     setSubmitting(false);
     if (error) return toast.error(error.message);
+
+    // Fire-and-forget: admin notification + applicant confirmation.
+    void supabase.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "marketplace-application-admin-notification",
+        recipientEmail: "info@rescuedogwines.com",
+        idempotencyKey: `marketplace-admin-${id}`,
+        templateData: {
+          businessName: payload.business_name,
+          contactName: payload.contact_name,
+          contactEmail: payload.contact_email,
+          contactPhone: payload.contact_phone,
+          website: payload.website,
+          businessType: payload.business_type,
+          yearsInBusiness: payload.years_in_business,
+          categories: payload.product_categories,
+          productDescription: payload.product_description,
+          estMonthlyUnits: payload.est_monthly_units,
+          fulfillmentModel: payload.fulfillment_model,
+          shippingRegions: payload.shipping_regions,
+          brandStory: payload.brand_story,
+          whyPartner: payload.why_partner,
+          submissionId: id,
+        },
+      },
+    });
+    if (payload.contact_email) {
+      void supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "marketplace-application-confirmation",
+          recipientEmail: payload.contact_email,
+          idempotencyKey: `marketplace-confirm-${id}`,
+          templateData: {
+            businessName: payload.business_name,
+            contactName: payload.contact_name,
+          },
+        },
+      });
+    }
+
     setSubmitted(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

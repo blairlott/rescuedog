@@ -38,6 +38,9 @@ const INTERNAL_TEMPLATES = new Set<string>([
   'access-request-admin-notification',
 ])
 INTERNAL_TEMPLATES.add('contact-form-admin-notification')
+INTERNAL_TEMPLATES.add('marketplace-application-admin-notification')
+INTERNAL_TEMPLATES.add('retailer-suggestion-admin-notification')
+INTERNAL_TEMPLATES.add('subscription-signup-admin-notification')
 
 function buildSupportFooterHtml(): string {
   return `

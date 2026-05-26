@@ -154,6 +154,18 @@ Deno.serve(async (req) => {
 
   // GET = probe scopes only
   if (req.method === "GET") {
+    const url = new URL(req.url);
+    if (url.searchParams.get("debug") === "creds") {
+      const cid = Deno.env.get("GOOGLE_CLIENT_ID") ?? "";
+      const sec = Deno.env.get("GOOGLE_CLIENT_SECRET") ?? "";
+      const rt  = Deno.env.get("GTM_REFRESH_TOKEN") ?? "";
+      const tail = (s: string, n = 8) => s ? `…${s.slice(-n)} (len ${s.length})` : "MISSING";
+      return json({
+        google_client_id: tail(cid, 12),
+        google_client_secret: tail(sec, 6),
+        gtm_refresh_token: tail(rt, 8),
+      });
+    }
     const ti = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(token)}`);
     return json({ tokeninfo_status: ti.status, tokeninfo: await ti.json().catch(() => ({})) });
   }

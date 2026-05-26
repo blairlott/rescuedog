@@ -3489,6 +3489,39 @@ export type Database = {
           },
         ]
       }
+      credential_grants: {
+        Row: {
+          can_write: boolean
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          note: string | null
+          scope: string
+          user_id: string
+        }
+        Insert: {
+          can_write?: boolean
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+          scope?: string
+          user_id: string
+        }
+        Update: {
+          can_write?: boolean
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+          scope?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cron_run_log: {
         Row: {
           error_message: string | null
@@ -12871,8 +12904,16 @@ export type Database = {
         }
         Returns: string
       }
+      can_access_credential: {
+        Args: { _provider: string; _user_id: string }
+        Returns: boolean
+      }
       can_view_finance: { Args: { _user_id: string }; Returns: boolean }
       can_view_kennel: { Args: { _user_id: string }; Returns: boolean }
+      can_write_credential: {
+        Args: { _provider: string; _user_id: string }
+        Returns: boolean
+      }
       compliant_retailer_set: {
         Args: {
           _latitude: number
@@ -13126,6 +13167,7 @@ export type Database = {
       is_cms_editor: { Args: { _user_id: string }; Returns: boolean }
       is_dropship_manager: { Args: { _user_id: string }; Returns: boolean }
       is_executive: { Args: { _user_id: string }; Returns: boolean }
+      is_owner: { Args: { _user_id: string }; Returns: boolean }
       is_sales_team: { Args: { _user_id: string }; Returns: boolean }
       is_wine_club_manager: { Args: { _user_id: string }; Returns: boolean }
       kennel_cron_status: {
@@ -13435,6 +13477,7 @@ export type Database = {
         | "kennel_viewer"
         | "viewer"
         | "cfo"
+        | "developer"
       cfo_share_type: "live" | "snapshot"
       discount_scope: "sitewide" | "wine" | "merch" | "sku_list" | "collection"
       discount_tier: "public" | "club_member" | "ambassador" | "vip" | "staff"
@@ -13621,6 +13664,7 @@ export const Constants = {
         "kennel_viewer",
         "viewer",
         "cfo",
+        "developer",
       ],
       cfo_share_type: ["live", "snapshot"],
       discount_scope: ["sitewide", "wine", "merch", "sku_list", "collection"],

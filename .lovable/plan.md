@@ -1,58 +1,67 @@
+## Goal
+
+Tighten access to API tokens and integration secrets so only **you (owner)** can view them by default. Anyone else — including admins — only sees them if you explicitly grant access. Also introduce a `developer` role for future use.
+
 ## Scope
 
-Ship Phase 1 Thompson Sampling bandit infrastructure AND the high-leverage UX wins as one bundle. Everything routes through the existing `optimization_opportunities` approval queue with the autonomous toggle already shipped.
+Sensitive surface = `public.integration_credentials` (the DB-backed store for provider API keys/secrets used by `_shared/credentials.ts`). Runtime Edge Function secrets in Lovable Cloud are already owner-managed in the UI and not affected.
 
-## What gets built
+## Changes
 
-### 1. Thompson Sampling bandit (landing-side)
+### 1. New `developer` app role
+- Extend the `app_role` enum with `developer`.
+- No automatic access to credentials — it's a label for future assignments (e.g. CRM access, edge function debugging surfaces). Owners can hand it out later.
+- Add `useUserRole` flag `isDeveloper` for future UI gating.
 
-**DB (migration):**
-- `bandit_experiments` — id, name, surface (`landing_hero`, `pdp_cta`, `cart_upsell`, etc.), status (`draft`/`active`/`paused`), autonomous (bool), created_by
-- `bandit_variants` — experiment_id, key, payload (jsonb: copy/image/cta/utm), alpha (default 1), beta (default 1), impressions, conversions
-- `bandit_events` — experiment_id, variant_id, session_id, event (`impression`/`conversion`), revenue_cents, occurred_at
-- RLS: read open for active experiments (impressions need to fire anon), writes via edge functions; admin/owner/ad_ops_manager manage experiments
-- RPC `bandit_assign(experiment_name, session_id)` — Thompson sample (Beta draw per variant), record impression, return variant payload
-- RPC `bandit_record_conversion(experiment_name, session_id, revenue_cents)` — increment alpha + log event
-- Nightly RPC `bandit_scan_opportunities()` — for any experiment where one variant has ≥95% posterior win probability over control with min 200 impressions, insert an `optimization_opportunities` row (type `bandit_winner`) so it flows through the approval queue / autonomous toggle
+### 2. New `credential_grants` table
+Explicit allow-list of who (besides owner) can read secrets.
 
-**Edge fn `bandit-assign`** — public, validates experiment is `active`, calls RPC, returns variant payload. Cached per session via cookie/localStorage so the same visitor sees the same variant.
+```text
+credential_grants
+  id uuid pk
+  user_id uuid  -- granted user
+  scope text    -- 'all' | provider name (e.g. 'vinoshipper', 'shopify')
+  can_write boolean default false
+  granted_by uuid
+  granted_at, expires_at (nullable), note text
+  unique(user_id, scope)
+```
 
-**Edge fn `bandit-convert`** — public, called on Vinoshipper handoff / Shopify checkout open. Idempotent per session.
+Security definer helper `can_access_credential(uid, provider) → bool`:
+- true if user is **owner** (not admin — owners only), OR
+- has a non-expired row in `credential_grants` matching `scope = 'all'` or `scope = provider`.
 
-**CMS surface** — extend `CmsOpportunitiesPage` with a new "Experiments" tab listing live bandits, per-variant impressions/conversions/posterior win %, pause/resume, and a "Promote winner" button (or auto-promote when autonomous is on for that experiment).
+Separate `can_write_credential(uid, provider)` requires `can_write = true` on the matching grant (or owner).
 
-### 2. Cart progress meter
-- In wine cart drawer, show "$X to shipping included" bar against the wine-shipping threshold (read from existing settings). Pure presentation, no checkout logic change.
+### 3. Tighten `integration_credentials` RLS
+- DROP existing `Admins can view integration credentials` policy.
+- SELECT: `is_owner(uid) OR can_access_credential(uid, provider)`.
+- INSERT/UPDATE/DELETE: `is_owner(uid) OR can_write_credential(uid, provider)`.
+- Service role retains full access (edge functions unaffected — they use service role via `_shared/credentials.ts`).
 
-### 3. Sticky mobile ATC bar
-- Wine PDP only, mobile breakpoint, slides up after hero scrolls past. Shows price + Add to Cart. Reuses existing ATC handler.
+Result: admins, executives, viewers, ad_ops_manager, etc. **lose** read access to secrets unless explicitly granted.
 
-### 4. LCP preload
-- Inject `<link rel="preload" as="image" fetchpriority="high">` for the hero image on the homepage, wine shop landing, and merch landing. For dynamic Shopify/Supabase hero images, do it via `react-helmet-async` inside the route component using the resolved CDN URL.
+### 4. Owner-only management UI
+New page **`/admin/secrets-access`** (owner-gated):
+- Lists all `integration_credentials` rows (masked values).
+- "Grant access" dialog: pick user (from `profiles`), choose scope (All providers / specific provider), read or read+write, optional expiry + note.
+- Revoke button per grant.
+- Audit log section showing recent reads/writes from existing `integration_credentials_audit` trigger.
 
-### 5. Exit-intent + scroll-depth offer
-- Reusable hook `useExitIntent` (mouseleave on desktop, 60% scroll on mobile, one-shot per session via sessionStorage).
-- Modal on wine PDPs invites "Join The Pack" (access-based, no % off — per brand memory). Copy passes through brand guardrails.
+Add a sidebar link in `AdminTopNav` visible only when `isOwner === true`.
 
-### 6. PDP social proof
-- Above the buy button on wine PDPs: show top review snippet + medal/award badges (already in `wine_products.tags`). Uses existing `AwardBadges` component, adds a lightweight review snippet block from existing review data (or hides cleanly if none).
+### 5. Audit & safety
+- Keep existing audit trigger.
+- Add `useUserRole.isOwner` already exists — reuse for gating.
+- Migration is additive; no data loss.
 
-### 7. JSON-LD on wine PDPs
-- Add `Product` + `Offer` JSON-LD via `react-helmet-async` on the wine PDP route. Includes name, image, description, sku, brand, price, availability. Adds `AggregateRating` only when real review data exists — never fake.
+## Out of scope
+- Lovable Cloud runtime secrets panel (already owner-controlled in platform UI).
+- Rotating any existing keys.
+- Re-permissioning other tables flagged in the security scan (separate task if you want).
 
-## Wiring into approval queue
-
-- The bandit's `bandit_scan_opportunities` RPC is the only autonomous writer here — winners land in `optimization_opportunities` and respect the existing global autonomous toggle plus a per-experiment autonomous flag.
-- UX changes (#2–#7) ship as live code, not opportunities — they're floor-level best practices, not experiments. The bandit then runs experiments on top of them (e.g. cart-meter copy variants, exit-intent headline variants).
-
-## Out of scope (deferred)
-
-- Meta/Google ad-platform bandit (Phase 2 — needs OAuth tokens).
-- Email lifecycle sequences.
-- Funnel dashboard in CRM.
-- Vault migration for plaintext secrets.
-
-## Post-ship
-
-- Append Changelog entry to `/mnt/documents/Lindy_User_Manual_and_Roadmap.docx` covering the new RPCs (`bandit_assign`, `bandit_record_conversion`, `bandit_scan_opportunities`) and edge functions (`bandit-assign`, `bandit-convert`).
-- Schedule `bandit_scan_opportunities` daily via pg_cron (reuse existing cron secret pattern).
+## Acceptance
+- A non-owner admin signed in cannot `select * from integration_credentials` via the client.
+- After you grant `dev@example.com` scope `shopify` read, they see only Shopify rows.
+- Edge functions continue to resolve credentials normally (service role bypass).
+- `developer` role exists and shows up in role pickers; no implicit permissions attached yet.

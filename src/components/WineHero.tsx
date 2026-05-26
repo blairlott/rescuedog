@@ -13,68 +13,86 @@ import hero3Webp from "@/assets/wine-hero-3.webp";
 import hero4Jpg from "@/assets/wine-hero-4.jpg";
 import hero4Webp from "@/assets/wine-hero-4.webp";
 
-type Variant = {
+// Images and copy rotate INDEPENDENTLY so the bandit can find the best
+// image × copy pairing. variant_id logged to hero_events is `${imgId}__${copyId}`,
+// giving 16 cells across 4 images and 4 copy decks.
+type ImageVariant = {
   id: string;
   jpg: string;
   webp: string;
   alt: string;
+};
+
+type CopyVariant = {
+  id: string;
   eyebrow: string;
   headline: React.ReactNode;
   sub: string;
   cta: string;
+  ctaHref: string; // every CTA drives to a wine-sales surface (Vinoshipper handoff)
 };
 
-// Conversion-optimized copy variants. Each leans on a different psychological lever
-// (mission, sustainability, social proof, urgency-of-cause) so the bandit can find the winner.
-export const WINE_HERO_VARIANTS: Variant[] = [
+export const WINE_HERO_IMAGES: ImageVariant[] = [
+  { id: "img1-cheers-cab",      jpg: hero1Jpg, webp: hero1Webp, alt: "Three friends toasting Rescue Dog Wines Cabernet Sauvignon on a sunny patio" },
+  { id: "img2-couples-dog",     jpg: hero2Jpg, webp: hero2Webp, alt: "Two couples cheers red wine with a rescue dog at the table" },
+  { id: "img3-vineyard-table",  jpg: hero3Jpg, webp: hero3Webp, alt: "Friends toasting at a vineyard table with a Rescue Dog Wines bottle" },
+  { id: "img4-backyard-charcut",jpg: hero4Jpg, webp: hero4Webp, alt: "Backyard dinner party with friends, charcuterie and a rescue dog" },
+];
+
+// Each copy deck leans on a different psychological lever for conversions:
+// mission, sustainability, social proof, scarcity/club value.
+export const WINE_HERO_COPY: CopyVariant[] = [
   {
-    id: "wine-v1-cheers-cab",
-    jpg: hero1Jpg,
-    webp: hero1Webp,
-    alt: "Three friends toasting Rescue Dog Wines Cabernet Sauvignon on a sunny patio",
+    id: "copy-mission",
     eyebrow: "Lodi Cabernet · 50% of profits to rescue",
-    headline: <>Pour for the pack.</>,
+    headline: <>Pour for<br />the pack.</>,
     sub: "Award-winning, sustainably grown Lodi wines. Every bottle helps a rescue dog find a forever home.",
     cta: "Shop Wines",
+    ctaHref: "/wines",
   },
   {
-    id: "wine-v2-young-couples-dog",
-    jpg: hero2Jpg,
-    webp: hero2Webp,
-    alt: "Two couples cheers red wine with a rescue dog at the table",
+    id: "copy-shipping",
     eyebrow: "Shipping included on 12+ bottles",
     headline: <>Wine that gives<br />back. Literally.</>,
     sub: "Half our profits go to animal rescue. The other half? Goes great with friends, food, and a dog at your feet.",
     cta: "Shop the Cabernet",
+    ctaHref: "/wines",
   },
   {
-    id: "wine-v3-vineyard-table",
-    jpg: hero3Jpg,
-    webp: hero3Webp,
-    alt: "Friends toasting at a vineyard table with a Rescue Dog Wines bottle",
+    id: "copy-sustainable",
     eyebrow: "Lodi Rules Certified Sustainable",
     headline: <>Our wine is<br />for the dogs.</>,
     sub: "Crafted in Lodi, California. Sip knowing every glass helps fund the rescues bringing dogs home.",
     cta: "Shop All Wines",
+    ctaHref: "/wines",
   },
   {
-    id: "wine-v4-backyard-charcuterie",
-    jpg: hero4Jpg,
-    webp: hero4Webp,
-    alt: "Backyard dinner party with friends, charcuterie, a rescue dog and Rescue Dog Wines",
-    eyebrow: "Join The Pack · 20% off every shipment",
+    id: "copy-club",
+    eyebrow: "Wine Club · members-only releases",
     headline: <>Save dogs.<br />Sip the proof.</>,
-    sub: "Join the Wine Club for 20% off, members-only releases, and a direct line to the rescues we fund.",
-    cta: "Join The Pack",
+    sub: "Join the Wine Club for member pricing, exclusive releases, and a direct line to the rescues we fund.",
+    cta: "Join the Wine Club",
+    ctaHref: "/wine-club",
   },
 ];
 
-const STORAGE_KEY = "rdw_wine_hero_idx";
+// Back-compat shim for analytics page: surfaces every (image × copy) cell.
+export const WINE_HERO_VARIANTS = WINE_HERO_IMAGES.flatMap((img) =>
+  WINE_HERO_COPY.map((cp) => ({
+    id: `${img.id}__${cp.id}`,
+    eyebrow: cp.eyebrow,
+    headline: cp.headline,
+    sub: cp.sub,
+  }))
+);
+
+const IMG_STORAGE_KEY = "rdw_wine_hero_img_idx";
+const COPY_STORAGE_KEY = "rdw_wine_hero_copy_idx";
 const SESSION_KEY = "rdw_session_id";
 const COOKIE_KEY = "rdw_hero_variant";
 const STATS_CACHE_KEY = "rdw_wine_hero_stats_v1";
 const STATS_TTL_MS = 10 * 60 * 1000;
-const EXPLORATION_FLOOR = 200;
+const EXPLORATION_FLOOR = 80; // per cell — 16 cells × 80 = ~1,280 imp baseline
 const ORDER_WEIGHT = 8; // 1 attributed order ≈ 8 clicks
 
 type VariantStat = {
@@ -107,12 +125,12 @@ function setVariantCookie(variantId: string) {
   }
 }
 
-function pickRoundRobin(total: number): number {
+function pickRoundRobin(key: string, total: number): number {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     const prev = raw ? parseInt(raw, 10) : -1;
     const next = (Number.isFinite(prev) ? prev + 1 : 0) % total;
-    localStorage.setItem(STORAGE_KEY, String(next));
+    localStorage.setItem(key, String(next));
     return next;
   } catch {
     return Math.floor(Math.random() * total);
@@ -166,44 +184,52 @@ function sampleBeta(alpha: number, beta: number): number {
   return x / (x + y);
 }
 
-function pickBandit(stats: VariantStat[] | null): number | null {
+// Returns { imgIdx, copyIdx } or null if any cell is still under-explored.
+function pickBanditCell(stats: VariantStat[] | null): { imgIdx: number; copyIdx: number } | null {
   if (!stats || stats.length === 0) return null;
   const byId = new Map(stats.map((s) => [s.variant_id, s]));
-  const rows = WINE_HERO_VARIANTS.map((v) => byId.get(v.id));
-  const underExplored = rows.some((r) => !r || r.impressions < EXPLORATION_FLOOR);
-  if (underExplored) return null;
-  let bestIdx = 0;
-  let bestScore = -Infinity;
-  rows.forEach((r, i) => {
-    const impressions = r!.impressions;
-    const reward = r!.clicks + ORDER_WEIGHT * r!.orders;
-    const alpha = Math.max(1, reward) + 1;
-    const beta = Math.max(0, impressions - reward) + 1;
-    const sample = sampleBeta(alpha, beta);
-    if (sample > bestScore) {
-      bestScore = sample;
-      bestIdx = i;
+  type Cell = { imgIdx: number; copyIdx: number; row: VariantStat | undefined };
+  const cells: Cell[] = [];
+  for (let i = 0; i < WINE_HERO_IMAGES.length; i++) {
+    for (let j = 0; j < WINE_HERO_COPY.length; j++) {
+      const id = `${WINE_HERO_IMAGES[i].id}__${WINE_HERO_COPY[j].id}`;
+      cells.push({ imgIdx: i, copyIdx: j, row: byId.get(id) });
     }
-  });
-  return bestIdx;
+  }
+  const underExplored = cells.some((c) => !c.row || c.row.impressions < EXPLORATION_FLOOR);
+  if (underExplored) return null;
+  let best = cells[0];
+  let bestScore = -Infinity;
+  for (const c of cells) {
+    const r = c.row!;
+    const reward = r.clicks + ORDER_WEIGHT * r.orders;
+    const alpha = Math.max(1, reward) + 1;
+    const beta = Math.max(0, r.impressions - reward) + 1;
+    const s = sampleBeta(alpha, beta);
+    if (s > bestScore) { bestScore = s; best = c; }
+  }
+  return { imgIdx: best.imgIdx, copyIdx: best.copyIdx };
 }
 
 export const WineHero = () => {
-  const variantIndex = useMemo(() => {
+  const { image, copy, variantId } = useMemo(() => {
     const cached = readCachedStats();
-    const banditPick = pickBandit(cached);
-    return banditPick ?? pickRoundRobin(WINE_HERO_VARIANTS.length);
+    const banditPick = pickBanditCell(cached);
+    const imgIdx = banditPick?.imgIdx ?? pickRoundRobin(IMG_STORAGE_KEY, WINE_HERO_IMAGES.length);
+    const copyIdx = banditPick?.copyIdx ?? pickRoundRobin(COPY_STORAGE_KEY, WINE_HERO_COPY.length);
+    const image = WINE_HERO_IMAGES[imgIdx];
+    const copy = WINE_HERO_COPY[copyIdx];
+    return { image, copy, variantId: `${image.id}__${copy.id}` };
   }, []);
-  const variant = WINE_HERO_VARIANTS[variantIndex];
   const loggedImpression = useRef(false);
 
   useEffect(() => {
     if (loggedImpression.current) return;
     loggedImpression.current = true;
-    setVariantCookie(variant.id);
+    setVariantCookie(variantId);
     const session_id = getOrCreateSessionId();
     void supabase.from("hero_events").insert({
-      variant_id: variant.id,
+      variant_id: variantId,
       event_type: "impression",
       session_id,
     });
@@ -212,7 +238,7 @@ export const WineHero = () => {
       .then(({ data, error }) => {
         if (!error && Array.isArray(data)) {
           const wineOnly = data
-            .filter((r: any) => typeof r.variant_id === "string" && r.variant_id.startsWith("wine-"))
+            .filter((r: any) => typeof r.variant_id === "string" && r.variant_id.startsWith("img"))
             .map((r: any) => ({
               variant_id: r.variant_id,
               impressions: Number(r.impressions) || 0,
@@ -223,13 +249,13 @@ export const WineHero = () => {
           writeCachedStats(wineOnly);
         }
       });
-  }, [variant.id]);
+  }, [variantId]);
 
   const handleCtaClick = () => {
     const session_id = getOrCreateSessionId();
-    setVariantCookie(variant.id);
+    setVariantCookie(variantId);
     void supabase.from("hero_events").insert({
-      variant_id: variant.id,
+      variant_id: variantId,
       event_type: "click",
       session_id,
     });
@@ -238,10 +264,10 @@ export const WineHero = () => {
   return (
     <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden bg-foreground">
       <picture>
-        <source srcSet={variant.webp} type="image/webp" />
+        <source srcSet={image.webp} type="image/webp" />
         <img
-          src={variant.jpg}
-          alt={variant.alt}
+          src={image.jpg}
+          alt={image.alt}
           className="absolute inset-0 w-full h-full object-cover"
           width={1920}
           height={1080}
@@ -253,13 +279,13 @@ export const WineHero = () => {
       <div className="relative container mx-auto px-4">
         <div className="max-w-2xl">
           <p className="text-primary-foreground/90 text-xs md:text-sm tracking-brand uppercase mb-4 font-bold">
-            <T>{variant.eyebrow}</T>
+            <T>{copy.eyebrow}</T>
           </p>
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-primary-foreground mb-6 leading-[0.95] uppercase">
-            {variant.headline}
+            {copy.headline}
           </h1>
           <p className="text-primary-foreground/85 text-base md:text-lg mb-8 max-w-xl">
-            <T>{variant.sub}</T>
+            <T>{copy.sub}</T>
           </p>
           <div className="flex flex-wrap gap-3">
             <Button
@@ -268,11 +294,11 @@ export const WineHero = () => {
               className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
             >
               <Link
-                to={variant.id === "wine-v4-backyard-charcuterie" ? "/wine-club" : "/wines"}
+                to={copy.ctaHref}
                 onClick={handleCtaClick}
-                data-hero-variant={variant.id}
+                data-hero-variant={variantId}
               >
-                <T>{variant.cta}</T>
+                <T>{copy.cta}</T>
               </Link>
             </Button>
             <Button

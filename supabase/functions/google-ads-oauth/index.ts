@@ -8,8 +8,8 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const CLIENT_ID = Deno.env.get("GOOGLE_ADS_CLIENT_ID")!;
-const CLIENT_SECRET = Deno.env.get("GOOGLE_ADS_CLIENT_SECRET")!;
+const CLIENT_ID = (Deno.env.get("GOOGLE_ADS_CLIENT_ID") ?? "").trim();
+const CLIENT_SECRET = (Deno.env.get("GOOGLE_ADS_CLIENT_SECRET") ?? "").trim();
 const LOGIN_CUSTOMER_ID = Deno.env.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID") ?? null;
 
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/google-ads-oauth/callback`;

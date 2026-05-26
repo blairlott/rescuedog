@@ -8156,6 +8156,96 @@ export type Database = {
         }
         Relationships: []
       }
+      optimization_opportunities: {
+        Row: {
+          applied_at: string | null
+          applied_ref: string | null
+          auto_applied: boolean
+          category: Database["public"]["Enums"]["optimization_category"]
+          confidence: number | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          est_lift_pct: number | null
+          goal: Database["public"]["Enums"]["optimization_goal"]
+          id: string
+          proposed_change: Json
+          rationale: string
+          source: string
+          status: Database["public"]["Enums"]["optimization_status"]
+          supporting_metrics: Json
+          surface: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_ref?: string | null
+          auto_applied?: boolean
+          category: Database["public"]["Enums"]["optimization_category"]
+          confidence?: number | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          est_lift_pct?: number | null
+          goal?: Database["public"]["Enums"]["optimization_goal"]
+          id?: string
+          proposed_change?: Json
+          rationale: string
+          source?: string
+          status?: Database["public"]["Enums"]["optimization_status"]
+          supporting_metrics?: Json
+          surface?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_ref?: string | null
+          auto_applied?: boolean
+          category?: Database["public"]["Enums"]["optimization_category"]
+          confidence?: number | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          est_lift_pct?: number | null
+          goal?: Database["public"]["Enums"]["optimization_goal"]
+          id?: string
+          proposed_change?: Json
+          rationale?: string
+          source?: string
+          status?: Database["public"]["Enums"]["optimization_status"]
+          supporting_metrics?: Json
+          surface?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      optimization_settings: {
+        Row: {
+          autonomous: boolean
+          category: Database["public"]["Enums"]["optimization_category"]
+          min_confidence: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          autonomous?: boolean
+          category: Database["public"]["Enums"]["optimization_category"]
+          min_confidence?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          autonomous?: boolean
+          category?: Database["public"]["Enums"]["optimization_category"]
+          min_confidence?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       order_email_settings: {
         Row: {
           description: string | null
@@ -12513,6 +12603,36 @@ export type Database = {
           site_variant: string
         }[]
       }
+      apply_opportunity_decision: {
+        Args: { _decision: string; _id: string }
+        Returns: {
+          applied_at: string | null
+          applied_ref: string | null
+          auto_applied: boolean
+          category: Database["public"]["Enums"]["optimization_category"]
+          confidence: number | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          est_lift_pct: number | null
+          goal: Database["public"]["Enums"]["optimization_goal"]
+          id: string
+          proposed_change: Json
+          rationale: string
+          source: string
+          status: Database["public"]["Enums"]["optimization_status"]
+          supporting_metrics: Json
+          surface: string | null
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "optimization_opportunities"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       approve_executive_decision: {
         Args: { _action: string; _decision_id: string }
         Returns: {
@@ -12987,6 +13107,26 @@ export type Database = {
           signal: string
         }[]
       }
+      set_autonomous_mode: {
+        Args: {
+          _autonomous: boolean
+          _category: Database["public"]["Enums"]["optimization_category"]
+          _min_confidence?: number
+        }
+        Returns: {
+          autonomous: boolean
+          category: Database["public"]["Enums"]["optimization_category"]
+          min_confidence: number
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "optimization_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       setup_gated_cron_jobs: { Args: { _secret: string }; Returns: Json }
       simulate_loyalty_earn: {
         Args: { _client_request_id?: string; _subtotal_cents: number }
@@ -13125,6 +13265,21 @@ export type Database = {
         | "custom"
       experiment_status: "draft" | "running" | "paused" | "ended"
       mirror_status: "pending" | "synced" | "failed" | "disabled"
+      optimization_category:
+        | "hero_copy"
+        | "hero_image"
+        | "cart_upsell"
+        | "pricing"
+        | "bundle"
+        | "merch_copy"
+        | "other"
+      optimization_goal: "conversion" | "aov" | "both"
+      optimization_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "applied"
+        | "superseded"
       subscription_cycle_status:
         | "pending"
         | "attempting"
@@ -13297,6 +13452,23 @@ export const Constants = {
       ],
       experiment_status: ["draft", "running", "paused", "ended"],
       mirror_status: ["pending", "synced", "failed", "disabled"],
+      optimization_category: [
+        "hero_copy",
+        "hero_image",
+        "cart_upsell",
+        "pricing",
+        "bundle",
+        "merch_copy",
+        "other",
+      ],
+      optimization_goal: ["conversion", "aov", "both"],
+      optimization_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "applied",
+        "superseded",
+      ],
       subscription_cycle_status: [
         "pending",
         "attempting",

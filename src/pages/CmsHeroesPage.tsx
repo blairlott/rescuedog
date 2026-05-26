@@ -307,6 +307,8 @@ function VariantCard({
           <div>Clicks: {stat?.clicks ?? 0}</div>
           <div>CTR: {ctr.toFixed(2)}%</div>
           <div>Orders: {stat?.orders ?? 0}</div>
+          <div>Revenue: ${Number(stat?.revenue ?? 0).toFixed(0)}</div>
+          <div>CVR: {stat && stat.clicks > 0 ? ((stat.orders / stat.clicks) * 100).toFixed(2) : "0.00"}%</div>
         </div>
       </div>
       <div className="space-y-3">

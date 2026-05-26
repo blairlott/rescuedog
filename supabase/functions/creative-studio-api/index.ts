@@ -381,6 +381,23 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const action = url.searchParams.get("action") ?? "";
 
+  // Role gate — only owners/admins/cms_editor/ad_ops_manager may use this surface.
+  // setup-check is read-only and safe; everything else touches paid AI/render
+  // jobs or rewrites credentials, so it must be role-gated.
+  if (action !== "setup-check") {
+    const sb = admin();
+    const requiredRoles = action === "save-key"
+      ? ["owner", "admin"]
+      : ["owner", "admin", "cms_editor", "ad_ops_manager"];
+    const { data: roleRow } = await sb
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .in("role", requiredRoles)
+      .maybeSingle();
+    if (!roleRow) return json({ error: "forbidden" }, 403);
+  }
+
   try {
     switch (action) {
       case "setup-check":

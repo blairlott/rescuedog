@@ -4975,6 +4975,7 @@ export type Database = {
           assigned_at: string
           experiment_id: string
           id: string
+          segment_bucket: string
           user_id: string | null
           variant_id: string
           visitor_id: string
@@ -4983,6 +4984,7 @@ export type Database = {
           assigned_at?: string
           experiment_id: string
           id?: string
+          segment_bucket?: string
           user_id?: string | null
           variant_id: string
           visitor_id: string
@@ -4991,6 +4993,7 @@ export type Database = {
           assigned_at?: string
           experiment_id?: string
           id?: string
+          segment_bucket?: string
           user_id?: string | null
           variant_id?: string
           visitor_id?: string
@@ -5012,6 +5015,60 @@ export type Database = {
           },
         ]
       }
+      experiment_candidates: {
+        Row: {
+          candidate_ref: string
+          candidate_type: string
+          created_at: string
+          experiment_id: string
+          id: string
+          metadata: Json
+          status: string
+          updated_at: string
+          variant_id: string | null
+          weight: number
+        }
+        Insert: {
+          candidate_ref: string
+          candidate_type?: string
+          created_at?: string
+          experiment_id: string
+          id?: string
+          metadata?: Json
+          status?: string
+          updated_at?: string
+          variant_id?: string | null
+          weight?: number
+        }
+        Update: {
+          candidate_ref?: string
+          candidate_type?: string
+          created_at?: string
+          experiment_id?: string
+          id?: string
+          metadata?: Json
+          status?: string
+          updated_at?: string
+          variant_id?: string | null
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experiment_candidates_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "experiment_candidates_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "experiment_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experiment_events: {
         Row: {
           created_at: string
@@ -5021,6 +5078,7 @@ export type Database = {
           id: string
           metadata: Json
           revenue_cents: number | null
+          segment_bucket: string
           user_id: string | null
           variant_id: string
           visitor_id: string
@@ -5033,6 +5091,7 @@ export type Database = {
           id?: string
           metadata?: Json
           revenue_cents?: number | null
+          segment_bucket?: string
           user_id?: string | null
           variant_id: string
           visitor_id: string
@@ -5045,6 +5104,7 @@ export type Database = {
           id?: string
           metadata?: Json
           revenue_cents?: number | null
+          segment_bucket?: string
           user_id?: string | null
           variant_id?: string
           visitor_id?: string
@@ -5101,6 +5161,63 @@ export type Database = {
           variant_configs?: Json
         }
         Relationships: []
+      }
+      experiment_variant_segment_stats: {
+        Row: {
+          conversions: number
+          decayed_exposures: number
+          decayed_reward: number
+          experiment_id: string
+          exposures: number
+          id: string
+          last_event_at: string
+          revenue_cents: number
+          segment_bucket: string
+          updated_at: string
+          variant_id: string
+        }
+        Insert: {
+          conversions?: number
+          decayed_exposures?: number
+          decayed_reward?: number
+          experiment_id: string
+          exposures?: number
+          id?: string
+          last_event_at?: string
+          revenue_cents?: number
+          segment_bucket?: string
+          updated_at?: string
+          variant_id: string
+        }
+        Update: {
+          conversions?: number
+          decayed_exposures?: number
+          decayed_reward?: number
+          experiment_id?: string
+          exposures?: number
+          id?: string
+          last_event_at?: string
+          revenue_cents?: number
+          segment_bucket?: string
+          updated_at?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experiment_variant_segment_stats_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "experiment_variant_segment_stats_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "experiment_variants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       experiment_variants: {
         Row: {
@@ -5159,12 +5276,15 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          decay_half_life_days: number
           description: string | null
           ends_at: string | null
+          exploration_floor: number
           id: string
           key: string
           name: string
           primary_metric: Database["public"]["Enums"]["experiment_metric"]
+          reward_weight_order: number
           segment: Json
           slot_key: string
           starts_at: string | null
@@ -5177,12 +5297,15 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          decay_half_life_days?: number
           description?: string | null
           ends_at?: string | null
+          exploration_floor?: number
           id?: string
           key: string
           name: string
           primary_metric?: Database["public"]["Enums"]["experiment_metric"]
+          reward_weight_order?: number
           segment?: Json
           slot_key: string
           starts_at?: string | null
@@ -5195,12 +5318,15 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          decay_half_life_days?: number
           description?: string | null
           ends_at?: string | null
+          exploration_floor?: number
           id?: string
           key?: string
           name?: string
           primary_metric?: Database["public"]["Enums"]["experiment_metric"]
+          reward_weight_order?: number
           segment?: Json
           slot_key?: string
           starts_at?: string | null

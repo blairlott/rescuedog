@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Wine } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,18 @@ export const HERO_VARIANTS: Variant[] = [
 const STORAGE_KEY = "rdw_hero_rotation_idx";
 const SESSION_KEY = "rdw_session_id";
 const COOKIE_KEY = "rdw_hero_variant";
+const STATS_CACHE_KEY = "rdw_hero_stats_v1";
+const STATS_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const EXPLORATION_FLOOR = 200; // min impressions per variant before bandit takes over
+const ORDER_WEIGHT = 8; // 1 attributed order ≈ 8 clicks in reward signal
+
+type VariantStat = {
+  variant_id: string;
+  impressions: number;
+  clicks: number;
+  orders: number;
+  revenue: number;
+};
 
 function getOrCreateSessionId(): string {
   try {
@@ -100,8 +112,90 @@ function pickVariantIndex(total: number): number {
   }
 }
 
+function readCachedStats(): VariantStat[] | null {
+  try {
+    const raw = localStorage.getItem(STATS_CACHE_KEY);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw) as { ts: number; data: VariantStat[] };
+    if (Date.now() - ts > STATS_TTL_MS) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedStats(data: VariantStat[]) {
+  try {
+    localStorage.setItem(STATS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+  } catch {
+    /* noop */
+  }
+}
+
+// Sample from Beta(alpha, beta) via two Gammas (Marsaglia & Tsang).
+function sampleGamma(shape: number): number {
+  if (shape < 1) {
+    const u = Math.random();
+    return sampleGamma(shape + 1) * Math.pow(u, 1 / shape);
+  }
+  const d = shape - 1 / 3;
+  const c = 1 / Math.sqrt(9 * d);
+  while (true) {
+    let x: number, v: number;
+    do {
+      const u1 = Math.random();
+      const u2 = Math.random();
+      x = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2); // standard normal
+      v = 1 + c * x;
+    } while (v <= 0);
+    v = v * v * v;
+    const u = Math.random();
+    if (u < 1 - 0.0331 * x * x * x * x) return d * v;
+    if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+  }
+}
+function sampleBeta(alpha: number, beta: number): number {
+  const x = sampleGamma(alpha);
+  const y = sampleGamma(beta);
+  return x / (x + y);
+}
+
+/**
+ * Thompson Sampling bandit. Reward = clicks + ORDER_WEIGHT * orders.
+ * Trials = impressions. Until every variant has EXPLORATION_FLOOR
+ * impressions, fall back to round-robin so we collect baseline data.
+ */
+function pickVariantBandit(stats: VariantStat[] | null): number | null {
+  if (!stats || stats.length === 0) return null;
+  const byId = new Map(stats.map((s) => [s.variant_id, s]));
+  const rows = HERO_VARIANTS.map((v) => byId.get(v.id));
+  const underExplored = rows.some((r) => !r || r.impressions < EXPLORATION_FLOOR);
+  if (underExplored) return null;
+
+  let bestIdx = 0;
+  let bestScore = -Infinity;
+  rows.forEach((r, i) => {
+    const impressions = r!.impressions;
+    const reward = r!.clicks + ORDER_WEIGHT * r!.orders;
+    const alpha = Math.max(1, reward) + 1;
+    const beta = Math.max(0, impressions - reward) + 1;
+    const sample = sampleBeta(alpha, beta);
+    if (sample > bestScore) {
+      bestScore = sample;
+      bestIdx = i;
+    }
+  });
+  return bestIdx;
+}
+
 export const MerchHero = () => {
-  const variantIndex = useMemo(() => pickVariantIndex(HERO_VARIANTS.length), []);
+  // Synchronous pick: use cached stats if fresh; else round-robin so the hero
+  // renders instantly without waiting on a network round-trip.
+  const variantIndex = useMemo(() => {
+    const cached = readCachedStats();
+    const banditPick = pickVariantBandit(cached);
+    return banditPick ?? pickVariantIndex(HERO_VARIANTS.length);
+  }, []);
   const variant = HERO_VARIANTS[variantIndex];
   const loggedImpression = useRef(false);
 
@@ -115,6 +209,23 @@ export const MerchHero = () => {
       event_type: "impression",
       session_id,
     });
+
+    // Refresh stats cache in the background for the next pageview.
+    void supabase
+      .rpc("get_hero_variant_stats", { _days: 30 })
+      .then(({ data, error }) => {
+        if (!error && Array.isArray(data)) {
+          writeCachedStats(
+            data.map((r: any) => ({
+              variant_id: r.variant_id,
+              impressions: Number(r.impressions) || 0,
+              clicks: Number(r.clicks) || 0,
+              orders: Number(r.orders) || 0,
+              revenue: Number(r.revenue) || 0,
+            }))
+          );
+        }
+      });
   }, [variant.id]);
 
   const handleCtaClick = () => {

@@ -493,6 +493,19 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // Role gate for execute/rollback — approve/reject are already gated by the
+  // kennel_review_recommendation RPC, but execute/rollback hit the platform
+  // APIs directly via the service-role client and must check roles in code.
+  if (action === "execute" || action === "rollback") {
+    const { data: roleRow } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .in("role", ["owner", "admin", "ad_ops_manager"])
+      .maybeSingle();
+    if (!roleRow) return json({ error: "forbidden" }, 403);
+  }
+
   // Kill-switch check for execute
   if (action === "execute" || action === "approve") {
     const { data: killRow } = await admin.from("ad_settings").select("value").eq("key", "kill_switch").maybeSingle();

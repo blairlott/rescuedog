@@ -78,6 +78,7 @@ const CmsFormsPage = lazy(() => import("./pages/CmsFormsPage"));
 const CmsMediaPage = lazy(() => import("./pages/CmsMediaPage"));
 const CmsLindyInboxPage = lazy(() => import("./pages/CmsLindyInboxPage"));
 const CmsHeroesPage = lazy(() => import("./pages/CmsHeroesPage"));
+const CmsOpportunitiesPage = lazy(() => import("./pages/CmsOpportunitiesPage"));
 const KennelBanditPage = lazy(() => import("./pages/kennel/KennelBanditPage"));
 const CmsAudiencesPage = lazy(() => import("./pages/CmsAudiencesPage"));
 const WineClubAdminPage = lazy(() => import("./pages/WineClubAdminPage"));

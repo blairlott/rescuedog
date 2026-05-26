@@ -145,7 +145,11 @@ Deno.serve(async (req) => {
           grant_type: "authorization_code",
         }),
       });
-      const tok = await tokRes.json();
+      const tokText = await tokRes.text();
+      let tok: any;
+      try { tok = JSON.parse(tokText); } catch {
+        return json({ error: "token_exchange_non_json", status: tokRes.status, body: tokText.slice(0, 500) }, 400);
+      }
       if (!tokRes.ok || !tok.refresh_token) {
         return json({ error: "token_exchange_failed", detail: tok }, 400);
       }
@@ -153,7 +157,7 @@ Deno.serve(async (req) => {
       // Identify the customer the user actually has access to via listAccessibleCustomers.
       const devToken = Deno.env.get("GOOGLE_ADS_DEVELOPER_TOKEN")!;
       const listRes = await fetch(
-        "https://googleads.googleapis.com/v17/customers:listAccessibleCustomers",
+        "https://googleads.googleapis.com/v21/customers:listAccessibleCustomers",
         {
           headers: {
             Authorization: `Bearer ${tok.access_token}`,
@@ -161,7 +165,14 @@ Deno.serve(async (req) => {
           },
         },
       );
-      const list = await listRes.json();
+      const listText = await listRes.text();
+      let list: any = {};
+      try { list = JSON.parse(listText); } catch {
+        return json({ error: "list_customers_non_json", status: listRes.status, body: listText.slice(0, 500) }, 400);
+      }
+      if (!listRes.ok) {
+        return json({ error: "list_customers_failed", status: listRes.status, detail: list }, 400);
+      }
       const resourceNames: string[] = list.resourceNames || [];
       const customerId = resourceNames[0]?.split("/")[1] || "";
 

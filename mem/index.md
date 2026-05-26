@@ -98,3 +98,4 @@
 - [Rescue Dog Month](mem://features/rescue-dog-month) — October is RDW's flagship awareness/sales month; pre-stage campaigns by mid-September
 - [Revenue × ROAS Mandate](mem://features/mission-and-roas-mandate) — Both levers up; reject volume-at-any-margin and margin-at-any-volume
 - [Work the Queue Standing Order](mem://features/work-the-queue-standing-order) — Proactively work lindy_inbox without per-batch confirmation
+- [Post-Build QA + Slack Loop](mem://preference/post-build-qa-loop) — Mandatory QA/debug/perf pass + #lindy-lovable update with Lindy+Claude review before any publish

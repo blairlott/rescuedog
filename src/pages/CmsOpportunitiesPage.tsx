@@ -21,14 +21,15 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default function CmsOpportunitiesPage() {
-  const { user, loading: authLoading } = useCmsAuth();
+  const { canEdit, loading: authLoading } = useCmsAuth();
+  const allowed = canEdit();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [scanning, setScanning] = useState(false);
 
   const { data: opps, isLoading } = useQuery({
     queryKey: ["opt-opportunities"],
-    enabled: !!user,
+    enabled: allowed,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("optimization_opportunities" as any)
@@ -42,7 +43,7 @@ export default function CmsOpportunitiesPage() {
 
   const { data: settings } = useQuery({
     queryKey: ["opt-settings"],
-    enabled: !!user,
+    enabled: allowed,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("optimization_settings" as any)
@@ -94,7 +95,7 @@ export default function CmsOpportunitiesPage() {
   };
 
   if (authLoading) return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
-  if (!user) return <div className="p-8">Sign in required.</div>;
+  if (!allowed) return <div className="p-8">Owner or admin access required.</div>;
 
   const pending = (opps ?? []).filter((o: any) => o.status === "pending");
   const recent = (opps ?? []).filter((o: any) => o.status !== "pending").slice(0, 50);

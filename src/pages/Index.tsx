@@ -32,6 +32,7 @@ import { Seo } from "@/components/Seo";
 import { InstacartOAuthCatcher } from "@/components/InstacartOAuthCatcher";
 import { T } from "@/components/T";
 import { useExperiment } from "@/hooks/useExperiment";
+import { WineHero } from "@/components/WineHero";
 
 const instagramPosts = [
   {

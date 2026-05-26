@@ -434,7 +434,8 @@ const CmsDashboard = () => {
         <div className="max-w-5xl mx-auto px-4 py-2 flex items-center gap-3 text-xs">
           <span className="text-muted-foreground">Quick links:</span>
           <a href="/cms/experiments" className="text-primary hover:underline">Experiments &amp; Personalization →</a>
-          <a href="/cms/heroes" className="text-primary hover:underline">Hero Variants →</a>
+          <a href="/cms/heroes#wine" className="text-primary hover:underline">Main Header (Wine) →</a>
+          <a href="/cms/heroes#merch" className="text-primary hover:underline">Merch Header →</a>
           <a href="/cms/opportunities" className="text-primary hover:underline">Optimization Queue →</a>
         </div>
       </div>

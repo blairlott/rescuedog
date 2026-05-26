@@ -43,6 +43,17 @@ function CmsHeroesPage() {
     if (!loading && !isCmsEditor) navigate("/cms/login");
   }, [loading, isCmsEditor, navigate]);
 
+  // Scroll to #wine or #merch on load when linked from the CMS dashboard
+  useEffect(() => {
+    if (loading || !isCmsEditor) return;
+    const hash = window.location.hash.replace("#", "");
+    if (hash === "wine" || hash === "merch") {
+      requestAnimationFrame(() => {
+        document.getElementById(`hero-section-${hash}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [loading, isCmsEditor]);
+
   const { data: variants = [], isLoading } = useQuery({
     queryKey: ["hero-variants-all"],
     queryFn: async () => {
@@ -129,10 +140,10 @@ function CmsHeroesPage() {
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-12">
         {(["wine", "merch"] as Surface[]).map((surface) => (
-          <section key={surface}>
+          <section key={surface} id={`hero-section-${surface}`} className="scroll-mt-24">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold uppercase tracking-brand">
-                {surface === "wine" ? "Homepage (Wine)" : "/merch"}
+                {surface === "wine" ? "Main Header — Homepage (Wine)" : "Merch Header — /merch"}
               </h2>
               <div className="flex gap-2">
                 <Button

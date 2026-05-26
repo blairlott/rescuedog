@@ -13294,6 +13294,15 @@ export type Database = {
           total_rescues: number
         }[]
       }
+      get_slot_variant_scores: {
+        Args: { _segment_bucket?: string; _slot_key: string }
+        Returns: {
+          exposures: number
+          revenue_cents: number
+          score: number
+          variant_key: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -14,6 +14,9 @@ import missionImg from "@/assets/merch-mission.jpg";
 import { BundleStrip } from "@/components/merch/BundleStrip";
 import { WineBarStrip } from "@/components/merch/WineBarStrip";
 import { MerchHero } from "@/components/merch/MerchHero";
+import { RecommendedRail } from "@/components/RecommendedRail";
+import { SmartSortToggle } from "@/components/SmartSortToggle";
+import { useSmartSort } from "@/hooks/useSmartSort";
 
 const CATEGORIES = [
   { id: "all", label: "All" },
@@ -38,6 +41,7 @@ function categoryOf(p: ShopifyProduct): string {
 const MerchHomePage = () => {
   const { data: products, isLoading } = useProducts(200);
   const [selected, setSelected] = useState<CategoryId>("all");
+  const [sortMode, setSortMode] = useState<"curated" | "smart">("curated");
 
   const merch = useMemo(
     () => (products || []).filter((p: ShopifyProduct) => !isWineProduct(p)),
@@ -49,11 +53,26 @@ const MerchHomePage = () => {
     [merch, selected],
   );
 
+  const { products: displayProducts } = useSmartSort(
+    `smart_sort_merch_${selected}`,
+    filtered,
+    sortMode,
+  );
+
   return (
     <div className="min-h-dvh flex flex-col">
       <Header />
 
       <MerchHero />
+
+      {merch.length > 4 && (
+        <RecommendedRail
+          slotPrefix="rail_merch"
+          title="Picked for you"
+          subtitle="Top-converting merch for shoppers like you."
+          pool={merch.slice(0, Math.min(16, merch.length))}
+        />
+      )}
 
       {/* Trust strip */}
       <section className="border-y border-border bg-background">
@@ -126,28 +145,31 @@ const MerchHomePage = () => {
           <WineBarStrip />
 
           {/* Category chips */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setSelected(c.id)}
-                className={cn(
-                  "px-4 py-2 text-xs uppercase tracking-brand font-bold border transition-colors",
-                  selected === c.id
-                    ? "bg-foreground text-background border-foreground"
-                    : "bg-background text-foreground border-border hover:border-foreground",
-                )}
-              >
-                {c.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelected(c.id)}
+                  className={cn(
+                    "px-4 py-2 text-xs uppercase tracking-brand font-bold border transition-colors",
+                    selected === c.id
+                      ? "bg-foreground text-background border-foreground"
+                      : "bg-background text-foreground border-border hover:border-foreground",
+                  )}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            <SmartSortToggle mode={sortMode} onChange={setSortMode} />
           </div>
 
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : displayProducts.length === 0 ? (
             <p className="text-center text-muted-foreground py-12">
               No products in this category yet — check back soon.
             </p>
@@ -155,12 +177,12 @@ const MerchHomePage = () => {
             <>
               <ShippingIncludedBanner mode="merch" />
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {filtered.map((product: ShopifyProduct) => (
+                {displayProducts.map((product: ShopifyProduct) => (
                   <ProductCard key={product.node.id} product={product} />
                 ))}
               </div>
               <p className="text-center text-xs text-muted-foreground mt-8">
-                Showing {filtered.length} of {merch.length} products
+                Showing {displayProducts.length} of {merch.length} products
               </p>
             </>
           )}

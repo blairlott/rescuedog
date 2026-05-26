@@ -11,6 +11,9 @@ import { ShopifyProduct } from "@/lib/shopify";
 import { useState, useMemo } from "react";
 import { Seo } from "@/components/Seo";
 import vineyardHero from "@/assets/migrated/vineyard-grapes.jpg";
+import { RecommendedRail } from "@/components/RecommendedRail";
+import { SmartSortToggle } from "@/components/SmartSortToggle";
+import { useSmartSort } from "@/hooks/useSmartSort";
 
 const WINE_SORT_ORDER = [
   "mothers-day-6-pack",
@@ -38,6 +41,7 @@ const categories = [
 
 const WinesPage = () => {
   const [activeCategory, setActiveCategory] = useState(0);
+  const [sortMode, setSortMode] = useState<"curated" | "smart">("curated");
   const { data: products, isLoading } = useProducts(50, "product_type:Wine");
 
   const { featured, sortedProducts } = useMemo(() => {
@@ -64,6 +68,12 @@ const WinesPage = () => {
     return { featured: feat, sortedProducts: rest };
   }, [products, activeCategory]);
 
+  const { products: displayProducts } = useSmartSort(
+    "smart_sort_wines",
+    sortedProducts,
+    sortMode,
+  );
+
   return (
     <div className="min-h-dvh flex flex-col">
       <Seo
@@ -86,23 +96,35 @@ const WinesPage = () => {
       {/* Featured product spotlight */}
       {featured && <FeaturedProduct product={featured} label="Best Seller" />}
 
+      {products && products.length > 4 && (
+        <RecommendedRail
+          slotPrefix="rail_wines"
+          title="Picked for you tonight"
+          subtitle="Bottles trending with shoppers like you this week."
+          pool={products.slice(0, Math.min(12, products.length))}
+        />
+      )}
+
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4">
           {/* Category Tabs */}
-          <div className="flex flex-wrap gap-2 mb-10 border-b border-border pb-4">
-            {categories.map((cat, i) => (
-              <button
-                key={cat.label}
-                onClick={() => setActiveCategory(i)}
-                className={`px-5 py-2.5 text-xs font-bold tracking-brand uppercase transition-colors ${
-                  activeCategory === i
-                    ? "bg-foreground text-background"
-                    : "bg-transparent text-foreground border border-border hover:bg-muted"
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-10 border-b border-border pb-4">
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat, i) => (
+                <button
+                  key={cat.label}
+                  onClick={() => setActiveCategory(i)}
+                  className={`px-5 py-2.5 text-xs font-bold tracking-brand uppercase transition-colors ${
+                    activeCategory === i
+                      ? "bg-foreground text-background"
+                      : "bg-transparent text-foreground border border-border hover:bg-muted"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+            <SmartSortToggle mode={sortMode} onChange={setSortMode} />
           </div>
 
           <ShippingIncludedBanner />
@@ -110,10 +132,10 @@ const WinesPage = () => {
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : sortedProducts.length === 0 ? (
+          ) : displayProducts.length === 0 ? (
             <p className="text-center text-muted-foreground py-12">No wines found in this category.</p>
           ) : (
-            <AnimatedProductGrid products={sortedProducts} />
+            <AnimatedProductGrid products={displayProducts} />
           )}
         </div>
       </main>

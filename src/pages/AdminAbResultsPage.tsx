@@ -30,6 +30,27 @@ function lift(a: number, b: number): string {
   return s + l.toFixed(1) + "%";
 }
 
+/**
+ * Per-session rate that gracefully handles the (common, early-rollout)
+ * case where historical conversions outnumber tracked sessions because
+ * one logger went live before the other. Returns null when meaningless.
+ */
+function safeRate(numerator: number, sessions: number): number | null {
+  if (!sessions) return null;
+  if (numerator > sessions) return null; // data not yet attributable 1:1
+  return numerator / sessions;
+}
+
+function fmtRate(r: number | null): string {
+  if (r === null) return "n/a";
+  return (r * 100).toFixed(2) + "%";
+}
+
+function liftRate(a: number | null, b: number | null): string {
+  if (a === null || b === null) return "—";
+  return lift(a, b);
+}
+
 export default function AdminAbResultsPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -199,26 +220,32 @@ export default function AdminAbResultsPage() {
                 <Metric label="Pageviews" lv={lovable?.pageviews ?? 0} lg={legacy?.pageviews ?? 0} />
                 <Metric label="Add to cart" lv={lovable?.add_to_carts ?? 0} lg={legacy?.add_to_carts ?? 0} />
                 <Metric label="Checkout intents" lv={lovable?.checkout_intents ?? 0} lg={legacy?.checkout_intents ?? 0} />
-                <Metric
-                  label="ATC rate (per session)"
-                  lv={lovable ? (lovable.sessions ? lovable.add_to_carts / lovable.sessions : 0) : 0}
-                  lg={legacy ? (legacy.sessions ? legacy.add_to_carts / legacy.sessions : 0) : 0}
-                  fmt={(n) => (n * 100).toFixed(2) + "%"}
-                  deltaFmt={lift(
-                    lovable?.sessions ? lovable.add_to_carts / lovable.sessions : 0,
-                    legacy?.sessions ? legacy.add_to_carts / legacy.sessions : 0,
-                  )}
-                />
-                <Metric
-                  label="Checkout rate (per session)"
-                  lv={lovable ? (lovable.sessions ? lovable.checkout_intents / lovable.sessions : 0) : 0}
-                  lg={legacy ? (legacy.sessions ? legacy.checkout_intents / legacy.sessions : 0) : 0}
-                  fmt={(n) => (n * 100).toFixed(2) + "%"}
-                  deltaFmt={lift(
-                    lovable?.sessions ? lovable.checkout_intents / lovable.sessions : 0,
-                    legacy?.sessions ? legacy.checkout_intents / legacy.sessions : 0,
-                  )}
-                />
+                {(() => {
+                  const lvAtc = safeRate(lovable?.add_to_carts ?? 0, lovable?.sessions ?? 0);
+                  const lgAtc = safeRate(legacy?.add_to_carts ?? 0, legacy?.sessions ?? 0);
+                  const lvCo = safeRate(lovable?.checkout_intents ?? 0, lovable?.sessions ?? 0);
+                  const lgCo = safeRate(legacy?.checkout_intents ?? 0, legacy?.sessions ?? 0);
+                  // Use NaN as a "no data" sentinel that survives the number-typed Metric API.
+                  const fmt = (n: number) => fmtRate(Number.isNaN(n) ? null : n);
+                  return (
+                    <>
+                      <Metric
+                        label="ATC rate (per session)"
+                        lv={lvAtc ?? NaN}
+                        lg={lgAtc ?? NaN}
+                        fmt={fmt}
+                        deltaFmt={liftRate(lvAtc, lgAtc)}
+                      />
+                      <Metric
+                        label="Checkout rate (per session)"
+                        lv={lvCo ?? NaN}
+                        lg={lgCo ?? NaN}
+                        fmt={fmt}
+                        deltaFmt={liftRate(lvCo, lgCo)}
+                      />
+                    </>
+                  );
+                })()}
               </tbody>
             </table>
 

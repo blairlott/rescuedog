@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { HERO_VARIANTS } from "@/components/merch/MerchHero";
-import { WINE_HERO_VARIANTS } from "@/components/WineHero";
+import { WINE_HERO_VARIANTS, WINE_HERO_IMAGES, WINE_HERO_COPY } from "@/components/WineHero";
 import { Loader2 } from "lucide-react";
 
 type Row = {
@@ -179,19 +179,24 @@ export default function AdminHeroAnalyticsPage() {
                   {(() => {
                     const probs = winProbabilities(rows);
                     return rows.map((r) => {
-                    const meta = [...HERO_VARIANTS, ...WINE_HERO_VARIANTS].find((v) => v.id === r.variant_id);
+                    const merchOrWineMeta = [...HERO_VARIANTS, ...WINE_HERO_VARIANTS].find((v) => v.id === r.variant_id);
+                    // Wine variants are stored as `${imgId}__${copyId}` — resolve thumbnail from the image side.
+                    const [imgIdPart] = r.variant_id.split("__");
+                    const wineImg = WINE_HERO_IMAGES.find((i) => i.id === imgIdPart);
+                    const thumb = (merchOrWineMeta as any)?.jpg ?? wineImg?.jpg;
+                    const eyebrow = (merchOrWineMeta as any)?.eyebrow;
                     const rpi = r.impressions > 0 ? r.revenue / r.impressions : 0;
                     return (
                       <tr key={r.variant_id} className="border-t border-border">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            {meta && (
-                              <img src={meta.jpg} alt="" className="w-14 h-9 object-cover" />
+                            {thumb && (
+                              <img src={thumb} alt="" className="w-14 h-9 object-cover" />
                             )}
                             <div>
                               <div className="font-semibold">{r.variant_id}</div>
-                              {meta && (
-                                <div className="text-xs text-muted-foreground line-clamp-1">{meta.eyebrow}</div>
+                              {eyebrow && (
+                                <div className="text-xs text-muted-foreground line-clamp-1">{eyebrow}</div>
                               )}
                             </div>
                           </div>

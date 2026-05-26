@@ -13276,6 +13276,7 @@ export type Database = {
         }
       }
       setup_gated_cron_jobs: { Args: { _secret: string }; Returns: Json }
+      setup_google_ads_cron: { Args: { _secret: string }; Returns: string }
       simulate_loyalty_earn: {
         Args: { _client_request_id?: string; _subtotal_cents: number }
         Returns: {

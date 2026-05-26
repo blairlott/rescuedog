@@ -6,6 +6,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { isWineProduct } from "@/lib/productUtils";
 import { ShopifyProduct } from "@/lib/shopify";
 import { toast } from "sonner";
+import { useBanditCandidate } from "@/hooks/useBanditCandidate";
 
 interface Props {
   wineHandle: string;
@@ -22,17 +23,46 @@ export function PairWineWithMerch({ wineHandle, wineTitle }: Props) {
   const applyDiscountCode = useCartStore((s) => s.applyDiscountCode);
   const discountCodes = useCartStore((s) => s.discountCodes);
 
-  const merchPick: ShopifyProduct | null = useMemo(() => {
-    if (!products) return null;
-    const merch = products.filter((p) => !isWineProduct(p));
-    if (!merch.length) return null;
-    // Prefer drinkware / glassware first, then anything tagged "wine-bar"
-    const preferred = merch.find((p) => {
+  // Stable candidate pool: all merch SKUs, alphabetized for deterministic
+  // signature so the bandit doesn't re-ensure on every render.
+  const merchPool = useMemo(() => {
+    if (!products) return [];
+    return products
+      .filter((p) => !isWineProduct(p))
+      .sort((a, b) => a.node.handle.localeCompare(b.node.handle))
+      .slice(0, 12);
+  }, [products]);
+
+  const candidates = useMemo(
+    () => merchPool.map((p) => ({ ref: p.node.handle, type: "merch" })),
+    [merchPool],
+  );
+
+  // Static heuristic stays as the fallback while bandit warms up.
+  const heuristicPick = useMemo(() => {
+    if (!merchPool.length) return null;
+    const preferred = merchPool.find((p) => {
       const tags = (p.node.tags || []).map((t) => t.toLowerCase());
       return tags.includes("wine-bar") || tags.includes("drinkware");
     });
-    return preferred ?? merch[0];
-  }, [products]);
+    return preferred ?? merchPool[0];
+  }, [merchPool]);
+
+  const pick = useBanditCandidate(
+    "pdp_pairing_merch_pick",
+    candidates,
+    heuristicPick?.node.handle ?? null,
+    { name: "PDP wine→merch pairing", primaryMetric: "revenue_per_visitor", explorationFloor: 100 },
+  );
+
+  const merchPick: ShopifyProduct | null = useMemo(() => {
+    if (!merchPool.length) return null;
+    if (pick.candidateRef) {
+      const match = merchPool.find((p) => p.node.handle === pick.candidateRef);
+      if (match) return match;
+    }
+    return heuristicPick;
+  }, [merchPool, pick.candidateRef, heuristicPick]);
 
   if (!merchPick || !products) return null;
   const wine = products.find((p) => p.node.handle === wineHandle);
@@ -48,6 +78,13 @@ export function PairWineWithMerch({ wineHandle, wineTitle }: Props) {
     const wineVariant = wine.node.variants.edges[0]?.node;
     const merchVariant = merchNode.variants.edges[0]?.node;
     if (!wineVariant || !merchVariant) return;
+    // Attribute add + expected revenue to the bandit pick
+    const priceStr = typeof merchVariant.price === "string"
+      ? merchVariant.price
+      : (merchVariant.price as { amount: string })?.amount ?? "0";
+    const merchCents = Math.round(parseFloat(priceStr) * 100);
+    pick.recordAdd({ handle: merchNode.handle, wine_handle: wineHandle });
+    pick.recordRevenue(merchCents, { handle: merchNode.handle, stage: "added", wine_handle: wineHandle });
     await addItem({
       product: wine,
       variantId: wineVariant.id,

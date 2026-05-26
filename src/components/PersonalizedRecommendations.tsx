@@ -5,6 +5,8 @@ import { Plus, Loader2, Sparkles, Wine } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import type { ShopifyProduct } from "@/lib/shopify";
+import { useMemo } from "react";
+import { useBanditCandidate } from "@/hooks/useBanditCandidate";
 
 interface PersonalizedRecommendationsProps {
   favoriteHandles: string[];
@@ -71,6 +73,25 @@ export function PersonalizedRecommendations({
   const addItem = useCartStore((state) => state.addItem);
   const isLoading = useCartStore((state) => state.isLoading);
 
+  // Bandit picks between recommendation STRATEGIES (not individual SKUs).
+  // The static keyword-matcher becomes one arm of many.
+  const strategyCandidates = useMemo(
+    () => [
+      { ref: "keyword_match", type: "strategy" as const },
+      { ref: "popular_available", type: "strategy" as const },
+      { ref: "favorite_first", type: "strategy" as const },
+      { ref: "preference_first", type: "strategy" as const },
+    ],
+    [],
+  );
+  const strategy = useBanditCandidate(
+    "personalized_rec_strategy",
+    strategyCandidates,
+    "keyword_match",
+    { name: "Personalized rec strategy", primaryMetric: "conversion_rate", explorationFloor: 60 },
+  );
+  const strategyKey = strategy.candidateRef ?? "keyword_match";
+
   if (!allProducts || allProducts.length === 0) return null;
 
   const favoriteHandleSet = new Set(favoriteHandles);
@@ -83,15 +104,40 @@ export function PersonalizedRecommendations({
     winePreferences.map((p) => p.toLowerCase().trim())
   );
 
-  // Score and sort
-  const scored = allProducts
-    .map((p) => ({
-      product: p,
-      score: scoreProduct(p, favKeywords, prefKeywords, favoriteHandleSet),
-    }))
-    .filter((s) => s.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 4);
+  // ----- Strategy execution -----
+  const notFav = allProducts.filter((p) => !favoriteHandleSet.has(p.node.handle));
+  let scored: ShopifyProduct[] = [];
+
+  if (strategyKey === "popular_available") {
+    // Available-first, deterministic by handle (proxy for "popular" until orders feed in)
+    scored = notFav
+      .filter((p) => p.node.variants.edges[0]?.node?.availableForSale)
+      .slice(0, 4);
+  } else if (strategyKey === "favorite_first") {
+    // Heavy weight on favorite keyword overlap; ignore preferences.
+    scored = notFav
+      .map((p) => ({ p, s: scoreProduct(p, favKeywords, new Set(), favoriteHandleSet) }))
+      .filter((x) => x.s > 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 4)
+      .map((x) => x.p);
+  } else if (strategyKey === "preference_first") {
+    // Heavy weight on preference keywords; ignore favorites.
+    scored = notFav
+      .map((p) => ({ p, s: scoreProduct(p, new Set(), prefKeywords, favoriteHandleSet) }))
+      .filter((x) => x.s > 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 4)
+      .map((x) => x.p);
+  } else {
+    // keyword_match — original blended scorer
+    scored = notFav
+      .map((p) => ({ p, s: scoreProduct(p, favKeywords, prefKeywords, favoriteHandleSet) }))
+      .filter((x) => x.s > 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 4)
+      .map((x) => x.p);
+  }
 
   // If we can't generate personalized recs, show nothing
   if (scored.length === 0) {
@@ -113,6 +159,7 @@ export function PersonalizedRecommendations({
         products={fallback}
         addItem={addItem}
         isLoading={isLoading}
+        onAdd={(p) => strategy.recordAdd({ strategy: strategyKey, handle: p.node.handle })}
       />
     );
   }
@@ -121,9 +168,10 @@ export function PersonalizedRecommendations({
     <RecommendationGrid
       title="Picked for You"
       subtitle="Based on your favorites and preferences"
-      products={scored.map((s) => s.product)}
+      products={scored}
       addItem={addItem}
       isLoading={isLoading}
+      onAdd={(p) => strategy.recordAdd({ strategy: strategyKey, handle: p.node.handle })}
     />
   );
 }
@@ -134,16 +182,19 @@ function RecommendationGrid({
   products,
   addItem,
   isLoading,
+  onAdd,
 }: {
   title: string;
   subtitle: string;
   products: ShopifyProduct[];
   addItem: any;
   isLoading: boolean;
+  onAdd?: (p: ShopifyProduct) => void;
 }) {
   const handleAdd = async (product: ShopifyProduct) => {
     const variant = product.node.variants.edges[0]?.node;
     if (!variant) return;
+    onAdd?.(product);
     await addItem({
       product,
       variantId: variant.id,

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useCartSettings } from "@/hooks/useCartSettings";
 import { isAgeVerified } from "@/lib/ageVerification";
 import { isWineProduct } from "@/lib/productUtils";
+import { useBanditCandidate } from "@/hooks/useBanditCandidate";
 import {
   Popover,
   PopoverContent,
@@ -32,8 +33,6 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
   // Local re-render trigger after the user confirms 21+ inline.
   const [ageOverride, setAgeOverride] = useState(false);
 
-  if (!allProducts || allProducts.length === 0) return null;
-
   // Suggest the OPPOSITE kind of what's in the cart:
   // wine-only cart → recommend merch; merch-only → recommend wine.
   // Mixed or empty → fall back to anything not already in the cart.
@@ -43,14 +42,13 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
 
   // Compliance: never recommend wine to visitors who haven't confirmed 21+.
   const ageOk = isAgeVerified() || ageOverride;
-  const available = allProducts.filter(p => {
+  const available = (allProducts ?? []).filter(p => {
     const firstVariant = p.node.variants.edges[0]?.node;
     if (!firstVariant?.availableForSale) return false;
     if (cartVariantIds.has(firstVariant.id)) return false;
     if (!ageOk && (p.node.productKind === "wine" || isWineProduct(p))) return false;
     return true;
   });
-  if (available.length === 0) return null;
 
   let pool = available;
   let heading = "You might also like";
@@ -69,7 +67,68 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
       heading = "Add a bottle to go with it";
     }
   }
-  const recommendations = pool.slice(0, 2);
+
+  // ----- Bandit-driven candidate pool -----
+  // Use a STABLE pool signature (independent of cart contents) so the bandit
+  // doesn't re-ensure on every cart change. The cart-aware filter still runs
+  // client-side on the resolved pick to avoid suggesting items already in cart.
+  const stablePool = (allProducts ?? [])
+    .filter(p => p.node.variants.edges[0]?.node?.availableForSale)
+    .filter(p => ageOk || (p.node.productKind !== "wine" && !isWineProduct(p)))
+    .sort((a, b) => a.node.handle.localeCompare(b.node.handle))
+    .slice(0, 12);
+
+  // Sub-slot for surface context — keeps wine-cart learning separate from merch-cart learning.
+  const subSlot = hasWine && !hasMerch ? "wine_cart" : hasMerch && !hasWine ? "merch_cart" : "mixed";
+  const candidates = stablePool.map(p => ({
+    ref: p.node.handle,
+    type: p.node.productKind === "wine" ? "wine" : "merch",
+    metadata: { sub_slot: subSlot },
+  }));
+
+  const pickA = useBanditCandidate(
+    `cart_upsell_${subSlot}_a`,
+    candidates,
+    pool[0]?.node.handle ?? null,
+    { name: `Cart upsell A (${subSlot})`, primaryMetric: "revenue_per_visitor", explorationFloor: 120 },
+  );
+  const pickB = useBanditCandidate(
+    `cart_upsell_${subSlot}_b`,
+    candidates,
+    pool[1]?.node.handle ?? pool[0]?.node.handle ?? null,
+    { name: `Cart upsell B (${subSlot})`, primaryMetric: "revenue_per_visitor", explorationFloor: 120 },
+  );
+
+  if (!allProducts || allProducts.length === 0) return null;
+  if (available.length === 0) return null;
+
+  // Resolve refs → products. Fall back to legacy pool slice if a pick lands on
+  // something already in the cart or filtered out.
+  const byHandle = new Map(pool.map(p => [p.node.handle, p]));
+  const resolved: typeof pool = [];
+  const pickedHandles = new Set<string>();
+  for (const ref of [pickA.candidateRef, pickB.candidateRef]) {
+    if (!ref) continue;
+    const p = byHandle.get(ref);
+    if (p && !pickedHandles.has(p.node.handle)) {
+      resolved.push(p);
+      pickedHandles.add(p.node.handle);
+    }
+  }
+  // Backfill with deterministic pool order if bandit picks are missing/dupes
+  for (const p of pool) {
+    if (resolved.length >= 2) break;
+    if (!pickedHandles.has(p.node.handle)) {
+      resolved.push(p);
+      pickedHandles.add(p.node.handle);
+    }
+  }
+  const recommendations = resolved.slice(0, 2);
+
+  // Map handle → which bandit pick recorded it (for attribution on add)
+  const pickByHandle: Record<string, typeof pickA> = {};
+  if (recommendations[0]) pickByHandle[recommendations[0].node.handle] = pickA;
+  if (recommendations[1]) pickByHandle[recommendations[1].node.handle] = pickB;
 
   const handleAdd = async (
     product: typeof recommendations[0],
@@ -77,6 +136,14 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
   ) => {
     const variant = variantOverride ?? product.node.variants.edges[0]?.node;
     if (!variant) return;
+    const pricedCents = Math.round(parseFloat(variant.price) * 100);
+    const attribution = pickByHandle[product.node.handle];
+    if (attribution) {
+      attribution.recordAdd({ handle: product.node.handle });
+      // Treat add-to-cart as expected revenue signal — actual purchase attribution
+      // can be added later via order webhook + handle lookup.
+      attribution.recordRevenue(pricedCents, { handle: product.node.handle, stage: "added" });
+    }
     await addItem({
       product,
       variantId: variant.id,

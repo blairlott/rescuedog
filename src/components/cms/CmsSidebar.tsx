@@ -42,7 +42,7 @@ export type CmsTabValue =
   | "integrations"
   | "dev-controls";
 
-const TABS: { value: CmsTabValue; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const TABS: { value: CmsTabValue; label: string; icon: React.ComponentType<{ className?: string }>; ownerOnly?: boolean }[] = [
   { value: "content", label: "Content", icon: FileText },
   { value: "library", label: "Blog & Events", icon: FileText },
   { value: "pairings", label: "Pairings", icon: ChefHat },
@@ -53,7 +53,7 @@ const TABS: { value: CmsTabValue; label: string; icon: React.ComponentType<{ cla
   { value: "settings", label: "Settings", icon: Settings },
   { value: "import", label: "Import", icon: Download },
   { value: "integrations", label: "Integrations", icon: Plug },
-  { value: "dev-controls", label: "Dev Controls", icon: SlidersHorizontal },
+  { value: "dev-controls", label: "Dev Controls", icon: SlidersHorizontal, ownerOnly: true },
 ];
 
 const TOOLS: { to: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -66,12 +66,15 @@ const TOOLS: { to: string; label: string; icon: React.ComponentType<{ className?
 export function CmsSidebar({
   activeTab,
   onTabChange,
+  isOwner = false,
 }: {
   activeTab: CmsTabValue;
   onTabChange: (v: CmsTabValue) => void;
+  isOwner?: boolean;
 }) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const visibleTabs = TABS.filter((t) => !t.ownerOnly || isOwner);
 
   return (
     <Sidebar collapsible="icon">
@@ -94,7 +97,7 @@ export function CmsSidebar({
           <SidebarGroupLabel>Manage</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {TABS.map((t) => (
+              {visibleTabs.map((t) => (
                 <SidebarMenuItem key={t.value}>
                   <SidebarMenuButton
                     isActive={activeTab === t.value}

@@ -383,7 +383,7 @@ const CmsDashboard = () => {
   return (
     <SidebarProvider>
       <div className="min-h-dvh w-full flex bg-secondary">
-        <CmsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <CmsSidebar activeTab={activeTab} onTabChange={setActiveTab} isOwner={!!roleInfo?.isOwner} />
         <div className="flex-1 min-w-0 flex flex-col">
           {/* Header */}
           <header className="bg-background border-b border-border">
@@ -656,7 +656,13 @@ const CmsDashboard = () => {
           </TabsContent>
 
           <TabsContent value="dev-controls">
-            <DevControlsPanel />
+            {roleInfo?.isOwner ? (
+              <DevControlsPanel />
+            ) : (
+              <div className="p-6 text-sm text-muted-foreground border border-border">
+                Dev Controls are restricted to the site owner.
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>

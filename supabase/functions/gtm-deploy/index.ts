@@ -114,13 +114,31 @@ async function signalKennel(versionId: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  // Shared-secret gate. Without this, anyone could inject JS into the production GTM container.
-  const authorized = await checkSharedSecret(req, {
+  // Auth: either shared admin secret OR a signed-in owner JWT.
+  // Without one of these, anyone could inject JS into the production GTM container.
+  let authorized = await checkSharedSecret(req, {
     functionName: "gtm-deploy",
     envVar: "GTM_DEPLOY_ADMIN_SECRET",
     headers: ["x-admin-secret", "x-cron-secret"],
-    alertOnFail: true,
+    alertOnFail: false,
   });
+  if (!authorized) {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (authHeader.startsWith("Bearer ")) {
+      try {
+        const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: claimsData } = await userClient.auth.getClaims(authHeader.slice(7));
+        const uid = claimsData?.claims?.sub;
+        if (uid) {
+          const svc = createClient(SUPABASE_URL, SERVICE_ROLE);
+          const { data: isOwner } = await svc.rpc("has_role", { _user_id: uid, _role: "owner" });
+          if (isOwner === true) authorized = true;
+        }
+      } catch (_e) { /* fall through to 401 */ }
+    }
+  }
   if (!authorized) return json({ ok: false, error: "unauthorized" }, 401);
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);

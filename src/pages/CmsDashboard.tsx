@@ -57,6 +57,8 @@ import { SlidersHorizontal } from "lucide-react";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
 import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
 import { useUserRole } from "@/hooks/useUserRole";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { CmsSidebar, type CmsTabValue } from "@/components/cms/CmsSidebar";
 
 // ─── Types ───────────────────────────────────────────────────
 type CmsUser = {

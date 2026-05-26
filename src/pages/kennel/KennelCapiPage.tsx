@@ -47,6 +47,7 @@ export default function KennelCapiPage() {
   });
   const [sending, setSending] = useState(false);
   const [checkingHealth, setCheckingHealth] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [oauthHealth, setOauthHealth] = useState<
     | { healthy: true; customer_id: string; checked_at: string; auto_enabled_oci?: boolean }
     | { healthy: false; error: string; hint?: string | null; checked_at: string }
@@ -88,6 +89,24 @@ export default function KennelCapiPage() {
       toast.error("Health check failed", { description: e?.message ?? String(e) });
     } finally {
       setCheckingHealth(false);
+    }
+  };
+
+  const reconnectGoogleAds = async () => {
+    setReconnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("google-ads-oauth/start", { body: {} });
+      if (error) throw error;
+      const url = (data as any)?.url;
+      if (!url) throw new Error("No OAuth URL returned");
+      window.open(url, "_blank", "noopener,noreferrer");
+      toast.success("Opened Google consent screen", {
+        description: "Finish sign-in in the new tab, then click Check to verify.",
+      });
+    } catch (e: any) {
+      toast.error("Couldn't start OAuth", { description: e?.message ?? String(e) });
+    } finally {
+      setReconnecting(false);
     }
   };
 
@@ -499,9 +518,14 @@ export default function KennelCapiPage() {
                 })()}
               </div>
             </div>
-            <Button size="sm" variant="outline" style={SHARP} onClick={checkGoogleHealth} disabled={checkingHealth}>
-              {checkingHealth ? "Checking…" : "Check"}
-            </Button>
+            <div className="flex gap-2 shrink-0">
+              <Button size="sm" variant="outline" style={SHARP} onClick={checkGoogleHealth} disabled={checkingHealth}>
+                {checkingHealth ? "Checking…" : "Check"}
+              </Button>
+              <Button size="sm" style={SHARP} onClick={reconnectGoogleAds} disabled={reconnecting}>
+                {reconnecting ? "Opening…" : "Reconnect"}
+              </Button>
+            </div>
           </div>
         </Card>
       </div>

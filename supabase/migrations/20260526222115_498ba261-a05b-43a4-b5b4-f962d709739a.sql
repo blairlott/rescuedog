@@ -1,0 +1,1 @@
+UPDATE public.ads_accounts SET customer_id='1237208547', login_customer_id='6005811529', label='Google Ads 123-720-8547 (via MCC 600-581-1529)' WHERE platform='google_ads';

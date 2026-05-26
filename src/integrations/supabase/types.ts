@@ -12929,6 +12929,17 @@ export type Database = {
           site_variant: string
         }[]
       }
+      ab_results_timeseries: {
+        Args: { _since?: string }
+        Returns: {
+          add_to_carts: number
+          checkout_intents: number
+          day: string
+          pageviews: number
+          sessions: number
+          site_variant: string
+        }[]
+      }
       ads_bandit_scan_opportunities: {
         Args: never
         Returns: {

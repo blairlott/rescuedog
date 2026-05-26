@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, RefreshCcw, CheckCircle2, XCircle, AlertCircle, Send, ExternalLink } from "lucide-react";
+import { CLARITY_PROJECT_ID, clarityUrls } from "@/lib/clarity";
 
 type Status = {
   key: string;
@@ -104,6 +105,65 @@ export function IntegrationsPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Microsoft Clarity — heatmaps, session recordings, behavior analytics */}
+      <section className="bg-background border border-border">
+        <div className="px-6 py-4 border-b border-border flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-bold text-foreground">Heatmaps &amp; Session Recordings (Microsoft Clarity)</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Click / scroll / area heatmaps, rage-click and dead-click detection, and full session replays. Tracks production traffic only
+              (<span className="font-mono">rescuedogwines.com</span>, <span className="font-mono">rescuedog.lovable.app</span>). Project ID:{" "}
+              <span className="font-mono">{CLARITY_PROJECT_ID}</span>.
+            </p>
+          </div>
+          <a
+            href={clarityUrls.dashboard}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-foreground text-background text-xs font-semibold hover:opacity-90"
+          >
+            Open Clarity <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <a href={clarityUrls.heatmaps} target="_blank" rel="noreferrer"
+             className="border border-border p-4 hover:bg-muted/30 transition">
+            <div className="text-sm font-semibold flex items-center justify-between">
+              Heatmaps <ExternalLink className="h-3 w-3 text-muted-foreground" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              See where users click, scroll, and hover on <span className="font-mono">/</span>, <span className="font-mono">/shop</span>,
+              <span className="font-mono"> /merch</span>, <span className="font-mono">/wine-club</span>.
+            </p>
+          </a>
+          <a href={clarityUrls.recordings} target="_blank" rel="noreferrer"
+             className="border border-border p-4 hover:bg-muted/30 transition">
+            <div className="text-sm font-semibold flex items-center justify-between">
+              Session Recordings <ExternalLink className="h-3 w-3 text-muted-foreground" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Watch real user sessions. Filter by tag: <span className="font-mono">utm_source</span>,
+              <span className="font-mono"> pack_tier</span>, <span className="font-mono">auth_state</span>, <span className="font-mono">surface</span>.
+            </p>
+          </a>
+          <a href={clarityUrls.dashboard} target="_blank" rel="noreferrer"
+             className="border border-border p-4 hover:bg-muted/30 transition">
+            <div className="text-sm font-semibold flex items-center justify-between">
+              Dashboard <ExternalLink className="h-3 w-3 text-muted-foreground" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Rage clicks, dead clicks, excessive scroll, JS errors, quick-back rate — the friction signals behind conversion drops.
+            </p>
+          </a>
+        </div>
+        <div className="px-6 py-4 border-t border-border bg-muted/20">
+          <p className="text-xs text-muted-foreground">
+            Pairs with the GA4 + Meta CAPI funnel: GA4 tells you <strong>what</strong> converted, Clarity tells you <strong>why</strong> the rest didn't.
+            Allow ~2 hours after first production visit for recordings to appear.
+          </p>
+        </div>
+      </section>
+
       {/* Test Order */}
       <section className="bg-background border border-border">
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">

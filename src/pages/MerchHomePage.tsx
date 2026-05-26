@@ -6,15 +6,14 @@ import { ShippingIncludedBanner } from "@/components/ShippingIncludedBanner";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowRight, Building2, Loader2, Wine, Truck, HeartHandshake } from "lucide-react";
+import { ArrowRight, Building2, Loader2, Truck, HeartHandshake } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
 import { isWineProduct } from "@/lib/productUtils";
 import { cn } from "@/lib/utils";
-import heroImg from "@/assets/merch-hero.jpg";
-import heroImgWebp from "@/assets/merch-hero.webp";
 import missionImg from "@/assets/merch-mission.jpg";
 import { BundleStrip } from "@/components/merch/BundleStrip";
 import { WineBarStrip } from "@/components/merch/WineBarStrip";
+import { MerchHero } from "@/components/merch/MerchHero";
 
 const CATEGORIES = [
   { id: "all", label: "All" },
@@ -54,53 +53,7 @@ const MerchHomePage = () => {
     <div className="min-h-dvh flex flex-col">
       <Header />
 
-      {/* Hero */}
-      <section className="relative h-[70vh] min-h-[520px] flex items-center bg-foreground">
-        <picture>
-          <source srcSet={heroImgWebp} type="image/webp" />
-          <img
-            src={heroImg}
-            alt="Rescue dog with branded gear"
-            className="absolute inset-0 w-full h-full object-cover opacity-70"
-            width={1920}
-            height={1088}
-            fetchPriority="high"
-            decoding="async"
-          />
-        </picture>
-        <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/40 to-transparent" />
-        <div className="relative container mx-auto px-4">
-          <p className="text-primary-foreground/90 text-xs md:text-sm tracking-brand uppercase mb-4 font-bold">
-            Gear that gives back · 50% of profits to rescue
-          </p>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 max-w-3xl leading-tight">
-            Wear the cause.<br />Spoil the pup.
-          </h1>
-          <p className="text-primary-foreground/85 max-w-xl mb-8 text-base md:text-lg">
-            Apparel, drinkware and pet gear designed in California, fulfilled
-            from US partners, and built to support animal rescue every day.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              asChild
-              size="lg"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
-            >
-              <a href="#products">Shop Merch</a>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="bg-transparent text-primary-foreground border-primary-foreground/60 hover:bg-primary-foreground hover:text-foreground uppercase tracking-brand text-sm font-bold px-10 py-6"
-            >
-              <Link to="/wines">
-                <Wine className="mr-2 h-4 w-4" /> Shop Wines
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+      <MerchHero />
 
       {/* Trust strip */}
       <section className="border-y border-border bg-background">

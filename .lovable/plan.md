@@ -1,42 +1,73 @@
-# Post Bayesian Retail Pricing Proposal to Slack
+# Bayesian Bandit Audit + Catalog/Hint Optimization
 
-Drop a casual "thinking about building this next" post into `#lindy-lovable` (C0B5KT989GT) so Lindy + Claude can weigh in on design and pitch feature suggestions before we scope the build.
+## What's already running (audit findings)
 
-## What gets posted
+**Live Thompson Sampling surfaces**
+- `MerchHero` and `WineHero` — Beta posteriors on `clicks + 8×orders` per variant; 200-impression exploration floor, then TS picks.
+- `useExperiment(slotKey, defaultConfig)` hook → `experiment_assign` RPC. Any wrapped slot is bandit-assigned, sticky per visitor, with exposure/conversion/revenue events recorded.
+- `experiments-autopilot` + `site-autopilot-nightly` — promote winners (≥200 exposures/variant, ≥10% lift) into `personalization_rules`.
+- `optimization-scanner` — sticky/retire hero variants, tune shipping-included threshold from order distribution.
+- `site-intel` — click, scroll, attention, rage tracking feeding decisions.
 
-A single top-level message in `#lindy-lovable`, written in the same casual "this is what I'm thinking about building next" tone as the Bob/Mark/Jana email, but reframed for the build team (less industry name-dropping, more "here's the surface area, poke holes").
+**What is NOT yet bandit-optimized (the gap)**
+- Wine catalog order on `/shop` (currently a strict hand-curated sort per `mem://features/wine-sort-order` — see constraint below).
+- Merch grid order on `/merch`.
+- `PersonalizedRecommendations` uses a static keyword score, no bandit, no learning.
+- Cart upsell / cross-sell picks (`MerchForWineLoversStrip`, `PairWineWithMerch`, `BundleStrip`, `PairItPicker`) — static rules, no posterior.
+- PDP "purchase hints" (related products, pairing chips, "frequently bought with").
+- Post-purchase upsell + exit-intent offer — static.
+- Reward weighting: hero bandit uses `clicks + 8×orders` but ignores AOV, margin, and time-decay. No per-segment posteriors (device, geo, member vs guest, new vs returning).
 
-Structure:
+## Constraint to resolve first
 
-1. **One-liner context** — "Drafted this for Bob/Mark/Jana — bringing it here for design input before we scope."
-2. **What's already in the codebase we'd reuse** — Thompson Sampling primitives (bandit infra), `vs_transactions` poll, wine catalog + wholesale price book, depletion-report ingest path, restructure-proposal RPC.
-3. **What v1 would do** — Bayesian elasticity model per SKU × market with confidence bands, fed by wholesale price book + suggested retail + DTC signal now, depletion + chain data as it lands. Answers: "should this SKU be $17.99 or $19.99 at this chain in this region?" and "which SKUs deserve the next facing?"
-4. **Industry context (1 line)** — Diageo / Pernod / Gallo / ABI all do versions of this; we already have the math running for the storefront.
-5. **Open design questions for the team** — explicit asks:
-   - Where should this live in CRM? (new `/crm/pricing-lab` vs folded into `/crm/margin` or `/crm/intelligence`)
-   - Model surface: edge function nightly batch vs on-demand RPC for "what-if" queries
-   - Lindy's role: HITL approval on price recommendations before they surface to reps?
-   - Claude: schema/perf concerns on storing posterior distributions per SKU × market × week
-   - Feature suggestions welcome — anything we should bake in from day one (e.g. promo-lift tracking, competitor price scraping hook, geo-clustering for new-market priors)
-6. **Close** — "Not scoping yet, just want reactions. Reply in thread."
+`mem://features/wine-sort-order` mandates a strict wine sort sequence. **Bandit re-sorting of the wine grid would violate this** unless we get explicit approval to relax it (or scope the bandit to a "Recommended for you" rail above the curated grid). Open question for you below.
 
-## How it gets posted
+## Proposed work
 
-- Use the existing `slack-post` edge function (already deployed, reviewer-gated, locked to channel `C0B5KT989GT`).
-- Call via `supabase--curl_edge_functions` with service-role auth, payload `{ text: "<message>" }`, no `thread_ts` (new top-level message starts the design discussion).
-- After posting, watch for replies on the next Slack poll / digest tick per the standard cadence rules — answer Lindy/Claude promptly in-thread.
+### Phase 1 — Tighten the existing bandit (1 day)
+1. Add **per-segment posteriors** to `experiment_assign` (device × authState × geoIsUS) so cohorts learn independently. Already have segment in the hook; missing on the RPC side.
+2. Switch reward from `clicks + 8×orders` to **revenue-per-impression with a Gamma-Poisson prior** for AOV-sensitive surfaces (hero, cart upsell). Keep CTR-Beta for top-funnel surfaces.
+3. Add **time-decay** (half-life ~14 days) so seasonal winners don't lock in forever.
+4. Lower the exploration floor to 150 for low-traffic slots; raise to 400 for hero where stakes are high.
 
-## What does NOT happen in this step
+### Phase 2 — Bandit-driven cross-sell / purchase hints (2–3 days)
+New slot keys wrapped with `useExperiment`, no UI rewrite needed:
+- `cart_upsell_product` — bandit picks 1 of N candidate SKUs given cart contents; reward = added-to-cart + 8×purchased.
+- `pdp_pairing_pick` — bandit picks pairing chip / "goes well with" SKU per PDP; reward = click + 4×add.
+- `post_purchase_upsell_sku` — bandit picks the upsell SKU on `/thank-you`; reward = upsell purchase.
+- `personalized_rec_strategy` — bandit between {keyword-match, co-purchase, popularity, segment-popularity} strategies feeding `PersonalizedRecommendations`. Static scorer becomes one arm of many.
 
-- No code, schema, or migration changes — this is comms only.
-- No commitment to build; we're soliciting design input first.
-- No publish, no QA loop (nothing shipped).
-- No update to the Lindy manual changelog (no new RPC/edge function surface).
+Each gets a candidate-set seeder (admin UI in `/kennel/bandit`) + auto-creation in `experiments` table.
 
-## Technical details
+### Phase 3 — Catalog-sort bandit ("Smart Sort") (3–4 days, gated on constraint decision)
+Two options depending on your call:
 
-- Channel: `C0B5KT989GT` (#lindy-lovable), hard-allowed by `slack-post`.
-- Endpoint: `POST {SUPABASE_URL}/functions/v1/slack-post` with `Authorization: Bearer {SERVICE_ROLE_KEY}`.
-- Body: `{ "text": "<message body, Slack mrkdwn>" }`.
-- No `blocks` needed — plain mrkdwn keeps tone casual and matches existing thread style.
-- Length target: ~250–350 words. Long enough to give context, short enough to invite reply.
+**Option A — "Recommended" rail above curated grid (safe, no constraint conflict)**
+- Insert a 4-tile "Recommended for you" strip at the top of `/shop` and `/merch`. Bandit picks the 4 SKUs per visitor segment from a candidate pool. Curated sort below stays untouched.
+
+**Option B — Full Smart Sort toggle (requires relaxing wine-sort-order memory)**
+- Add a sort dropdown: `Curated` (default, current) | `Smart` (bandit). Smart Sort scores every SKU as `posterior_mean(reward | segment) × stock_available × margin_weight` and orders descending. Logs an impression for the top 24, conversion on add-to-cart. Curated stays the canonical default; Smart is opt-in until it proves out.
+
+### Phase 4 — Reporting (0.5 day)
+Extend `/kennel/bandit` with: per-slot posterior table, P(best), expected lift over control, segment breakdown, and a "promote winner to personalization rule" button (already exists for hero — generalize).
+
+## Schema additions (minimal)
+
+```sql
+-- per-segment posteriors so cohorts don't blend
+ALTER TABLE public.experiment_events ADD COLUMN segment_bucket text;
+
+-- candidate pools for slots that pick SKUs (not just copy variants)
+CREATE TABLE public.experiment_candidates (
+  id uuid PK, experiment_id uuid FK, candidate_ref text, candidate_type text,
+  weight numeric DEFAULT 1, status text DEFAULT 'active', ...
+);
+```
+
+## What I need from you before building
+
+1. **Wine sort constraint** — Option A (safe rail), Option B (Smart Sort toggle), or both?
+2. **Reward weighting** — keep `clicks + 8×orders` everywhere, or move hero/cart to revenue-per-impression (recommended)?
+3. **Scope of phase 1** — do all four tweaks, or just the high-value ones (per-segment + revenue reward)?
+
+Once you answer, I'll scope the migration + edge function work and start with Phase 1.

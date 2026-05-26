@@ -8,10 +8,12 @@ import { Label } from "@/components/ui/label";
 import { MapPin, Mail, Phone, Truck } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import rdwHero from "@/assets/migrated/rdw-hero.jpg";
 
 const ContactPage = () => {
   const { toast } = useToast();
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -38,13 +40,64 @@ const ContactPage = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Message sent!",
-      description: "We'll get back to you as soon as possible.",
-    });
-    setFormData({ name: "", email: "", phone: "", interests: [], message: "", hearAbout: "" });
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const id = crypto.randomUUID();
+      const { error: insertError } = await supabase.from("contact_submissions").insert({
+        id,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || null,
+        interests: formData.interests,
+        message: formData.message,
+        hear_about: formData.hearAbout || null,
+      });
+      if (insertError) throw insertError;
+
+      // Fire-and-forget: admin notification + customer confirmation. Don't block the UX.
+      void supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "contact-form-admin-notification",
+          recipientEmail: "info@rescuedogwines.com",
+          idempotencyKey: `contact-admin-${id}`,
+          templateData: {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            interests: formData.interests,
+            message: formData.message,
+            hearAbout: formData.hearAbout,
+            submissionId: id,
+          },
+        },
+      });
+      void supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "contact-form-confirmation",
+          recipientEmail: formData.email,
+          idempotencyKey: `contact-confirm-${id}`,
+          templateData: { name: formData.name },
+        },
+      });
+
+      toast({
+        title: "Message sent!",
+        description: "We'll get back to you as soon as possible.",
+      });
+      setFormData({ name: "", email: "", phone: "", interests: [], message: "", hearAbout: "" });
+    } catch (err) {
+      console.error("Contact form submission failed", err);
+      toast({
+        title: "Couldn't send your message",
+        description: "Please try again, or email info@rescuedogwines.com directly.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -131,8 +184,8 @@ const ContactPage = () => {
                   <Label htmlFor="hearAbout">How Did You Hear About Rescue Dog Wines?</Label>
                   <Input id="hearAbout" value={formData.hearAbout} onChange={(e) => setFormData({ ...formData, hearAbout: e.target.value })} />
                 </div>
-                <Button type="submit" size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6">
-                  Send Message
+                <Button type="submit" size="lg" disabled={submitting} className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6">
+                  {submitting ? "Sending..." : "Send Message"}
                 </Button>
               </form>
             </div>

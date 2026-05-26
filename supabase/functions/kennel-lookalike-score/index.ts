@@ -6,6 +6,7 @@
 //   to score each prospect on 0-1 conversion probability via tool calling.
 // - Upserts kennel_lookalike_scores(email, score, scored_at, model_version).
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { verifyCronSecret } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,6 +119,12 @@ async function scoreBatch(buyerProfile: string, batch: ProspectFeatures[], apiKe
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (!(await verifyCronSecret(req, "kennel-lookalike-score"))) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

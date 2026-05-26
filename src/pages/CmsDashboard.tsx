@@ -236,6 +236,7 @@ const CmsDashboard = () => {
   const [inviteOpen, setInviteOpen] = useState(false);
   const { data: roleInfo } = useUserRole();
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<CmsTabValue>("content");
 
   // Redirect if not CMS editor
   useEffect(() => {

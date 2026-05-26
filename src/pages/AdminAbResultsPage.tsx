@@ -2,9 +2,29 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+} from "recharts";
 
 type Row = {
+  site_variant: string;
+  sessions: number;
+  pageviews: number;
+  add_to_carts: number;
+  checkout_intents: number;
+};
+
+type TsRow = {
+  day: string;
   site_variant: string;
   sessions: number;
   pageviews: number;
@@ -51,12 +71,91 @@ function liftRate(a: number | null, b: number | null): string {
   return lift(a, b);
 }
 
+/* ---------- Stats helpers (pure math) ---------- */
+
+// Standard normal CDF — Abramowitz & Stegun approximation.
+function normalCdf(z: number): number {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989422804014327 * Math.exp(-z * z / 2);
+  const p =
+    d *
+    t *
+    (0.31938153 +
+      t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+  return z > 0 ? 1 - p : p;
+}
+
+// Two-proportion z-test. Returns { z, pValue, probWin } where probWin =
+// P(Lovable rate > Legacy rate) under a normal approximation.
+function twoProportionTest(
+  successA: number, nA: number,
+  successB: number, nB: number
+): { z: number; pValue: number; probWin: number } | null {
+  if (!nA || !nB || successA + successB === 0) return null;
+  const pA = successA / nA;
+  const pB = successB / nB;
+  const pPool = (successA + successB) / (nA + nB);
+  const se = Math.sqrt(pPool * (1 - pPool) * (1 / nA + 1 / nB));
+  if (se === 0) return null;
+  const z = (pA - pB) / se;
+  const pValue = 2 * (1 - normalCdf(Math.abs(z)));
+  const probWin = normalCdf(z); // P(A > B)
+  return { z, pValue, probWin };
+}
+
+// Required sample size per arm to detect a given relative lift at 95% conf, 80% power.
+// p1 = baseline rate, mde = minimum detectable effect (relative, e.g. 0.10 = 10%).
+function requiredSampleSize(p1: number, mde: number): number | null {
+  if (!p1 || !mde) return null;
+  const p2 = p1 * (1 + mde);
+  if (p2 <= 0 || p2 >= 1) return null;
+  const zAlpha = 1.96; // two-sided 95%
+  const zBeta = 0.8416; // 80% power
+  const pBar = (p1 + p2) / 2;
+  const num = Math.pow(
+    zAlpha * Math.sqrt(2 * pBar * (1 - pBar)) +
+      zBeta * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2)),
+    2
+  );
+  const den = Math.pow(p2 - p1, 2);
+  return Math.ceil(num / den);
+}
+
+function fmtInt(n: number | null | undefined): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "—";
+  return Math.round(n).toLocaleString();
+}
+
+function fmtMoney(n: number | null | undefined): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return "—";
+  return "$" + Math.round(n).toLocaleString();
+}
+
 export default function AdminAbResultsPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [series, setSeries] = useState<TsRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(7);
   const [authed, setAuthed] = useState<boolean | null>(null);
+
+  // Forecast inputs (persisted in localStorage)
+  const [aov, setAov] = useState<number>(() => {
+    const v = Number(localStorage.getItem("ab_forecast_aov"));
+    return v > 0 ? v : 75;
+  });
+  const [completion, setCompletion] = useState<number>(() => {
+    const v = Number(localStorage.getItem("ab_forecast_completion"));
+    return v > 0 ? v : 60;
+  });
+  const [projectedSessions, setProjectedSessions] = useState<number>(() => {
+    const v = Number(localStorage.getItem("ab_forecast_sessions"));
+    return v > 0 ? v : 10000;
+  });
+
+  useEffect(() => { localStorage.setItem("ab_forecast_aov", String(aov)); }, [aov]);
+  useEffect(() => { localStorage.setItem("ab_forecast_completion", String(completion)); }, [completion]);
+  useEffect(() => { localStorage.setItem("ab_forecast_sessions", String(projectedSessions)); }, [projectedSessions]);
 
   useEffect(() => {
     (async () => {
@@ -72,13 +171,14 @@ export default function AdminAbResultsPage() {
   const load = async () => {
     setLoading(true);
     const since = new Date(Date.now() - days * 86400 * 1000).toISOString();
-    const { data, error } = await supabase.rpc("ab_results_summary", { _since: since });
-    if (error) {
-      console.error(error);
-      setRows([]);
-    } else {
-      setRows((data as Row[]) || []);
-    }
+    const [summary, ts] = await Promise.all([
+      supabase.rpc("ab_results_summary", { _since: since }),
+      supabase.rpc("ab_results_timeseries", { _since: since }),
+    ]);
+    if (summary.error) console.error(summary.error);
+    if (ts.error) console.error(ts.error);
+    setRows((summary.data as Row[]) || []);
+    setSeries((ts.data as TsRow[]) || []);
     setLoading(false);
   };
 
@@ -103,6 +203,63 @@ export default function AdminAbResultsPage() {
   const totalSess = lvSess + lgSess;
   const lvSplit = totalSess ? (lvSess / totalSess) * 100 : 0;
   const lgSplit = totalSess ? (lgSess / totalSess) * 100 : 0;
+
+  /* ---------- Derived stats / forecasts ---------- */
+  const lvCo = lovable?.checkout_intents ?? 0;
+  const lgCo = legacy?.checkout_intents ?? 0;
+  const lvCoRate = safeRate(lvCo, lvSess);
+  const lgCoRate = safeRate(lgCo, lgSess);
+
+  const test = (lvCoRate !== null && lgCoRate !== null)
+    ? twoProportionTest(lvCo, lvSess, lgCo, lgSess)
+    : null;
+
+  // Pick baseline = legacy rate when available, else lovable, else null.
+  const baselineRate = lgCoRate ?? lvCoRate;
+  const observedLift = (lvCoRate && lgCoRate) ? (lvCoRate - lgCoRate) / lgCoRate : null;
+  // Use observed lift if meaningful, else 10% MDE default.
+  const mde = observedLift && Math.abs(observedLift) >= 0.02 ? Math.abs(observedLift) : 0.10;
+  const requiredPerArm = baselineRate ? requiredSampleSize(baselineRate, mde) : null;
+
+  // Sessions per day per arm (avg over window) for time-to-decision.
+  const lvPerDay = lvSess / Math.max(days, 1);
+  const lgPerDay = lgSess / Math.max(days, 1);
+  const slowerPerDay = Math.min(lvPerDay, lgPerDay);
+  const sessionsNeededRemaining = requiredPerArm
+    ? Math.max(0, requiredPerArm - Math.min(lvSess, lgSess))
+    : null;
+  const daysToDecision = (sessionsNeededRemaining !== null && slowerPerDay > 0)
+    ? sessionsNeededRemaining / slowerPerDay
+    : null;
+
+  // Forecast at projectedSessions per variant (split evenly for apples-to-apples).
+  const completionFrac = Math.max(0, Math.min(1, completion / 100));
+  const lvForecastCheckouts = lvCoRate !== null ? lvCoRate * projectedSessions : null;
+  const lgForecastCheckouts = lgCoRate !== null ? lgCoRate * projectedSessions : null;
+  const lvForecastOrders = lvForecastCheckouts !== null ? lvForecastCheckouts * completionFrac : null;
+  const lgForecastOrders = lgForecastCheckouts !== null ? lgForecastCheckouts * completionFrac : null;
+  const lvForecastRevenue = lvForecastOrders !== null ? lvForecastOrders * aov : null;
+  const lgForecastRevenue = lgForecastOrders !== null ? lgForecastOrders * aov : null;
+  const revenueDelta = (lvForecastRevenue !== null && lgForecastRevenue !== null)
+    ? lvForecastRevenue - lgForecastRevenue
+    : null;
+
+  // Time series: pivot for chart.
+  const chartData = (() => {
+    if (!series) return [];
+    const byDay = new Map<string, any>();
+    for (const r of series) {
+      const key = r.day;
+      if (!byDay.has(key)) byDay.set(key, { day: key.slice(5) });
+      const row = byDay.get(key);
+      row[`${r.site_variant}_sessions`] = r.sessions;
+      row[`${r.site_variant}_co`] = r.checkout_intents;
+      row[`${r.site_variant}_rate`] = r.sessions > 0 && r.checkout_intents <= r.sessions
+        ? Number(((r.checkout_intents / r.sessions) * 100).toFixed(2))
+        : null;
+    }
+    return Array.from(byDay.values());
+  })();
 
   const Metric = ({
     label,

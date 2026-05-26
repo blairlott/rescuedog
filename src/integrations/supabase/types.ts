@@ -12810,8 +12810,8 @@ export type Database = {
       experiment_scan_bandit_winners: {
         Args: never
         Returns: {
-          experiment_id: string
-          opportunity_id: string
+          exp_id: string
+          opp_id: string
         }[]
       }
       finance_cash_trend: {

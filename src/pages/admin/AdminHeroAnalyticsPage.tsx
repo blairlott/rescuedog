@@ -179,7 +179,7 @@ export default function AdminHeroAnalyticsPage() {
                   {(() => {
                     const probs = winProbabilities(rows);
                     return rows.map((r) => {
-                    const meta = HERO_VARIANTS.find((v) => v.id === r.variant_id);
+                    const meta = [...HERO_VARIANTS, ...WINE_HERO_VARIANTS].find((v) => v.id === r.variant_id);
                     const rpi = r.impressions > 0 ? r.revenue / r.impressions : 0;
                     return (
                       <tr key={r.variant_id} className="border-t border-border">

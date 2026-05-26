@@ -12697,6 +12697,16 @@ export type Database = {
           wine_club_net_cents: number
         }[]
       }
+      get_hero_variant_stats: {
+        Args: { _days?: number }
+        Returns: {
+          clicks: number
+          impressions: number
+          orders: number
+          revenue: number
+          variant_id: string
+        }[]
+      }
       get_public_impact_totals: {
         Args: never
         Returns: {

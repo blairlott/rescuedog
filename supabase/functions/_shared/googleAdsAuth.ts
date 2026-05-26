@@ -30,9 +30,9 @@ export async function getGoogleAdsAccessToken(overrides?: {
   customer_id?: string;
   login_customer_id?: string;
 }): Promise<GoogleAdsAuthResult | GoogleAdsAuthError> {
-  const clientId = Deno.env.get('GOOGLE_ADS_CLIENT_ID');
-  const clientSecret = Deno.env.get('GOOGLE_ADS_CLIENT_SECRET');
-  const developerToken = Deno.env.get('GOOGLE_ADS_DEVELOPER_TOKEN');
+  const clientId = (Deno.env.get('GOOGLE_ADS_CLIENT_ID') ?? '').trim();
+  const clientSecret = (Deno.env.get('GOOGLE_ADS_CLIENT_SECRET') ?? '').trim();
+  const developerToken = (Deno.env.get('GOOGLE_ADS_DEVELOPER_TOKEN') ?? '').trim();
 
   // Try the DB-backed refresh token first (written by /google-ads-oauth/callback).
   let dbCustomerId = '';
@@ -66,7 +66,17 @@ export async function getGoogleAdsAccessToken(overrides?: {
   const refreshToken = dbRefreshToken || Deno.env.get('GOOGLE_ADS_REFRESH_TOKEN') || '';
 
   if (!customerId || !clientId || !clientSecret || !refreshToken || !developerToken) {
-    return { error: 'server misconfigured: missing Google Ads credentials' };
+    const missing = [
+      !clientId && 'GOOGLE_ADS_CLIENT_ID',
+      !clientSecret && 'GOOGLE_ADS_CLIENT_SECRET',
+      !developerToken && 'GOOGLE_ADS_DEVELOPER_TOKEN',
+      !refreshToken && 'refresh_token (ads_accounts or GOOGLE_ADS_REFRESH_TOKEN)',
+      !customerId && 'customer_id (ads_accounts or GOOGLE_ADS_CUSTOMER_ID)',
+    ].filter(Boolean).join(', ');
+    return {
+      error: 'server_misconfigured',
+      hint: `Missing: ${missing}. ${!refreshToken || !customerId ? 'Click Reconnect Google Ads to run OAuth.' : ''}`.trim(),
+    };
   }
 
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {

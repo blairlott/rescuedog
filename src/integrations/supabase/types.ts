@@ -1515,9 +1515,9 @@ export type Database = {
       ads_performance: {
         Row: {
           account_id: string
-          ad_group_id: string | null
+          ad_group_id: string
           ad_group_name: string | null
-          ad_id: string | null
+          ad_id: string
           campaign_id: string
           campaign_name: string | null
           clicks: number
@@ -1533,9 +1533,9 @@ export type Database = {
         }
         Insert: {
           account_id: string
-          ad_group_id?: string | null
+          ad_group_id?: string
           ad_group_name?: string | null
-          ad_id?: string | null
+          ad_id?: string
           campaign_id: string
           campaign_name?: string | null
           clicks?: number
@@ -1551,9 +1551,9 @@ export type Database = {
         }
         Update: {
           account_id?: string
-          ad_group_id?: string | null
+          ad_group_id?: string
           ad_group_name?: string | null
-          ad_id?: string | null
+          ad_id?: string
           campaign_id?: string
           campaign_name?: string | null
           clicks?: number

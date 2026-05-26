@@ -6,7 +6,7 @@ import { ShippingIncludedBanner } from "@/components/ShippingIncludedBanner";
 import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowRight, Building2, Loader2, Truck, HeartHandshake } from "lucide-react";
+import { ArrowRight, Building2, Loader2, Wine, Truck, HeartHandshake } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
 import { isWineProduct } from "@/lib/productUtils";
 import { cn } from "@/lib/utils";

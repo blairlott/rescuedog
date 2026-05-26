@@ -99,9 +99,17 @@ export default function KennelCapiPage() {
       if (error) throw error;
       const url = (data as any)?.url;
       if (!url) throw new Error("No OAuth URL returned");
-      window.open(url, "_blank", "noopener,noreferrer");
+      // Use an anchor click so the new tab escapes the preview iframe
+      // (window.open can be downgraded to an iframe nav, which Google blocks).
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
       toast.success("Opened Google consent screen", {
-        description: "Finish sign-in in the new tab, then click Check to verify.",
+        description: "Finish sign-in in the new tab, then click Check to verify. If nothing opened, try the published site.",
       });
     } catch (e: any) {
       toast.error("Couldn't start OAuth", { description: e?.message ?? String(e) });

@@ -94,28 +94,20 @@ export default function KennelCapiPage() {
 
   const reconnectGoogleAds = async () => {
     setReconnecting(true);
-    // Open the tab synchronously inside the click handler so the browser
-    // doesn't treat it as a popup once the async invoke resolves.
-    const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
     try {
       const { data, error } = await supabase.functions.invoke("google-ads-oauth/start", { body: {} });
       if (error) throw error;
       const url = (data as any)?.url;
       if (!url) throw new Error("No OAuth URL returned");
-      if (popup && !popup.closed) {
-        popup.location.href = url;
-      } else {
-        // Popup blocked — fall back to navigating the current tab.
+      // Top-frame navigation — bypasses preview-iframe sandbox and popup
+      // blockers. After consent the callback redirects back to /kennel/capi.
+      try {
+        window.top!.location.href = url;
+      } catch {
         window.location.href = url;
-        return;
       }
-      toast.success("Opened Google consent screen", {
-        description: "Finish sign-in in the new tab, then click Check to verify. If nothing opened, try the published site.",
-      });
     } catch (e: any) {
-      if (popup && !popup.closed) popup.close();
       toast.error("Couldn't start OAuth", { description: e?.message ?? String(e) });
-    } finally {
       setReconnecting(false);
     }
   };

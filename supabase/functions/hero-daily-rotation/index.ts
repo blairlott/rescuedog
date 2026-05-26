@@ -115,12 +115,15 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-  // Auth: cron secret OR owner/admin JWT
+  // Auth: cron secret, service-role bearer (used by pg_cron), OR owner/admin JWT
   const cronHeader = req.headers.get("x-cron-secret");
-  const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
+  const authHeader = req.headers.get("Authorization")?.replace("Bearer ", "");
+  const isCron =
+    (!!CRON_SECRET && cronHeader === CRON_SECRET) ||
+    (!!authHeader && !!SERVICE_KEY && authHeader === SERVICE_KEY);
   let userId: string | null = null;
   if (!isCron) {
-    const auth = req.headers.get("Authorization")?.replace("Bearer ", "");
+    const auth = authHeader;
     if (!auth) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: `Bearer ${auth}` } },

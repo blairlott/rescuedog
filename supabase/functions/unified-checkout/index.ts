@@ -117,6 +117,28 @@ Deno.serve(async (req) => {
 
   try {
     if (data.action === "create-intent") {
+      // ── Verify user_id against caller's JWT ─────────────────────────────
+      // Body-supplied user_id is untrusted. If a valid JWT is present we
+      // overwrite it with the JWT subject; if user_id was supplied AND
+      // mismatches the JWT subject, reject. Anonymous callers (no JWT) get
+      // user_id=null regardless of what they sent.
+      const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization");
+      let callerSub: string | null = null;
+      if (authHeader?.toLowerCase().startsWith("bearer ")) {
+        try {
+          const token = authHeader.slice(7).trim();
+          const { data: claimsData } = await supabase.auth.getClaims(token);
+          callerSub = (claimsData?.claims?.sub as string | undefined) ?? null;
+        } catch (e) {
+          console.warn("[unified-checkout] jwt verify failed; treating as anonymous", e);
+          callerSub = null;
+        }
+      }
+      if (data.user_id && callerSub && data.user_id !== callerSub) {
+        return jsonResp({ error: "user_id mismatch" }, 403);
+      }
+      const safeUserId: string | null = callerSub ?? null;
+
       // ── Cost snapshot lookup (margin tracking) ──────────────────────────
       // Wine: cost from wine_products.cost_cents, partner = Vinoshipper.
       // Merch: prefer dropship_skus.cost_cents (matched by sku), fall back to
@@ -273,7 +295,7 @@ Deno.serve(async (req) => {
 
       const { data: order, error: orderErr } = await supabase.from("orders").insert({
         order_number: orderNumber,
-        user_id: data.user_id ?? null,
+        user_id: safeUserId,
         customer_email: data.customer.email,
         customer_first_name: data.customer.first_name,
         customer_last_name: data.customer.last_name,

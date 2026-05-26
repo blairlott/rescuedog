@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { MapPin } from "lucide-react";
+import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { T } from "@/components/T";
@@ -358,7 +359,7 @@ export const WineHero = () => {
             <T>{variant.eyebrow}</T>
           </p>
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-primary-foreground mb-6 leading-[0.95] uppercase">
-            <span dangerouslySetInnerHTML={{ __html: variant.headline_html }} />
+            <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(variant.headline_html, { ALLOWED_TAGS: ["br", "b", "i", "em", "strong", "span"], ALLOWED_ATTR: [] }) }} />
           </h1>
           <p className="text-primary-foreground/85 text-base md:text-lg mb-8 max-w-xl">
             <T>{variant.sub}</T>

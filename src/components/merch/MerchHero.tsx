@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Wine } from "lucide-react";
+import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import hero1Jpg from "@/assets/merch-hero.jpg";
@@ -314,7 +315,7 @@ export const MerchHero = () => {
           {variant.eyebrow}
         </p>
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 max-w-3xl leading-tight">
-          <span dangerouslySetInnerHTML={{ __html: variant.headline_html }} />
+          <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(variant.headline_html, { ALLOWED_TAGS: ["br", "b", "i", "em", "strong", "span"], ALLOWED_ATTR: [] }) }} />
         </h1>
         <p className="text-primary-foreground/85 max-w-xl mb-8 text-base md:text-lg">
           {variant.sub}

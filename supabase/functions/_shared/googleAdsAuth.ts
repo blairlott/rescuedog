@@ -1,5 +1,8 @@
 // Shared Google Ads OAuth + config loader used by google-ads-proxy and google-ads-oci-upload.
-// Refresh-token flow only — no user OAuth.
+// Refresh-token flow. Prefers the live refresh_token stored in the `ads_accounts`
+// table (written by the google-ads-oauth callback). Falls back to the
+// GOOGLE_ADS_REFRESH_TOKEN env var if the table is empty / unreachable.
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 export interface GoogleAdsConfig {
   customerId: string;
@@ -27,12 +30,40 @@ export async function getGoogleAdsAccessToken(overrides?: {
   customer_id?: string;
   login_customer_id?: string;
 }): Promise<GoogleAdsAuthResult | GoogleAdsAuthError> {
-  const customerId = (overrides?.customer_id || Deno.env.get('GOOGLE_ADS_CUSTOMER_ID') || '').replace(/-/g, '');
-  const loginCustomerId = (overrides?.login_customer_id || Deno.env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID') || '').replace(/-/g, '');
   const clientId = Deno.env.get('GOOGLE_ADS_CLIENT_ID');
   const clientSecret = Deno.env.get('GOOGLE_ADS_CLIENT_SECRET');
-  const refreshToken = Deno.env.get('GOOGLE_ADS_REFRESH_TOKEN');
   const developerToken = Deno.env.get('GOOGLE_ADS_DEVELOPER_TOKEN');
+
+  // Try the DB-backed refresh token first (written by /google-ads-oauth/callback).
+  let dbCustomerId = '';
+  let dbLoginCustomerId = '';
+  let dbRefreshToken = '';
+  try {
+    const sbUrl = Deno.env.get('SUPABASE_URL');
+    const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (sbUrl && sbKey) {
+      const sb = createClient(sbUrl, sbKey);
+      const { data } = await sb
+        .from('ads_accounts')
+        .select('customer_id, login_customer_id, refresh_token')
+        .eq('platform', 'google_ads')
+        .eq('status', 'active')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.refresh_token) {
+        dbRefreshToken = String(data.refresh_token);
+        dbCustomerId = String(data.customer_id ?? '');
+        dbLoginCustomerId = String(data.login_customer_id ?? '');
+      }
+    }
+  } catch (_e) {
+    // table missing / RLS — fall through to env
+  }
+
+  const customerId = (overrides?.customer_id || dbCustomerId || Deno.env.get('GOOGLE_ADS_CUSTOMER_ID') || '').replace(/-/g, '');
+  const loginCustomerId = (overrides?.login_customer_id || dbLoginCustomerId || Deno.env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID') || '').replace(/-/g, '');
+  const refreshToken = dbRefreshToken || Deno.env.get('GOOGLE_ADS_REFRESH_TOKEN') || '';
 
   if (!customerId || !clientId || !clientSecret || !refreshToken || !developerToken) {
     return { error: 'server misconfigured: missing Google Ads credentials' };
@@ -54,7 +85,9 @@ export async function getGoogleAdsAccessToken(overrides?: {
       error: 'google_oauth_failed',
       status: tokenRes.status,
       details: tokenJson,
-      hint: 'GOOGLE_ADS_REFRESH_TOKEN is likely invalid (invalid_grant). Re-run OAuth and update the secret.',
+      hint: dbRefreshToken
+        ? 'Stored refresh_token in ads_accounts is invalid (invalid_grant). Re-run OAuth via /kennel/capi → Reconnect Google Ads.'
+        : 'GOOGLE_ADS_REFRESH_TOKEN env var is invalid (invalid_grant). Re-run OAuth via /kennel/capi → Reconnect Google Ads to store a fresh token in ads_accounts.',
     };
   }
 

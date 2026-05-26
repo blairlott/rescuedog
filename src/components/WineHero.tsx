@@ -72,7 +72,7 @@ export const WINE_HERO_COPY: CopyVariant[] = [
     headline: <>Save dogs.<br />Sip the proof.</>,
     sub: "Join the Wine Club for member pricing, exclusive releases, and a direct line to the rescues we fund.",
     cta: "Join the Wine Club",
-    ctaHref: "/wine-club",
+    ctaHref: "/club",
   },
 ];
 

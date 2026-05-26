@@ -12807,6 +12807,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      experiment_scan_bandit_winners: {
+        Args: never
+        Returns: {
+          exp_id: string
+          opp_id: string
+        }[]
+      }
       finance_cash_trend: {
         Args: { _bucket?: string; _end: string; _start: string }
         Returns: {
@@ -13273,6 +13280,7 @@ export type Database = {
         | "bundle"
         | "merch_copy"
         | "other"
+        | "bandit_winner"
       optimization_goal: "conversion" | "aov" | "both"
       optimization_status:
         | "pending"
@@ -13460,6 +13468,7 @@ export const Constants = {
         "bundle",
         "merch_copy",
         "other",
+        "bandit_winner",
       ],
       optimization_goal: ["conversion", "aov", "both"],
       optimization_status: [

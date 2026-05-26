@@ -116,15 +116,11 @@ Deno.serve(async (req) => {
       }, { onConflict: "platform,customer_id" });
       if (upErr) return json({ error: upErr.message }, 500);
 
-      // Return a tiny HTML so a browser tab can close itself.
-      return new Response(
-        `<!doctype html><meta charset=utf-8><title>Connected</title>
-         <body style="font-family:system-ui;padding:2rem">
-           <h1>Google Ads connected</h1>
-           <p>Customer <code>${customerId}</code> linked. You can close this tab.</p>
-         </body>`,
-        { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } },
-      );
+      // Redirect back to the CAPI dashboard. Origin is the page that started
+      // the flow (passed via the Referer-derived state cookie if available),
+      // falling back to the published site.
+      const back = "https://rescuedog.lovable.app/kennel/capi?google_ads=connected&customer=" + encodeURIComponent(customerId);
+      return new Response(null, { status: 302, headers: { Location: back } });
     }
 
     return json({ error: "unknown action" }, 404);

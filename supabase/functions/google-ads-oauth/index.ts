@@ -46,6 +46,29 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   try {
+    // Diagnostic: confirm which credentials the function sees (no secrets leaked).
+    if (action === "debug-creds") {
+      const token = url.searchParams.get("t");
+      if (token !== Deno.env.get("CRON_SECRET")) {
+        const { data: row } = await admin.from("app_settings")
+          .select("value").eq("key", "oauth_start_link_token").maybeSingle();
+        const v = row?.value as any;
+        if (!(v?.token === token && v?.expires_at && new Date(v.expires_at) > new Date())) {
+          return json({ error: "unauthorized" }, 401);
+        }
+      }
+      const cid = CLIENT_ID || "";
+      const sec = CLIENT_SECRET || "";
+      return json({
+        client_id_tail: cid.slice(-12),
+        client_id_len: cid.length,
+        client_secret_prefix: sec.slice(0, 6),
+        client_secret_len: sec.length,
+        client_secret_has_whitespace: /\s/.test(sec),
+        redirect_uri: REDIRECT_URI,
+      });
+    }
+
     // Token-gated GET redirect — lets an admin click a plain URL and land
     // straight on Google's consent screen, bypassing any client-side issues.
     // Token = CRON_SECRET (already shared with cron jobs).

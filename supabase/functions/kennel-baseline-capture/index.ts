@@ -1,6 +1,7 @@
 // Captures today's daily_budget per campaign + MTD spend per channel into guardrail_baseline.
 // Flips prior is_current=true rows to false. Run via pg_cron at 08:00 UTC (00:00 PT) or manually from Settings.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { verifyCronSecret } from "../_shared/cronAlert.ts";
 const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key' };
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -40,6 +41,9 @@ async function fetchChannelMtdSpend(admin: any, platform: string): Promise<numbe
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST" && req.method !== "GET") return json({ error: "method not allowed" }, 405);
+  if (!(await verifyCronSecret(req, "kennel-baseline-capture"))) {
+    return json({ error: "unauthorized" }, 401);
+  }
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 

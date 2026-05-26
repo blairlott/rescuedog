@@ -4,6 +4,7 @@
 //   AND meta_lookalike_id IS NULL AND member_count >= min_seed_size
 // it creates a 1% LAL via Graph API and stores the resulting id.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { verifyCronSecret } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,12 @@ const GRAPH = "https://graph.facebook.com/v21.0";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (!(await verifyCronSecret(req, "meta-lookalike-trigger"))) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,

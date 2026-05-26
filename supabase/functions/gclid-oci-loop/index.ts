@@ -17,6 +17,7 @@ import {
   buildGoogleAdsHeaders,
   isAuthError,
 } from "../_shared/googleAdsAuth.ts";
+import { verifyCronSecret } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,6 +38,12 @@ function fmtCdt(d: Date): string {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (!(await verifyCronSecret(req, "gclid-oci-loop"))) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,

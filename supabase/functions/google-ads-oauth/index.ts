@@ -122,6 +122,23 @@ Deno.serve(async (req) => {
       return json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params}` });
     }
 
+    // Admin-authenticated: mint a short-lived token for start-link so the
+    // browser can top-frame navigate to it (cannot send Authorization on
+    // a top-frame navigation).
+    if (action === "mint-link") {
+      const auth = await requireAdOps(req);
+      if (auth instanceof Response) return auth;
+      const token = crypto.randomUUID();
+      const expires_at = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+      await admin.from("app_settings").upsert({
+        key: "oauth_start_link_token",
+        value: { token, expires_at, minted_by: auth.userId },
+      }, { onConflict: "key" });
+      return json({
+        url: `${SUPABASE_URL}/functions/v1/google-ads-oauth/start-link?t=${token}`,
+      });
+    }
+
     if (action === "callback") {
       const code = url.searchParams.get("code");
       const state = url.searchParams.get("state");

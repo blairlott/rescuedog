@@ -57,7 +57,7 @@ export function useBanditCandidate(
     if (ensuredSlots.has(key)) return;
     let promise = ensureInflight.get(key);
     if (!promise) {
-      promise = supabase.rpc("ensure_candidate_experiment", {
+      promise = Promise.resolve(supabase.rpc("ensure_candidate_experiment", {
         _slot_key: slotKey,
         _name: opts?.name ?? slotKey,
         _candidates: candidates.map((c) => ({
@@ -68,7 +68,7 @@ export function useBanditCandidate(
         })) as never,
         _primary_metric: (opts?.primaryMetric ?? "revenue_per_visitor") as never,
         _exploration_floor: opts?.explorationFloor ?? 150,
-      }).then(() => {
+      })).then(() => {
         ensuredSlots.add(key);
       });
       ensureInflight.set(key, promise);

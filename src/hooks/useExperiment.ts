@@ -49,6 +49,9 @@ export function useExperiment<T extends Record<string, unknown>>(
   });
   const exposedRef = useRef(false);
 
+  // Deterministic segment bucket mirrored from experiment_assign — keeps cardinality bounded
+  const segmentBucket = `${segment.device ?? "any"}|${segment.authState ?? "any"}|${segment.geoIsUS ? "us" : "intl"}`;
+
   useEffect(() => {
     let active = true;
 
@@ -153,7 +156,7 @@ export function useExperiment<T extends Record<string, unknown>>(
       _event_type: "exposure",
       _revenue_cents: null,
       _goal_key: null,
-      _metadata: {} as never,
+      _metadata: { segment_bucket: segmentBucket } as never,
     });
   }, [state.source, state.experimentId, state.variantId, user?.id]);
 
@@ -168,10 +171,10 @@ export function useExperiment<T extends Record<string, unknown>>(
         _event_type: "conversion",
         _revenue_cents: null,
         _goal_key: goalKey ?? null,
-        _metadata: (metadata ?? {}) as never,
+        _metadata: { ...(metadata ?? {}), segment_bucket: segmentBucket } as never,
       });
     },
-    [state.experimentId, state.variantId, user?.id],
+    [state.experimentId, state.variantId, user?.id, segmentBucket],
   );
 
   const recordRevenue = useCallback(
@@ -185,10 +188,10 @@ export function useExperiment<T extends Record<string, unknown>>(
         _event_type: "revenue",
         _revenue_cents: Math.max(0, Math.round(revenueCents)),
         _goal_key: goalKey ?? null,
-        _metadata: (metadata ?? {}) as never,
+        _metadata: { ...(metadata ?? {}), segment_bucket: segmentBucket } as never,
       });
     },
-    [state.experimentId, state.variantId, user?.id],
+    [state.experimentId, state.variantId, user?.id, segmentBucket],
   );
 
   return {

@@ -61,13 +61,37 @@ export const HERO_VARIANTS: Variant[] = [
   },
 ];
 
+const ASSET_FALLBACK_MAP: Record<string, string> = {
+  "/src/assets/merch-hero.jpg": hero1Jpg,
+  "/src/assets/merch-hero-2.jpg": hero2Jpg,
+  "/src/assets/merch-hero-3.jpg": hero3Jpg,
+  "/src/assets/merch-hero-4.jpg": hero4Jpg,
+};
+function resolveImageUrl(url: string): string {
+  return ASSET_FALLBACK_MAP[url] ?? url;
+}
+
+type DbVariant = {
+  id: string;
+  image_url: string;
+  image_alt: string;
+  eyebrow: string;
+  headline_html: string;
+  sub: string;
+  cta_label: string;
+  cta_href: string;
+  sticky: boolean;
+};
+
 const STORAGE_KEY = "rdw_hero_rotation_idx";
 const SESSION_KEY = "rdw_session_id";
 const COOKIE_KEY = "rdw_hero_variant";
 const STATS_CACHE_KEY = "rdw_hero_stats_v1";
 const STATS_TTL_MS = 10 * 60 * 1000; // 10 minutes
-const EXPLORATION_FLOOR = 200; // min impressions per variant before bandit takes over
+const EXPLORATION_FLOOR = 80; // min impressions per variant before bandit takes over
 const ORDER_WEIGHT = 8; // 1 attributed order ≈ 8 clicks in reward signal
+const VARIANTS_CACHE_KEY = "rdw_merch_hero_variants_v1";
+const VARIANTS_TTL_MS = 5 * 60 * 1000;
 
 type VariantStat = {
   variant_id: string;
@@ -160,44 +184,77 @@ function sampleBeta(alpha: number, beta: number): number {
   return x / (x + y);
 }
 
-/**
- * Thompson Sampling bandit. Reward = clicks + ORDER_WEIGHT * orders.
- * Trials = impressions. Until every variant has EXPLORATION_FLOOR
- * impressions, fall back to round-robin so we collect baseline data.
- */
-function pickVariantBandit(stats: VariantStat[] | null): number | null {
-  if (!stats || stats.length === 0) return null;
+function pickDbVariant(variants: DbVariant[], stats: VariantStat[] | null): DbVariant {
+  if (variants.length === 0) throw new Error("no variants");
+  if (!stats || stats.length === 0) return variants[pickVariantIndex(variants.length)];
   const byId = new Map(stats.map((s) => [s.variant_id, s]));
-  const rows = HERO_VARIANTS.map((v) => byId.get(v.id));
-  const underExplored = rows.some((r) => !r || r.impressions < EXPLORATION_FLOOR);
-  if (underExplored) return null;
-
-  let bestIdx = 0;
-  let bestScore = -Infinity;
-  rows.forEach((r, i) => {
-    const impressions = r!.impressions;
-    const reward = r!.clicks + ORDER_WEIGHT * r!.orders;
-    const alpha = Math.max(1, reward) + 1;
-    const beta = Math.max(0, impressions - reward) + 1;
-    const sample = sampleBeta(alpha, beta);
-    if (sample > bestScore) {
-      bestScore = sample;
-      bestIdx = i;
-    }
+  const underExplored = variants.some((v) => {
+    const r = byId.get(v.id);
+    return !r || r.impressions < EXPLORATION_FLOOR;
   });
-  return bestIdx;
+  if (underExplored) return variants[pickVariantIndex(variants.length)];
+  let best = variants[0];
+  let bestScore = -Infinity;
+  for (const v of variants) {
+    const r = byId.get(v.id)!;
+    const reward = r.clicks + ORDER_WEIGHT * r.orders;
+    const alpha = Math.max(1, reward) + 1;
+    const beta = Math.max(0, r.impressions - reward) + 1;
+    const s = sampleBeta(alpha, beta) + (v.sticky ? 0.05 : 0);
+    if (s > bestScore) { bestScore = s; best = v; }
+  }
+  return best;
 }
 
+function readCachedVariants(): DbVariant[] | null {
+  try {
+    const raw = localStorage.getItem(VARIANTS_CACHE_KEY);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw) as { ts: number; data: DbVariant[] };
+    if (Date.now() - ts > VARIANTS_TTL_MS) return null;
+    return data;
+  } catch { return null; }
+}
+function writeCachedVariants(data: DbVariant[]) {
+  try { localStorage.setItem(VARIANTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch { /* noop */ }
+}
+
+const FALLBACK_DB_VARIANTS: DbVariant[] = HERO_VARIANTS.map((v) => ({
+  id: v.id,
+  image_url: v.jpg,
+  image_alt: v.alt,
+  eyebrow: v.eyebrow,
+  headline_html: typeof v.headline === "string" ? v.headline : "Wear the cause.<br/>Spoil the pup.",
+  sub: v.sub,
+  cta_label: "Shop Merch",
+  cta_href: "/merch#products",
+  sticky: false,
+}));
+
 export const MerchHero = () => {
-  // Synchronous pick: use cached stats if fresh; else round-robin so the hero
-  // renders instantly without waiting on a network round-trip.
-  const variantIndex = useMemo(() => {
-    const cached = readCachedStats();
-    const banditPick = pickVariantBandit(cached);
-    return banditPick ?? pickVariantIndex(HERO_VARIANTS.length);
-  }, []);
-  const variant = HERO_VARIANTS[variantIndex];
+  const [variants, setVariants] = useState<DbVariant[]>(() => readCachedVariants() ?? FALLBACK_DB_VARIANTS);
   const loggedImpression = useRef(false);
+  const variant = useMemo(() => pickDbVariant(variants, readCachedStats()), [variants]);
+
+  useEffect(() => {
+    void supabase.rpc("get_active_hero_variants", { _surface: "merch" }).then(({ data, error }) => {
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const mapped: DbVariant[] = data.map((r: any) => ({
+          id: r.id,
+          image_url: resolveImageUrl(r.image_url),
+          image_alt: r.image_alt ?? "",
+          eyebrow: r.eyebrow ?? "",
+          headline_html: r.headline_html ?? "",
+          sub: r.sub ?? "",
+          cta_label: r.cta_label ?? "Shop Merch",
+          cta_href: r.cta_href ?? "/merch#products",
+          sticky: !!r.sticky,
+        }));
+        writeCachedVariants(mapped);
+        setVariants(mapped);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (loggedImpression.current) return;
@@ -241,10 +298,9 @@ export const MerchHero = () => {
   return (
     <section className="relative h-[70vh] min-h-[520px] flex items-center bg-foreground">
       <picture>
-        <source srcSet={variant.webp} type="image/webp" />
         <img
-          src={variant.jpg}
-          alt={variant.alt}
+          src={variant.image_url}
+          alt={variant.image_alt}
           className="absolute inset-0 w-full h-full object-cover opacity-70"
           width={1920}
           height={1080}
@@ -258,7 +314,7 @@ export const MerchHero = () => {
           {variant.eyebrow}
         </p>
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 max-w-3xl leading-tight">
-          {variant.headline}
+          <span dangerouslySetInnerHTML={{ __html: variant.headline_html }} />
         </h1>
         <p className="text-primary-foreground/85 max-w-xl mb-8 text-base md:text-lg">
           {variant.sub}
@@ -269,9 +325,9 @@ export const MerchHero = () => {
             size="lg"
             className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
           >
-            <a href="#products" onClick={handleCtaClick} data-hero-variant={variant.id}>
-              Shop Merch
-            </a>
+            <Link to={variant.cta_href} onClick={handleCtaClick} data-hero-variant={variant.id}>
+              {variant.cta_label}
+            </Link>
           </Button>
           <Button
             asChild

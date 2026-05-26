@@ -13121,6 +13121,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      ensure_candidate_experiment: {
+        Args: {
+          _candidates: Json
+          _exploration_floor?: number
+          _name: string
+          _primary_metric?: Database["public"]["Enums"]["experiment_metric"]
+          _slot_key: string
+        }
+        Returns: string
+      }
       experiment_assign: {
         Args: {
           _experiment_key: string
@@ -13226,6 +13236,17 @@ export type Database = {
           net_revenue_cents: number
           wholesale_net_cents: number
           wine_club_net_cents: number
+        }[]
+      }
+      get_active_candidates_for_slot: {
+        Args: { _slot_key: string }
+        Returns: {
+          candidate_ref: string
+          candidate_type: string
+          experiment_id: string
+          metadata: Json
+          variant_id: string
+          weight: number
         }[]
       }
       get_active_hero_variants: {

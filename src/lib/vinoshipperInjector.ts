@@ -169,6 +169,12 @@ export async function addLinesAndGoToHostedCart(
     await applyVinoshipperCoupon(String(cartId), promoCode);
   }
   checkoutUrl.searchParams.set("ret", window.location.href);
+  // Best-effort brand theming on Vinoshipper's hosted checkout page.
+  // Undocumented, but VS honors `theme=red` on their hosted club embed,
+  // so we pass the same hint here. If they ignore it, no harm done.
+  if (!checkoutUrl.searchParams.has("theme")) {
+    checkoutUrl.searchParams.set("theme", "red");
+  }
   const finalUrl = vs.getLinkParams ? await vs.getLinkParams(checkoutUrl) : checkoutUrl;
   const href = finalUrl.toString();
   if (popup && !popup.closed) {

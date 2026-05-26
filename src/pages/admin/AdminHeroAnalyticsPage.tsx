@@ -40,6 +40,49 @@ function aggregate(events: Array<{ variant_id: string; event_type: string; order
 
 const pct = (num: number, den: number) => (den > 0 ? ((num / den) * 100).toFixed(2) + "%" : "—");
 
+const EXPLORATION_FLOOR = 200;
+const ORDER_WEIGHT = 8;
+
+/**
+ * Estimate each variant's probability of being the true best (highest
+ * click+order reward rate) via a Monte Carlo Thompson Sampling simulation
+ * over Beta posteriors. Matches the bandit logic in MerchHero.
+ */
+function winProbabilities(rows: Row[]): Record<string, number> {
+  const SIMS = 4000;
+  const wins: Record<string, number> = Object.fromEntries(rows.map((r) => [r.variant_id, 0]));
+  const params = rows.map((r) => {
+    const reward = r.clicks + ORDER_WEIGHT * r.orders;
+    return {
+      id: r.variant_id,
+      alpha: Math.max(1, reward) + 1,
+      beta: Math.max(0, r.impressions - reward) + 1,
+    };
+  });
+  // Use Math.random-based Beta via two Gammas approximation; for display
+  // purposes a lighter normal approximation is fine.
+  const sampleBeta = (a: number, b: number) => {
+    const mean = a / (a + b);
+    const variance = (a * b) / ((a + b) ** 2 * (a + b + 1));
+    const sd = Math.sqrt(variance);
+    // Box-Muller
+    const u1 = Math.random() || 1e-9;
+    const u2 = Math.random();
+    const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    return Math.min(1, Math.max(0, mean + sd * z));
+  };
+  for (let s = 0; s < SIMS; s++) {
+    let bestIdx = 0;
+    let best = -Infinity;
+    params.forEach((p, i) => {
+      const x = sampleBeta(p.alpha, p.beta);
+      if (x > best) { best = x; bestIdx = i; }
+    });
+    wins[params[bestIdx].id] += 1;
+  }
+  return Object.fromEntries(Object.entries(wins).map(([k, v]) => [k, v / SIMS]));
+}
+
 export default function AdminHeroAnalyticsPage() {
   const [range, setRange] = useState("30");
   const [rows, setRows] = useState<Row[]>([]);
@@ -108,6 +151,7 @@ export default function AdminHeroAnalyticsPage() {
           </div>
         ) : (
           <>
+            <OptimizerStatus rows={rows} />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <Stat label="Impressions" value={totals.impressions.toLocaleString()} />
               <Stat label="Clicks" value={totals.clicks.toLocaleString()} />
@@ -127,10 +171,13 @@ export default function AdminHeroAnalyticsPage() {
                     <th className="px-4 py-3 text-right">Conv. Rate</th>
                     <th className="px-4 py-3 text-right">Revenue</th>
                     <th className="px-4 py-3 text-right">RPI</th>
+                    <th className="px-4 py-3 text-right">P(best)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => {
+                  {(() => {
+                    const probs = winProbabilities(rows);
+                    return rows.map((r) => {
                     const meta = HERO_VARIANTS.find((v) => v.id === r.variant_id);
                     const rpi = r.impressions > 0 ? r.revenue / r.impressions : 0;
                     return (
@@ -155,9 +202,11 @@ export default function AdminHeroAnalyticsPage() {
                         <td className="px-4 py-3 text-right tabular-nums">{pct(r.orders, r.impressions)}</td>
                         <td className="px-4 py-3 text-right tabular-nums">${r.revenue.toFixed(2)}</td>
                         <td className="px-4 py-3 text-right tabular-nums">${rpi.toFixed(3)}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{(probs[r.variant_id] * 100).toFixed(1)}%</td>
                       </tr>
                     );
-                  })}
+                  });
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -166,6 +215,8 @@ export default function AdminHeroAnalyticsPage() {
               Attribution: a 90-day cookie (<code>rdw_hero_variant</code>) records the last hero a visitor saw or clicked.
               Shopify orders are credited to that variant when the order webhook fires (wire-up pending).
               CTR = clicks ÷ impressions. Conv. Rate = orders ÷ impressions. RPI = revenue per impression.
+              P(best) = Thompson-sampled probability that a variant has the highest reward rate
+              (reward = clicks + {ORDER_WEIGHT}× orders).
             </p>
           </>
         )}
@@ -181,6 +232,30 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
       <div className="text-xs uppercase tracking-brand font-bold text-muted-foreground">{label}</div>
       <div className="text-2xl font-bold mt-1">{value}</div>
       {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
+    </div>
+  );
+}
+
+function OptimizerStatus({ rows }: { rows: Row[] }) {
+  const minImpr = rows.length ? Math.min(...rows.map((r) => r.impressions)) : 0;
+  const exploring = minImpr < EXPLORATION_FLOOR;
+  return (
+    <div className="border border-border p-4 mb-6 bg-muted/40">
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-xs uppercase tracking-brand font-bold">Optimizer</span>
+        <span
+          className={`text-xs uppercase tracking-brand font-bold px-2 py-1 ${
+            exploring ? "bg-foreground text-background" : "bg-primary text-primary-foreground"
+          }`}
+        >
+          {exploring ? "Exploring" : "Optimizing"}
+        </span>
+        <span className="text-sm text-muted-foreground">
+          {exploring
+            ? `Round-robin until every variant reaches ${EXPLORATION_FLOOR} impressions (lowest: ${minImpr.toLocaleString()}).`
+            : `Thompson Sampling bandit is live — higher-CTR variants are shown more often, with continuous exploration.`}
+        </span>
+      </div>
     </div>
   );
 }

@@ -51,9 +51,16 @@ Deno.serve(async (req) => {
     // Token = CRON_SECRET (already shared with cron jobs).
     if (action === "start-link") {
       const token = url.searchParams.get("t");
-      if (!token || token !== Deno.env.get("CRON_SECRET")) {
-        return json({ error: "unauthorized" }, 401);
+      let ok = !!token && token === Deno.env.get("CRON_SECRET");
+      if (!ok && token) {
+        const { data: row } = await admin.from("app_settings")
+          .select("value").eq("key", "oauth_start_link_token").maybeSingle();
+        const v = row?.value as any;
+        if (v?.token === token && v?.expires_at && new Date(v.expires_at) > new Date()) {
+          ok = true;
+        }
       }
+      if (!ok) return json({ error: "unauthorized" }, 401);
       const state = crypto.randomUUID();
       await admin.from("ads_oauth_state").insert({ state, created_by: null });
       const params = new URLSearchParams({

@@ -32,10 +32,12 @@ async function requireAdOps(req: Request): Promise<{ userId: string } | Response
   if (!u) return json({ error: "unauthorized" }, 401);
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
   const { data: roles } = await admin.from("user_roles").select("role")
-    .eq("user_id", u.id)
-    .in("role", ["owner", "admin", "ad_ops_manager", "kennel_viewer"])
-    .limit(1);
-  if (!roles || roles.length === 0) return json({ error: "forbidden" }, 403);
+    .eq("user_id", u.id);
+  const userRoles = (roles ?? []).map((r: any) => r.role);
+  const allowed = ["owner", "admin", "ad_ops_manager", "kennel_viewer", "developer", "executive", "cfo"];
+  if (!userRoles.some((r) => allowed.includes(r))) {
+    return json({ error: "forbidden", user_id: u.id, email: u.email, roles: userRoles, allowed }, 403);
+  }
   return { userId: u.id };
 }
 

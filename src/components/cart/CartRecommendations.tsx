@@ -136,7 +136,8 @@ export function CartRecommendations({ cartItems, cartTotal }: CartRecommendation
   ) => {
     const variant = variantOverride ?? product.node.variants.edges[0]?.node;
     if (!variant) return;
-    const pricedCents = Math.round(parseFloat(variant.price) * 100);
+    const priceStr = typeof variant.price === "string" ? variant.price : (variant.price as { amount: string })?.amount ?? "0";
+    const pricedCents = Math.round(parseFloat(priceStr) * 100);
     const attribution = pickByHandle[product.node.handle];
     if (attribution) {
       attribution.recordAdd({ handle: product.node.handle });

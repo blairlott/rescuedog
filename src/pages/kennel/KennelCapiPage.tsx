@@ -95,10 +95,10 @@ export default function KennelCapiPage() {
   const reconnectGoogleAds = async () => {
     setReconnecting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("google-ads-oauth/start", { body: {} });
+      const { data, error } = await supabase.functions.invoke("google-ads-oauth/mint-link", { body: {} });
       if (error) throw error;
       const url = (data as any)?.url;
-      if (!url) throw new Error("No OAuth URL returned");
+      if (!url) throw new Error("No start-link URL returned");
       // Top-frame navigation — bypasses preview-iframe sandbox and popup
       // blockers. After consent the callback redirects back to /kennel/capi.
       try {

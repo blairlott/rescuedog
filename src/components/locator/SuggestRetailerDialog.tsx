@@ -33,12 +33,48 @@ export function SuggestRetailerDialog({ trigger }: { trigger?: React.ReactNode }
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("retailer_suggestions").insert([form]);
+    const id = crypto.randomUUID();
+    const { error } = await supabase
+      .from("retailer_suggestions")
+      .insert([{ ...form, id } as any]);
     setSubmitting(false);
     if (error) {
       toast.error("Could not submit. Please try again.");
       return;
     }
+
+    // Fire-and-forget: admin notification + (optional) submitter confirmation.
+    void supabase.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "retailer-suggestion-admin-notification",
+        recipientEmail: "info@rescuedogwines.com",
+        idempotencyKey: `retailer-admin-${id}`,
+        templateData: {
+          storeName: form.store_name,
+          streetAddress: form.street_address,
+          city: form.city,
+          state: form.state,
+          zip: form.zip,
+          phone: form.phone,
+          premiseType: form.premise_type,
+          contactName: form.contact_name,
+          submitterEmail: form.submitter_email,
+          notes: form.notes,
+          submissionId: id,
+        },
+      },
+    });
+    if (form.submitter_email) {
+      void supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "retailer-suggestion-confirmation",
+          recipientEmail: form.submitter_email,
+          idempotencyKey: `retailer-confirm-${id}`,
+          templateData: { contactName: form.contact_name, storeName: form.store_name },
+        },
+      });
+    }
+
     toast.success("Thanks! We'll reach out to your store.");
     setOpen(false);
     setForm({

@@ -32,6 +32,7 @@ import { Seo } from "@/components/Seo";
 import { InstacartOAuthCatcher } from "@/components/InstacartOAuthCatcher";
 import { T } from "@/components/T";
 import { useExperiment } from "@/hooks/useExperiment";
+import { WineHero } from "@/components/WineHero";
 
 const instagramPosts = [
   {
@@ -185,85 +186,7 @@ const Index = () => {
       <Header />
 
       {/* Hero — Full-bleed image background */}
-      <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden">
-        <CmsEditButton onClick={() => setEditSection("hero")} />
-        {hero.config.imageUrl ? (
-          <img
-            src={hero.config.imageUrl}
-            alt="Friends enjoying Rescue Dog Wines with the 2023 Red Blend"
-            className="absolute inset-0 w-full h-full object-cover"
-            fetchPriority="high"
-            decoding="async"
-          />
-        ) : (
-          <picture>
-            <source srcSet={heroRedBlendWebp} type="image/webp" />
-            <img
-              src={heroRedBlend}
-              alt="Friends enjoying Rescue Dog Wines with the 2023 Red Blend"
-              className="absolute inset-0 w-full h-full object-cover"
-              fetchPriority="high"
-              decoding="async"
-            />
-          </picture>
-        )}
-        <div className="absolute inset-0 bg-foreground/30" />
-
-        <div className="relative container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="max-w-xl">
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-primary-foreground mb-6 leading-[0.9] uppercase">
-              {hero.config.headlineOverride ? (
-                <T>{hero.config.headlineOverride}</T>
-              ) : (
-                <>
-                  <T>{getVal("hero", "headline", "Our Wine")}</T><br />
-                  <T>{getVal("hero", "headline2", "Is For The")}</T><br />
-                  <T>{getVal("hero", "headline3", "Dogs")}</T>
-                </>
-              )}
-            </h1>
-            <p className="text-primary-foreground/80 text-lg mb-8 max-w-md">
-              <T>{hero.config.subtitleOverride || getVal("hero", "subtitle", "Award-winning, sustainable wines. 50% of our profits support animal rescue organizations.")}</T>
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Button
-                asChild
-                size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
-                onClick={() => hero.recordConversion("hero_cta_click")}
-              >
-                <Link to={hero.config.ctaHref || "/wines"}><T>{hero.config.ctaLabel || "Shop Wines"}</T></Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-primary-foreground text-primary-foreground bg-transparent hover:bg-primary-foreground/10 uppercase tracking-brand text-sm font-bold px-10 py-6"
-              >
-                <Link to="/store-locator"><T>Find a Store</T></Link>
-              </Button>
-            </div>
-          </div>
-
-          {/* Bottle Image Overlay */}
-          <div className="hidden lg:block">
-            <img
-              src="https://cdn.shopify.com/s/files/1/0599/6580/0542/files/redblend2023.png?v=1774391461"
-              alt="2023 Red Blend | Rescue Dog Wines"
-              className="h-[500px] w-auto drop-shadow-2xl"
-            />
-          </div>
-        </div>
-
-        {/* Scroll Indicator */}
-        <button
-          onClick={scrollToContent}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-primary-foreground/60 hover:text-primary-foreground transition-colors animate-bounce"
-          aria-label="Scroll down"
-        >
-          <ChevronDown className="h-8 w-8" />
-        </button>
-      </section>
+      <WineHero />
 
       {/* Mission Statement */}
       <section id="mission-section" className="py-16 md:py-24 relative">

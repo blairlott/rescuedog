@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { HERO_VARIANTS } from "@/components/merch/MerchHero";
+import { WINE_HERO_VARIANTS } from "@/components/WineHero";
 import { Loader2 } from "lucide-react";
 
 type Row = {
@@ -22,7 +23,7 @@ const RANGES = [
 
 function aggregate(events: Array<{ variant_id: string; event_type: string; order_value: number | null }>): Row[] {
   const map = new Map<string, Row>();
-  for (const v of HERO_VARIANTS) {
+  for (const v of [...HERO_VARIANTS, ...WINE_HERO_VARIANTS]) {
     map.set(v.id, { variant_id: v.id, impressions: 0, clicks: 0, orders: 0, revenue: 0 });
   }
   for (const e of events) {
@@ -178,7 +179,7 @@ export default function AdminHeroAnalyticsPage() {
                   {(() => {
                     const probs = winProbabilities(rows);
                     return rows.map((r) => {
-                    const meta = HERO_VARIANTS.find((v) => v.id === r.variant_id);
+                    const meta = [...HERO_VARIANTS, ...WINE_HERO_VARIANTS].find((v) => v.id === r.variant_id);
                     const rpi = r.impressions > 0 ? r.revenue / r.impressions : 0;
                     return (
                       <tr key={r.variant_id} className="border-t border-border">

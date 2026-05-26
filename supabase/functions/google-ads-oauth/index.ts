@@ -31,11 +31,11 @@ async function requireAdOps(req: Request): Promise<{ userId: string } | Response
   const { data: { user: u } } = await user.auth.getUser();
   if (!u) return json({ error: "unauthorized" }, 401);
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-  const { data: role } = await admin.from("user_roles").select("role")
+  const { data: roles } = await admin.from("user_roles").select("role")
     .eq("user_id", u.id)
     .in("role", ["owner", "admin", "ad_ops_manager", "kennel_viewer"])
-    .maybeSingle();
-  if (!role) return json({ error: "forbidden" }, 403);
+    .limit(1);
+  if (!roles || roles.length === 0) return json({ error: "forbidden" }, 403);
   return { userId: u.id };
 }
 

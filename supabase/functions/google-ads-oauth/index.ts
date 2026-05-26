@@ -46,6 +46,31 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   try {
+    // Token-gated GET redirect — lets an admin click a plain URL and land
+    // straight on Google's consent screen, bypassing any client-side issues.
+    // Token = CRON_SECRET (already shared with cron jobs).
+    if (action === "start-link") {
+      const token = url.searchParams.get("t");
+      if (!token || token !== Deno.env.get("CRON_SECRET")) {
+        return json({ error: "unauthorized" }, 401);
+      }
+      const state = crypto.randomUUID();
+      await admin.from("ads_oauth_state").insert({ state, created_by: null });
+      const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        redirect_uri: REDIRECT_URI,
+        response_type: "code",
+        scope: SCOPES,
+        access_type: "offline",
+        prompt: "consent",
+        state,
+      });
+      return new Response(null, {
+        status: 302,
+        headers: { Location: `https://accounts.google.com/o/oauth2/v2/auth?${params}` },
+      });
+    }
+
     if (action === "start") {
       const auth = await requireAdOps(req);
       if (auth instanceof Response) return auth;

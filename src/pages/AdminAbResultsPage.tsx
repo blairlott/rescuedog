@@ -225,20 +225,22 @@ export default function AdminAbResultsPage() {
                   const lgAtc = safeRate(legacy?.add_to_carts ?? 0, legacy?.sessions ?? 0);
                   const lvCo = safeRate(lovable?.checkout_intents ?? 0, lovable?.sessions ?? 0);
                   const lgCo = safeRate(legacy?.checkout_intents ?? 0, legacy?.sessions ?? 0);
+                  // Use NaN as a "no data" sentinel that survives the number-typed Metric API.
+                  const fmt = (n: number) => fmtRate(Number.isNaN(n) ? null : n);
                   return (
                     <>
                       <Metric
                         label="ATC rate (per session)"
-                        lv={lvAtc ?? 0}
-                        lg={lgAtc ?? 0}
-                        fmt={() => fmtRate(lvAtc)}
+                        lv={lvAtc ?? NaN}
+                        lg={lgAtc ?? NaN}
+                        fmt={fmt}
                         deltaFmt={liftRate(lvAtc, lgAtc)}
                       />
                       <Metric
                         label="Checkout rate (per session)"
-                        lv={lvCo ?? 0}
-                        lg={lgCo ?? 0}
-                        fmt={() => fmtRate(lvCo)}
+                        lv={lvCo ?? NaN}
+                        lg={lgCo ?? NaN}
+                        fmt={fmt}
                         deltaFmt={liftRate(lvCo, lgCo)}
                       />
                     </>

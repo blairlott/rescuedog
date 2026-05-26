@@ -1443,6 +1443,140 @@ export type Database = {
           },
         ]
       }
+      ads_accounts: {
+        Row: {
+          connected_by: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          label: string | null
+          last_sync_at: string | null
+          last_sync_error: string | null
+          login_customer_id: string | null
+          platform: string
+          refresh_token: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          connected_by?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          label?: string | null
+          last_sync_at?: string | null
+          last_sync_error?: string | null
+          login_customer_id?: string | null
+          platform?: string
+          refresh_token: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          connected_by?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          label?: string | null
+          last_sync_at?: string | null
+          last_sync_error?: string | null
+          login_customer_id?: string | null
+          platform?: string
+          refresh_token?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ads_oauth_state: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          platform: string
+          state: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          platform?: string
+          state: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          platform?: string
+          state?: string
+        }
+        Relationships: []
+      }
+      ads_performance: {
+        Row: {
+          account_id: string
+          ad_group_id: string | null
+          ad_group_name: string | null
+          ad_id: string | null
+          campaign_id: string
+          campaign_name: string | null
+          clicks: number
+          conversion_value_micros: number
+          conversions: number
+          cost_micros: number
+          created_at: string
+          date: string
+          id: string
+          impressions: number
+          platform: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          ad_group_id?: string | null
+          ad_group_name?: string | null
+          ad_id?: string | null
+          campaign_id: string
+          campaign_name?: string | null
+          clicks?: number
+          conversion_value_micros?: number
+          conversions?: number
+          cost_micros?: number
+          created_at?: string
+          date: string
+          id?: string
+          impressions?: number
+          platform?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          ad_group_id?: string | null
+          ad_group_name?: string | null
+          ad_id?: string | null
+          campaign_id?: string
+          campaign_name?: string | null
+          clicks?: number
+          conversion_value_micros?: number
+          conversions?: number
+          cost_micros?: number
+          created_at?: string
+          date?: string
+          id?: string
+          impressions?: number
+          platform?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ads_performance_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ads_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_creative_variants: {
         Row: {
           approved_at: string | null
@@ -12601,6 +12735,13 @@ export type Database = {
           pageviews: number
           sessions: number
           site_variant: string
+        }[]
+      }
+      ads_bandit_scan_opportunities: {
+        Args: never
+        Returns: {
+          ad_group: string
+          opp_id: string
         }[]
       }
       apply_opportunity_decision: {

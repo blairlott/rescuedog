@@ -323,6 +323,7 @@ export default function AdminAbResultsPage() {
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
+        <>
           <div className="bg-background border border-border p-6">
             <div className="mb-6 pb-6 border-b border-border">
               <div className="flex items-center justify-between mb-2">

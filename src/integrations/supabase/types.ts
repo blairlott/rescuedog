@@ -5503,6 +5503,60 @@ export type Database = {
         }
         Relationships: []
       }
+      hero_variants: {
+        Row: {
+          auto_generated: boolean
+          created_at: string
+          created_by: string | null
+          cta_href: string
+          cta_label: string
+          eyebrow: string
+          headline_html: string
+          id: string
+          image_alt: string
+          image_url: string
+          status: string
+          sticky: boolean
+          sub: string
+          surface: string
+          updated_at: string
+        }
+        Insert: {
+          auto_generated?: boolean
+          created_at?: string
+          created_by?: string | null
+          cta_href?: string
+          cta_label?: string
+          eyebrow?: string
+          headline_html?: string
+          id?: string
+          image_alt?: string
+          image_url: string
+          status?: string
+          sticky?: boolean
+          sub?: string
+          surface: string
+          updated_at?: string
+        }
+        Update: {
+          auto_generated?: boolean
+          created_at?: string
+          created_by?: string | null
+          cta_href?: string
+          cta_label?: string
+          eyebrow?: string
+          headline_html?: string
+          id?: string
+          image_alt?: string
+          image_url?: string
+          status?: string
+          sticky?: boolean
+          sub?: string
+          surface?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       holdout_assignments: {
         Row: {
           assigned_at: string
@@ -12502,6 +12556,15 @@ export type Database = {
         }
         Returns: string
       }
+      auto_tune_hero_variants: {
+        Args: { _days?: number; _min_impressions?: number }
+        Returns: {
+          action: string
+          ctr: number
+          impressions: number
+          variant_id: string
+        }[]
+      }
       award_loyalty_points: {
         Args: {
           _delta_points: number
@@ -12696,6 +12759,32 @@ export type Database = {
           wholesale_net_cents: number
           wine_club_net_cents: number
         }[]
+      }
+      get_active_hero_variants: {
+        Args: { _surface: string }
+        Returns: {
+          auto_generated: boolean
+          created_at: string
+          created_by: string | null
+          cta_href: string
+          cta_label: string
+          eyebrow: string
+          headline_html: string
+          id: string
+          image_alt: string
+          image_url: string
+          status: string
+          sticky: boolean
+          sub: string
+          surface: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "hero_variants"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_hero_variant_stats: {
         Args: { _days?: number }

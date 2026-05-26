@@ -5470,6 +5470,39 @@ export type Database = {
         }
         Relationships: []
       }
+      hero_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          order_value: number | null
+          session_id: string | null
+          shopify_order_id: string | null
+          variant_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          order_value?: number | null
+          session_id?: string | null
+          shopify_order_id?: string | null
+          variant_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          order_value?: number | null
+          session_id?: string | null
+          shopify_order_id?: string | null
+          variant_id?: string
+        }
+        Relationships: []
+      }
       holdout_assignments: {
         Row: {
           assigned_at: string
@@ -12459,6 +12492,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      attribute_hero_order: {
+        Args: {
+          _order_value: number
+          _session_id?: string
+          _shopify_order_id: string
+          _variant_id: string
+        }
+        Returns: string
       }
       award_loyalty_points: {
         Args: {

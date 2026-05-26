@@ -92,6 +92,7 @@ const AdminPortalPage = lazy(() => import("./pages/AdminPortalPage"));
 const AdminAbResultsPage = lazy(() => import("./pages/AdminAbResultsPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const AdminCustomersPage = lazy(() => import("./pages/admin/AdminCustomersPage"));
+const AdminHeroAnalyticsPage = lazy(() => import("./pages/admin/AdminHeroAnalyticsPage"));
 const RequestAccessPage = lazy(() => import("./pages/RequestAccessPage"));
 const SellOnSitePage = lazy(() => import("./pages/SellOnSitePage"));
 const AmbassadorsLandingPage = lazy(() => import("./pages/AmbassadorsLandingPage"));
@@ -218,6 +219,7 @@ function AppContent() {
       <Route path="/admin/ab-results" element={<AdminAbResultsPage />} />
       <Route path="/admin/users" element={<AdminUsersPage />} />
       <Route path="/admin/customers" element={<AdminCustomersPage />} />
+      <Route path="/admin/hero-analytics" element={<AdminHeroAnalyticsPage />} />
       <Route path="/admin/request-access" element={<RequestAccessPage />} />
       <Route path="/admin/login" element={<Navigate to="/admin" replace />} />
       <Route path="/admin/change-password" element={<ForcePasswordChangePage />} />

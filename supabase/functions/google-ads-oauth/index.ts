@@ -33,7 +33,7 @@ async function requireAdOps(req: Request): Promise<{ userId: string } | Response
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
   const { data: role } = await admin.from("user_roles").select("role")
     .eq("user_id", u.id)
-    .in("role", ["owner", "admin", "ad_ops_manager"])
+    .in("role", ["owner", "admin", "ad_ops_manager", "kennel_viewer"])
     .maybeSingle();
   if (!role) return json({ error: "forbidden" }, 403);
   return { userId: u.id };

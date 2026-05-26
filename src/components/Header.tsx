@@ -129,11 +129,11 @@ export function Header() {
           <div className="relative flex justify-center px-1 md:px-2 min-w-0">
             <CmsEditButton onClick={() => setEditSection("logos")} label="Edit Logo" scope="branding" />
             <Link to={isMerch ? "/merch" : "/"} className="flex justify-center min-w-0">
-              <span className={`relative inline-flex items-center overflow-visible leading-none ${isMerch ? "pb-3 md:pb-4" : "pb-1"}`}>
+              <span className={`relative inline-flex items-center overflow-visible leading-none ${isMerch ? "pb-1" : "pb-1"}`}>
                 <img
                   src={logo}
                   alt={logoAlt}
-                  className={`block w-full h-auto object-contain ${isMerch ? "max-w-[180px] md:max-w-[280px]" : "max-w-[320px] md:max-w-[500px]"}`}
+                  className={`block w-full h-auto object-contain ${isMerch ? "max-w-[240px] md:max-w-[360px]" : "max-w-[320px] md:max-w-[500px]"}`}
                 />
                 {isMerch && (
                   <span className="absolute top-[18%] -right-3 md:-right-4 text-[0.5rem] md:text-[0.6rem] font-semibold text-muted-foreground leading-none">TM</span>

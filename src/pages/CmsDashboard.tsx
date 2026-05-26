@@ -381,11 +381,16 @@ const CmsDashboard = () => {
   };
 
   return (
-    <div className="min-h-dvh bg-secondary">
-      {/* Header */}
-      <header className="bg-background border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <SidebarProvider>
+      <div className="min-h-dvh w-full flex bg-secondary">
+        <CmsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="flex-1 min-w-0 flex flex-col">
+          {/* Header */}
+          <header className="bg-background border-b border-border">
+            <div className="px-4 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger />
+                <div className="flex items-center gap-3">
             <div className="inline-flex items-center justify-center w-9 h-9 bg-primary/10 rounded-full">
               <PenLine className="h-4 w-4 text-primary" />
             </div>
@@ -395,7 +400,8 @@ const CmsDashboard = () => {
               </h1>
               <p className="text-xs text-muted-foreground">Admin Dashboard</p>
             </div>
-          </div>
+                </div>
+              </div>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -429,58 +435,13 @@ const CmsDashboard = () => {
             >
               <LogOut className="h-3.5 w-3.5" /> Sign out
             </Button>
-          </div>
-        </div>
-      </header>
+              </div>
+            </div>
+          </header>
 
-      <div className="border-b border-border bg-muted/40">
-        <div className="max-w-5xl mx-auto px-4 py-2 flex items-center gap-3 text-xs">
-          <span className="text-muted-foreground">Quick links:</span>
-          <a href="/cms/experiments" className="text-primary hover:underline">Experiments &amp; Personalization →</a>
-          <a href="/cms/heroes#wine" className="text-primary hover:underline">Main Header (Wine) →</a>
-          <a href="/cms/heroes#merch" className="text-primary hover:underline">Merch Header →</a>
-          <a href="/cms/opportunities" className="text-primary hover:underline">Optimization Queue →</a>
-        </div>
-      </div>
-
-      {/* Main */}
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        <Tabs defaultValue="content">
-          <TabsList className="mb-6">
-            <TabsTrigger value="content" className="gap-1.5">
-              <FileText className="h-3.5 w-3.5" /> Content
-            </TabsTrigger>
-            <TabsTrigger value="library" className="gap-1.5">
-              <FileText className="h-3.5 w-3.5" /> Blog & Events
-            </TabsTrigger>
-            <TabsTrigger value="pairings" className="gap-1.5">
-              <ChefHat className="h-3.5 w-3.5" /> Pairings
-            </TabsTrigger>
-            <TabsTrigger value="merch-images" className="gap-1.5">
-              <ImageIcon className="h-3.5 w-3.5" /> Merch Images
-            </TabsTrigger>
-            <TabsTrigger value="creative-queue" className="gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" /> Creative Queue
-            </TabsTrigger>
-            <TabsTrigger value="rescues" className="gap-1.5">
-              <Heart className="h-3.5 w-3.5" /> Rescues
-            </TabsTrigger>
-            <TabsTrigger value="users" className="gap-1.5">
-              <Users className="h-3.5 w-3.5" /> Users
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-1.5">
-              <Settings className="h-3.5 w-3.5" /> Settings
-            </TabsTrigger>
-            <TabsTrigger value="import" className="gap-1.5">
-              <Download className="h-3.5 w-3.5" /> Import
-            </TabsTrigger>
-            <TabsTrigger value="integrations" className="gap-1.5">
-              <Plug className="h-3.5 w-3.5" /> Integrations
-            </TabsTrigger>
-            <TabsTrigger value="dev-controls" className="gap-1.5">
-              <SlidersHorizontal className="h-3.5 w-3.5" /> Dev Controls
-            </TabsTrigger>
-          </TabsList>
+          {/* Main */}
+          <main className="flex-1 px-4 py-8 max-w-6xl w-full mx-auto">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as CmsTabValue)}>
 
           {/* ── Content Tab ───────────────────────────────── */}
           <TabsContent value="content">

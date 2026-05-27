@@ -140,7 +140,20 @@ export default function KennelOciLogPage() {
         if (dryRun) {
           toast.success(`Dry run: ${data?.would_upload ?? 0} would upload`);
         } else {
-          toast.success(`Uploaded ${data?.uploaded ?? 0} (${data?.failed ?? 0} failed)`);
+          const uploaded = Number(data?.uploaded ?? 0);
+          const matched = Number(data?.matched ?? 0);
+          const scanned = Number(data?.scanned ?? 0);
+          if (uploaded > 0) {
+            toast.success(`Uploaded ${uploaded} (${data?.failed ?? 0} failed)`);
+          } else if (matched === 0) {
+            toast.message(`No new conversions to upload`, {
+              description: `Scanned ${scanned} VS sales — none matched a captured GCLID in the last ${7} days.`,
+            });
+          } else {
+            toast.message(`Nothing new to upload`, {
+              description: `Matched ${matched}, but all were already uploaded previously.`,
+            });
+          }
           load();
         }
       }

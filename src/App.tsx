@@ -206,13 +206,16 @@ function AppContent() {
   }, [path]);
   const showSommelier = !["/merch", "/crm", "/cms", "/sell", "/donation", "/login", "/signup", "/ambassador", "/club", "/checkout", "/cart", "/finance", "/admin"].some(p => path === p || path.startsWith(p + "/"));
   const isKennel = path === "/kennel" || path.startsWith("/kennel/");
+  // Host-aware root: on rescuedog.com / www.rescuedog.com the root path
+  // serves the Merch storefront (keeps URL clean — no visible /merch).
+  const merchHost = typeof window !== "undefined" && isRescueDogDomain();
   return (
     <>
     <a href="#main-content" className="skip-link">Skip to main content</a>
     <main id="main-content" tabIndex={-1}>
     <Suspense fallback={<PageFallback />}>
     <Routes>
-      <Route path="/" element={<Index />} />
+      <Route path="/" element={merchHost ? <MerchHomePage /> : <Index />} />
       <Route path="/merch" element={<MerchHomePage />} />
       <Route path="/product/:handle" element={<ProductDetail />} />
       <Route path="/shop-wine/:handle" element={<ProductDetail />} />

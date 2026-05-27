@@ -113,20 +113,57 @@ Deno.serve(async (req) => {
 
   // 2. Pull recent intents with gclid
   const emails = [...new Set(txs.map((t: any) => String(t.customer_email).toLowerCase().trim()).filter(Boolean))];
-  const { data: intents, error: inErr } = await admin
-    .from("ab_checkout_intents")
-    .select("id,email,gclid,created_at")
-    .not("gclid", "is", null)
-    .in("email", emails)
-    .gte("created_at", new Date(Date.now() - (lookbackDays + 30) * 24 * 60 * 60 * 1000).toISOString());
-  if (inErr) return json({ error: "intent_query_failed", details: inErr.message }, 500);
+  const sinceIso = new Date(Date.now() - (lookbackDays + 30) * 24 * 60 * 60 * 1000).toISOString();
 
-  // Index intents by email → most-recent first
+  const [intentsRes, cartsRes] = await Promise.all([
+    admin
+      .from("ab_checkout_intents")
+      .select("id,email,gclid,created_at")
+      .not("gclid", "is", null)
+      .in("email", emails)
+      .gte("created_at", sinceIso),
+    admin
+      .from("abandoned_carts")
+      .select("id,email,gclid,last_activity_at,created_at")
+      .not("gclid", "is", null)
+      .in("email", emails)
+      .gte("last_activity_at", sinceIso),
+  ]);
+  if (intentsRes.error) return json({ error: "intent_query_failed", details: intentsRes.error.message }, 500);
+  if (cartsRes.error) return json({ error: "cart_query_failed", details: cartsRes.error.message }, 500);
+
+  // Unwrap any stored `GCL.{seconds}.{gclid}` wrappers so we only emit raw click IDs.
+  const unwrapGclid = (raw: string | null): string | null => {
+    if (!raw) return null;
+    if (raw.startsWith("GCL.")) {
+      const parts = raw.split(".");
+      return parts.length >= 3 ? parts.slice(2).join(".") : null;
+    }
+    return raw;
+  };
+
+  // Index intents + abandoned-cart fallbacks by email → most-recent first.
+  // Intents take priority (explicit "about to check out" signal); carts back-fill.
   const byEmail = new Map<string, any[]>();
-  for (const it of intents || []) {
+  for (const it of intentsRes.data || []) {
+    const gclid = unwrapGclid(it.gclid);
+    if (!gclid) continue;
     const k = String(it.email).toLowerCase().trim();
     if (!byEmail.has(k)) byEmail.set(k, []);
-    byEmail.get(k)!.push(it);
+    byEmail.get(k)!.push({ id: it.id, email: it.email, gclid, created_at: it.created_at, source: "intent" });
+  }
+  for (const c of cartsRes.data || []) {
+    const gclid = unwrapGclid(c.gclid);
+    if (!gclid) continue;
+    const k = String(c.email).toLowerCase().trim();
+    if (!byEmail.has(k)) byEmail.set(k, []);
+    byEmail.get(k)!.push({
+      id: c.id,
+      email: c.email,
+      gclid,
+      created_at: c.last_activity_at ?? c.created_at,
+      source: "cart",
+    });
   }
   for (const arr of byEmail.values()) arr.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
 

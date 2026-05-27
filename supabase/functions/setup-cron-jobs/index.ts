@@ -20,7 +20,10 @@ Deno.serve(async (req) => {
     const { data, error } = await supabase.rpc('setup_gated_cron_jobs', { _secret: secret });
     if (error) throw error;
 
-    return new Response(JSON.stringify(data), {
+    const { data: gadsData, error: gadsErr } = await supabase.rpc('setup_google_ads_cron', { _secret: secret });
+    if (gadsErr) throw gadsErr;
+
+    return new Response(JSON.stringify({ gated: data, google_ads: gadsData }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

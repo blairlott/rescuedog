@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { Seo } from "@/components/Seo";
 import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,6 +146,37 @@ const MissionPage = () => {
 
   return (
     <div className="min-h-dvh flex flex-col">
+      <Seo
+        title="Our Mission — 50% of Profits Help Rescue Dogs"
+        description="Through wine sales and donations, Rescue Dog Wines supports rescue partners nationwide helping dogs find their forever home."
+        path="/mission"
+        breadcrumbs={[{ name: "Home", path: "/" }, { name: "Mission", path: "/mission" }]}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Rescue Partner Directory",
+          url: "https://rescuedogwines.com/mission",
+          description: "Directory of 501(c)(3) rescue partners supported by Rescue Dog Wines.",
+          mainEntity: {
+            "@type": "ItemList",
+            numberOfItems: partners.length,
+            itemListElement: partners.slice(0, 50).map((p: RescuePartner, i: number) => ({
+              "@type": "ListItem",
+              position: i + 1,
+              item: {
+                "@type": "Organization",
+                name: p.name,
+                address: {
+                  "@type": "PostalAddress",
+                  addressLocality: p.city ?? undefined,
+                  addressRegion: p.state ?? undefined,
+                  addressCountry: "US",
+                },
+              },
+            })),
+          },
+        }}
+      />
       <Header />
       <main className="flex-1">
         {/* Hero */}

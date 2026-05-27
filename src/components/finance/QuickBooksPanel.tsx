@@ -22,7 +22,11 @@ export function QuickBooksPanel({ days }: { days: number }) {
   const { data: conn, refetch } = useQuery({
     queryKey: ["qbo-connection"],
     queryFn: async () => {
-      const { data } = await supabase.from("qbo_connections").select("*").limit(1).maybeSingle();
+      const { data } = await supabase
+        .from("qbo_connections")
+        .select("id, realm_id, company_name, status, scope, created_at, updated_at, last_synced_at, access_token_expires_at, refresh_token_expires_at")
+        .limit(1)
+        .maybeSingle();
       return data;
     },
   });

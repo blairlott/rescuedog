@@ -254,6 +254,9 @@ function AppContent() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/blog" element={<BlogPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
+      {/* /news/* aliases redirect to /blog/* (e.g. inbound rescuedogmonth.com forward) */}
+      <Route path="/news" element={<Navigate to="/blog" replace />} />
+      <Route path="/news/:slug" element={<NewsSlugRedirect />} />
       <Route path="/pairings" element={<Pairings />} />
       <Route path="/pairings/:slug" element={<PairingDetail />} />
       <Route path="/club" element={<WineClubPage />} />

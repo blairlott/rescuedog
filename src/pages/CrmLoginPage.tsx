@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 export default function CrmLoginPage() {
   const [email, setEmail] = useState("");
@@ -43,6 +44,8 @@ export default function CrmLoginPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Crm Login" />
     <div className="min-h-dvh bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
@@ -105,5 +108,6 @@ export default function CrmLoginPage() {
         </p>
       </div>
     </div>
+    </>
   );
 }

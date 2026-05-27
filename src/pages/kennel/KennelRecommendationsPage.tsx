@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Check, X, Play, Undo2, Clock, Sparkles } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 type Rec = {
   id: string;
@@ -102,6 +103,8 @@ export default function KennelRecommendationsPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Kennel Recommendations" />
     <div className="p-6 max-w-[1400px]" style={BRAND_FONT}>
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -234,5 +237,6 @@ export default function KennelRecommendationsPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Activity, Flame, MousePointerClick, Play } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 interface Decision {
   id: string;
@@ -89,6 +90,8 @@ export default function KennelSiteIntelPage() {
   const maxHits = heat.reduce((m, h) => Math.max(m, h.hits), 0) || 1;
 
   return (
+    <>
+      <Seo noindex title="Kennel Site Intel" />
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -220,5 +223,6 @@ export default function KennelSiteIntelPage() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

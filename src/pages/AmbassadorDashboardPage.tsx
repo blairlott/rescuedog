@@ -13,6 +13,7 @@ import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { toast } from "sonner";
 import { AvatarUploader } from "@/components/ambassador/AvatarUploader";
 import { CopyLinkButton } from "@/components/ambassador/CopyLinkButton";
+import { Seo } from "@/components/Seo";
 
 type Profile = any;
 type Event = any;
@@ -77,6 +78,8 @@ export default function AmbassadorDashboardPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Ambassador Dashboard" />
     <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 max-w-5xl mx-auto py-10 px-4 w-full">
@@ -253,5 +256,6 @@ export default function AmbassadorDashboardPage() {
       </main>
       <Footer />
     </div>
+    </>
   );
 }

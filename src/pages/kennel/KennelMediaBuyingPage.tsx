@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Mail, ExternalLink, RefreshCw, Phone, User, FileText, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type Platform = {
   id: string;
@@ -155,6 +156,8 @@ export default function KennelMediaBuyingPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Kennel Media Buying" />
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
@@ -270,6 +273,7 @@ export default function KennelMediaBuyingPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }
 
@@ -283,6 +287,8 @@ function EditForm({ platform, onSave }: { platform: Platform; onSave: (f: Partia
   const [notes, setNotes] = useState(platform.notes ?? "");
 
   return (
+    <>
+      <Seo noindex title="Kennel Media Buying" />
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -332,5 +338,6 @@ function EditForm({ platform, onSave }: { platform: Platform; onSave: (f: Partia
         Save
       </Button>
     </div>
+    </>
   );
 }

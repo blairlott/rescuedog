@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2, RefreshCw, Upload, Save } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 type Score = { email: string; score: number; scored_at: string };
 type UploadRow = {
@@ -143,6 +144,8 @@ const CmsAudiencesPage = () => {
   if (loading) return <div className="p-8"><Loader2 className="animate-spin" /></div>;
 
   return (
+    <>
+      <Seo noindex title="Cms Audiences" />
     <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
@@ -274,6 +277,7 @@ const CmsAudiencesPage = () => {
         </Card>
       </div>
     </div>
+    </>
   );
 };
 

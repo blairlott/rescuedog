@@ -6,6 +6,7 @@ import { US_STATE_CENTROIDS } from "@/lib/usStateCentroids";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 type Cohort = {
   customer_email: string | null;
@@ -124,6 +125,8 @@ export default function CrmCustomerMapPage() {
   }), [filtered, byState]);
 
   return (
+    <>
+      <Seo noindex title="Crm Customer Map" />
     <div className="relative" style={{ height: "100%" }}>
       <div className="relative z-[1000] p-4 border-b border-border bg-card space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -174,5 +177,6 @@ export default function CrmCustomerMapPage() {
         style={{ height: "calc(100% - 130px)", width: "100%" }}
       />
     </div>
+    </>
   );
 }

@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, History, Database, Copy, CheckCircle2 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { Seo } from "@/components/Seo";
 
 const SHARP = { borderRadius: 0 } as const;
 const PROJECT_REF = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
@@ -31,6 +32,8 @@ const CSV_FIELDS = [
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
   return (
+    <>
+      <Seo noindex title="Kennel Backfills" />
     <Button
       size="sm" variant="outline" style={SHARP}
       onClick={() => {
@@ -43,6 +46,7 @@ function CopyButton({ value }: { value: string }) {
       {copied ? <CheckCircle2 className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
       {copied ? "Copied" : "Copy"}
     </Button>
+    </>
   );
 }
 
@@ -153,6 +157,8 @@ export default function KennelBackfillsPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Kennel Backfills" />
     <div className="space-y-6 p-6 max-w-5xl">
       <header>
         <h1 className="text-2xl font-bold uppercase tracking-brand text-foreground flex items-center gap-2">
@@ -320,5 +326,6 @@ x-kennel-secret: <KENNEL_INGEST_SECRET>`}</pre>
         </div>
       </Card>
     </div>
+    </>
   );
 }

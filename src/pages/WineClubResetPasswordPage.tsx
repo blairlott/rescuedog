@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Wine } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 export default function WineClubResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -28,6 +29,8 @@ export default function WineClubResetPasswordPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Wine Club Reset Password" />
     <div className="min-h-dvh bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-3">
@@ -53,5 +56,6 @@ export default function WineClubResetPasswordPage() {
         </form>
       </div>
     </div>
+    </>
   );
 }

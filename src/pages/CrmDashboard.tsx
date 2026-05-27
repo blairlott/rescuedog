@@ -17,6 +17,7 @@ import type { SalesAccount } from "@/hooks/useSalesAccounts";
 import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 import { EditableSelect } from "@/components/crm/EditableSelect";
 import { ApprovalQueueTab, useApprovalCount } from "@/components/crm/ApprovalQueueTab";
+import { Seo } from "@/components/Seo";
 
 const statusColors: Record<string, string> = {
   prospect: "bg-muted text-muted-foreground",
@@ -91,6 +92,8 @@ export default function CrmDashboard() {
   const canEditAccount = (_a: SalesAccount) => true;
 
   return (
+    <>
+      <Seo noindex title="Crm Dashboard" />
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Accounts</h1>
@@ -345,5 +348,6 @@ export default function CrmDashboard() {
       <AccountFormDialog open={formOpen} onOpenChange={setFormOpen} account={editAccount} />
       <BulkImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
+    </>
   );
 }

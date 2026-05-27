@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, RefreshCw, PlayCircle, CheckCircle2, AlertCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type Change = {
   id: string;
@@ -91,6 +92,8 @@ export default function CrmVinoshipperApiPage() {
   const latest = snapshots[0];
 
   return (
+    <>
+      <Seo noindex title="Crm Vinoshipper Api" />
     <div className="p-6 max-w-7xl space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -178,5 +181,6 @@ export default function CrmVinoshipperApiPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, Database, Cpu, ShieldCheck, RefreshCw } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 export default function KennelMethodologyPage() {
   return (
+    <>
+      <Seo noindex title="Kennel Methodology" />
     <div className="p-4 md:p-6 max-w-3xl space-y-6">
       <Link to="/kennel" className="inline-flex items-center gap-1 text-xs uppercase tracking-brand font-bold text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3 w-3" /> Back to Command Center
@@ -75,5 +78,6 @@ export default function KennelMethodologyPage() {
         Questions or need a deeper walkthrough? Reach out to the ad-ops team — every number on the Command Center can be traced back to its raw source.
       </p>
     </div>
+    </>
   );
 }

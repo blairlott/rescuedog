@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Play, RefreshCw, Zap, Save } from "lucide-react";
 import { JobRunHistory } from "@/components/kennel/JobRunHistory";
 import { useUserRole } from "@/hooks/useUserRole";
+import { Seo } from "@/components/Seo";
 
 type SignalRow = {
   email: string;
@@ -125,6 +126,8 @@ export default function KennelSegflowPage() {
   const c = counts.data;
 
   return (
+    <>
+      <Seo noindex title="Kennel Segflow" />
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
@@ -259,6 +262,7 @@ export default function KennelSegflowPage() {
 
       <JobRunHistory jobName="segflow_compute_and_tag" title="Segflow run history" />
     </div>
+    </>
   );
 }
 
@@ -317,6 +321,8 @@ function OffersEditor({ canEdit }: { canEdit: boolean }) {
   };
 
   return (
+    <>
+      <Seo noindex title="Kennel Segflow" />
     <div>
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Signal offers (Mailchimp anchors)</h2>
@@ -383,5 +389,6 @@ function OffersEditor({ canEdit }: { canEdit: boolean }) {
         </table>
       </div>
     </div>
+    </>
   );
 }

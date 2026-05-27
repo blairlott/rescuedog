@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import {
+import { Seo } from "@/components/Seo";
   ResponsiveContainer,
   LineChart,
   Line,
@@ -287,6 +288,8 @@ export default function AdminAbResultsPage() {
   );
 
   return (
+    <>
+      <Seo noindex title="Admin Ab Results" />
     <div className="min-h-dvh bg-secondary">
       <div className="border-b border-border bg-background">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -625,5 +628,6 @@ export default function AdminAbResultsPage() {
         )}
       </main>
     </div>
+    </>
   );
 }

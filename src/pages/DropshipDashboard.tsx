@@ -2,6 +2,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Truck, ExternalLink, Lock } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 export default function DropshipDashboard() {
   const { data: role } = useUserRole();
@@ -25,6 +26,8 @@ export default function DropshipDashboard() {
   ];
 
   return (
+    <>
+      <Seo noindex title="Dropship Dashboard" />
     <div className="p-6 max-w-7xl mx-auto">
       <header className="mb-6 flex items-center gap-3">
         <Truck className="h-6 w-6 text-muted-foreground" />
@@ -79,5 +82,6 @@ export default function DropshipDashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MetricCard } from "@/components/kennel/MetricCard";
 import { Sparkles, Search, CheckCircle2, XCircle, Pause, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 function dollars(c: number | null | undefined) { return `$${((c ?? 0) / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}`; }
 function pct(n: number | null | undefined) { return n == null || !isFinite(n) ? "—" : `${(n * 100).toFixed(1)}%`; }
@@ -129,6 +130,8 @@ export default function KennelKeywordsPage() {
   }
 
   return (
+    <>
+      <Seo noindex title="Kennel Keywords" />
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -260,5 +263,6 @@ export default function KennelKeywordsPage() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

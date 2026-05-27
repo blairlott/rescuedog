@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, Mail, TrendingUp, AlertTriangle, Users } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type Cohort = {
   customer_email: string;
@@ -119,6 +120,8 @@ export default function CrmIntelligencePage() {
     .slice(0, 24);
 
   return (
+    <>
+      <Seo noindex title="Crm Intelligence" />
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -269,5 +272,6 @@ export default function CrmIntelligencePage() {
         )}
       </Card>
     </div>
+    </>
   );
 }

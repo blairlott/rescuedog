@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Play, CheckCircle2, AlertOctagon, UserCog, Copy, ChevronDown, ChevronRight, RefreshCw, Inbox } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 type BacklogRow = {
   id: string;
@@ -128,6 +129,8 @@ export default function KennelBacklogPage() {
     });
 
   return (
+    <>
+      <Seo noindex title="Kennel Backlog" />
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4">
       <div className="flex flex-wrap items-center gap-3 border-b border-border pb-3">
         <Inbox className="h-5 w-5 text-primary" />
@@ -332,5 +335,6 @@ export default function KennelBacklogPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

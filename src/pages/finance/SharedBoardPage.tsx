@@ -7,6 +7,7 @@ import { ArrowLeft, BookOpen, Wine, Activity, Radar } from "lucide-react";
 import { SOURCE_LABEL, TILE_BY_KEY, type FinanceTileSource } from "@/lib/financeTiles";
 import { renderTile } from "@/components/finance/FinanceTiles";
 import { SortableTileGrid, type SortableTile } from "@/components/finance/SortableTileGrid";
+import { Seo } from "@/components/Seo";
 
 const SOURCE_META: Record<FinanceTileSource, { icon: typeof BookOpen; chip: string }> = {
   quickbooks:     { icon: BookOpen, chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
@@ -70,6 +71,8 @@ export default function SharedBoardPage() {
     }).filter(Boolean) as SortableTile[];
 
   return (
+    <>
+      <Seo noindex title="Shared Board" />
     <div className="finance-workspace px-6 py-5 space-y-5 max-w-[1700px] mx-auto">
       <div className="sticky top-14 z-20 -mx-6 px-6 py-3 bg-card border-b border-border flex flex-wrap items-center gap-3">
         <Button size="sm" variant="ghost" asChild className="h-8"><Link to="/finance"><ArrowLeft className="h-3.5 w-3.5 mr-1" /> Back</Link></Button>
@@ -95,5 +98,6 @@ export default function SharedBoardPage() {
 
       <SortableTileGrid tiles={sortableTiles} onReorder={() => {}} readOnly />
     </div>
+    </>
   );
 }

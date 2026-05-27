@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type DailyRow = {
   id: string;
@@ -92,6 +93,8 @@ export default function KennelTrueRoasPage() {
   }
 
   return (
+    <>
+      <Seo noindex title="Kennel True Roas" />
     <div className="p-6 space-y-6 max-w-7xl">
       <div className="flex items-start justify-between">
         <div>
@@ -244,5 +247,6 @@ export default function KennelTrueRoasPage() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

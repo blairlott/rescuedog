@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type MarginRow = {
   order_id: string;
@@ -123,6 +124,8 @@ export default function CrmMarginPage() {
   }
 
   return (
+    <>
+      <Seo noindex title="Crm Margin" />
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Margin</h1>
@@ -277,6 +280,7 @@ export default function CrmMarginPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </>
   );
 }
 
@@ -290,6 +294,8 @@ function CostEditor({
   onSave: (id: string, value: string) => void;
 }) {
   return (
+    <>
+      <Seo noindex title="Crm Margin" />
     <Card className="overflow-hidden">
       <div className="p-4 border-b">
         <h3 className="font-semibold">{title}</h3>
@@ -340,14 +346,18 @@ function CostEditor({
         </Table>
       </div>
     </Card>
+    </>
   );
 }
 
 function Stat({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
   return (
+    <>
+      <Seo noindex title="Crm Margin" />
     <Card className={`p-4 ${highlight ? "bg-primary/5 border-primary/30" : ""}`}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-brand">{icon} {label}</div>
       <div className="text-2xl font-bold mt-1 font-mono">{value}</div>
     </Card>
+    </>
   );
 }

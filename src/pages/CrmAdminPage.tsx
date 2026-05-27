@@ -20,6 +20,7 @@ import { TestEmailsCard } from "@/components/crm/TestEmailsCard";
 import { DepletionUploadCard } from "@/components/crm/DepletionUploadCard";
 import { AccessRequestsTab } from "@/components/crm/AccessRequestsTab";
 import { isStaffEmail } from "@/lib/staffEmail";
+import { Seo } from "@/components/Seo";
 
 interface UserWithRoles {
   id: string;
@@ -238,6 +239,8 @@ export default function CrmAdminPage() {
   );
 
   return (
+    <>
+      <Seo noindex title="Crm Admin" />
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -309,5 +312,6 @@ export default function CrmAdminPage() {
         }}
       />
     </div>
+    </>
   );
 }

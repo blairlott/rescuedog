@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import CrmAdminPage from "@/pages/CrmAdminPage";
+import { Seo } from "@/components/Seo";
 
 export default function AdminUsersPage() {
   const navigate = useNavigate();
@@ -35,11 +36,14 @@ export default function AdminUsersPage() {
   }
 
   return (
+    <>
+      <Seo noindex title="Admin Users" />
     <div className="min-h-dvh bg-secondary">
       <AdminTopNav roles={roles} />
       <main className="container mx-auto max-w-6xl">
         <CrmAdminPage />
       </main>
     </div>
+    </>
   );
 }

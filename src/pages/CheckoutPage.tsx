@@ -23,6 +23,7 @@ import { caseEligibleBottleCount, discountEligibleSubtotal } from "@/lib/wineBun
 import { memberDiscountPercent } from "@/lib/vinoshipperConfig";
 import { refreshWineClubMembership } from "@/lib/refreshWineClubMembership";
 import { useQueryClient } from "@tanstack/react-query";
+import { Seo } from "@/components/Seo";
 
 const STRIPE_PK = import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN as string | undefined;
 const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
@@ -44,6 +45,8 @@ function copy(text: string) {
 function SandboxTestCardHint() {
   if (!IS_SANDBOX) return null;
   return (
+    <>
+      <Seo noindex title="Checkout" />
     <div className="border border-orange-300 bg-orange-50 p-3 text-xs space-y-2">
       <p className="font-semibold text-orange-900">
         Sandbox mode — use this test card (Stripe blocks auto-fill for security):
@@ -68,6 +71,7 @@ function SandboxTestCardHint() {
       </div>
       <p className="text-orange-800">Tap any field to copy, then paste into the Stripe form below.</p>
     </div>
+    </>
   );
 }
 
@@ -156,6 +160,8 @@ function CheckoutInner({
   };
 
   return (
+    <>
+      <Seo noindex title="Checkout" />
     <form onSubmit={handlePay} className="space-y-4">
       <SandboxTestCardHint />
       <PaymentElement options={{ layout: "tabs" }} />
@@ -175,6 +181,7 @@ function CheckoutInner({
         Secure payment. Wine ships from our compliance partner Vinoshipper; merch ships from our US fulfillment partners.
       </p>
     </form>
+    </>
   );
 }
 
@@ -338,6 +345,8 @@ export default function CheckoutPage() {
   }
 
   return (
+    <>
+      <Seo noindex title="Checkout" />
     <div className="min-h-dvh bg-background">
       <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8">
         {/* LEFT: form / payment */}
@@ -535,5 +544,6 @@ export default function CheckoutPage() {
         </aside>
       </div>
     </div>
+    </>
   );
 }

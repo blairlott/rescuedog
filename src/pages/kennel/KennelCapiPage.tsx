@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Send, Activity, Flame, CheckCircle2, XCircle, Clock, ShieldCheck, Upload, FileSpreadsheet } from "lucide-react";
 import * as XLSX from "xlsx";
+import { Seo } from "@/components/Seo";
 
 const SHARP = { borderRadius: 0 } as const;
 
@@ -287,6 +288,8 @@ export default function KennelCapiPage() {
   });
 
   return (
+    <>
+      <Seo noindex title="Kennel Capi" />
     <div className="p-6 space-y-6 max-w-6xl">
       <header>
         <h1 className="text-2xl font-bold uppercase tracking-brand">Meta CAPI</h1>
@@ -608,5 +611,6 @@ export default function KennelCapiPage() {
         </div>
       </Card>
     </div>
+    </>
   );
 }

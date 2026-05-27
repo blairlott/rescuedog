@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Mail, Power, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type Lead = {
   id: string;
@@ -84,6 +85,8 @@ export default function CrmLeadsPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Crm Leads" />
     <div className="p-6 space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
@@ -196,5 +199,6 @@ export default function CrmLeadsPage() {
         )}
       </Card>
     </div>
+    </>
   );
 }

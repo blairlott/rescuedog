@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import "leaflet/dist/leaflet.css";
+import { Seo } from "@/components/Seo";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -147,6 +148,8 @@ export default function CrmMapPage() {
   }, [unmapped, upsertAccount]);
 
   return (
+    <>
+      <Seo noindex title="Crm Map" />
     <div className="relative" style={{ height: "100%" }}>
       <div className="relative z-[1000] p-4 border-b border-border bg-card flex items-center gap-3 flex-wrap">
         <h2 className="font-bold text-foreground">Account Map</h2>
@@ -192,5 +195,6 @@ export default function CrmMapPage() {
         style={{ height: "calc(100% - 64px)", width: "100%" }}
       />
     </div>
+    </>
   );
 }

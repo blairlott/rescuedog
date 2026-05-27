@@ -23,6 +23,7 @@ import { SortableTileGrid, type SortableTile } from "@/components/finance/Sortab
 import { ShareBoardDialog } from "@/components/finance/ShareBoardDialog";
 import { GrazChat } from "@/components/finance/GrazChat";
 import { BobTileNote } from "@/components/finance/BobTileNote";
+import { Seo } from "@/components/Seo";
 
 const RANGES = [
   { label: "Last 7 days", days: 7 },
@@ -262,6 +263,8 @@ export default function FinanceDashboard() {
   };
 
   return (
+    <>
+      <Seo noindex title="Finance Dashboard" />
     <div className="finance-workspace px-3 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5 max-w-[1700px] mx-auto">
       {/* Sticky toolbar */}
       <div className="sticky top-14 z-20 -mx-3 sm:-mx-6 px-3 sm:px-6 py-3 bg-card border-b border-border flex flex-wrap items-center gap-2">
@@ -461,5 +464,6 @@ export default function FinanceDashboard() {
         <ShareBoardDialog open={shareOpen} onOpenChange={setShareOpen} board={board ?? null} userId={userId} />
       )}
     </div>
+    </>
   );
 }

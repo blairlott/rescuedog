@@ -19,6 +19,7 @@ import {
 import { InstacartPartnershipPlanner } from "@/components/kennel/InstacartPartnershipPlanner";
 import { InstacartCapabilitiesOutline } from "@/components/kennel/InstacartCapabilitiesOutline";
 import { InstacartAutopilotHealth } from "@/components/kennel/InstacartAutopilotHealth";
+import { Seo } from "@/components/Seo";
 
 const PLATFORM = "instacart";
 
@@ -247,6 +248,8 @@ export default function KennelInstacartAdsPage() {
   }
 
   return (
+    <>
+      <Seo noindex title="Kennel Instacart Ads" />
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -627,5 +630,6 @@ export default function KennelInstacartAdsPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </>
   );
 }

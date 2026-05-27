@@ -15,6 +15,7 @@ import { UploadDatasetDialog } from "@/components/finance/UploadDatasetDialog";
 import { PivotBuilder, type PivotConfig } from "@/components/finance/PivotBuilder";
 import { ChartBuilder, type ChartConfig } from "@/components/finance/ChartBuilder";
 import { SavedViewsPanel } from "@/components/finance/SavedViewsPanel";
+import { Seo } from "@/components/Seo";
 
 const defaultPivot: PivotConfig = { rowField: null, colField: null, valueField: null, agg: "sum" };
 const defaultChart: ChartConfig = { type: "bar", xField: null, yField: null, groupField: null, agg: "sum" };
@@ -71,6 +72,8 @@ export default function FinanceWorkspace() {
   };
 
   return (
+    <>
+      <Seo noindex title="Finance Workspace" />
     <div className="px-6 py-6 max-w-[1600px] mx-auto">
       <div className="mb-4">
         <h1 className="text-2xl font-bold leading-tight">Workspace</h1>
@@ -183,5 +186,6 @@ export default function FinanceWorkspace() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

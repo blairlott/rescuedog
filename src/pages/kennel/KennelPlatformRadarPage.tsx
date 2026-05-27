@@ -7,6 +7,7 @@ import { MetricCard } from "@/components/kennel/MetricCard";
 import { Radar, ExternalLink, X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { Seo } from "@/components/Seo";
 
 const sevColor: Record<string, string> = {
   high: "bg-red-600 text-white",
@@ -71,6 +72,8 @@ export default function KennelPlatformRadarPage() {
   }
 
   return (
+    <>
+      <Seo noindex title="Kennel Platform Radar" />
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -158,5 +161,6 @@ export default function KennelPlatformRadarPage() {
         </Card>
       </div>
     </div>
+    </>
   );
 }

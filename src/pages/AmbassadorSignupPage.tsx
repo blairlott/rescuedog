@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { toast } from "sonner";
 import { AvatarUploader } from "@/components/ambassador/AvatarUploader";
+import { Seo } from "@/components/Seo";
 
 export default function AmbassadorSignupPage() {
   const { user, loading } = useCustomerAuth();
@@ -128,6 +129,8 @@ export default function AmbassadorSignupPage() {
   if (hasProfile) return null;
 
   return (
+    <>
+      <Seo noindex title="Ambassador Signup" />
     <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 max-w-2xl mx-auto py-12 px-4">
@@ -214,5 +217,6 @@ export default function AmbassadorSignupPage() {
       </main>
       <Footer />
     </div>
+    </>
   );
 }

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 export default function ForcePasswordChangePage() {
   const [password, setPassword] = useState("");
@@ -68,6 +69,8 @@ export default function ForcePasswordChangePage() {
   }
 
   return (
+    <>
+      <Seo noindex title="Force Password Change" />
     <div className="min-h-dvh flex items-center justify-center bg-secondary px-4">
       <div className="w-full max-w-md">
         <div className="bg-background border border-border p-8 shadow-sm">
@@ -97,5 +100,6 @@ export default function ForcePasswordChangePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Mail, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type LogRow = {
   id: string;
@@ -87,6 +88,8 @@ export default function CmsEmailsPage() {
   const visibleLogs = (data?.logs ?? []).filter(r => new Date(r.created_at).getTime() >= cutoff);
 
   return (
+    <>
+      <Seo noindex title="Cms Emails" />
     <div className="min-h-dvh bg-background p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -192,5 +195,6 @@ export default function CmsEmailsPage() {
         </table>
       </div>
     </div>
+    </>
   );
 }

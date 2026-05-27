@@ -12,6 +12,7 @@ import { AbVariantTile } from "@/components/admin/AbVariantTile";
 import { BarChart3, Bell } from "lucide-react";
 import { FeatureRequestBox } from "@/components/admin/FeatureRequestBox";
 import { FeatureRequestInbox } from "@/components/admin/FeatureRequestInbox";
+import { Seo } from "@/components/Seo";
 
 type RoleRow = { role: string };
 type PendingRequest = {
@@ -187,6 +188,8 @@ const AdminPortalPage = () => {
 
   // Logged in → portal landing
   return (
+    <>
+      <Seo noindex title="Admin Portal" />
     <div className="min-h-dvh bg-secondary">
       <AdminTopNav roles={roles} />
       <main className="container mx-auto px-4 py-12 max-w-4xl">
@@ -326,6 +329,7 @@ const AdminPortalPage = () => {
         </div>
       </main>
     </div>
+    </>
   );
 };
 

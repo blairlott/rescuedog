@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 type Flag = {
   id: string;
@@ -61,6 +62,8 @@ export default function AdminFlagsPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Admin Flags" />
     <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-10 max-w-3xl">
@@ -93,5 +96,6 @@ export default function AdminFlagsPage() {
       </main>
       <Footer />
     </div>
+    </>
   );
 }

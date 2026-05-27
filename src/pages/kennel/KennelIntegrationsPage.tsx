@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Key, Save, Trash2, Eye, EyeOff, Lock, Plug, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -325,6 +326,8 @@ export default function KennelIntegrationsPage() {
   }
 
   return (
+    <>
+      <Seo noindex title="Kennel Integrations" />
     <div className="p-4 md:p-6 space-y-6" style={BRAND}>
       <header className="space-y-1">
         <div className="flex items-center gap-2">
@@ -503,5 +506,6 @@ export default function KennelIntegrationsPage() {
         </div>
       </Card>
     </div>
+    </>
   );
 }

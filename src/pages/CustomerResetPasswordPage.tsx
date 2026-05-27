@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 const CustomerResetPasswordPage = () => {
   const navigate = useNavigate();
@@ -68,6 +69,8 @@ const CustomerResetPasswordPage = () => {
   }
 
   return (
+    <>
+      <Seo noindex title="Customer Reset Password" />
     <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 flex items-center justify-center py-12 px-4">
@@ -93,6 +96,7 @@ const CustomerResetPasswordPage = () => {
       </main>
       <Footer />
     </div>
+    </>
   );
 };
 

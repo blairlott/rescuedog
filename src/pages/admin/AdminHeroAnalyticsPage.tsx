@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { HERO_VARIANTS } from "@/components/merch/MerchHero";
 import { WINE_HERO_VARIANTS, WINE_HERO_IMAGES, WINE_HERO_COPY } from "@/components/WineHero";
 import { Loader2 } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 type Row = {
   variant_id: string;
@@ -125,6 +126,8 @@ export default function AdminHeroAnalyticsPage() {
   );
 
   return (
+    <>
+      <Seo noindex title="Admin Hero Analytics" />
     <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-10">
@@ -229,16 +232,20 @@ export default function AdminHeroAnalyticsPage() {
       </main>
       <Footer />
     </div>
+    </>
   );
 }
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
+    <>
+      <Seo noindex title="Admin Hero Analytics" />
     <div className="border border-border p-4">
       <div className="text-xs uppercase tracking-brand font-bold text-muted-foreground">{label}</div>
       <div className="text-2xl font-bold mt-1">{value}</div>
       {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
     </div>
+    </>
   );
 }
 
@@ -246,6 +253,8 @@ function OptimizerStatus({ rows }: { rows: Row[] }) {
   const minImpr = rows.length ? Math.min(...rows.map((r) => r.impressions)) : 0;
   const exploring = minImpr < EXPLORATION_FLOOR;
   return (
+    <>
+      <Seo noindex title="Admin Hero Analytics" />
     <div className="border border-border p-4 mb-6 bg-muted/40">
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-xs uppercase tracking-brand font-bold">Optimizer</span>
@@ -263,5 +272,6 @@ function OptimizerStatus({ rows }: { rows: Row[] }) {
         </span>
       </div>
     </div>
+    </>
   );
 }

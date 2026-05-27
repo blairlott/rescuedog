@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Mail, Bot, Save, RotateCcw } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 type WelcomeTemplate = { name: string; title: string; defaultSubject: string; description: string };
 
@@ -113,6 +114,8 @@ export default function CrmCustomerServicePage() {
   }
 
   return (
+    <>
+      <Seo noindex title="Crm Customer Service" />
     <div className="p-6 space-y-6 max-w-5xl">
       <div>
         <h1 className="text-2xl font-bold tracking-brand uppercase">Customer Service</h1>
@@ -253,5 +256,6 @@ export default function CrmCustomerServicePage() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

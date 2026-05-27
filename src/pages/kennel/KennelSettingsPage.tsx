@@ -13,6 +13,7 @@ import {
 import { ShieldAlert, Power, UserPlus, Eye, Bell, Camera, Send, MessageSquare } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { TeamInviteDialog } from "@/components/team/TeamInviteDialog";
+import { Seo } from "@/components/Seo";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -184,6 +185,8 @@ export default function KennelSettingsPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Kennel Settings" />
     <div className="p-6 max-w-[1400px] space-y-8" style={BRAND_FONT}>
       <header className="flex items-center justify-between">
         <div>
@@ -521,5 +524,6 @@ export default function KennelSettingsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </>
   );
 }

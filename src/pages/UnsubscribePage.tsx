@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Seo } from "@/components/Seo";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -39,6 +40,8 @@ export default function UnsubscribePage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Unsubscribe" />
     <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 max-w-md mx-auto py-20 px-4 text-center">
@@ -58,5 +61,6 @@ export default function UnsubscribePage() {
       </main>
       <Footer />
     </div>
+    </>
   );
 }

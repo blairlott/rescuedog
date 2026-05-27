@@ -56,4 +56,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://shopify-buddy-b2b.lovable.app/sitemap.xml
+Sitemap: https://rescuedogwines.com/sitemap.xml

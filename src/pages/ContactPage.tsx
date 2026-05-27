@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -102,6 +103,27 @@ const ContactPage = () => {
 
   return (
     <div className="min-h-dvh flex flex-col">
+      <Seo
+        title="Contact Rescue Dog Wines"
+        description="Get in touch with Rescue Dog Wines — questions, orders, wholesale, and media inquiries. Sustainably crafted Lodi wines that help rescue dogs."
+        path="/contact"
+        breadcrumbs={[{ name: "Home", path: "/" }, { name: "Contact", path: "/contact" }]}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          name: "Rescue Dog Wines",
+          url: "https://rescuedogwines.com/contact",
+          email: "hello@rescuedogwines.com",
+          telephone: "+1-209-365-6150",
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: "Lodi",
+            addressRegion: "CA",
+            addressCountry: "US",
+          },
+          areaServed: "US",
+        }}
+      />
       <Header />
       <main className="flex-1">
         {/* Hero */}

@@ -17,7 +17,7 @@ import {
   buildGoogleAdsHeaders,
   isAuthError,
 } from "../_shared/googleAdsAuth.ts";
-import { verifyCronSecret } from "../_shared/cronAlert.ts";
+import { checkSharedSecret } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,7 +44,12 @@ Deno.serve(async (req) => {
   );
 
   // Accept either cron secret OR an authenticated admin/owner/ad_ops_manager JWT.
-  const cronOk = await verifyCronSecret(req, "gclid-oci-loop");
+  const cronOk = await checkSharedSecret(req, {
+    functionName: "gclid-oci-loop",
+    envVar: "CRON_SECRET",
+    headers: ["x-cron-secret"],
+    alertOnFail: false,
+  });
   if (!cronOk) {
     const auth = req.headers.get("Authorization");
     if (!auth?.startsWith("Bearer ")) {

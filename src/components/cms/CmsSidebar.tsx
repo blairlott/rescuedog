@@ -27,6 +27,7 @@ import {
   ShoppingBag,
   ListChecks,
   PenLine,
+  LineChart,
 } from "lucide-react";
 
 export type CmsTabValue =
@@ -61,6 +62,7 @@ const TOOLS: { to: string; label: string; icon: React.ComponentType<{ className?
   { to: "/cms/heroes#merch", label: "Merch Header", icon: ShoppingBag },
   { to: "/cms/experiments", label: "Experiments", icon: FlaskConical },
   { to: "/cms/opportunities", label: "Optimization Queue", icon: ListChecks },
+  { to: "/cms/search-console", label: "Search Console", icon: LineChart },
 ];
 
 export function CmsSidebar({

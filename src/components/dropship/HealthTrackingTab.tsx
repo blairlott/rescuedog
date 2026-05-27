@@ -72,7 +72,10 @@ export function HealthTrackingTab() {
   async function load() {
     setLoading(true);
     const [p, r, m, a] = await Promise.all([
-      supabase.from("dropship_partners").select("*").order("name"),
+      supabase
+        .from("dropship_partners")
+        .select("id, name, slug, vendor_type, simulation_mode, status, last_health_check_at, last_health_status")
+        .order("name"),
       supabase
         .from("vs_tracking_relay_log")
         .select("*")

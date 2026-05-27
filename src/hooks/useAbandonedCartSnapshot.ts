@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useCartStore } from "@/stores/cartStore";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { getGclid } from "@/lib/metaAttribution";
 
 /**
  * Snapshots the cart to Supabase for the abandoned-cart recovery worker.
@@ -62,7 +63,8 @@ export function useAbandonedCartSnapshot() {
             shopify_checkout_url: shopifyCheckoutUrl,
             fbc: getCookie("_fbc"),
             fbp: getCookie("_fbp"),
-            gclid: getCookie("gclaw"),
+            // Unwrapped click ID, not the GCL.{seconds}.{gclid} wrapper.
+            gclid: getGclid(),
           },
         })
         .catch((e) => console.warn("[abandoned-cart] snapshot failed", e));

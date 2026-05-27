@@ -215,6 +215,7 @@ function AppContent() {
     <a href="#main-content" className="skip-link">Skip to main content</a>
     <main id="main-content" tabIndex={-1}>
     <Suspense fallback={<PageFallback />}>
+    <HostRouter />
     <Routes>
       <Route path="/" element={merchHost ? <MerchHomePage /> : <Index />} />
       <Route path="/merch" element={<MerchHomePage />} />

@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
   }
 
   // Lookback window: default 7 days, can be overridden by body
-  let lookbackDays = 7;
+  let lookbackDays = 30;
   let dryRun = false;
   if (req.method === "POST") {
     try {

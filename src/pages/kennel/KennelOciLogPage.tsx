@@ -58,7 +58,7 @@ export default function KennelOciLogPage() {
   const [rows, setRows] = useState<OciRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<StatusFilter>("all");
-  const [windowFilter, setWindowFilter] = useState<WindowFilter>("7d");
+  const [windowFilter, setWindowFilter] = useState<WindowFilter>("30d");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [running, setRunning] = useState<false | "run" | "dry">(false);
@@ -128,7 +128,7 @@ export default function KennelOciLogPage() {
           Authorization: `Bearer ${session.access_token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ lookback_days: 7, dry_run: dryRun }),
+        body: JSON.stringify({ lookback_days: 30, dry_run: dryRun }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -147,7 +147,7 @@ export default function KennelOciLogPage() {
             toast.success(`Uploaded ${uploaded} (${data?.failed ?? 0} failed)`);
           } else if (matched === 0) {
             toast.message(`No new conversions to upload`, {
-              description: `Scanned ${scanned} VS sales — none matched a captured GCLID in the last ${7} days.`,
+              description: `Scanned ${scanned} VS sales — none matched a captured GCLID in the last 30 days.`,
             });
           } else {
             toast.message(`Nothing new to upload`, {

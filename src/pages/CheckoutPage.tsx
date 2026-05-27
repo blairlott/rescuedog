@@ -267,9 +267,11 @@ export default function CheckoutPage() {
     if (!canSubmit) return;
     setCreating(true);
     try {
-      const ageVerified = (() => {
-        try { return localStorage.getItem("rdw_age_verified") === "true"; } catch { return false; }
-      })();
+      // Defense-in-depth age gate — covers both legacy + canonical key
+      // spellings and reloads the page if a visitor bypassed AgeGate.
+      const { isAgeVerified, requireAgeVerified } = await import("@/lib/ageVerification");
+      if (!requireAgeVerified()) { setCreating(false); return; }
+      const ageVerified = isAgeVerified();
 
       const { data, error } = await supabase.functions.invoke("unified-checkout", {
         body: {

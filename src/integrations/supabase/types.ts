@@ -13604,6 +13604,15 @@ export type Database = {
           valid: boolean
         }[]
       }
+      vault_create_secret_by_name: {
+        Args: { p_name: string; p_secret: string }
+        Returns: string
+      }
+      vault_secret_id_by_name: { Args: { p_name: string }; Returns: string }
+      vault_update_secret_by_name: {
+        Args: { p_name: string; p_secret: string }
+        Returns: undefined
+      }
       wine_club_conversion_triggers: {
         Args: never
         Returns: {

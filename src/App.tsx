@@ -159,6 +159,11 @@ const PageFallback = () => (
   <div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">Loading…</div>
 );
 
+function NewsSlugRedirect() {
+  const { slug } = useParams();
+  return <Navigate to={`/blog/${slug ?? ""}`} replace />;
+}
+
 function AppContent() {
   useCartSync();
   useAbandonedCartSnapshot();

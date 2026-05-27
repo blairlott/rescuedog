@@ -90,7 +90,7 @@ export function getGa4ClientId(): string | null {
   return `${parts[2]}.${parts[3]}`;
 }
 
-/** Read the gclid we stashed during ad-click capture (see metaAttribution). */
-export function getStoredGclid(): string | null {
-  return readCookie("gclaw");
-}
+/** Read the gclid we stashed during ad-click capture (see metaAttribution).
+ *  Re-exported from metaAttribution so we unwrap "GCL.{seconds}.{gclid}"
+ *  and never insert the wrapper string into ab_checkout_intents. */
+export { getGclid as getStoredGclid } from "@/lib/metaAttribution";

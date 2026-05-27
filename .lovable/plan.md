@@ -1,49 +1,31 @@
-## Root cause
+## Two issues, two fixes
 
-`vinoshipper-poll-15min` cron has been returning **401 unauthorized** every 15 minutes since at least last night (every entry in `net._http_response` for this cron is a 401). The cron reads `KENNEL_INGEST_SECRET` from `vault.decrypted_secrets` and sends it as `x-kennel-ingest-secret`; the function compares it to the `KENNEL_INGEST_SECRET` edge-function env var. The two values no longer match, so no Vinoshipper orders have been polled and `vs_transactions` stayed empty → the OCI loop had nothing to scan.
-
-## Fix
-
-**1. Add a `CRON_SECRET` fallback to `vinoshipper-poll`** (`supabase/functions/vinoshipper-poll/index.ts`)
-
-The function currently accepts only `x-kennel-ingest-secret` or an admin JWT. Add a third accepted path that mirrors what every other healthy cron in this project uses — `x-cron-secret` compared against the existing `CRON_SECRET` env var (already populated, already used by `gclid-oci-loop` and others). This decouples the function from the broken vault entry and matches the project's established pattern.
-
+### Fix 1 — `getStoredGclid()` returns the wrong value
+`src/lib/abVariant.ts` line 94-96:
 ```ts
-// in addition to the existing secretOk check
-const cronSecret = req.headers.get("x-cron-secret");
-const expectedCronSecret = Deno.env.get("CRON_SECRET");
-const cronOk = !!expectedCronSecret && cronSecret === expectedCronSecret;
-if (!secretOk && !cronOk) { /* fall through to JWT check */ }
+export function getStoredGclid(): string | null {
+  return readCookie("gclaw"); // returns "GCL.{seconds}.{gclid}" — wrapped value
+}
 ```
+The `gclaw` cookie is `GCL.{seconds}.{gclid}`. Sending that whole string to Google Ads as the click ID is what produced the `INVALID_CONVERSION_VALUE` PARTIAL row visible in the screenshot.
 
-**2. Repoint the cron job to use `x-cron-secret`** (insert SQL, not migration — cron commands hold environment-specific values)
-
-```sql
-SELECT cron.unschedule('vinoshipper-poll-15min');
-SELECT cron.schedule(
-  'vinoshipper-poll-15min',
-  '*/15 * * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://eskqaxmypgvwtsffcbsw.supabase.co/functions/v1/vinoshipper-poll',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'x-cron-secret', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'CRON_SECRET' LIMIT 1)
-    ),
-    body := jsonb_build_object('limit', 100)
-  );
-  $$
-);
+Replace it to re-export the already-correct unwrapper from `metaAttribution.ts`:
+```ts
+export { getGclid as getStoredGclid } from "@/lib/metaAttribution";
 ```
+(That function correctly parses `parts.slice(2).join(".")`.)
 
-**3. Verify by polling `net._http_response` once**
+### Fix 2 — Surface why intents aren't being recorded
+`ab_checkout_intents` has only 38 rows, all without `gclid`. Two follow-ups:
 
-After deploy + reschedule, the next quarter-hour cron tick should return `200` with a `scanned`/`inserted` JSON payload instead of 401. Then `vs_transactions` will start filling in, and the next 2-hour `gclid-oci-loop` run will have rows to match against.
+a. **Audit where `recordCheckoutIntent` is called** — `rg "recordCheckoutIntent"` from `src/lib/abCheckoutIntent.ts`. Likely it's only on the Vinoshipper modal "Continue" click, which misses subscription/Shopify-merch flows entirely. List the call sites in a short note (no code change in this turn — just a finding for you to direct).
 
-**4. Leave the existing `x-kennel-ingest-secret` path in place.** It's still used by any Lindy/admin workflow that knows the value; the new `x-cron-secret` path is purely additive.
+b. **Add a small fallback in `gclid-oci-loop`**: also look up the gclid via `meta_capi_events` or a `gclid` recorded on the cart-snapshot row (we already store `gclid` in `cart-snapshot/index.ts`). If `ab_checkout_intents` has no row for an email but a `cart_snapshots` row does, use that. This widens the match net and uses the data we're already collecting.
 
-## Out of scope
+### Out of scope (call out, don't build)
 
-- No changes to `gclid-oci-loop`, the OCI page, or RLS.
-- Not touching the vault `KENNEL_INGEST_SECRET` entry — if you want to also re-seed that later for Lindy, we can do it separately.
-- No backfill SQL for `vs_transactions` — `vinoshipper-poll` will pull recent orders on its own once it can authenticate. (If you need orders older than its default lookback, we can trigger `vinoshipper-conversions-backfill` afterward.)
+- The "only 38 intents in 30 days" problem is a tracking-coverage issue. Not fixable by the OCI loop — needs a separate review of which checkout flows do/don't call `recordCheckoutIntent`. I'll surface the call-site list as part of Fix 2a, and you decide where to add more capture calls.
+- The historical PARTIAL row will stay PARTIAL — Google Ads OCI rejects can't be retroactively cleaned up; only the next run with the corrected click ID format will succeed.
+
+### Verify after deploy
+- Reload `/kennel/oci-log` and click **Dry Run** — `scanned` should still be ~192. `matched` will only rise once `ab_checkout_intents` (or `cart_snapshots`) actually contains a gclid for a recent customer's email. So after Fix 1 + Fix 2b, manually arrive at the site with `?gclid=test123` in the URL, complete a checkout, then re-run.

@@ -1,70 +1,97 @@
-## Goal
+# Make rescuedogwines.com Crawlable (Vite + React, no framework migration)
 
-Two cleanups, one pass:
+Sequenced exactly per your brief. I'll **stop and report after each step** for your go-ahead before moving on. No Next.js, no visual changes.
 
-1. **Fix all 16 imported WordPress posts** — every row in `content_index` currently has the title `"Age Verification - Rescue Dog Wines"` because the original import used Firecrawl, which scraped the page's `<title>` tag after the age-gate modal had injected its own document title. The slugs, bodies, and excerpts are correct; only `title` (and likely `cover_image_url` for some) is wrong.
-2. **Link the blog from the footer** — `/blog` is a working route but not linked anywhere in the public nav, so the 16 imported articles (and the Rescue Dog Month one in particular) are effectively orphaned.
+---
 
-## What I'll build
+## Step 1 — Prerendering (highest priority)
 
-### 1. Re-pull titles from the real WordPress REST API
+**Approach:** Add `vite-plugin-prerender` (uses Puppeteer, integrates with existing Vite build, no source restructuring). `react-snap` is the alternative but it's unmaintained since 2020 — `vite-plugin-prerender` is the right call.
 
-The existing `wp-import` edge function already reads `item.title.rendered` from `/wp-json/wp/v2/posts` — that's the clean H1 title, not a scrape. I'll add a small companion edge function `wp-refresh-titles` that:
+**Routes to prerender:**
+- `/`
+- `/shop` (current path is `/wines` — will confirm and prerender the canonical one)
+- `/club` (Wine Club)
+- `/mission` (cause / rescue partners page)
+- `/wine-that-gives-back`
+- `/ambassadors`
+- `/press`
+- `/policies`
+- Every individual wine PDP — pulled at build time from the `wine_products` table via the Supabase anon key (already in `.env`)
 
-- Reads every row in `content_index` where `source = 'wordpress'`.
-- For each row, fetches `https://rescuedogwines.com/wp-json/wp/v2/posts?slug=<slug>&_embed=1`.
-- Updates `title`, `excerpt`, `author`, `published_at`, and `cover_image_url` (re-hosting the featured image into the `blog-media` bucket if it isn't already a Supabase URL).
-- Leaves `body_html` alone (already correct from Firecrawl).
-- Admin/CMS-editor gated, same auth pattern as `wp-import`.
-- Returns a JSON summary: `{ updated, skipped, failed, errors[] }`.
+**Excluded from prerender** (correctly noindex'd already): `/crm/*`, `/cms/*`, `/kennel/*`, `/admin/*`, `/finance/*`, all `*-login`, `/account`, `/checkout`, `/thank-you`, `/unsubscribe`.
 
-I'll then trigger it once from a small one-off CMS button (or you can hit it from the existing Import tab) so all 16 titles get corrected in one run. The function is idempotent — safe to re-run anytime.
+**Age-gate consideration:** Puppeteer will hit the age modal during prerender. I'll set `localStorage.rdw-age-verified=true` in the prerender script's page context so the real HTML renders. Step 6 then makes sure the gate doesn't hide HTML from crawlers either way.
 
-### 2. Add `/blog` to the public footer
+**Verification:** `curl https://rescuedogwines.com/wines/<slug>` → must show `<h1>`, product name, price, description in the response body.
 
-In `src/components/Footer.tsx`, add a "News & Stories" link to `/blog` under the existing nav column. Single line change — no design system impact.
+---
 
-### 3. Forward `rescuedogmonth.com` (you do this in GoDaddy)
+## Step 2 — Per-route meta tags
 
-Once titles are fixed, the canonical URL becomes:
+`react-helmet-async` is **already installed** (used by the `<Seo>` component we audited last week). I'll audit which prerendered routes are missing it and fill the gaps. Per-PDP `og:image` = bottle shot, not the site default. Canonical on every page.
 
+---
+
+## Step 3 — `/og-default.jpg`
+
+Check `public/og-default.jpg` exists at 1200×630. If missing or low-res, generate a brand-correct one (red #c30017 + black RDW logo, no "free shipping" copy).
+
+---
+
+## Step 4 — JSON-LD structured data
+
+Already have `src/lib/jsonLd.tsx`. Will extend so the prerender output includes:
+- `Organization` on `/` with `sameAs` (need IG/FB/LinkedIn URLs from you — see Open Questions)
+- `Product` on each PDP — name, image, description, brand "Rescue Dog Wines", offers (price, availability), `aggregateRating` only when reviews exist
+- `WebSite` + `SearchAction` on `/` pointing at `/wines?q={search_term_string}`
+
+---
+
+## Step 5 — sitemap.xml + robots.txt
+
+Both already exist in `/public`. I'll regenerate sitemap from live DB at build time (`scripts/generate-sitemap.ts` predev/prebuild hook) with all canonical URLs + `lastmod`. Confirm robots.txt allows all + references sitemap.
+
+---
+
+## Step 6 — Age-gate audit
+
+Current `AgeGate.tsx` is client-side localStorage — good. Need to verify it never returns `null` from `<App>` before children mount (which would empty the DOM for crawlers). Refactor if needed so the gate is a pure **overlay** while the underlying `<main>` HTML is always present in the source.
+
+---
+
+## Step 7 — GTM dataLayer sanity
+
+GTM-NHTH66HM head snippet + `<noscript>` iframe placement check in `index.html`. Add a route-change listener that pushes:
+
+```js
+dataLayer.push({
+  event: 'page_view',
+  page_type: 'home' | 'shop' | 'pdp' | 'club' | 'mission' | ...,
+  wine_sku: <sku or undefined>,
+  user_status: 'member' | 'non_member' | 'unknown',
+});
 ```
-https://rescuedogwines.com/blog/october-is-rescue-dog-month
-```
 
-In GoDaddy:
+Wire `user_status` to `useCustomerAuth` + `useIsMember`.
 
-- My Products → `rescuedogmonth.com` → Domain Settings → **Forwarding** → Add forwarding.
-- Forward to: `https://rescuedogwines.com/blog/october-is-rescue-dog-month`
-- Type: **Permanent (301)**, **Forward only** (no masking).
-- Save. Repeat for `www.rescuedogmonth.com`.
+---
 
-## What I won't touch
+## Step 8 — Lighthouse baseline
 
-- `body_html` of any imported post — already clean from Firecrawl.
-- The `content_redirects` table — the 301s from old WP paths are already in place.
-- The Header nav — already crowded; "News & Stories" only goes in the footer.
-- The CMS Content Library panel UI itself — bulk-editing 16 titles by hand isn't necessary now that we have a refresh function.
+Run Lighthouse mobile on `/` and one PDP **before** changes and **after**. Report deltas. Targets: LCP < 2.5s, CLS < 0.1, Perf ≥ 85. Prerendering alone usually nets +15–25 perf points because the LCP image and H1 are in the static HTML.
 
-## Technical details
+---
 
-- **Why a new edge function instead of re-running `wp-import`?** `wp-import` wipes & re-imports based on `external_id`; some of the Firecrawl rows have no `external_id` populated, so a refresh-by-slug pass is cleaner and won't disturb the existing primary keys, redirects, or any manual edits.
-- **WP REST source of truth:** `https://rescuedogwines.com/wp-json/wp/v2/posts?slug=<slug>&_embed=1` returns the real `title.rendered` (decoded HTML entities, no age-gate document-title pollution).
-- **Image re-host:** if `cover_image_url` already starts with the Supabase public URL prefix, skip; otherwise download the WP `wp:featuredmedia` source and upload to `blog-media/post/<slug>-<id>.<ext>`.
-- **Auth:** require `is_cms_editor` or `is_admin_or_owner` (same RPCs as `wp-import`).
-- **Per-memory rule:** append a Lindy Manual changelog entry for the new `wp-refresh-titles` edge function in the same turn.
+## Open questions (need before Step 4)
 
-## Files touched
+1. **Social `sameAs` URLs** — please paste Instagram, Facebook, LinkedIn handles/URLs for the Organization schema.
+2. **Shop path canonical** — site currently uses `/wines`, your brief says `/shop`. Should I (a) keep `/wines` as canonical, (b) add `/shop` as a 301-style alias that renders the same page, or (c) rename `/wines` → `/shop`? Recommend (a) — `/wines` is already indexed and on the sitemap.
 
-- `supabase/functions/wp-refresh-titles/index.ts` — new edge function.
-- `src/components/Footer.tsx` — add "News & Stories" link to `/blog`.
-- `/mnt/documents/Lindy_User_Manual_and_Roadmap.docx` — changelog entry for the new function.
+---
 
-## Verification
+## Execution cadence
 
-After implementation:
+I'll do **Step 1 only**, report what changed + a `curl` verification of one prerendered route, and wait for your green light before Step 2. Same pattern through Step 8.
 
-1. Call `wp-refresh-titles` once.
-2. Re-query `content_index` and confirm 16 distinct, correct titles (e.g. `"October Is Rescue Dog Month"`).
-3. Visit `/blog` and `/blog/october-is-rescue-dog-month` in preview — titles render correctly, footer link works.
-4. You then complete the GoDaddy forwarding step.
+Ready to start Step 1 on your go.

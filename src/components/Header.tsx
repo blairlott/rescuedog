@@ -150,14 +150,6 @@ export function Header() {
             <div className="hidden md:inline-flex">
               <LanguageSwitcher compact />
             </div>
-            <Link
-              to={user ? "/account" : "/login"}
-              className="p-1 text-foreground hover:text-primary transition-colors"
-              title={user ? t("nav.account") : t("nav.sign_in")}
-              aria-label={user ? "Account" : "Sign in"}
-            >
-              {user ? <User className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
-            </Link>
             <CartDrawer />
           </div>
         </div>

@@ -26,7 +26,6 @@ type CredRow = {
   id: string;
   provider: string;
   credential_key: string;
-  credential_value: string;
   scope: string;
   notes: string | null;
   updated_at: string;
@@ -236,7 +235,7 @@ export default function KennelIntegrationsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("integration_credentials")
-      .select("*")
+      .select("id, provider, credential_key, scope, notes, updated_at")
       .order("provider")
       .order("credential_key");
     if (error) toast.error(error.message);

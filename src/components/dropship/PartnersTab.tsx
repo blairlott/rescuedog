@@ -50,7 +50,10 @@ export function PartnersTab() {
   const { data: partners = [], isLoading } = useQuery({
     queryKey: ["dropship_partners"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("dropship_partners" as any).select("*").order("name");
+      const { data, error } = await supabase
+        .from("dropship_partners" as any)
+        .select("id, name, slug, contact_email, contact_phone, api_base_url, api_key_secret_name, payout_terms, status, notify_on_new_order, vendor_type, simulation_mode, fulfills_from_us, notes, last_health_check_at, last_health_status, created_at, updated_at")
+        .order("name");
       if (error) throw error;
       return (data || []) as unknown as Partner[];
     },

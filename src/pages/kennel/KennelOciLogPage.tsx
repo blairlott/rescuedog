@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { RefreshCw, Copy, ChevronDown, ChevronRight } from "lucide-react";
+import { RefreshCw, Copy, ChevronDown, ChevronRight, Play, FlaskConical } from "lucide-react";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -61,6 +61,18 @@ export default function KennelOciLogPage() {
   const [windowFilter, setWindowFilter] = useState<WindowFilter>("7d");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [running, setRunning] = useState<false | "run" | "dry">(false);
+  const [lastRun, setLastRun] = useState<null | {
+    ok: boolean;
+    scanned?: number;
+    matched?: number;
+    uploaded?: number;
+    would_upload?: number;
+    failed?: number;
+    dry_run?: boolean;
+    note?: string;
+    error?: string;
+  }>(null);
 
   const load = async () => {
     setLoading(true);
@@ -102,6 +114,33 @@ export default function KennelOciLogPage() {
     navigator.clipboard.writeText(text).then(() => toast.success("Copied"));
   };
 
+  const runLoop = async (dryRun: boolean) => {
+    setRunning(dryRun ? "dry" : "run");
+    setLastRun(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("gclid-oci-loop", {
+        body: { lookback_days: 7, dry_run: dryRun },
+      });
+      if (error) {
+        toast.error(error.message || "Loop failed");
+        setLastRun({ ok: false, error: error.message });
+      } else {
+        setLastRun(data as any);
+        if (dryRun) {
+          toast.success(`Dry run: ${data?.would_upload ?? 0} would upload`);
+        } else {
+          toast.success(`Uploaded ${data?.uploaded ?? 0} (${data?.failed ?? 0} failed)`);
+          load();
+        }
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Loop failed");
+      setLastRun({ ok: false, error: e?.message });
+    } finally {
+      setRunning(false);
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-4" style={BRAND_FONT}>
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -110,21 +149,73 @@ export default function KennelOciLogPage() {
             Google Ads OCI Uploads
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Offline click conversions pushed to Google Ads by Lindy's Z3 worker.
+            Offline click conversions. Internal <code>gclid-oci-loop</code> runs every 2h, matching VS sales → captured GCLIDs and uploading to Google Ads.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          style={SHARP}
-          onClick={load}
-          disabled={loading}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            style={SHARP}
+            onClick={() => runLoop(true)}
+            disabled={!!running}
+            className="gap-2"
+            title="Match VS sales → GCLIDs without uploading"
+          >
+            <FlaskConical className={`h-4 w-4 ${running === "dry" ? "animate-pulse" : ""}`} />
+            Dry Run
+          </Button>
+          <Button
+            size="sm"
+            style={SHARP}
+            onClick={() => runLoop(false)}
+            disabled={!!running}
+            className="gap-2"
+          >
+            <Play className={`h-4 w-4 ${running === "run" ? "animate-pulse" : ""}`} />
+            Run Match & Upload
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            style={SHARP}
+            onClick={load}
+            disabled={loading}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
+
+      {lastRun && (
+        <div
+          className="border border-border bg-card p-3 text-xs"
+          style={SHARP}
+        >
+          <div className="uppercase tracking-brand text-[10px] text-muted-foreground mb-1">
+            Last loop result {lastRun.dry_run ? "(dry run)" : ""}
+          </div>
+          {lastRun.error ? (
+            <div className="text-destructive font-mono">{lastRun.error}</div>
+          ) : (
+            <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono">
+              <span>scanned: <b>{lastRun.scanned ?? 0}</b></span>
+              <span>matched: <b>{lastRun.matched ?? 0}</b></span>
+              {lastRun.dry_run ? (
+                <span>would_upload: <b>{lastRun.would_upload ?? 0}</b></span>
+              ) : (
+                <>
+                  <span className="text-green-600">uploaded: <b>{lastRun.uploaded ?? 0}</b></span>
+                  <span className="text-destructive">failed: <b>{lastRun.failed ?? 0}</b></span>
+                </>
+              )}
+              {lastRun.note && <span className="text-muted-foreground">({lastRun.note})</span>}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Summary tiles */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
@@ -205,7 +296,7 @@ export default function KennelOciLogPage() {
             )}
             {!loading && rows.length === 0 && (
               <tr><td colSpan={8} className="px-2 py-6 text-center text-muted-foreground">
-                No uploads yet. Lindy's Z3 worker will populate this after the next post-purchase batch.
+                No uploads yet. The internal loop runs every 2h, or click "Run Match & Upload" to trigger now.
               </td></tr>
             )}
             {!loading && rows.map((r) => {

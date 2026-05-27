@@ -233,12 +233,17 @@ Deno.serve(async (req) => {
   const expectedSecret = Deno.env.get("KENNEL_INGEST_SECRET");
   const secretOk = !!expectedSecret && ingestSecret === expectedSecret;
 
+  // Cron fallback — matches the pattern used by other crons in this project
+  const cronSecret = req.headers.get("x-cron-secret");
+  const expectedCronSecret = Deno.env.get("CRON_SECRET");
+  const cronOk = !!expectedCronSecret && cronSecret === expectedCronSecret;
+
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  if (!secretOk) {
+  if (!secretOk && !cronOk) {
     const authHeader = req.headers.get("Authorization") ?? "";
     const jwt = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
     if (!jwt) return json({ error: "unauthorized" }, 401);

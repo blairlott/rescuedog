@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
     .from("vs_transactions")
     .select("invoice,customer_email,transaction_date,order_total,attribution_gross_product_value")
     .gte("transaction_date", since.slice(0, 10))
-    .in("transaction_type", ["Sale", "Order"])
+    .in("transaction_type", ["Sale", "Order", "SALE", "ORDER", "sale", "order"])
     .gt("order_total", 0)
     .not("customer_email", "is", null);
   if (txErr) return json({ error: "vs_query_failed", details: txErr.message }, 500);

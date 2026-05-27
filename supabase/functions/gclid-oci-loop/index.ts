@@ -169,12 +169,13 @@ Deno.serve(async (req) => {
 
   // 3. Build candidate matches
   type Match = {
-    intent_id: string;
+    intent_id: string | null;
     invoice: string;
     email: string;
     gclid: string;
     conversion_value: number;
     transaction_date: string;
+    source: "intent" | "cart";
   };
   const matches: Match[] = [];
   for (const t of txs) {
@@ -190,12 +191,14 @@ Deno.serve(async (req) => {
     });
     if (!winnerIntent) continue;
     matches.push({
-      intent_id: winnerIntent.id,
+      // intent_id has a FK to ab_checkout_intents — only set when source is intent.
+      intent_id: winnerIntent.source === "intent" ? winnerIntent.id : null,
       invoice: t.invoice,
       email,
       gclid: winnerIntent.gclid,
       conversion_value: Number(t.attribution_gross_product_value ?? t.order_total) || 0,
       transaction_date: t.transaction_date,
+      source: winnerIntent.source,
     });
   }
 

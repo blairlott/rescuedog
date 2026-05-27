@@ -24,6 +24,7 @@ import { PaymentMethodsTab } from "@/components/account/PaymentMethodsTab";
 import { RescueRewardsDashboard } from "@/components/account/RescueRewardsDashboard";
 import { useLaunchFeatures } from "@/hooks/useLaunchFeatures";
 import { OrdersTab } from "@/components/account/OrdersTab";
+import { Seo } from "@/components/Seo";
 
 const AccountPage = () => {
   const { user, loading, signOut } = useCustomerAuth();
@@ -240,6 +241,8 @@ const AccountPage = () => {
   if (!user) return null;
 
   return (
+    <>
+      <Seo noindex title="Account" />
     <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 py-8">
@@ -554,6 +557,7 @@ const AccountPage = () => {
       </main>
       <Footer />
     </div>
+    </>
   );
 };
 

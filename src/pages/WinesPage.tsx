@@ -9,11 +9,11 @@ import { useProducts } from "@/hooks/useProducts";
 import { Loader2 } from "lucide-react";
 import { ShopifyProduct } from "@/lib/shopify";
 import { useState, useMemo } from "react";
-import { Seo } from "@/components/Seo";
 import vineyardHero from "@/assets/migrated/vineyard-grapes.jpg";
 import { RecommendedRail } from "@/components/RecommendedRail";
 import { SmartSortToggle } from "@/components/SmartSortToggle";
 import { useSmartSort } from "@/hooks/useSmartSort";
+import { Seo } from "@/components/Seo";
 
 const WINE_SORT_ORDER = [
   "mothers-day-6-pack",

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, MessageSquare, CheckCircle2, AlertTriangle, SkipForward } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -61,6 +62,8 @@ export default function KennelSlackDigestLogPage() {
     : 0;
 
   return (
+    <>
+      <Seo noindex title="Kennel Slack Digest Log" />
     <div className="p-6 max-w-[1400px] space-y-6" style={BRAND_FONT}>
       <header className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -148,5 +151,6 @@ export default function KennelSlackDigestLogPage() {
         </table>
       </div>
     </div>
+    </>
   );
 }

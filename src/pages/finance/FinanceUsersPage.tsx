@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Trash2, UserPlus } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 export default function FinanceUsersPage() {
   const { data: roleInfo } = useUserRole();
@@ -81,6 +82,8 @@ export default function FinanceUsersPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Finance Users" />
     <div className="container mx-auto px-4 py-6 max-w-3xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Finance Access</h1>
@@ -144,5 +147,6 @@ export default function FinanceUsersPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

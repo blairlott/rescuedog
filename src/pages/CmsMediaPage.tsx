@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Upload, Loader2, Trash2, Copy, Image as ImageIcon, Video, FileText, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type MediaItem = {
   id: string;
@@ -133,6 +134,8 @@ export default function CmsMediaPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Cms Media" />
     <div className="min-h-dvh bg-background p-6">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center justify-between">
@@ -282,5 +285,6 @@ export default function CmsMediaPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

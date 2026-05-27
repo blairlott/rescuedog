@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, Play, Link2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 interface RunRow {
   id: string;
@@ -110,6 +111,8 @@ export default function CrmLegacyMigrationPage() {
   if (!isAdmin) return <div className="p-8 text-sm text-muted-foreground">Admin or owner role required.</div>;
 
   return (
+    <>
+      <Seo noindex title="Crm Legacy Migration" />
     <div className="p-6 space-y-6 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Legacy Vinoshipper Migration</h1>
@@ -237,16 +240,20 @@ export default function CrmLegacyMigrationPage() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
+    <>
+      <Seo noindex title="Crm Legacy Migration" />
     <Card>
       <CardContent className="p-4">
         <div className="text-xs uppercase tracking-brand text-muted-foreground">{label}</div>
         <div className="text-2xl font-bold text-foreground mt-1">{value.toLocaleString()}</div>
       </CardContent>
     </Card>
+    </>
   );
 }

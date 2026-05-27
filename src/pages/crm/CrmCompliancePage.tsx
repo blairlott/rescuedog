@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Play, ShieldCheck, AlertTriangle, XCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type Audit = {
   id: string; status: string; source: string; triggered_by: string;
@@ -54,6 +55,8 @@ export default function CrmCompliancePage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Crm Compliance" />
     <div className="p-6 space-y-6 overflow-auto">
       <div className="flex items-center justify-between">
         <div>
@@ -128,5 +131,6 @@ export default function CrmCompliancePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

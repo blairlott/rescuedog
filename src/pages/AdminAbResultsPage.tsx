@@ -14,6 +14,7 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
+import { Seo } from "@/components/Seo";
 
 type Row = {
   site_variant: string;
@@ -287,6 +288,8 @@ export default function AdminAbResultsPage() {
   );
 
   return (
+    <>
+      <Seo noindex title="Admin Ab Results" />
     <div className="min-h-dvh bg-secondary">
       <div className="border-b border-border bg-background">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -625,5 +628,6 @@ export default function AdminAbResultsPage() {
         )}
       </main>
     </div>
+    </>
   );
 }

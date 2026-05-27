@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, PawPrint, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Seo } from "@/components/Seo";
 
 const TIER_LABEL: Record<string, string> = {
   pup: "Pup Pack — 3 bottles",
@@ -32,6 +33,8 @@ const GiftCertificatePrintPage = () => {
   if (!gift) return <div className="min-h-dvh flex items-center justify-center text-muted-foreground">Gift not found.</div>;
 
   return (
+    <>
+      <Seo noindex title="Gift Certificate Print" />
     <div className="min-h-dvh bg-background p-8 print:p-0">
       <div className="no-print max-w-2xl mx-auto mb-4 flex justify-end">
         <Button onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4" />Print Again</Button>
@@ -64,6 +67,7 @@ const GiftCertificatePrintPage = () => {
       </div>
       <style>{`@media print { .no-print { display: none !important; } body { background: white !important; } }`}</style>
     </div>
+    </>
   );
 };
 

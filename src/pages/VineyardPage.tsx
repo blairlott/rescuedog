@@ -1,6 +1,5 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Seo } from "@/components/Seo";
 import { winerySchema } from "@/lib/jsonLd";
 import { Button } from "@/components/ui/button";
 import { Leaf, Grape, TreePine, Sprout } from "lucide-react";
@@ -13,6 +12,7 @@ import vineyard1 from "@/assets/migrated/vineyard-1.jpg";
 import vineyard3 from "@/assets/migrated/vineyard-3.jpg";
 import vineyard5 from "@/assets/migrated/vineyard-5.jpg";
 import lodiSustainable from "@/assets/migrated/lodi-sustainable.png";
+import { Seo } from "@/components/Seo";
 
 type EditSection = "hero" | "story" | "lodi_rules" | null;
 

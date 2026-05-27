@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Check, X, AlertTriangle, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type Proposal = {
   id: string;
@@ -83,6 +84,8 @@ export default function CrmRestructuresPage() {
       : "bg-amber-500/10 border-amber-500/40 text-amber-700";
 
   return (
+    <>
+      <Seo noindex title="Crm Restructures" />
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold uppercase tracking-brand flex items-center gap-2">
@@ -176,5 +179,6 @@ export default function CrmRestructuresPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

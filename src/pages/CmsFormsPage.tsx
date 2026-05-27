@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Save, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type Row = {
   id: string;
@@ -93,6 +94,8 @@ export default function CmsFormsPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Cms Forms" />
     <div className="min-h-dvh bg-background text-foreground">
       <div className="border-b border-border">
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center gap-4">
@@ -222,5 +225,6 @@ export default function CmsFormsPage() {
         </section>
       </div>
     </div>
+    </>
   );
 }

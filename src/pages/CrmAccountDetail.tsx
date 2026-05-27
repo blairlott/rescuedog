@@ -12,6 +12,7 @@ import { AwardPointsDialog } from "@/components/crm/AwardPointsDialog";
 import { toast } from "sonner";
 import { getStaleness, getStalenessLabel, getStalenessColor } from "@/lib/staleness";
 import { US_STATES } from "@/lib/usStates";
+import { Seo } from "@/components/Seo";
 
 function EditableField({ label, value, onSave, type = "text" }: {
   label: string; value: string; onSave: (v: string) => void; type?: string;
@@ -31,6 +32,8 @@ function EditableField({ label, value, onSave, type = "text" }: {
   }
 
   return (
+    <>
+      <Seo noindex title="Crm Account Detail" />
     <div className="flex items-center gap-1">
       <Input value={draft} onChange={(e) => setDraft(e.target.value)} type={type} className="h-7 text-sm w-full" autoFocus />
       <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => { onSave(draft); setEditing(false); }} aria-label="Save">
@@ -40,6 +43,7 @@ function EditableField({ label, value, onSave, type = "text" }: {
         <X className="h-3 w-3 text-destructive" />
       </Button>
     </div>
+    </>
   );
 }
 
@@ -58,12 +62,15 @@ function EditableStateSelect({ value, onSave }: { value: string; onSave: (v: str
   }
 
   return (
+    <>
+      <Seo noindex title="Crm Account Detail" />
     <Select value={value} onValueChange={(v) => { onSave(v); setEditing(false); }}>
       <SelectTrigger className="h-7 text-sm w-[120px]"><SelectValue /></SelectTrigger>
       <SelectContent>
         {US_STATES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
       </SelectContent>
     </Select>
+    </>
   );
 }
 
@@ -105,6 +112,8 @@ export default function CrmAccountDetail() {
   const activityIcons: Record<string, string> = { note: "📝", visit: "🏪", call: "📞", email: "📧", order: "📦" };
 
   return (
+    <>
+      <Seo noindex title="Crm Account Detail" />
     <div className="p-6 space-y-6 max-w-4xl">
       <Link to="/crm" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Back to Accounts
@@ -285,5 +294,6 @@ export default function CrmAccountDetail() {
         defaultEmail={account.email || ""}
       />
     </div>
+    </>
   );
 }

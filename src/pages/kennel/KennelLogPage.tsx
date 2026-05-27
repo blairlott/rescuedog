@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Undo2 } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -71,6 +72,8 @@ export default function KennelLogPage() {
     : rows;
 
   return (
+    <>
+      <Seo noindex title="Kennel Log" />
     <div className="p-6 max-w-[1400px]" style={BRAND_FONT}>
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -144,5 +147,6 @@ export default function KennelLogPage() {
         </table>
       </div>
     </div>
+    </>
   );
 }

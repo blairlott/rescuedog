@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Lock, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { AdminTopNav } from "@/components/admin/AdminTopNav";
 import { findArea, ADMIN_AREAS, REQUESTABLE_ROLES_BY_AREA } from "@/lib/adminAreas";
+import { Seo } from "@/components/Seo";
 
 export default function RequestAccessPage() {
   const [params] = useSearchParams();
@@ -112,6 +113,8 @@ export default function RequestAccessPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Request Access" />
     <div className="min-h-dvh bg-secondary">
       <AdminTopNav roles={roles} />
       <main className="container mx-auto px-4 py-12 max-w-xl">
@@ -193,5 +196,6 @@ export default function RequestAccessPage() {
         </div>
       </main>
     </div>
+    </>
   );
 }

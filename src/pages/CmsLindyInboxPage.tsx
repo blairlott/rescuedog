@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CheckCircle2, XCircle, Loader2, ExternalLink, Inbox, Undo2 } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 type Draft = {
   id: string;
@@ -95,6 +96,8 @@ export default function CmsLindyInboxPage() {
   const counts = drafts.reduce((acc, d) => { acc[d.status] = (acc[d.status] ?? 0) + 1; return acc; }, {} as Record<string, number>);
 
   return (
+    <>
+      <Seo noindex title="Cms Lindy Inbox" />
     <div className="min-h-dvh bg-background">
       <div className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -218,5 +221,6 @@ export default function CmsLindyInboxPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

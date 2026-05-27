@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, KeyRound, Plus } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 interface Credential {
   id: string;
@@ -142,6 +143,8 @@ export default function AdminSecretsAccessPage() {
   if (!roleInfo.isOwner) return null;
 
   return (
+    <>
+      <Seo noindex title="Admin Secrets Access" />
     <div className="min-h-dvh bg-secondary">
       <AdminTopNav roles={roleInfo.roles} />
       <main className="container mx-auto max-w-5xl px-4 py-6 space-y-6">
@@ -265,5 +268,6 @@ export default function AdminSecretsAccessPage() {
         </Card>
       </main>
     </div>
+    </>
   );
 }

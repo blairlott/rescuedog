@@ -15,6 +15,7 @@ import { StrategyMixPanel } from "@/components/kennel/StrategyMixPanel";
 import { ForecastTimeline } from "@/components/kennel/ForecastTimeline";
 import { RefreshButton } from "@/components/kennel/RefreshButton";
 import { CronStatusPanel } from "@/components/kennel/CronStatusPanel";
+import { Seo } from "@/components/Seo";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -450,6 +451,8 @@ export default function KennelChannelsPage() {
 
   // --- Drill-down view ---
   return (
+    <>
+      <Seo noindex title="Kennel Channels" />
     <div className="p-6 max-w-[1400px]" style={BRAND_FONT}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 text-sm flex-wrap">
@@ -773,5 +776,6 @@ export default function KennelChannelsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

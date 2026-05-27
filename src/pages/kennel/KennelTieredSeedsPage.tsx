@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Play } from "lucide-react";
 import { JobRunHistory } from "@/components/kennel/JobRunHistory";
+import { Seo } from "@/components/Seo";
 
 export default function KennelTieredSeedsPage() {
   const { toast } = useToast();
@@ -25,6 +26,8 @@ export default function KennelTieredSeedsPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Kennel Tiered Seeds" />
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
@@ -41,5 +44,6 @@ export default function KennelTieredSeedsPage() {
 
       <JobRunHistory jobName="tiered_seeds_monthly" title="Tiered seed run history" />
     </div>
+    </>
   );
 }

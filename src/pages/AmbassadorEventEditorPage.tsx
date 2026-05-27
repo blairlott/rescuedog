@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 60);
@@ -90,6 +91,8 @@ export default function AmbassadorEventEditorPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Ambassador Event Editor" />
     <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 max-w-3xl mx-auto py-10 px-4 w-full">
@@ -152,5 +155,6 @@ export default function AmbassadorEventEditorPage() {
       </main>
       <Footer />
     </div>
+    </>
   );
 }

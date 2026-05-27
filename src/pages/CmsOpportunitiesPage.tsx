@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Check, X, Loader2, Sparkles, RefreshCw } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 const CATEGORY_LABELS: Record<string, string> = {
   hero_copy: "Hero copy",
@@ -101,6 +102,8 @@ export default function CmsOpportunitiesPage() {
   const recent = (opps ?? []).filter((o: any) => o.status !== "pending").slice(0, 50);
 
   return (
+    <>
+      <Seo noindex title="Cms Opportunities" />
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -202,11 +205,14 @@ export default function CmsOpportunitiesPage() {
         </section>
       </main>
     </div>
+    </>
   );
 }
 
 function OpportunityRow({ opp, onDecide }: { opp: any; onDecide: (d: "approve" | "reject") => void }) {
   return (
+    <>
+      <Seo noindex title="Cms Opportunities" />
     <Card>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
@@ -240,5 +246,6 @@ function OpportunityRow({ opp, onDecide }: { opp: any; onDecide: (d: "approve" |
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }

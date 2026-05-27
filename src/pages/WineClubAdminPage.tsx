@@ -16,6 +16,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ClubTiersAdmin } from "@/components/wine-club/ClubTiersAdmin";
 import { LegacyMembersAdmin } from "@/components/wine-club/LegacyMembersAdmin";
+import { Seo } from "@/components/Seo";
 
 interface MemberRow {
   id: string;
@@ -203,6 +204,8 @@ function InviteManagerDialog({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
+    <>
+      <Seo noindex title="Wine Club Admin" />
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="uppercase tracking-brand text-sm font-bold">
@@ -244,6 +247,7 @@ function InviteManagerDialog({ onSuccess }: { onSuccess: () => void }) {
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
 
@@ -303,6 +307,8 @@ const WineClubAdminPage = () => {
   };
 
   return (
+    <>
+      <Seo noindex title="Wine Club Admin" />
     <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 py-12">
@@ -640,6 +646,7 @@ const WineClubAdminPage = () => {
       </main>
       <Footer />
     </div>
+    </>
   );
 };
 

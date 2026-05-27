@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, RefreshCw, Trash2, Loader2 } from "lucide-react";
 import { CopyLinkButton } from "@/components/ambassador/CopyLinkButton";
+import { Seo } from "@/components/Seo";
 
 type Code = {
   id: string;
@@ -138,6 +139,8 @@ export default function CmsDiscountsPage() {
   if (loading) return <div className="p-10">Loading…</div>;
 
   return (
+    <>
+      <Seo noindex title="Cms Discounts" />
     <div className="min-h-dvh bg-background p-6 md:p-10">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
@@ -305,5 +308,6 @@ export default function CmsDiscountsPage() {
         </Dialog>
       </div>
     </div>
+    </>
   );
 }

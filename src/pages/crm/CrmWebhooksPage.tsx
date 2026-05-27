@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 type Evt = {
   id: string;
@@ -55,6 +56,8 @@ export default function CrmWebhooksPage() {
   }), [rows]);
 
   return (
+    <>
+      <Seo noindex title="Crm Webhooks" />
     <div className="p-6 max-w-7xl space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -127,5 +130,6 @@ export default function CrmWebhooksPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

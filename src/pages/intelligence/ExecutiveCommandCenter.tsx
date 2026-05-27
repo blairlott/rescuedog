@@ -8,6 +8,7 @@ import {
   AlertTriangle, Brain, CheckCircle2, ChevronDown, ChevronRight,
   Mail, RefreshCw, Sparkles, TrendingDown, TrendingUp, XCircle, MapPin,
 } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 const SHARP = { borderRadius: 0 } as const;
 
@@ -132,6 +133,8 @@ export default function ExecutiveCommandCenter() {
   }, [data]);
 
   return (
+    <>
+      <Seo noindex title="Executive Command Center" />
     <div className="min-h-dvh bg-background text-foreground">
       <div className="max-w-[1400px] mx-auto p-6 space-y-6">
         <header className="flex items-end justify-between flex-wrap gap-3 border-b border-border pb-4">
@@ -227,6 +230,7 @@ export default function ExecutiveCommandCenter() {
         </section>
       </div>
     </div>
+    </>
   );
 }
 
@@ -236,6 +240,8 @@ function DecisionColumn({ title, icon, decisions, onAct, busy, expanded, onToggl
   busy: string | null; expanded: Set<string>; onToggle: (id: string) => void;
 }) {
   return (
+    <>
+      <Seo noindex title="Executive Command Center" />
     <div className="border border-border bg-card" style={SHARP}>
       <div className="px-3 py-2 border-b border-border text-xs uppercase tracking-brand text-muted-foreground flex items-center gap-2">
         {icon} {title} <span className="ml-auto text-foreground font-bold">{decisions.length}</span>
@@ -283,5 +289,6 @@ function DecisionColumn({ title, icon, decisions, onAct, busy, expanded, onToggl
         );
       })}
     </div>
+    </>
   );
 }

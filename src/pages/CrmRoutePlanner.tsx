@@ -9,6 +9,7 @@ import { assertAllowedMapsReferrer } from "@/lib/googleMaps";
 import { geocodeAddress, computeOptimizedRoute } from "@/lib/googleMapsClient";
 import { MapPin, Navigation, ExternalLink, Search, Clock, ArrowDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 interface DirectionsLeg {
   distance: { text: string; value: number };
@@ -157,6 +158,8 @@ export default function CrmRoutePlanner() {
   };
 
   return (
+    <>
+      <Seo noindex title="Crm Route Planner" />
     <div className="p-6 space-y-6 max-w-4xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -297,5 +300,6 @@ export default function CrmRoutePlanner() {
         )}
       </div>
     </div>
+    </>
   );
 }

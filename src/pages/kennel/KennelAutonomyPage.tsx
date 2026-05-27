@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { Play, Check, X, ExternalLink, Loader2 } from "lucide-react";
 import { MetaAutopilotHealth } from "@/components/kennel/MetaAutopilotHealth";
+import { Seo } from "@/components/Seo";
 
 function StatusPill({ s }: { s: string }) {
   const tone: Record<string, string> = {
@@ -22,9 +23,12 @@ function StatusPill({ s }: { s: string }) {
     error: "bg-destructive text-destructive-foreground",
   };
   return (
+    <>
+      <Seo noindex title="Kennel Autonomy" />
     <span className={`px-2 py-0.5 text-[10px] font-bold uppercase ${tone[s] ?? "bg-muted"}`} style={{ borderRadius: 0 }}>
       {s}
     </span>
+    </>
   );
 }
 
@@ -85,6 +89,8 @@ export default function KennelAutonomyPage() {
   const feedUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-feed-meta?rail=all`;
 
   return (
+    <>
+      <Seo noindex title="Kennel Autonomy" />
     <div className="p-4 md:p-6 space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -304,5 +310,6 @@ export default function KennelAutonomyPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </>
   );
 }

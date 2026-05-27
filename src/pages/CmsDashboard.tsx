@@ -59,6 +59,7 @@ import { TeamInvitationsList } from "@/components/team/TeamInvitationsList";
 import { useUserRole } from "@/hooks/useUserRole";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { CmsSidebar, type CmsTabValue } from "@/components/cms/CmsSidebar";
+import { Seo } from "@/components/Seo";
 
 // ─── Types ───────────────────────────────────────────────────
 type CmsUser = {
@@ -118,6 +119,8 @@ function CartSettingsPanel() {
   ];
 
   return (
+    <>
+      <Seo noindex title="Cms Dashboard" />
     <div className="bg-background border border-border">
       <div className="px-6 py-4 border-b border-border">
         <h2 className="font-bold text-foreground">Cart & Shipping Settings</h2>
@@ -151,6 +154,7 @@ function CartSettingsPanel() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -180,6 +184,8 @@ function GiftWrapSettingsPanel() {
   };
 
   return (
+    <>
+      <Seo noindex title="Cms Dashboard" />
     <div className="bg-background border border-border mt-6">
       <div className="px-6 py-4 border-b border-border">
         <h2 className="font-bold text-foreground">Gift Wrapping</h2>
@@ -223,6 +229,7 @@ function GiftWrapSettingsPanel() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -381,6 +388,8 @@ const CmsDashboard = () => {
   };
 
   return (
+    <>
+      <Seo noindex title="Cms Dashboard" />
     <SidebarProvider>
       <div className="min-h-dvh w-full flex bg-secondary">
         <CmsSidebar activeTab={activeTab} onTabChange={setActiveTab} isOwner={!!roleInfo?.isOwner} />
@@ -735,6 +744,7 @@ const CmsDashboard = () => {
         </div>
       </div>
     </SidebarProvider>
+    </>
   );
 };
 

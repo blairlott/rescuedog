@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { DollarSign } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 export default function FinanceLogin() {
   const [email, setEmail] = useState("");
@@ -46,6 +47,8 @@ export default function FinanceLogin() {
   };
 
   return (
+    <>
+      <Seo noindex title="Finance Login" />
     <div className="min-h-dvh bg-muted/30 grid lg:grid-cols-2">
       {/* Brand panel */}
       <div className="hidden lg:flex flex-col justify-between p-12 bg-foreground text-background">
@@ -109,5 +112,6 @@ export default function FinanceLogin() {
         </div>
       </div>
     </div>
+    </>
   );
 }

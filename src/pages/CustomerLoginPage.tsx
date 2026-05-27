@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { useEffect } from "react";
 import { isStaffEmail, STAFF_EMAIL_MESSAGE } from "@/lib/staffEmail";
+import { Seo } from "@/components/Seo";
 
 const CustomerLoginPage = () => {
   const { user } = useCustomerAuth();
@@ -77,6 +78,8 @@ const CustomerLoginPage = () => {
   };
 
   return (
+    <>
+      <Seo noindex title="Customer Login" />
     <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 flex items-center justify-center py-12 px-4">
@@ -172,6 +175,7 @@ const CustomerLoginPage = () => {
       </main>
       <Footer />
     </div>
+    </>
   );
 };
 

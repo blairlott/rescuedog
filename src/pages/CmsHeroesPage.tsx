@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Seo } from "@/components/Seo";
 
 type Surface = "wine" | "merch";
 type Status = "active" | "paused" | "retired";
@@ -125,6 +126,8 @@ function CmsHeroesPage() {
   const bySurface = (s: Surface) => variants.filter((v) => v.surface === s);
 
   return (
+    <>
+      <Seo noindex title="Cms Heroes" />
     <div className="min-h-dvh bg-secondary">
       <header className="bg-background border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -190,6 +193,7 @@ function CmsHeroesPage() {
         ))}
       </main>
     </div>
+    </>
   );
 }
 
@@ -230,6 +234,8 @@ function NewVariantButton({ surface, onCreated }: { surface: Surface; onCreated:
 
   return (
     <>
+      <Seo noindex title="Cms Heroes" />
+    <>
       <Button size="sm" disabled={busy} onClick={() => fileRef.current?.click()}>
         {busy ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
         Upload image
@@ -244,6 +250,7 @@ function NewVariantButton({ surface, onCreated }: { surface: Surface; onCreated:
           if (f) void handleFile(f);
         }}
       />
+    </>
     </>
   );
 }
@@ -293,6 +300,8 @@ function VariantCard({
   };
 
   return (
+    <>
+      <Seo noindex title="Cms Heroes" />
     <div className="bg-background border border-border p-4 grid md:grid-cols-[200px_1fr] gap-4">
       <div className="space-y-2">
         <div className="aspect-video bg-muted overflow-hidden">
@@ -373,6 +382,7 @@ function VariantCard({
         </div>
       </div>
     </div>
+    </>
   );
 }
 

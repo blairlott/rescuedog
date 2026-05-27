@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, TrendingDown } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
+import { Seo } from "@/components/Seo";
 
 type Row = {
   membership_id: string;
@@ -96,6 +97,8 @@ export default function CrmCancellationsPage() {
   }
 
   return (
+    <>
+      <Seo noindex title="Crm Cancellations" />
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -216,5 +219,6 @@ export default function CrmCancellationsPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -21,6 +21,7 @@ import MediaLibraryTab from "@/components/cms/MediaLibraryTab";
 import AutopilotTab from "@/components/cms/AutopilotTab";
 import SlotFieldsForm from "@/components/cms/SlotFieldsForm";
 import { SLOT_SCHEMAS, getSchema, cleanConfig, summarizeConfig, AUDIENCE_OPTIONS } from "@/components/cms/slotSchemas";
+import { Seo } from "@/components/Seo";
 
 // Slot definitions moved to src/components/cms/slotSchemas.ts so the
 // Experiments + Rules forms can render plain-language inputs.
@@ -84,6 +85,8 @@ function ChipPicker({
   const toggle = (v: string) =>
     onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
   return (
+    <>
+      <Seo noindex title="Cms Experiments" />
     <div>
       <Label className="text-xs">{label}</Label>
       <div className="flex flex-wrap gap-2 mt-1">
@@ -103,6 +106,7 @@ function ChipPicker({
         {value.length === 0 && <span className="text-xs text-muted-foreground self-center">Anyone</span>}
       </div>
     </div>
+    </>
   );
 }
 
@@ -309,6 +313,8 @@ export default function CmsExperimentsPage() {
   if (!isCmsEditor) return null;
 
   return (
+    <>
+      <Seo noindex title="Cms Experiments" />
     <div className="min-h-dvh bg-background">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -667,5 +673,6 @@ export default function CmsExperimentsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

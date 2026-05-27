@@ -1,10 +1,10 @@
 import { Navigate, useParams, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Seo } from "@/components/Seo";
 import { ArrowRight, Check, X, PawPrint } from "lucide-react";
 import { faqPageSchema } from "@/lib/jsonLd";
 import { getBrandComparison, BRAND_COMPARISONS } from "@/data/brandComparisons";
+import { Seo } from "@/components/Seo";
 
 export default function BrandComparePage() {
   const { slug = "" } = useParams<{ slug: string }>();

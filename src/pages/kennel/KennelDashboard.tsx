@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertTriangle, RefreshCw, Sparkles, ChevronRight, Maximize2, SlidersHorizontal, Radio } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 function rangeLabel(start: Date, end: Date): string {
   const today = todayUTC();
@@ -372,6 +373,8 @@ export default function KennelDashboard() {
   };
 
   return (
+    <>
+      <Seo noindex title="Kennel Dashboard" />
     <div className="p-4 md:p-6 space-y-6 max-w-[1400px] min-w-0">
       <KennelSystemHealthStrip />
       <AdCommandTiles />
@@ -668,5 +671,6 @@ export default function KennelDashboard() {
         </>
       )}
     </div>
+    </>
   );
 }

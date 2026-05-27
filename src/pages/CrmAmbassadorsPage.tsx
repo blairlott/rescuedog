@@ -7,15 +7,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ImpactHealthCard } from "@/components/admin/ImpactHealthCard";
 import { AmbassadorPerformanceTable } from "@/components/crm/AmbassadorPerformanceTable";
+import { Seo } from "@/components/Seo";
 
 function StatTile({ icon: Icon, label, value, sub, tone = "default" }: { icon: any; label: string; value: number | string; sub?: string; tone?: "default" | "warn" | "success" }) {
   const toneClass = tone === "warn" ? "border-destructive/40 bg-destructive/5" : tone === "success" ? "border-emerald-500/40 bg-emerald-500/5" : "border-border bg-card";
   return (
+    <>
+      <Seo noindex title="Crm Ambassadors" />
     <div className={`p-4 border ${toneClass}`}>
       <div className="flex items-center gap-2 text-xs uppercase tracking-brand text-muted-foreground"><Icon className="w-3.5 h-3.5" />{label}</div>
       <div className="text-3xl font-bold mt-1 leading-none">{value}</div>
       {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
     </div>
+    </>
   );
 }
 
@@ -62,6 +66,8 @@ export default function CrmAmbassadorsPage() {
   const filtered = tab === "all" ? rows : rows.filter(r => r.status === tab);
 
   return (
+    <>
+      <Seo noindex title="Crm Ambassadors" />
     <div className="p-6 max-w-6xl space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -162,5 +168,6 @@ export default function CrmAmbassadorsPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

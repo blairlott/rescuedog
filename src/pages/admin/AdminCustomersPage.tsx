@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, RefreshCw, Search, Users, Wine, Mail, Phone, MapPin } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 type VsCustomer = {
   id: string;
@@ -157,6 +158,8 @@ export default function AdminCustomersPage() {
   if (!allowed) return null;
 
   return (
+    <>
+      <Seo noindex title="Admin Customers" />
     <div className="min-h-dvh bg-secondary">
       <header className="border-b border-border bg-background">
         <div className="container mx-auto px-4 py-4 flex items-center gap-3">
@@ -316,5 +319,6 @@ export default function AdminCustomersPage() {
         </SheetContent>
       </Sheet>
     </div>
+    </>
   );
 }

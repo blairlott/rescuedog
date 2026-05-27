@@ -16,13 +16,13 @@ import { useIsMember } from "@/hooks/useIsMember";
 import { Link as RouterLink } from "react-router-dom";
 import { ShipsToStateCheck, useShipState } from "@/components/ShipsToStateCheck";
 import { PairingChips } from "@/components/PairingChips";
-import { Seo } from "@/components/Seo";
 import { PairItPicker } from "@/components/merch/PairItPicker";
 import { PairWineWithMerch } from "@/components/cross-sell/PairWineWithMerch";
 import { ProductReviews, useProductRating } from "@/components/reviews/ProductReviews";
 import { LocalRescueLine } from "@/components/rescue/LocalRescueLine";
 import { isBundleHandle } from "@/lib/wineBundles";
 import { WineShippingPolicy } from "@/components/cart/WineShippingPolicy";
+import { Seo } from "@/components/Seo";
 
 const ProductDetail = () => {
   const { handle } = useParams<{ handle: string }>();

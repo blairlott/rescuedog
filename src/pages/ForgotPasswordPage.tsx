@@ -8,6 +8,7 @@ import { Loader2, Mail, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { Seo } from "@/components/Seo";
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
@@ -32,6 +33,8 @@ const ForgotPasswordPage = () => {
   };
 
   return (
+    <>
+      <Seo noindex title="Forgot Password" />
     <div className="min-h-dvh flex flex-col">
       <Header />
       <main className="flex-1 flex items-center justify-center py-12 px-4">
@@ -62,6 +65,7 @@ const ForgotPasswordPage = () => {
       </main>
       <Footer />
     </div>
+    </>
   );
 };
 

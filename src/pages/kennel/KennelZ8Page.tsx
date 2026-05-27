@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Shield, Play, AlertTriangle } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 type Run = {
   id: string;
@@ -71,6 +72,8 @@ export default function KennelZ8Page() {
   };
 
   return (
+    <>
+      <Seo noindex title="Kennel Z8" />
     <div className="space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
@@ -127,5 +130,6 @@ export default function KennelZ8Page() {
         </div>
       </div>
     </div>
+    </>
   );
 }

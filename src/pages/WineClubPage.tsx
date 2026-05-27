@@ -12,8 +12,8 @@ import { VinoshipperInlineSignup } from "@/components/wine-club/VinoshipperInlin
 import { MemberDashboard } from "@/components/wine-club/MemberDashboard";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { Link, useNavigate } from "react-router-dom";
-import { Seo } from "@/components/Seo";
 import { faqPageSchema } from "@/lib/jsonLd";
+import { Seo } from "@/components/Seo";
 
 
 const perks = [

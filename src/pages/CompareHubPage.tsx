@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Seo } from "@/components/Seo";
 import { ArrowRight } from "lucide-react";
 import { BRAND_COMPARISONS } from "@/data/brandComparisons";
+import { Seo } from "@/components/Seo";
 
 export default function CompareHubPage() {
   return (

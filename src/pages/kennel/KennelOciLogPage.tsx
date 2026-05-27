@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { RefreshCw, Copy, ChevronDown, ChevronRight, Play, FlaskConical } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 const SHARP = { borderRadius: 0 } as const;
 const BRAND_FONT = { fontFamily: '"Nunito Sans", system-ui, sans-serif' } as const;
@@ -48,9 +49,12 @@ function statusBadge(status: OciRow["status"]) {
   };
   const v = map[status];
   return (
+    <>
+      <Seo noindex title="Kennel Oci Log" />
     <Badge style={SHARP} className={`uppercase tracking-brand text-[10px] ${v.cls}`}>
       {v.label}
     </Badge>
+    </>
   );
 }
 
@@ -166,6 +170,8 @@ export default function KennelOciLogPage() {
   };
 
   return (
+    <>
+      <Seo noindex title="Kennel Oci Log" />
     <div className="p-4 md:p-6 space-y-4" style={BRAND_FONT}>
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
@@ -380,14 +386,18 @@ export default function KennelOciLogPage() {
         </table>
       </div>
     </div>
+    </>
   );
 }
 
 function Tile({ label, value, accent }: { label: string; value: number | string; accent?: string }) {
   return (
+    <>
+      <Seo noindex title="Kennel Oci Log" />
     <div className="border border-border bg-card p-3" style={SHARP}>
       <div className="text-[10px] uppercase tracking-brand text-muted-foreground">{label}</div>
       <div className={`text-lg font-bold tabular-nums ${accent ?? "text-foreground"}`}>{value}</div>
     </div>
+    </>
   );
 }

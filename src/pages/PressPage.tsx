@@ -1,8 +1,8 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Seo } from "@/components/Seo";
 import { Link } from "react-router-dom";
 import { Download, Mail, Newspaper, Quote } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 const FACTS = [
   { label: "Founded", value: "Family-owned California winery" },

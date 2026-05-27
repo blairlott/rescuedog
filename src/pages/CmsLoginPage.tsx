@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { PenLine } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 const CmsLoginPage = () => {
   const [email, setEmail] = useState("");
@@ -96,6 +97,8 @@ const CmsLoginPage = () => {
   };
 
   return (
+    <>
+      <Seo noindex title="Cms Login" />
     <div className="min-h-dvh flex items-center justify-center bg-secondary px-4">
       <div className="w-full max-w-md">
         <div className="bg-background border border-border p-8 shadow-sm">
@@ -131,6 +134,7 @@ const CmsLoginPage = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

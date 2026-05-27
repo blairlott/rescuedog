@@ -1,6 +1,5 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +10,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import rdwHero from "@/assets/migrated/rdw-hero.jpg";
+import { Seo } from "@/components/Seo";
 
 const ContactPage = () => {
   const { toast } = useToast();

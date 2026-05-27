@@ -65,13 +65,13 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { data: role } = await admin
+    const { data: roles, error: roleErr } = await admin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .in("role", ["owner", "admin", "ad_ops_manager", "kennel_viewer", "executive"])
-      .maybeSingle();
-    if (!role) {
+      .limit(1);
+    if (roleErr || !roles?.length) {
       return new Response(JSON.stringify({ error: "forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

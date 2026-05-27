@@ -289,16 +289,16 @@ function AppContent() {
       <Route path="/a/:handle" element={<AmbassadorPublicProfilePage />} />
       <Route path="/e/:slug" element={<AmbassadorEventPublicPage />} />
       <Route path="/subscribe" element={<SubscribePage />} />
-      <Route path="/login" element={<CustomerLoginPage />} />
-      <Route path="/signup" element={<Navigate to="/login" replace />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<CustomerResetPasswordPage />} />
-      <Route path="/account" element={<AccountPage />} />
-      <Route path="/account/gifts/:id/print" element={<GiftCertificatePrintPage />} />
-      <Route path="/account/shipments" element={<MyShipmentsPage />} />
-      <Route path="/account/shipments/:id" element={<MyShipmentsPage />} />
-      <Route path="/rewards" element={<RewardsPage />} />
-      <Route path="/rewards/terms" element={<RewardsTermsPage />} />
+      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/signup" element={<Navigate to="/" replace />} />
+      <Route path="/forgot-password" element={<Navigate to="/" replace />} />
+      <Route path="/reset-password" element={<Navigate to="/" replace />} />
+      <Route path="/account" element={<Navigate to="/" replace />} />
+      <Route path="/account/gifts/:id/print" element={<Navigate to="/" replace />} />
+      <Route path="/account/shipments" element={<Navigate to="/" replace />} />
+      <Route path="/account/shipments/:id" element={<Navigate to="/" replace />} />
+      <Route path="/rewards" element={<Navigate to="/" replace />} />
+      <Route path="/rewards/terms" element={<Navigate to="/" replace />} />
       <Route path="/policies" element={<PoliciesPage />} />
       <Route path="/privacy" element={<Navigate to="/policies#privacy" replace />} />
       <Route path="/shipping" element={<Navigate to="/policies#shipping" replace />} />

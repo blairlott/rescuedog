@@ -25,6 +25,7 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 import { MissionStrip } from "@/components/MissionStrip";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useRescuePartners } from "@/hooks/useRescuePartners";
 import { PairingFinder } from "@/components/PairingFinder";
 import { LazyYouTube } from "@/components/LazyYouTube";
 import { RescueVoices } from "@/components/rescue/RescueVoices";
@@ -76,6 +77,7 @@ const Index = () => {
   const { content, upsert } = useCmsContent("homepage");
   const [editSection, setEditSection] = useState<EditSection>(null);
   const showImpact = useFeatureFlag("impact_counter", false);
+  const { data: rescuePartners = [] } = useRescuePartners();
 
   // Self-optimizing hero. Overrides apply on top of CMS values.
   const hero = useExperiment<{
@@ -206,9 +208,11 @@ const Index = () => {
               <p className="text-foreground mb-6">
                 <T>{getVal("mission", "paragraph2", "Rescue Dog™ ships to most of the US from our online store!")}</T>
               </p>
-              <p className="text-sm tracking-brand uppercase text-primary font-bold mb-6">
-                <T>Partnered with 225 rescue organizations</T>
-              </p>
+              {rescuePartners.length > 0 && (
+                <p className="text-sm tracking-brand uppercase text-primary font-bold mb-6">
+                  <T>{`Partnered with ${rescuePartners.length} rescue organizations`}</T>
+                </p>
+              )}
               <div className="flex flex-wrap gap-4">
                 <Button
                   asChild

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -159,6 +159,11 @@ const PageFallback = () => (
   <div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">Loading…</div>
 );
 
+function NewsSlugRedirect() {
+  const { slug } = useParams();
+  return <Navigate to={`/blog/${slug ?? ""}`} replace />;
+}
+
 function AppContent() {
   useCartSync();
   useAbandonedCartSnapshot();
@@ -254,6 +259,9 @@ function AppContent() {
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/blog" element={<BlogPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
+      {/* /news/* aliases redirect to /blog/* (e.g. inbound rescuedogmonth.com forward) */}
+      <Route path="/news" element={<Navigate to="/blog" replace />} />
+      <Route path="/news/:slug" element={<NewsSlugRedirect />} />
       <Route path="/pairings" element={<Pairings />} />
       <Route path="/pairings/:slug" element={<PairingDetail />} />
       <Route path="/club" element={<WineClubPage />} />

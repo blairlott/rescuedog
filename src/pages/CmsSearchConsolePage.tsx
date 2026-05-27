@@ -3,7 +3,6 @@ import { Link, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCmsAuth } from "@/hooks/useCmsAuth";
-import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Seo } from "@/components/Seo";
 
 type SiteEntry = { siteUrl: string; permissionLevel: string };
 type GscRow = { keys?: string[]; clicks: number; impressions: number; ctr: number; position: number };

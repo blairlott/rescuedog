@@ -1,9 +1,9 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Seo } from "@/components/Seo";
 import { Link } from "react-router-dom";
 import { ArrowRight, HeartHandshake, Leaf, Trophy, PawPrint } from "lucide-react";
 import { faqPageSchema } from "@/lib/jsonLd";
+import { Seo } from "@/components/Seo";
 
 const FAQS = [
   {

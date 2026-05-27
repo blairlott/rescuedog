@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Heart, Users, Gift, Percent, AlertTriangle, Loader2, ShoppingCart, Hourglass } from "lucide-react";
 import { useIsMember } from "@/hooks/useIsMember";
@@ -11,6 +10,7 @@ import { recordExperimentRevenueForVisitor } from "@/lib/experimentRevenue";
 import { trackPurchase } from "@/lib/metaPixel";
 import { supabase } from "@/integrations/supabase/client";
 import { useCartStore } from "@/stores/cartStore";
+import { Seo } from "@/components/Seo";
 
 const PENDING_WINE_CONFIRM_KEY = "rdw_pending_wine_confirm";
 type WineConfirmState = "idle" | "polling" | "confirmed" | "missing";

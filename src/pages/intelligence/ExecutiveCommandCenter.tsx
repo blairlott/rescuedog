@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
-import { Seo } from "@/components/Seo";
   AlertTriangle, Brain, CheckCircle2, ChevronDown, ChevronRight,
   Mail, RefreshCw, Sparkles, TrendingDown, TrendingUp, XCircle, MapPin,
 } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 const SHARP = { borderRadius: 0 } as const;
 

@@ -3,8 +3,8 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Heart, Megaphone, Sparkles, Download, ShieldCheck, ExternalLink, Check, X, Users, Building2, Wine } from "lucide-react";
-import { Seo } from "@/components/Seo";
 import { faqPageSchema } from "@/lib/jsonLd";
+import { Seo } from "@/components/Seo";
 
 const IMPACT_SIGNUP = "https://app.impact.com/signup/none/create-new-mediapartner-account-flow.ihtml?execution=e1s1#/?viewkey=signUpPreStart";
 

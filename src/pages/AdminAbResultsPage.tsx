@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import {
-import { Seo } from "@/components/Seo";
   ResponsiveContainer,
   LineChart,
   Line,
@@ -15,6 +14,7 @@ import { Seo } from "@/components/Seo";
   Legend,
   CartesianGrid,
 } from "recharts";
+import { Seo } from "@/components/Seo";
 
 type Row = {
   site_variant: string;

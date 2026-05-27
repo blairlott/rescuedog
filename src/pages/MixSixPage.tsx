@@ -2,13 +2,13 @@ import { useMemo, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PageHero } from "@/components/PageHero";
-import { Seo } from "@/components/Seo";
 import { useProducts } from "@/hooks/useProducts";
 import { isWineProduct } from "@/lib/productUtils";
 import { useCartStore } from "@/stores/cartStore";
 import { Button } from "@/components/ui/button";
 import { Loader2, Minus, Plus, Wine } from "lucide-react";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 const TIERS = [
   { qty: 6, off: 5, label: "6-pack — 5% off" },

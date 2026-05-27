@@ -63,11 +63,24 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
   }, [open]);
 
   if (!needsAgeGate(location.pathname)) return <>{children}</>;
-  if (verified === null) return null;
-  if (verified) return <>{children}</>;
 
+  // Always render children into the DOM so crawlers (and assistive tech in
+  // no-JS contexts) see real page HTML. When the gate is open, the children
+  // are visually covered by the modal overlay and made inert so they cannot
+  // be interacted with, focused, or read by screen readers. We never return
+  // `null` from this component — that was the root SEO bug.
   return (
-    <div
+    <>
+      <div
+        aria-hidden={open ? true : undefined}
+        // @ts-expect-error - `inert` is a valid HTML attribute, React 19 types lag
+        inert={open ? "" : undefined}
+        style={open ? { pointerEvents: "none" } : undefined}
+      >
+        {children}
+      </div>
+      {open && (
+        <div
       className="fixed inset-0 z-[100] bg-foreground flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
@@ -139,5 +152,7 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
         )}
       </div>
     </div>
+      )}
+    </>
   );
 }

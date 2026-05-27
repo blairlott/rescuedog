@@ -237,9 +237,12 @@ const MissionPage = () => {
               <h2 className="text-sm font-bold tracking-brand uppercase text-muted-foreground mb-3"><T>Our Network</T></h2>
               <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-2"><T>Supported Rescue Organizations</T></h3>
               <p className="text-muted-foreground">
-                Partnered with <strong className="text-foreground">225 rescue organizations</strong> to date
-                {partners.length > 0 && (
-                  <> · Showing {filtered.length} of {partners.length} in our directory</>
+                {partners.length > 0 ? (
+                  <>
+                    Partnered with <strong className="text-foreground">{partners.length} rescue organizations</strong> to date · Showing {filtered.length} of {partners.length} in our directory
+                  </>
+                ) : (
+                  <>Partnered with rescue organizations nationwide</>
                 )}
               </p>
             </div>

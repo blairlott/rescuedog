@@ -14,7 +14,6 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog } from "@/components/cms/CmsEditDialog";
 import { CmsToolbar } from "@/components/cms/CmsToolbar";
 import { T } from "@/components/T";
-import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,7 +52,6 @@ const MissionPage = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: partners = [], isLoading, error, addPartner, updatePartner, deletePartner } = useRescuePartners();
-  const { toast } = useToast();
 
   const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
 

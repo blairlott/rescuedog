@@ -27,6 +27,7 @@ import { KennelLayout } from "./components/kennel/KennelLayout";
 import CrmLayout from "./components/crm/CrmLayout";
 import { SiteIntelTracker } from "./components/SiteIntelTracker";
 import { isRescueDogDomain } from "@/lib/productUtils";
+import { HostRouter } from "@/components/HostRouter";
 const FinanceLayout = lazy(() => import("./components/finance/FinanceLayout"));
 const FinanceLogin = lazy(() => import("./pages/finance/FinanceLogin"));
 const FinanceDashboard = lazy(() => import("./pages/finance/FinanceDashboard"));

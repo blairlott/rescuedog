@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
 
     // 4. Call Google Ads API (searchStream returns the full result set in one shot)
     const adsRes = await fetch(
-      `https://googleads.googleapis.com/v20/customers/${customerId}/googleAds:searchStream`,
+      `https://googleads.googleapis.com/v21/customers/${customerId}/googleAds:searchStream`,
       {
         method: 'POST',
         headers,

@@ -24,7 +24,7 @@ export function QuickBooksPanel({ days }: { days: number }) {
     queryFn: async () => {
       const { data } = await supabase
         .from("qbo_connections")
-        .select("id, realm_id, company_name, status, scope, created_at, updated_at, last_synced_at, access_token_expires_at, refresh_token_expires_at")
+        .select("id, realm_id, company_name, environment, connected_at, connected_by, created_at, updated_at, last_refreshed_at, last_error, access_token_expires_at, refresh_token_expires_at")
         .limit(1)
         .maybeSingle();
       return data;

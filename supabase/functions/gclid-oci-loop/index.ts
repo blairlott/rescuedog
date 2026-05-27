@@ -17,7 +17,7 @@ import {
   buildGoogleAdsHeaders,
   isAuthError,
 } from "../_shared/googleAdsAuth.ts";
-import { verifyCronSecret } from "../_shared/cronAlert.ts";
+import { checkSharedSecret } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,7 +44,12 @@ Deno.serve(async (req) => {
   );
 
   // Accept either cron secret OR an authenticated admin/owner/ad_ops_manager JWT.
-  const cronOk = await verifyCronSecret(req, "gclid-oci-loop");
+  const cronOk = await checkSharedSecret(req, {
+    functionName: "gclid-oci-loop",
+    envVar: "CRON_SECRET",
+    headers: ["x-cron-secret"],
+    alertOnFail: false,
+  });
   if (!cronOk) {
     const auth = req.headers.get("Authorization");
     if (!auth?.startsWith("Bearer ")) {
@@ -65,13 +70,13 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { data: role } = await admin
+    const { data: roles, error: roleErr } = await admin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .in("role", ["owner", "admin", "ad_ops_manager", "kennel_viewer", "executive"])
-      .maybeSingle();
-    if (!role) {
+      .limit(1);
+    if (roleErr || !roles?.length) {
       return new Response(JSON.stringify({ error: "forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

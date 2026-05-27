@@ -118,12 +118,23 @@ export default function KennelOciLogPage() {
     setRunning(dryRun ? "dry" : "run");
     setLastRun(null);
     try {
-      const { data, error } = await supabase.functions.invoke("gclid-oci-loop", {
-        body: { lookback_days: 7, dry_run: dryRun },
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Please sign in again before running the loop.");
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gclid-oci-loop`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ lookback_days: 7, dry_run: dryRun }),
       });
-      if (error) {
-        toast.error(error.message || "Loop failed");
-        setLastRun({ ok: false, error: error.message });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = data?.details?.message || data?.error || `Loop failed (${response.status})`;
+        toast.error(message);
+        setLastRun({ ok: false, error: message });
       } else {
         setLastRun(data as any);
         if (dryRun) {

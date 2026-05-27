@@ -2,6 +2,27 @@ const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-
 const TOKEN_URL = "https://api.ads.instacart.com/oauth/token";
 const DEFAULT_REDIRECT = "https://eskqaxmypgvwtsffcbsw.supabase.co/functions/v1/oauth-instacart-callback";
 
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+async function requireAdmin(req: Request): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return { ok: false, status: 401, error: "missing authorization" };
+  }
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+  const token = authHeader.replace("Bearer ", "");
+  const { data, error } = await sb.auth.getClaims(token);
+  if (error || !data?.claims?.sub) return { ok: false, status: 401, error: "invalid token" };
+  const admin = createClient(supabaseUrl, serviceKey);
+  const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", data.claims.sub);
+  const isAdmin = (roles ?? []).some((r: any) => r.role === "admin" || r.role === "owner");
+  if (!isAdmin) return { ok: false, status: 403, error: "admin required" };
+  return { ok: true };
+}
+
 function html(body: string, status = 200) {
   return new Response(
     `<!doctype html><html><head><meta charset="utf-8"><title>Instacart OAuth</title>
@@ -30,6 +51,15 @@ Deno.serve(async (req) => {
       error = body?.error ?? error;
       redirect_uri = body?.redirect_uri ?? redirect_uri;
     } catch { /* ignore */ }
+  }
+
+  // Require an authenticated admin/owner before exchanging the code. This
+  // prevents anonymous callers from racing a valid auth code to obtain a
+  // long-lived Instacart Ads refresh_token.
+  const gate = await requireAdmin(req);
+  if (!gate.ok) {
+    if (wantsJson) return new Response(JSON.stringify({ ok: false, error: gate.error }), { status: gate.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return html(`<h1 class="err">Not authorized</h1><p class="muted">Sign in as an admin in Lovable Cloud before completing Instacart OAuth.</p>`, gate.status);
   }
 
   if (error) {

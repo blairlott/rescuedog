@@ -42,6 +42,24 @@ Deno.serve(async (req) => {
   let body: any = {};
   try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
 
+  // Input size + length caps. Reject obviously abusive payloads outright
+  // and truncate string fields to safe bounds before any downstream use.
+  const cap = (v: unknown, n: number) =>
+    typeof v === "string" ? v.slice(0, n) : v;
+  body.email = cap(body.email, 320);
+  body.phone = cap(body.phone, 32);
+  body.first_name = cap(body.first_name, 100);
+  body.last_name = cap(body.last_name, 100);
+  body.visitor_id = cap(body.visitor_id, 128);
+  body.session_id = cap(body.session_id, 128);
+  body.page_url = cap(body.page_url, 2048);
+  body.product_id = cap(body.product_id, 128);
+  body.fbp = cap(body.fbp, 256);
+  body.fbc = cap(body.fbc, 512);
+  if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email))) {
+    return json({ error: "invalid email" }, 400);
+  }
+
   const eventName = String(body.event_name || "");
   if (!ALLOWED_EVENTS.has(eventName)) {
     return json({ error: `event_name must be one of ${[...ALLOWED_EVENTS].join(", ")}` }, 400);

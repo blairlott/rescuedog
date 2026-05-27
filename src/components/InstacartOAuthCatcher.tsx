@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Drops into the rescuedogwines.com root to intercept Instacart's OAuth redirect.
@@ -30,22 +31,21 @@ export function InstacartOAuthCatcher() {
     }
 
     setState({ status: "exchanging" });
-    const projectRef = "eskqaxmypgvwtsffcbsw";
-    const url = `https://${projectRef}.supabase.co/functions/v1/oauth-instacart-callback`;
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, redirect_uri: "https://rescuedogwines.com/" }),
-    })
-      .then(async (r) => {
-        const data = await r.json().catch(() => ({}));
-        if (r.ok && data?.refresh_token) {
-          setState({ status: "ok", refresh_token: data.refresh_token });
-        } else {
-          setState({ status: "err", message: JSON.stringify(data).slice(0, 500) });
-        }
-      })
-      .catch((e) => setState({ status: "err", message: String(e) }));
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setState({ status: "err", message: "Sign in as an admin before completing Instacart OAuth." });
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke("oauth-instacart-callback", {
+        body: { code, redirect_uri: "https://rescuedogwines.com/" },
+      });
+      if (!error && (data as any)?.refresh_token) {
+        setState({ status: "ok", refresh_token: (data as any).refresh_token });
+      } else {
+        setState({ status: "err", message: error?.message || JSON.stringify(data).slice(0, 500) });
+      }
+    })();
   }, []);
 
   if (state.status === "idle") return null;

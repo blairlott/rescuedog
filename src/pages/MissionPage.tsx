@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
+import { Heart, PawPrint, Wine, TreePine, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -14,9 +14,7 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog } from "@/components/cms/CmsEditDialog";
 import { CmsToolbar } from "@/components/cms/CmsToolbar";
 import { T } from "@/components/T";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,30 +54,6 @@ const MissionPage = () => {
 
   const { data: partners = [], isLoading, error, addPartner, updatePartner, deletePartner } = useRescuePartners();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  const handleSyncFromLive = async () => {
-    setIsSyncing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("sync-rescue-partners");
-      if (error) throw error;
-      const { scraped = 0, inserted = 0, updated = 0, skipped = 0, total = 0 } = data ?? {};
-      toast({
-        title: "Partner sync complete",
-        description: `Scraped ${scraped} from live site · ${inserted} added, ${updated} updated, ${skipped} unchanged · ${total} total in CMS.`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["rescue-partners"] });
-    } catch (e) {
-      toast({
-        title: "Sync failed",
-        description: (e as Error)?.message ?? "Check edge function logs.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   const getVal = (key: string, field: string, fallback: string) => getCmsValue(content, key, field, fallback);
 
@@ -245,10 +219,6 @@ const MissionPage = () => {
               <div className="max-w-4xl mx-auto mb-4 flex items-center justify-between bg-primary/10 border border-primary/20 rounded-md px-4 py-3">
                 <span className="text-sm font-medium text-foreground">Edit Mode</span>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={handleSyncFromLive} disabled={isSyncing} className="gap-1">
-                    <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
-                    {isSyncing ? "Syncing…" : "Sync from live site"}
-                  </Button>
                   <Button size="sm" onClick={() => { setEditingPartner(null); setDialogOpen(true); }} className="gap-1">
                     <Plus className="h-4 w-4" /> Add Partner
                   </Button>

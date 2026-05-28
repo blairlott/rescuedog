@@ -14,12 +14,14 @@ import { toast } from "sonner";
 import { AvatarUploader } from "@/components/ambassador/AvatarUploader";
 import { CopyLinkButton } from "@/components/ambassador/CopyLinkButton";
 import { Seo } from "@/components/Seo";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 type Profile = any;
 type Event = any;
 
 export default function AmbassadorDashboardPage() {
   const { user, loading } = useCustomerAuth();
+  const eventsEnabled = useFeatureFlag("ambassador_events_rsvp_enabled", false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const justSignedUp = searchParams.get("welcome") === "1";

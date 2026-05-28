@@ -134,7 +134,7 @@ export default function AmbassadorPublicProfilePage() {
           </div>
         </section>
 
-        {events.length > 0 && (
+        {eventsEnabled && events.length > 0 && (
           <section className="py-12 px-4">
             <div className="max-w-3xl mx-auto">
               <h2 className="text-2xl font-bold uppercase mb-6 flex items-center gap-2"><Calendar className="w-5 h-5" />Upcoming Tastings</h2>

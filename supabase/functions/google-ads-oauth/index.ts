@@ -62,13 +62,8 @@ Deno.serve(async (req) => {
       const cid = CLIENT_ID || "";
       const sec = CLIENT_SECRET || "";
       return json({
-        client_id_head: cid.slice(0, 14),
-        client_id_first_char_code: cid.charCodeAt(0),
-        client_id_has_whitespace: /\s/.test(cid),
-        client_id_tail: cid.slice(-12),
         client_id_len: cid.length,
-        client_secret_prefix: sec.slice(0, 6),
-        client_secret_tail: sec.slice(-4),
+        client_id_has_whitespace: /\s/.test(cid),
         client_secret_len: sec.length,
         client_secret_has_whitespace: /\s/.test(sec),
         redirect_uri: REDIRECT_URI,

@@ -92,6 +92,13 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Sentinel: when the test-mode block fans out to itself, it sets this
+  // header on the inner invoke. The inner call MUST skip the test-mode
+  // block, otherwise each test recipient triggers another fanout and we
+  // recurse exponentially. See email_send_log spike on 2026-05-28.
+  const isTestModeRelay =
+    req.headers.get('x-email-test-mode-relay') === '1'
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -184,7 +191,14 @@ Deno.serve(async (req) => {
   // S&S templates (and any template listed in exempt_templates) are NOT
   // affected and follow normal routing. Disable before launch.
   // ========================================================================
+  if (isTestModeRelay) {
+    console.log('[email_test_mode] Relay invoke — skipping test-mode block', {
+      templateName,
+      effectiveRecipient,
+    })
+  }
   try {
+    if (isTestModeRelay) throw new Error('__skip_test_mode__')
     const { data: tmRow } = await supabase
       .from('app_settings')
       .select('value')
@@ -208,6 +222,7 @@ Deno.serve(async (req) => {
       const results = await Promise.allSettled(
         testRecipients.map((to, i) =>
           supabase.functions.invoke('send-transactional-email', {
+            headers: { 'x-email-test-mode-relay': '1' },
             body: {
               templateName,
               recipientEmail: to,
@@ -239,7 +254,9 @@ Deno.serve(async (req) => {
       )
     }
   } catch (e) {
-    console.warn('[email_test_mode] lookup failed, proceeding with normal routing', e)
+    if ((e as Error)?.message !== '__skip_test_mode__') {
+      console.warn('[email_test_mode] lookup failed, proceeding with normal routing', e)
+    }
   }
 
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)

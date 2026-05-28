@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Env files — values are managed via Lovable Secrets / .env auto-generated locally.
+# Keep .env.example tracked as the canonical list of expected variables.
+.env
+.env.*
+!.env.example

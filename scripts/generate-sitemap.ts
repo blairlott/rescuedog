@@ -51,7 +51,8 @@ async function fetchWineHandles(): Promise<Array<{ handle: string; updated_at?: 
       headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` },
     });
     if (!res.ok) {
-      console.warn(`[sitemap] wine_products fetch failed (${res.status}); falling back to static entries only`);
+      const body = await res.text().catch(() => "");
+      console.warn(`[sitemap] wine_products fetch failed (${res.status}): ${body.slice(0, 300)}`);
       return [];
     }
     const rows = (await res.json()) as Array<{ handle?: string; updated_at?: string }>;

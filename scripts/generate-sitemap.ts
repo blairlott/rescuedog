@@ -46,7 +46,7 @@ const STATIC: Entry[] = [
 
 async function fetchWineHandles(): Promise<Array<{ handle: string; updated_at?: string }>> {
   try {
-    const url = `${SUPABASE_URL}/rest/v1/wine_products?select=handle,updated_at&active=eq.true&order=updated_at.desc`;
+    const url = `${SUPABASE_URL}/rest/v1/wine_products?select=handle,updated_at&is_active=eq.true&order=updated_at.desc`;
     const res = await fetch(url, {
       headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` },
     });

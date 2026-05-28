@@ -12,7 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:legacy-urls": "node scripts/check-legacy-urls.mjs",
-    "postbuild": "node scripts/check-legacy-urls.mjs"
+    "postbuild": "node scripts/check-legacy-urls.mjs",
+    "predev": "bunx tsx scripts/generate-sitemap.ts",
+    "prebuild": "bunx tsx scripts/generate-sitemap.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

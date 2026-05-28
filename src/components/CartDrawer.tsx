@@ -37,6 +37,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { recordCheckoutIntent } from "@/lib/abCheckoutIntent";
 import { VS_FLAT_SHIPPING_MIN_BOTTLES, VS_FLAT_SHIPPING_USD } from "@/lib/vinoshipperConfig";
 import { supabase } from "@/integrations/supabase/client";
+import { requireAgeVerified } from "@/lib/ageVerification";
 
 const LAST_ORDER_KEY = "rdw_last_order";
 const PENDING_WINE_KEY = "rdw_pending_wine_checkout";
@@ -298,6 +299,11 @@ export const CartDrawer = () => {
   };
 
   const handleCheckoutWines = async (preOpenedPopup?: Window | null) => {
+    // Defense-in-depth age gate. Vinoshipper enforces age + ID at the
+    // hosted checkout endpoint (PCI + compliance live there), but we also
+    // block the click client-side in case a visitor stripped the AgeGate
+    // `inert` attribute via dev tools.
+    if (!requireAgeVerified()) { try { preOpenedPopup?.close(); } catch {} return; }
     // Synchronously open the popup INSIDE the click handler if the
     // caller didn't already. The async work below (gift intent, supabase,
     // injector boot) takes long enough that browsers will block a late

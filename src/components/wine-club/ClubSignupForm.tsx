@@ -53,6 +53,10 @@ export function ClubSignupForm({ tier, onBack, onSubmit, isSubmitting, lockGift 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Defense-in-depth age gate: Wine Club is a wine subscription.
+    const { requireAgeVerified } = await import("@/lib/ageVerification");
+    if (!requireAgeVerified()) return;
+
     // Wait for the auth session to resolve before deciding whether to
     // create an account — otherwise a signed-in member could be briefly
     // treated as a guest and prompted for credentials.

@@ -13,6 +13,7 @@ import {
 } from "@/lib/shopify";
 import { analytics } from "@/lib/analytics";
 import { logAbEvent } from "@/lib/abEvents";
+import { requireAgeVerified } from "@/lib/ageVerification";
 
 export type { CartItem, ShopifyProduct };
 
@@ -61,6 +62,14 @@ export const useCartStore = create<CartStore>()(
 
       addItem: async (item) => {
         const existing = get().items.find(i => i.variantId === item.variantId);
+
+        // Defense-in-depth age gate: a determined visitor could strip the
+        // AgeGate `inert` attribute via dev tools and click Add to Cart on a
+        // wine PDP without ever confirming 21+. Block wine additions at the
+        // store level too. requireAgeVerified() reloads the page so the
+        // gate re-mounts. (Vinoshipper enforces the second layer at the
+        // hosted checkout endpoint — see ageVerification.ts.)
+        if (isWine(item) && !requireAgeVerified()) return;
 
         // Analytics: GA4 add_to_cart (fans out via GTM to Meta/TikTok/Pinterest).
         analytics.addToCart({

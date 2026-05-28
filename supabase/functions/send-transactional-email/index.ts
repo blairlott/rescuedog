@@ -92,13 +92,6 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
-  // Sentinel: when the test-mode block fans out to itself, it sets this
-  // header on the inner invoke. The inner call MUST skip the test-mode
-  // block, otherwise each test recipient triggers another fanout and we
-  // recurse exponentially. See email_send_log spike on 2026-05-28.
-  const isTestModeRelay =
-    req.headers.get('x-email-test-mode-relay') === '1'
-
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -117,14 +110,12 @@ Deno.serve(async (req) => {
   let templateName: string
   let recipientEmail: string
   let idempotencyKey: string
-  let messageId: string
   let templateData: Record<string, any> = {}
   try {
     const body = await req.json()
     templateName = body.templateName || body.template_name
     recipientEmail = body.recipientEmail || body.recipient_email
-    messageId = crypto.randomUUID()
-    idempotencyKey = body.idempotencyKey || body.idempotency_key || messageId
+    idempotencyKey = body.idempotencyKey || body.idempotency_key || crypto.randomUUID()
     if (body.templateData && typeof body.templateData === 'object') {
       templateData = body.templateData
     }
@@ -185,20 +176,16 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   // ========================================================================
-  // PRE-LAUNCH TEST MODE
-  // Reroutes all transactional sends to the configured test recipients
-  // (default: Blair + Lindy). Configured in app_settings['email_test_mode'].
-  // S&S templates (and any template listed in exempt_templates) are NOT
-  // affected and follow normal routing. Disable before launch.
+  // PRE-LAUNCH TEST MODE — resolved IN-PROCESS, no self-invocation.
+  // When enabled and the template is not exempt, we:
+  //   1. Log ONE suppressed audit row for the original recipient.
+  //   2. Replace `recipients` with the configured test list.
+  // Then the normal per-recipient enqueue loop below handles each one.
   // ========================================================================
-  if (isTestModeRelay) {
-    console.log('[email_test_mode] Relay invoke — skipping test-mode block', {
-      templateName,
-      effectiveRecipient,
-    })
-  }
+  let recipients: string[] = [effectiveRecipient]
+  let isTestModeReroute = false
+  let testModeOriginalRecipient: string | null = null
   try {
-    if (isTestModeRelay) throw new Error('__skip_test_mode__')
     const { data: tmRow } = await supabase
       .from('app_settings')
       .select('value')
@@ -212,52 +199,90 @@ Deno.serve(async (req) => {
     const exempt = new Set((tm.exempt_templates || []).map((t) => t.toLowerCase()))
     const testRecipients = (tm.recipients || []).filter(Boolean)
     if (tm.enabled && testRecipients.length > 0 && !exempt.has(templateName.toLowerCase())) {
-      console.log('[email_test_mode] Rerouting', {
+      console.log('[email_test_mode] Rerouting in-process', {
         templateName,
         originalRecipient: effectiveRecipient,
         testRecipients,
       })
-      // Fan out to all test recipients; first one uses the original
-      // idempotency key, subsequent get a suffix to remain unique.
-      const results = await Promise.allSettled(
-        testRecipients.map((to, i) =>
-          supabase.functions.invoke('send-transactional-email', {
-            headers: { 'x-email-test-mode-relay': '1' },
-            body: {
-              templateName,
-              recipientEmail: to,
-              idempotencyKey: `${idempotencyKey}:tm:${i}`,
-              templateData: {
-                ...templateData,
-                __testModeOriginalRecipient: effectiveRecipient,
-              },
-            },
-          })
-        )
-      )
-      // Mark the original send as suppressed-by-test-mode for audit
+      // 1. Audit row for the original recipient
       await supabase.from('email_send_log').insert({
-        message_id: messageId,
+        message_id: crypto.randomUUID(),
         template_name: templateName,
         recipient_email: effectiveRecipient,
         status: 'suppressed',
         error_message: 'rerouted by email_test_mode',
       })
-      return new Response(
-        JSON.stringify({
-          success: true,
-          test_mode: true,
-          rerouted_to: testRecipients,
-          fanout: results.map((r) => r.status),
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      // 2. Swap recipient list to the test recipients
+      recipients = testRecipients
+      isTestModeReroute = true
+      testModeOriginalRecipient = effectiveRecipient
     }
   } catch (e) {
-    if ((e as Error)?.message !== '__skip_test_mode__') {
-      console.warn('[email_test_mode] lookup failed, proceeding with normal routing', e)
-    }
+    console.warn('[email_test_mode] lookup failed, proceeding with normal routing', e)
   }
+
+  // ========================================================================
+  // Per-recipient processing: suppression check, token, render, enqueue.
+  // Runs in a loop so test-mode produces one pending row per test recipient.
+  // ========================================================================
+  const perRecipientResults: Array<{ recipient: string; status: string; reason?: string }> = []
+  for (let rIdx = 0; rIdx < recipients.length; rIdx++) {
+    const currentRecipient = recipients[rIdx]
+    const messageId = crypto.randomUUID()
+    const perRecipientIdemKey = isTestModeReroute
+      ? `${idempotencyKey}:tm:${rIdx}`
+      : idempotencyKey
+    const perRecipientTemplateData = isTestModeReroute
+      ? { ...templateData, __testModeOriginalRecipient: testModeOriginalRecipient }
+      : templateData
+    const result = await processRecipient({
+      supabase,
+      templateName,
+      template,
+      effectiveRecipient: currentRecipient,
+      messageId,
+      idempotencyKey: perRecipientIdemKey,
+      templateData: perRecipientTemplateData,
+      isTestModeReroute,
+    })
+    perRecipientResults.push({ recipient: currentRecipient, ...result })
+  }
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      test_mode: isTestModeReroute,
+      ...(isTestModeReroute ? { rerouted_to: recipients } : {}),
+      results: perRecipientResults,
+    }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+})
+
+// ---------------------------------------------------------------------------
+// Per-recipient pipeline (extracted from the old inline flow).
+// Returns a small result descriptor; never throws to the caller.
+// ---------------------------------------------------------------------------
+async function processRecipient(args: {
+  supabase: ReturnType<typeof createClient>
+  templateName: string
+  template: any
+  effectiveRecipient: string
+  messageId: string
+  idempotencyKey: string
+  templateData: Record<string, any>
+  isTestModeReroute: boolean
+}): Promise<{ status: string; reason?: string }> {
+  const {
+    supabase,
+    templateName,
+    template,
+    effectiveRecipient,
+    messageId,
+    idempotencyKey,
+    templateData,
+    isTestModeReroute,
+  } = args
 
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase
@@ -271,13 +296,7 @@ Deno.serve(async (req) => {
       error: suppressionError,
       effectiveRecipient,
     })
-    return new Response(
-      JSON.stringify({ error: 'Failed to verify suppression status' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return { status: 'failed', reason: 'suppression_check_error' }
   }
 
   if (suppressed) {
@@ -290,13 +309,7 @@ Deno.serve(async (req) => {
     })
 
     console.log('Email suppressed', { effectiveRecipient, templateName })
-    return new Response(
-      JSON.stringify({ success: false, reason: 'email_suppressed' }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return { status: 'suppressed' }
   }
 
   // 3. Get or create unsubscribe token (one token per email address)
@@ -322,13 +335,7 @@ Deno.serve(async (req) => {
       status: 'failed',
       error_message: 'Failed to look up unsubscribe token',
     })
-    return new Response(
-      JSON.stringify({ error: 'Failed to prepare email' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return { status: 'failed', reason: 'token_lookup_error' }
   }
 
   if (existingToken && !existingToken.used_at) {
@@ -355,13 +362,7 @@ Deno.serve(async (req) => {
         status: 'failed',
         error_message: 'Failed to create unsubscribe token',
       })
-      return new Response(
-        JSON.stringify({ error: 'Failed to prepare email' }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return { status: 'failed', reason: 'token_create_error' }
     }
 
     // If another request raced us, our upsert was silently ignored.
@@ -384,13 +385,7 @@ Deno.serve(async (req) => {
         status: 'failed',
         error_message: 'Failed to confirm unsubscribe token storage',
       })
-      return new Response(
-        JSON.stringify({ error: 'Failed to prepare email' }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      return { status: 'failed', reason: 'token_reread_error' }
     }
     unsubscribeToken = storedToken.token
   } else {
@@ -407,13 +402,7 @@ Deno.serve(async (req) => {
       error_message:
         'Unsubscribe token used but email missing from suppressed list',
     })
-    return new Response(
-      JSON.stringify({ success: false, reason: 'email_suppressed' }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return { status: 'suppressed', reason: 'token_used' }
   }
 
   // 4. Render React Email template to HTML and plain text
@@ -507,10 +496,7 @@ Deno.serve(async (req) => {
       error_message: 'Failed to enqueue email',
     })
 
-    return new Response(JSON.stringify({ error: 'Failed to enqueue email' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return { status: 'failed', reason: 'enqueue_error' }
   }
 
   console.log('Transactional email enqueued', { templateName, effectiveRecipient })
@@ -520,7 +506,6 @@ Deno.serve(async (req) => {
   // primary recipient is already info@ to avoid duplicate sends.
   // Also skip when this send is itself a test-mode reroute (templateData carries
   // `__testModeOriginalRecipient`) — we don't want to BCC info@ during testing.
-  const isTestModeReroute = Boolean(templateData && (templateData as any).__testModeOriginalRecipient)
   if (isCustomerFacing && !isTestModeReroute && effectiveRecipient.toLowerCase() !== BCC_EMAIL.toLowerCase()) {
     const bccMessageId = crypto.randomUUID()
     const bccSubject = `[BCC: ${effectiveRecipient}] ${resolvedSubject}`
@@ -593,11 +578,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(
-    JSON.stringify({ success: true, queued: true }),
-    {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    }
-  )
-})
+  return { status: 'queued' }
+}

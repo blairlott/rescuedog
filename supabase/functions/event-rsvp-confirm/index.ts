@@ -39,6 +39,12 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return j({ error: 'method not allowed' }, 405);
 
+  // Master kill-switch: ambassador_events_rsvp_enabled feature flag.
+  // When OFF, no-op so direct calls cannot trigger any email send.
+  const { data: flag } = await admin
+    .from('feature_flags').select('enabled').eq('key', 'ambassador_events_rsvp_enabled').maybeSingle();
+  if (!flag?.enabled) return j({ skipped: true, reason: 'feature_disabled' });
+
   const { data: setting } = await admin
     .from('app_settings').select('value').eq('key', 'event_rsvp_confirmation_enabled').maybeSingle();
   if (setting && (setting.value as any) === false) return j({ skipped: true, reason: 'disabled' });

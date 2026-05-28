@@ -176,14 +176,42 @@ const Index = () => {
         path="/"
         preloadImage={!hero.config.imageUrl ? heroRedBlendWebp : undefined}
         preloadImageType="image/webp"
-        jsonLd={{
-          "@context": "https://schema.org",
-          "@type": "Organization",
-          name: "Rescue Dog Wines",
-          url: "https://rescuedogwines.com",
-          logo: "https://rescuedogwines.myshopify.com/cdn/shop/files/rdw_black_4x_7dece252-0ae7-4039-b832-0a86b7adec60.png",
-          sameAs: ["https://www.instagram.com/rescuedogwines"],
-        }}
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "Rescue Dog Wines",
+            url: "https://rescuedogwines.com",
+            logo: "https://rescuedogwines.myshopify.com/cdn/shop/files/rdw_black_4x_7dece252-0ae7-4039-b832-0a86b7adec60.png",
+            sameAs: [
+              "https://www.instagram.com/rescuedogwines",
+              "https://www.facebook.com/rescuedogwines",
+              "https://www.linkedin.com/company/rescue-dog-wines",
+            ],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "Rescue Dog Wines",
+            url: "https://rescuedogwines.com",
+            potentialAction: {
+              "@type": "SearchAction",
+              target: "https://rescuedogwines.com/wines?q={search_term_string}",
+              "query-input": "required name=search_term_string",
+            },
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "Winery",
+            name: "Rescue Dog Wines",
+            url: "https://rescuedogwines.com",
+            logo: "https://rescuedogwines.myshopify.com/cdn/shop/files/rdw_black_4x_7dece252-0ae7-4039-b832-0a86b7adec60.png",
+            description:
+              "Family-owned, sustainably-farmed Lodi, California winery. 50% of profits support 501(c)(3) dog-rescue partners helping dogs find their forever home.",
+            address: { "@type": "PostalAddress", addressLocality: "Lodi", addressRegion: "CA", addressCountry: "US" },
+            areaServed: "US",
+          },
+        ]}
       />
       <Header />
 

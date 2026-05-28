@@ -84,7 +84,37 @@ function generateToken(): string {
 
 // Auth note: this function uses verify_jwt = true in config.toml, so Supabase's
 // gateway validates the caller's JWT (anon or service_role) before the request
-// reaches this code. No in-function auth check is needed.
+// reaches this code. We additionally perform an in-function authorization check
+// to prevent abuse via the public anon key: anonymous callers may only invoke
+// templates on the PUBLIC_TEMPLATES allowlist (the public-form confirmations
+// and admin notifications). Authenticated users with an admin/cms role and
+// service_role callers may invoke any template.
+const PUBLIC_TEMPLATES = new Set<string>([
+  'contact-form-confirmation',
+  'contact-form-admin-notification',
+  'subscription-signup-confirmation',
+  'subscription-signup-admin-notification',
+  'marketplace-application-confirmation',
+  'marketplace-application-admin-notification',
+  'retailer-suggestion-confirmation',
+  'retailer-suggestion-admin-notification',
+  'ambassador-welcome',
+  'access-request-admin-notification',
+])
+
+const PRIVILEGED_ROLES = ['admin', 'cms_admin', 'ambassador_manager', 'wine_club_manager']
+
+function decodeJwtPayload(jwt: string): any | null {
+  try {
+    const parts = jwt.split('.')
+    if (parts.length < 2) return null
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4))
+    return JSON.parse(atob(b64 + pad))
+  } catch {
+    return null
+  }
+}
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -137,6 +167,40 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
+  }
+
+  // -----------------------------------------------------------------
+  // Authorization: gate non-public templates to privileged callers.
+  // -----------------------------------------------------------------
+  if (!PUBLIC_TEMPLATES.has(templateName)) {
+    const authHeader = req.headers.get('Authorization') || ''
+    const jwt = authHeader.replace(/^Bearer\s+/i, '').trim()
+    const claims = decodeJwtPayload(jwt) || {}
+    const callerRole: string = claims.role || 'anon'
+    let allowed = callerRole === 'service_role'
+    if (!allowed && callerRole === 'authenticated' && claims.sub) {
+      try {
+        const authClient = createClient(supabaseUrl, supabaseServiceKey)
+        const { data: roleRows } = await authClient
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', claims.sub)
+        const rs = (roleRows || []).map((r: any) => String(r.role))
+        allowed = rs.some((r) => PRIVILEGED_ROLES.includes(r))
+      } catch (e) {
+        console.warn('role lookup failed', e)
+      }
+    }
+    if (!allowed) {
+      console.warn('Blocked unauthorized transactional email request', {
+        templateName,
+        callerRole,
+      })
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: template requires privileged caller' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
   }
 
   // 1. Look up template from registry (early — needed to resolve recipient)

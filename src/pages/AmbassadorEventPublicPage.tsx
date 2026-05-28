@@ -10,11 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, MapPin, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 const SITE_URL = "https://rescuedog.lovable.app";
 
 export default function AmbassadorEventPublicPage() {
   const { slug } = useParams();
+  const rsvpEnabled = useFeatureFlag("ambassador_events_rsvp_enabled", false);
   const [event, setEvent] = useState<any>(null);
   const [host, setHost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,10 @@ export default function AmbassadorEventPublicPage() {
 
   const onRsvp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!rsvpEnabled) {
+      toast.error("RSVPs are temporarily paused. Please check back soon.");
+      return;
+    }
     setSubmitting(true);
     const { data: inserted, error } = await supabase.from("ambassador_event_rsvps").insert({
       event_id: event.id,
@@ -183,7 +189,11 @@ export default function AmbassadorEventPublicPage() {
 
         <section className="mt-12 border-t border-border pt-8">
           <h2 className="text-2xl font-bold uppercase mb-4">RSVP</h2>
-          {submitted ? (
+          {!rsvpEnabled ? (
+            <p className="border border-border bg-muted p-6 text-center text-sm">
+              RSVPs are temporarily paused while we improve this experience. Check back soon.
+            </p>
+          ) : submitted ? (
             <p className="border border-border bg-muted p-6 text-center">You're on the list. Check your email for details!</p>
           ) : (
             <form onSubmit={onRsvp} className="space-y-4 max-w-md">

@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCustomerAuth } from "@/hooks/useCustomerAuth";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 60);
@@ -26,6 +27,7 @@ export default function AmbassadorEventEditorPage() {
   const { id } = useParams();
   const isNew = !id;
   const { user, loading } = useCustomerAuth();
+  const eventsEnabled = useFeatureFlag("ambassador_events_rsvp_enabled", false);
   const navigate = useNavigate();
   const [form, setForm] = useState<any>(blank);
   const [rsvps, setRsvps] = useState<any[]>([]);
@@ -33,6 +35,7 @@ export default function AmbassadorEventEditorPage() {
 
   useEffect(() => {
     if (loading) return;
+    if (!eventsEnabled) { navigate("/ambassador/dashboard"); return; }
     if (!user) { navigate("/login?next=/ambassador/dashboard"); return; }
     if (isNew) return;
     (async () => {

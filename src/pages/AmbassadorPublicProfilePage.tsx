@@ -6,10 +6,12 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Loader2, Instagram, Globe, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 const SITE_URL = "https://rescuedog.lovable.app";
 
 export default function AmbassadorPublicProfilePage() {
+  const eventsEnabled = useFeatureFlag("ambassador_events_rsvp_enabled", false);
   const { handle } = useParams();
   const [profile, setProfile] = useState<any>(null);
   const [events, setEvents] = useState<any[]>([]);
@@ -134,7 +136,7 @@ export default function AmbassadorPublicProfilePage() {
           </div>
         </section>
 
-        {events.length > 0 && (
+        {eventsEnabled && events.length > 0 && (
           <section className="py-12 px-4">
             <div className="max-w-3xl mx-auto">
               <h2 className="text-2xl font-bold uppercase mb-6 flex items-center gap-2"><Calendar className="w-5 h-5" />Upcoming Tastings</h2>

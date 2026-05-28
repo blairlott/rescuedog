@@ -34,6 +34,11 @@ Deno.serve(async (req) => {
   const internal = req.headers.get('x-internal-key') === SERVICE_KEY;
   if (!internal) return j({ error: 'unauthorized' }, 401);
 
+  // Master kill-switch: ambassador_events_rsvp_enabled feature flag.
+  const { data: flag } = await admin
+    .from('feature_flags').select('enabled').eq('key', 'ambassador_events_rsvp_enabled').maybeSingle();
+  if (!flag?.enabled) return j({ skipped: true, reason: 'feature_disabled' });
+
   const { data: enabled } = await admin
     .from('app_settings').select('value').eq('key', 'event_reminder_enabled').maybeSingle();
   if (enabled && (enabled.value as any) === false) return j({ skipped: true });

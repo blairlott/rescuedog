@@ -230,9 +230,15 @@ export default function AmbassadorDashboardPage() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold uppercase">Tasting Events</h2>
-            <Button asChild size="sm"><Link to="/ambassador/events/new"><Plus className="w-4 h-4 mr-1" />New Event</Link></Button>
+            {eventsEnabled && (
+              <Button asChild size="sm"><Link to="/ambassador/events/new"><Plus className="w-4 h-4 mr-1" />New Event</Link></Button>
+            )}
           </div>
-          {events.length === 0 ? (
+          {!eventsEnabled ? (
+            <p className="text-muted-foreground text-sm border border-dashed border-border p-6 text-center">
+              Tasting events are temporarily paused while we refresh this feature. Your existing event data is preserved.
+            </p>
+          ) : events.length === 0 ? (
             <p className="text-muted-foreground text-sm border border-dashed border-border p-6 text-center">No events yet. Host your first tasting!</p>
           ) : (
             <div className="border border-border divide-y divide-border">

@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.sync_kennel_ingest_vault(text);

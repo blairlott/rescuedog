@@ -120,26 +120,28 @@ function pickNum(...candidates: unknown[]): number | null {
 /** Map a Vinoshipper order JSON into a vs_transactions row. */
 function mapOrder(o: any): Record<string, unknown> {
   const cust = o.customer ?? {};
-  const ship = o.shipTo ?? o.shipping ?? cust;
-  const billAddr = cust.address ?? {};
-  const shipAddr = ship.address ?? billAddr;
+  // VS schema: shipToAddress is a flat address object (street1/city/state/zip
+  // directly on the object). Older code expected a nested .address — keep that
+  // as a fallback for safety.
+  const shipAddr = o.shipToAddress ?? o.shipTo?.address ?? cust.address ?? {};
+  const billAddr = cust.address ?? shipAddr;
   const club = o.club ?? o.subscription ?? null;
   const isClub = !!club || /club|member/i.test(String(o.cartType ?? o.orderType ?? ""));
 
   return {
-    invoice: String(o.id ?? o.orderId ?? o.invoice),
-    transaction_date: o.orderDate ? new Date(o.orderDate).toISOString().slice(0, 10) : null,
-    transaction_type: o.orderType ?? o.cartType ?? null,
-    ship_date: o.shipDate ? new Date(o.shipDate).toISOString().slice(0, 10) : null,
+    invoice: String(o.orderNumber ?? o.id ?? o.orderId ?? o.invoice),
+    transaction_date: o.purchasedAt ? new Date(o.purchasedAt).toISOString().slice(0, 10) : null,
+    transaction_type: o.cartType ?? o.orderType ?? null,
+    ship_date: o.shippedAt ? new Date(o.shippedAt).toISOString().slice(0, 10) : null,
     requested_ship_date: o.requestedShipDate ? new Date(o.requestedShipDate).toISOString().slice(0, 10) : null,
     store: o.store ?? null,
-    delivery_type: o.deliveryType ?? null,
+    delivery_type: o.deliveryType ?? o.device ?? null,
     inventory_location: o.inventoryLocation ?? null,
     tracking: o.tracking ?? null,
     payment_type: o.paymentType ?? null,
     club: club?.name ?? club?.clubName ?? null,
     release: club?.release ?? null,
-    order_type: o.orderType ?? null,
+    order_type: o.orderType ?? o.cartType ?? null,
     referrer: o.referrerUrl ?? o.referrer ?? null,
     discount_code: o.discountCode ?? null,
     customer_first_name: cust.firstName ?? null,
@@ -149,13 +151,13 @@ function mapOrder(o: any): Record<string, unknown> {
     customer_id: cust.id ? String(cust.id) : null,
     active_club_member: isClub,
     business_name: cust.businessName ?? null,
-    customer_street: billAddr.street1 ?? billAddr.address1 ?? null,
+    customer_street: billAddr.street1 ?? billAddr.address1 ?? billAddr.street ?? null,
     customer_city: billAddr.city ?? null,
     customer_state: billAddr.state ?? billAddr.stateCode ?? null,
     customer_zip: billAddr.zip ?? billAddr.postalCode ?? null,
-    ship_to_first_name: ship.firstName ?? cust.firstName ?? null,
-    ship_to_last_name: ship.lastName ?? cust.lastName ?? null,
-    ship_to_street: shipAddr.street1 ?? shipAddr.address1 ?? null,
+    ship_to_first_name: shipAddr.firstName ?? o.shipTo?.firstName ?? cust.firstName ?? null,
+    ship_to_last_name: shipAddr.lastName ?? o.shipTo?.lastName ?? cust.lastName ?? null,
+    ship_to_street: shipAddr.street1 ?? shipAddr.address1 ?? shipAddr.street ?? null,
     ship_to_city: shipAddr.city ?? null,
     ship_to_state: shipAddr.state ?? shipAddr.stateCode ?? null,
     ship_to_zip: shipAddr.zip ?? shipAddr.postalCode ?? null,
@@ -163,8 +165,8 @@ function mapOrder(o: any): Record<string, unknown> {
     gross_value: pickNum(o.grossValue, o.subtotal, o.subTotal),
     discount: pickNum(o.discount, o.discountTotal),
     shipping_to_customer: pickNum(o.shippingTotal, o.shippingCost, o.shipping?.total, o.shipping?.cost),
-    order_total: pickNum(o.orderTotal, o.total, o.grandTotal),
-    chain_status: o.chainStatus ?? o.status ?? null,
+    order_total: pickNum(o.saleAmount, o.orderTotal, o.total, o.grandTotal),
+    chain_status: o.orderStatus ?? o.chainStatus ?? o.status ?? null,
     raw: o,
   };
 }

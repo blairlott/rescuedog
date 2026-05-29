@@ -9,10 +9,6 @@ import hero1Jpg from "@/assets/wine-hero-1.jpg";
 import hero1Webp from "@/assets/wine-hero-1.webp";
 import hero2Jpg from "@/assets/wine-hero-2.jpg";
 import hero2Webp from "@/assets/wine-hero-2.webp";
-import hero3Jpg from "@/assets/wine-hero-3.jpg";
-import hero3Webp from "@/assets/wine-hero-3.webp";
-import hero4Jpg from "@/assets/wine-hero-4.jpg";
-import hero4Webp from "@/assets/wine-hero-4.webp";
 
 // Images and copy rotate INDEPENDENTLY so the bandit can find the best
 // image × copy pairing. variant_id logged to hero_events is `${imgId}__${copyId}`,

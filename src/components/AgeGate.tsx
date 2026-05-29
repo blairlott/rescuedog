@@ -127,7 +127,7 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
                 className="bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-brand text-sm font-bold px-10"
                 aria-label="Yes, I am over 21"
               >
-                <T>Yes</T>
+                <T>Yes, I'm 21+</T>
               </Button>
               <Button
                 onClick={handleNo}
@@ -136,7 +136,7 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
                 className="uppercase tracking-brand text-sm font-bold px-10 border-foreground text-foreground hover:bg-foreground hover:text-background"
                 aria-label="No, I am under 21"
               >
-                <T>No</T>
+                <T>No, I'm under 21</T>
               </Button>
             </div>
             <label className="flex items-center justify-center gap-2 cursor-pointer text-sm text-muted-foreground">

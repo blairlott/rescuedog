@@ -97,3 +97,7 @@ project_id = "eskqaxmypgvwtsffcbsw"
     verify_jwt = false
   [functions.vinoshipper-sync-prices]
     verify_jwt = false
+  [functions.vinoshipper-sync-catalog]
+    verify_jwt = false
+  [functions.vinoshipper-prepopulate-overrides]
+    verify_jwt = false

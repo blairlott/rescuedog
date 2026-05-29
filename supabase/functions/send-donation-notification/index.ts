@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkSharedSecret } from "../_shared/cronAlert.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,16 +20,23 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    // Require a valid Supabase user OR service-role JWT to prevent abuse
-    // (notification spam, inquiry-id enumeration).
+    // Path A: cron shared secret (used by DB trigger via pg_net).
+    const hasCronSecret = await checkSharedSecret(req, {
+      functionName: 'send-donation-notification',
+      envVar: 'CRON_SECRET',
+      headers: ['x-cron-secret'],
+      alertOnFail: false,
+    });
+
+    // Path B: Supabase user OR service-role JWT (CRM resend buttons).
     const authHeader = req.headers.get('Authorization') || '';
     const token = authHeader.replace(/^Bearer\s+/i, '');
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    if (!token) {
+    if (!hasCronSecret && !token) {
       return new Response(JSON.stringify({ success: false, error: 'unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    if (token !== serviceKey) {
+    if (!hasCronSecret && token !== serviceKey) {
       const verifier = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY') ?? serviceKey);
       const { data: userData, error: userErr } = await verifier.auth.getUser(token);
       if (userErr || !userData?.user) {

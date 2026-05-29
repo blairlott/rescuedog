@@ -194,12 +194,9 @@ const DonationPage = () => {
 
       if (insertError) throw insertError;
 
-      // Trigger email notification
-      if (donation?.id) {
-        await supabase.functions.invoke('send-donation-notification', {
-          body: { donationRequestId: donation.id },
-        });
-      }
+      // Notification emails are dispatched server-side by the
+      // trg_notify_donation_ai trigger (calls send-donation-notification
+      // via pg_net with the cron shared secret).
 
       toast({
         title: "Request submitted!",

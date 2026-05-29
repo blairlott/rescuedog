@@ -100,10 +100,12 @@ Deno.serve(async (req) => {
                 .upsert(
                   {
                     wine_product_id: row.id,
+                    vinoshipper_product_id: String(vsId),
                     field,
-                    proposed_value: incoming as any,
-                    current_value: (current ?? null) as any,
+                    new_value: incoming as any,
+                    old_value: (current ?? null) as any,
                     status: "pending",
+                    source: "vinoshipper-sync-catalog",
                   },
                   { onConflict: "wine_product_id,field" },
                 );

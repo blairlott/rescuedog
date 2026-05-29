@@ -549,29 +549,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Wine Club CTA */}
-      <section className="py-16 md:py-24 relative">
-        <CmsEditButton onClick={() => setEditSection("club_cta")} />
-        <div className="container mx-auto px-4">
-          <div className="bg-primary p-8 md:p-16 text-center">
-            <p className="text-primary-foreground/80 text-sm uppercase tracking-brand font-bold mb-2"><T>Join Our</T></p>
-            <h2 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">
-              <T>{getVal("club_cta", "heading", "Club")}</T>
-            </h2>
-            <p className="text-primary-foreground/80 text-lg max-w-xl mx-auto mb-4">
-              <T>{getVal("club_cta", "body", "Get 20% off wine purchases! Join us in our commitment to support animal rescue organizations and receive regular shipments of award-winning wines — plus perks!")}</T>
-            </p>
-            <Button
-              asChild
-              size="lg"
-              className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
-            >
-              <Link to="/club"><T>Learn More & Join</T></Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
       {/* Merch Section */}
       {merch.length > 0 && (
         <section className="py-16 bg-secondary">

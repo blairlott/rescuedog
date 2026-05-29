@@ -12946,6 +12946,7 @@ export type Database = {
       }
     }
     Functions: {
+      _test_cron_auth: { Args: { _fn: string; _mode: string }; Returns: number }
       ab_results_summary: {
         Args: { _since?: string }
         Returns: {

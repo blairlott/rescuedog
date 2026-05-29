@@ -36,10 +36,6 @@ export default function ForcePasswordChangePage() {
       toast.error("Password must be at least 10 characters.");
       return;
     }
-    if (password === "ChangeMeRDW!" || password === "ChangeMe2026!") {
-      toast.error("Please choose a new password — not the temporary one.");
-      return;
-    }
     if (password !== confirm) {
       toast.error("Passwords do not match.");
       return;

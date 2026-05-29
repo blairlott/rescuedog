@@ -3,7 +3,7 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook, TrendingDown, FlaskConical, Headphones, ArrowLeft, Radar, Menu, X } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook, TrendingDown, FlaskConical, Headphones, ArrowLeft, Radar, Menu, X, AlertTriangle } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
 import { CrmBreadcrumbs } from "@/components/crm/CrmBreadcrumbs";
@@ -17,6 +17,23 @@ export default function CrmLayout() {
   const { data: roleInfo, isLoading: roleLoading } = useUserRole();
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [driftCount, setDriftCount] = useState(0);
+
+  useEffect(() => {
+    if (!roleInfo?.isAdminOrOwner) return;
+    let cancelled = false;
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from("wine_products_pending")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (!cancelled) setDriftCount(count || 0);
+    };
+    fetchCount();
+    const onFocus = () => fetchCount();
+    window.addEventListener("focus", onFocus);
+    return () => { cancelled = true; window.removeEventListener("focus", onFocus); };
+  }, [roleInfo?.isAdminOrOwner]);
 
   const navItems = [
     { to: "/crm", label: "Dashboard", icon: LayoutDashboard },
@@ -31,6 +48,7 @@ export default function CrmLayout() {
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/admin/ab-results", label: "A/B Results", icon: FlaskConical }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin#depletion-uploader", label: "Depletion Upload", icon: FileText }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/legacy-migration", label: "Legacy Migration", icon: Link2 }] : []),
+    ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin/sync-drift", label: "Catalog Drift", icon: AlertTriangle, badge: driftCount }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin", label: "Users", icon: Users }] : []),
   ];
 

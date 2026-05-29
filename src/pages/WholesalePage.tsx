@@ -96,15 +96,9 @@ const WholesalePage = () => {
         throw new Error(insertError.message);
       }
 
-      // Trigger notification emails
-      const { error: fnError } = await supabase.functions.invoke('send-wholesale-notification', {
-        body: { inquiryId: id },
-      });
-
-      if (fnError) {
-        console.error('Notification error:', fnError);
-        // Still show success — the inquiry was saved
-      }
+      // Notification emails are dispatched server-side by the
+      // trg_notify_wholesale_ai trigger (calls send-wholesale-notification
+      // via pg_net with the cron shared secret).
 
       toast.success(`Thank you! Your inquiry has been sent to ${selectedRegion.contact}.`, { position: "top-center" });
       setFormData({ name: '', business: '', email: '', phone: '', region: '', message: '' });

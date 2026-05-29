@@ -10,9 +10,7 @@ import hero1Webp from "@/assets/wine-hero-1.webp";
 import hero2Jpg from "@/assets/wine-hero-2.jpg";
 import hero2Webp from "@/assets/wine-hero-2.webp";
 import hero3Jpg from "@/assets/wine-hero-3.jpg";
-import hero3Webp from "@/assets/wine-hero-3.webp";
 import hero4Jpg from "@/assets/wine-hero-4.jpg";
-import hero4Webp from "@/assets/wine-hero-4.webp";
 
 // Images and copy rotate INDEPENDENTLY so the bandit can find the best
 // image × copy pairing. variant_id logged to hero_events is `${imgId}__${copyId}`,
@@ -36,8 +34,6 @@ type CopyVariant = {
 export const WINE_HERO_IMAGES: ImageVariant[] = [
   { id: "img1-cheers-cab",      jpg: hero1Jpg, webp: hero1Webp, alt: "Three friends toasting Rescue Dog Wines Cabernet Sauvignon on a sunny patio" },
   { id: "img2-couples-dog",     jpg: hero2Jpg, webp: hero2Webp, alt: "Two couples cheers red wine with a rescue dog at the table" },
-  { id: "img3-vineyard-table",  jpg: hero3Jpg, webp: hero3Webp, alt: "Friends toasting at a vineyard table with a Rescue Dog Wines bottle" },
-  { id: "img4-backyard-charcut",jpg: hero4Jpg, webp: hero4Webp, alt: "Backyard dinner party with friends, charcuterie and a rescue dog" },
 ];
 
 // Each copy deck leans on a different psychological lever for conversions:
@@ -49,22 +45,6 @@ export const WINE_HERO_COPY: CopyVariant[] = [
     headline: <>Pour for<br />the pack.</>,
     sub: "Award-winning, sustainably grown Lodi wines. Every bottle helps a rescue dog find a forever home.",
     cta: "Shop Wines",
-    ctaHref: "/wines",
-  },
-  {
-    id: "copy-shipping",
-    eyebrow: "Shipping included on 12+ bottles",
-    headline: <>Wine that gives<br />back. Literally.</>,
-    sub: "Half our profits go to animal rescue. The other half? Goes great with friends, food, and a dog at your feet.",
-    cta: "Shop the Cabernet",
-    ctaHref: "/wines",
-  },
-  {
-    id: "copy-sustainable",
-    eyebrow: "Lodi Rules Certified Sustainable",
-    headline: <>Our wine is<br />for the dogs.</>,
-    sub: "Crafted in Lodi, California. Sip knowing every glass helps fund the rescues bringing dogs home.",
-    cta: "Shop All Wines",
     ctaHref: "/wines",
   },
   {

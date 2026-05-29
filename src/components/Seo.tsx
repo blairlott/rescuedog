@@ -17,7 +17,9 @@ interface Props {
   type?: "website" | "article" | "product" | "profile";
 }
 
-const SITE = "https://rescuedogwines.com";
+const SITE = typeof window !== "undefined"
+  ? `${window.location.protocol}//${window.location.host}`
+  : "https://rescuedogwines.com";
 const DEFAULT_DESC = "Award-winning, sustainable wines from Lodi. 50% of profits support animal rescue.";
 const DEFAULT_IMG = `${SITE}/og-default.jpg`;
 

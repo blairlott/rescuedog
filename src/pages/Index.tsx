@@ -34,6 +34,19 @@ import { T } from "@/components/T";
 import { useExperiment } from "@/hooks/useExperiment";
 import { WineHero } from "@/components/WineHero";
 import { Seo } from "@/components/Seo";
+import pressWineEnthusiast from "@/assets/press-logos/wine-enthusiast.svg";
+import pressUsaToday from "@/assets/press-logos/usa-today.svg";
+import pressForbes from "@/assets/press-logos/forbes.svg";
+import pressSfChronicle from "@/assets/press-logos/sf-chronicle.svg";
+import pressLodi from "@/assets/press-logos/lodi-wine-commission.svg";
+
+const pressLogos = [
+  { name: "Wine Enthusiast", src: pressWineEnthusiast },
+  { name: "USA Today", src: pressUsaToday },
+  { name: "Forbes", src: pressForbes },
+  { name: "SF Chronicle", src: pressSfChronicle },
+  { name: "Lodi Wine Commission", src: pressLodi },
+];
 
 const instagramPosts = [
   {
@@ -264,6 +277,7 @@ const Index = () => {
                 src={getVal("mission", "image", rdwHero)}
                 alt="Rescue Dog Wines bottles"
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
             </div>
           </div>
@@ -292,10 +306,14 @@ const Index = () => {
             <T>As Featured In</T>
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-foreground/70">
-            {["Wine Enthusiast", "USA Today", "Forbes", "SF Chronicle", "Lodi Wine Commission"].map((name) => (
-              <span key={name} className="text-sm md:text-base font-bold uppercase tracking-brand opacity-70 hover:opacity-100 transition-opacity">
-                <T>{name}</T>
-              </span>
+            {pressLogos.map((logo) => (
+              <img
+                key={logo.name}
+                src={logo.src}
+                alt={logo.name}
+                loading="lazy"
+                className="h-10 md:h-12 w-auto grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition"
+              />
             ))}
           </div>
         </div>
@@ -363,6 +381,29 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Wine Club CTA */}
+      <section className="py-16 md:py-24 relative">
+        <CmsEditButton onClick={() => setEditSection("club_cta")} />
+        <div className="container mx-auto px-4">
+          <div className="bg-primary p-8 md:p-16 text-center">
+            <p className="text-primary-foreground/80 text-sm uppercase tracking-brand font-bold mb-2"><T>Join Our</T></p>
+            <h2 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">
+              <T>{getVal("club_cta", "heading", "Club")}</T>
+            </h2>
+            <p className="text-primary-foreground/80 text-lg max-w-xl mx-auto mb-4">
+              <T>{getVal("club_cta", "body", "Get 20% off wine purchases! Join us in our commitment to support animal rescue organizations and receive regular shipments of award-winning wines — plus perks!")}</T>
+            </p>
+            <Button
+              asChild
+              size="lg"
+              className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
+            >
+              <Link to="/club"><T>Learn More & Join</T></Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Video Background Section */}
       <section className="relative h-[60vh] min-h-[400px] flex items-center overflow-hidden">
         <LazyYouTube
@@ -427,6 +468,7 @@ const Index = () => {
                 src={lodiSustainable}
                 alt="Lodi Rules Sustainable Winegrowing certification"
                 className="max-w-[250px] w-full h-auto"
+                loading="lazy"
               />
             </div>
             <div>
@@ -469,31 +511,6 @@ const Index = () => {
       </section>
 
       {/* Events Preview */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-10">
-            <h2 className="text-2xl font-bold text-foreground"><T>Events</T></h2>
-            <Link to="/events" className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 uppercase tracking-brand">
-              <T>View More Events</T> <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="border border-border p-6 hover:border-primary transition-colors">
-              <p className="text-sm text-primary font-bold uppercase tracking-brand mb-1">April 2026</p>
-              <h3 className="text-xl font-bold text-foreground mb-2">Birthday Block Party</h3>
-              <p className="text-sm text-muted-foreground mb-3">April 18, 2026 · All Day Event</p>
-              <Link to="/events" className="text-sm text-primary hover:underline font-medium">More Info →</Link>
-            </div>
-            <div className="border border-border p-6 hover:border-primary transition-colors">
-              <p className="text-sm text-primary font-bold uppercase tracking-brand mb-1">April 2026</p>
-              <h3 className="text-xl font-bold text-foreground mb-2">Spay-ghetti & No Balls Dinner</h3>
-              <p className="text-sm text-muted-foreground mb-3">April 18, 2026 · 7:00 pm - 10:00 pm</p>
-              <Link to="/events" className="text-sm text-primary hover:underline font-medium">More Info →</Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Instagram Feed */}
       <section className="py-16 bg-secondary">
         <div className="container mx-auto px-4">
@@ -530,29 +547,6 @@ const Index = () => {
                 </div>
               </a>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Wine Club CTA */}
-      <section className="py-16 md:py-24 relative">
-        <CmsEditButton onClick={() => setEditSection("club_cta")} />
-        <div className="container mx-auto px-4">
-          <div className="bg-primary p-8 md:p-16 text-center">
-            <p className="text-primary-foreground/80 text-sm uppercase tracking-brand font-bold mb-2"><T>Join Our</T></p>
-            <h2 className="text-4xl md:text-6xl font-bold text-primary-foreground mb-4">
-              <T>{getVal("club_cta", "heading", "Club")}</T>
-            </h2>
-            <p className="text-primary-foreground/80 text-lg max-w-xl mx-auto mb-4">
-              <T>{getVal("club_cta", "body", "Get 20% off wine purchases! Join us in our commitment to support animal rescue organizations and receive regular shipments of award-winning wines — plus perks!")}</T>
-            </p>
-            <Button
-              asChild
-              size="lg"
-              className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 uppercase tracking-brand text-sm font-bold px-10 py-6"
-            >
-              <Link to="/club"><T>Learn More & Join</T></Link>
-            </Button>
           </div>
         </div>
       </section>

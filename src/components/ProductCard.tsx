@@ -225,6 +225,7 @@ export function ProductCard({ product }: ProductCardProps) {
               {[1,2,3,4,5,6,7,8,9,10].map(n => (
                 <SelectItem key={n} value={String(n)}>{n}</SelectItem>
               ))}
+              <SelectItem value="11">11</SelectItem>
               <SelectItem value="12">12 (case)</SelectItem>
             </SelectContent>
           </Select>
@@ -248,7 +249,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <Button
             onClick={(e) => handleAddToCart(e, { buyNow: true })}
             disabled={soldOut || !purchaseAllowed}
-            className="w-full uppercase tracking-brand text-[11px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 h-9 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full uppercase tracking-brand text-[11px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 h-9 disabled:opacity-40 disabled:cursor-not-allowed opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
           >
             <Zap className="w-3.5 h-3.5 mr-1.5" />
             {soldOut ? t("common.sold_out") : "Buy Now"}

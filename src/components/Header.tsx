@@ -25,13 +25,10 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "SHOP WINES", i18nKey: "nav.shop_wines", to: "/wines" },
   { label: "WINE CLUB", i18nKey: "nav.wine_club", to: "/club" },
-  { label: "FIND A STORE", i18nKey: "nav.find_a_store", to: "/store-locator" },
   { label: "MERCH", i18nKey: "nav.merch", to: "/merch" },
-  { label: "ABOUT", i18nKey: "nav.about", to: "/about" },
+  { label: "FIND A STORE", i18nKey: "nav.find_a_store", to: "/store-locator" },
   { label: "MISSION", i18nKey: "nav.mission", to: "/mission" },
-  { label: "DONATION", i18nKey: "nav.donation", to: "/donation" },
-  { label: "EVENTS", i18nKey: "nav.events", to: "/events" },
-  { label: "AMBASSADORS", i18nKey: "nav.ambassadors", to: "/ambassadors" },
+  { label: "ABOUT", i18nKey: "nav.about", to: "/about" },
 ];
 
 export function Header() {
@@ -213,6 +210,7 @@ export function Header() {
             )
           ))}
           <div className="pt-2 mt-2 border-t border-border space-y-3">
+            {isStaff && (<>
               <Link
                 to="/admin"
                 className="block text-xs font-medium tracking-brand uppercase text-muted-foreground"
@@ -234,6 +232,7 @@ export function Header() {
               >
                 COMMAND CENTER
               </Link>
+            </>)}
           </div>
           <div className="pt-2 border-t border-border">
             <LanguageSwitcher />

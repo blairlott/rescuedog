@@ -16,7 +16,6 @@ import { useSmartSort } from "@/hooks/useSmartSort";
 import { Seo } from "@/components/Seo";
 
 const WINE_SORT_ORDER = [
-  "mothers-day-6-pack",
   "cabernet-sauvignon",
   "red-wine-blend",
   "rescue-dog-wines-sauvignon-blanc",
@@ -26,9 +25,10 @@ const WINE_SORT_ORDER = [
   "central-coast-pinot-noir",
   "demisec-mthode-champenoise-sparkling-wine",
   "mthode-champenoise-sparkling-ros",
+  "mothers-day-6-pack",
 ];
 
-const FEATURED_HANDLE = "mothers-day-6-pack";
+const FEATURED_HANDLE = "cabernet-sauvignon";
 
 const categories = [
   { label: "All", tag: null as string | null },

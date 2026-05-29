@@ -33,7 +33,11 @@ Deno.serve(async (req) => {
 
   if (!write) return J(200, { ok: true, mode: "probe", ...probe });
 
-  const admin = createClient(Deno.env.get("SUPABASE_URL")!, SR, { auth: { persistSession: false } });
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } },
+  );
   const { data, error } = await admin.rpc("sync_kennel_ingest_vault", { p_value: secret });
   if (error) return J(500, { error: error.message, ...probe });
   return J(200, { ok: true, ...probe, vault_result: data });

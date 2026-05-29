@@ -279,35 +279,74 @@ Deno.serve(async (req) => {
   const logId = logRow?.id;
 
   try {
-    // Poll Vinoshipper
-    const r = await fetch(`${VS_BASE}/orders/search`, {
-      method: "POST",
-      headers: { Authorization: auth, "Content-Type": "application/json" },
-      body: JSON.stringify({ limit, offset: 0 }),
-    });
-    if (!r.ok) {
-      const txt = await r.text().catch(() => "");
-      await admin.from("vs_poll_log").update({
-        finished_at: new Date().toISOString(),
-        error: `VS ${r.status}: ${txt.slice(0, 300)}`,
-      }).eq("id", logId);
-      return json({ error: `VS ${r.status}`, body: txt.slice(0, 500) }, 502);
-    }
-    const data = await r.json();
-    const orders: any[] = Array.isArray(data) ? data : (data.orders ?? data.results ?? data.data ?? []);
-    const ordersSeen = orders.length;
+    // Poll Vinoshipper — paginate ORDER_DATE DESC, early-exit on full-dedupe page.
+    // VS caps page size at 25 server-side regardless of `limit`. Hard cap 20 pages = 500 orders.
+    const PAGE_SIZE = 25;
+    const MAX_PAGES = 20;
+    let ordersSeen = 0;
+    const allNewOrders: any[] = [];
+    let pagesFetched = 0;
+    let earlyExitReason: string | null = null;
 
-    // Find which invoices we already have
-    const invoices = orders.map((o) => String(o.id ?? o.orderId ?? o.invoice)).filter(Boolean);
-    const existing = new Set<string>();
-    if (invoices.length > 0) {
-      const { data: have } = await admin
-        .from("vs_transactions")
-        .select("invoice")
-        .in("invoice", invoices);
-      have?.forEach((row: any) => existing.add(row.invoice));
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const offset = page * PAGE_SIZE;
+      const r = await fetch(`${VS_BASE}/orders/search`, {
+        method: "POST",
+        headers: { Authorization: auth, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          limit: PAGE_SIZE,
+          offset,
+          sort: { field: "ORDER_DATE", direction: "DESC" },
+        }),
+      });
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        await admin.from("vs_poll_log").update({
+          finished_at: new Date().toISOString(),
+          error: `VS ${r.status} on page ${page}: ${txt.slice(0, 300)}`,
+        }).eq("id", logId);
+        return json({ error: `VS ${r.status}`, body: txt.slice(0, 500), page }, 502);
+      }
+      const data = await r.json();
+      const pageOrders: any[] = Array.isArray(data)
+        ? data
+        : (data.results ?? data.orders ?? data.data ?? []);
+      pagesFetched++;
+      ordersSeen += pageOrders.length;
+      if (pageOrders.length === 0) {
+        earlyExitReason = "empty-page";
+        break;
+      }
+
+      const pageInvoices = pageOrders
+        .map((o) => String(o.id ?? o.orderId ?? o.invoice))
+        .filter(Boolean);
+      const existing = new Set<string>();
+      if (pageInvoices.length > 0) {
+        const { data: have } = await admin
+          .from("vs_transactions")
+          .select("invoice")
+          .in("invoice", pageInvoices);
+        have?.forEach((row: any) => existing.add(row.invoice));
+      }
+      const pageNew = pageOrders.filter(
+        (o) => !existing.has(String(o.id ?? o.orderId ?? o.invoice)),
+      );
+      allNewOrders.push(...pageNew);
+
+      if (pageNew.length === 0) {
+        earlyExitReason = "full-dedupe-hit";
+        break;
+      }
+      if (pageOrders.length < PAGE_SIZE) {
+        earlyExitReason = "partial-page";
+        break;
+      }
+
+      // Rate-limit safety — VS Cloudflare gate trips around ~10 rapid calls.
+      await new Promise((res) => setTimeout(res, 1000));
     }
-    const newOrders = orders.filter((o) => !existing.has(String(o.id ?? o.orderId ?? o.invoice)));
+    const newOrders = allNewOrders;
 
     // Upsert new orders
     let inserted = 0;
@@ -440,6 +479,8 @@ Deno.serve(async (req) => {
         limit,
         static_club_ltv_cents: STATIC_CLUB_LTV_CENTS,
         ltv_note: "Static $400 LTV — replace once vs_transactions has 30+ days of fresh per-customer data",
+        pages_fetched: pagesFetched,
+        early_exit_reason: earlyExitReason,
       },
     }).eq("id", logId);
 
@@ -450,6 +491,8 @@ Deno.serve(async (req) => {
       capi_purchases_sent: purchases,
       capi_subscribes_sent: subscribes,
       ltv_value_sent_cents: ltvCents,
+      pages_fetched: pagesFetched,
+      early_exit_reason: earlyExitReason,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

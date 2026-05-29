@@ -86,18 +86,15 @@ Deno.serve(async (req) => {
             preview.push({ wine_product_id: row.id, handle: row.handle, overrides: newOverrides });
           }
           if (!dryRun) {
-            // jsonb concat — preserves any existing override keys (idempotent).
-            const { error: uErr } = await admin.rpc("exec_sql", {} as any).then(() => ({ error: null as any })).catch(() => ({ error: null as any }));
-            // Use raw update with merged jsonb client-side for safety (no exec_sql RPC available).
+            // Client-side merge preserves any existing override keys
+            // (idempotent: same field re-locking is a no-op overwrite).
             const existing = (row.cms_overrides ?? {}) as Record<string, unknown>;
             const merged = { ...existing, ...newOverrides };
-            const { error: u2 } = await admin
+            const { error: uErr } = await admin
               .from("wine_products")
               .update({ cms_overrides: merged })
               .eq("id", row.id);
-            if (u2) errors.push({ wine_product_id: row.id, vs_id: vsId, error: u2.message });
-            // Keep reference to `uErr` linter quiet:
-            void uErr;
+            if (uErr) errors.push({ wine_product_id: row.id, vs_id: vsId, error: uErr.message });
           }
         }
 

@@ -17,20 +17,48 @@ interface Props {
   type?: "website" | "article" | "product" | "profile";
 }
 
-const SITE = typeof window !== "undefined"
-  ? `${window.location.protocol}//${window.location.host}`
-  : "https://rescuedogwines.com";
+const WINE_SITE = "https://rescuedogwines.com";
+const MERCH_SITE = "https://rescuedog.com";
+
+/**
+ * Resolve the production origin for canonical/og:url. On lovable.app
+ * preview/published hosts we must NOT self-canonicalize — point Google
+ * (and shared links) at the real customer-facing domain. Merch lives
+ * under /merch on the wine host AND at the root of rescuedog.com, so
+ * branch on pathname.
+ */
+function resolveSite(path?: string): string {
+  const pathname = path ?? (typeof window !== "undefined" ? window.location.pathname : "/");
+  const isMerch = pathname === "/merch" || pathname.startsWith("/merch/");
+  if (typeof window === "undefined") return isMerch ? MERCH_SITE : WINE_SITE;
+  const host = window.location.hostname;
+  // On the real custom domains, mirror the host we're already on
+  // (host-aware routing in HostRouter keeps each domain on the right paths).
+  if (host === "rescuedogwines.com" || host === "www.rescuedogwines.com") return WINE_SITE;
+  if (host === "rescuedog.com" || host === "www.rescuedog.com") return MERCH_SITE;
+  // Lovable preview/published, localhost, anything else → use the
+  // production equivalent so canonicals never point at lovable.app.
+  return isMerch ? MERCH_SITE : WINE_SITE;
+}
+
+const SITE = resolveSite();
 const DEFAULT_DESC = "Award-winning, sustainable wines from Lodi. 50% of profits support animal rescue.";
 const DEFAULT_IMG = `${SITE}/og-default.jpg`;
 
 export function Seo({ title, description = DEFAULT_DESC, image = DEFAULT_IMG, path, noindex, jsonLd, breadcrumbs, preloadImage, preloadImageType, type = "website" }: Props) {
-  const url = path ? `${SITE}${path}` : SITE;
+  const site = resolveSite(path);
+  const url = path ? `${site}${path}` : site;
+  // Belt-and-suspenders: noindex any non-production host so a shared
+  // lovable.app/preview link can never get indexed accidentally.
+  const isPreviewHost = typeof window !== "undefined"
+    && /(^|\.)lovable\.app$|(^|\.)lovableproject\.com$/.test(window.location.hostname);
+  const shouldNoindex = noindex || isPreviewHost;
   const fullTitle = title.endsWith("Rescue Dog Wines") ? title : `${title} | Rescue Dog Wines`;
   const schemas: Record<string, any>[] = [];
   if (jsonLd) schemas.push(...(Array.isArray(jsonLd) ? jsonLd : [jsonLd]));
   if (breadcrumbs && breadcrumbs.length > 0) {
     schemas.push(
-      breadcrumbListSchema(breadcrumbs.map((b) => ({ name: b.name, url: `${SITE}${b.path}` }))),
+      breadcrumbListSchema(breadcrumbs.map((b) => ({ name: b.name, url: `${resolveSite(b.path)}${b.path}` }))),
     );
   }
   return (
@@ -38,7 +66,7 @@ export function Seo({ title, description = DEFAULT_DESC, image = DEFAULT_IMG, pa
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
-      {noindex && <meta name="robots" content="noindex,nofollow" />}
+      {shouldNoindex && <meta name="robots" content="noindex,nofollow" />}
       {preloadImage && (
         <link rel="preload" as="image" href={preloadImage} {...(preloadImageType ? { type: preloadImageType } : {})} fetchPriority="high" />
       )}

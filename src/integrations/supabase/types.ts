@@ -12946,6 +12946,15 @@ export type Database = {
       }
     }
     Functions: {
+      _test_kis_fingerprint: {
+        Args: never
+        Returns: {
+          first4: string
+          last4: string
+          name: string
+          secret_len: number
+        }[]
+      }
       ab_results_summary: {
         Args: { _since?: string }
         Returns: {

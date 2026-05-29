@@ -277,6 +277,7 @@ const Index = () => {
                 src={getVal("mission", "image", rdwHero)}
                 alt="Rescue Dog Wines bottles"
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
             </div>
           </div>
@@ -467,6 +468,7 @@ const Index = () => {
                 src={lodiSustainable}
                 alt="Lodi Rules Sustainable Winegrowing certification"
                 className="max-w-[250px] w-full h-auto"
+                loading="lazy"
               />
             </div>
             <div>

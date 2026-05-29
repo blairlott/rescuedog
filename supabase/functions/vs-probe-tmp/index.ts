@@ -42,12 +42,33 @@ Deno.serve(async (req) => {
     raw_preview: detailText.slice(0, 800),
   };
 
-  // (b) List endpoint probes
+  // (b) List endpoint probes — check if from/to actually filters
+  async function listProbe(path: string) {
+    const r = await fetch(`${BASE}${path}`, {
+      headers: { Authorization: auth(), Accept: "application/json" },
+    });
+    const text = await r.text();
+    let j: any = null; try { j = JSON.parse(text); } catch {}
+    const results = Array.isArray(j?.results) ? j.results : null;
+    return {
+      path,
+      status: r.status,
+      total_keys: j && typeof j === "object" && !Array.isArray(j) ? Object.keys(j) : null,
+      result_count: results?.length ?? null,
+      first_order_date: results?.[0]?.purchasedAt ?? results?.[0]?.orderDate ?? null,
+      last_order_date: results?.[results.length - 1]?.purchasedAt ?? results?.[results.length - 1]?.orderDate ?? null,
+      first_order_number: results?.[0]?.orderNumber ?? null,
+      last_order_number: results?.[results.length - 1]?.orderNumber ?? null,
+      body_preview: text.slice(0, 300),
+    };
+  }
   const list = await Promise.all([
-    probe("/p/orders?from=2026-05-18&to=2026-05-21"),
-    probe("/p/orders?startDate=2026-05-18"),
-    probe("/p/orders/by-month/2026-05"),
-    probe("/p/orders/list"),
+    listProbe("/p/orders?from=2026-05-18&to=2026-05-21"),
+    listProbe("/p/orders?from=2026-05-18&to=2026-05-21&limit=100"),
+    listProbe("/p/orders/search?from=2026-05-18&to=2026-05-21"),
+    listProbe("/p/orders?startDate=2026-05-18&endDate=2026-05-21"),
+    listProbe("/p/orders/by-month/2026-05"),
+    listProbe("/p/orders/list"),
   ]);
 
   return new Response(JSON.stringify({ detail, list }, null, 2), {

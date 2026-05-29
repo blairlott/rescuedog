@@ -305,10 +305,14 @@ const Index = () => {
             <T>As Featured In</T>
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-foreground/70">
-            {["Wine Enthusiast", "USA Today", "Forbes", "SF Chronicle", "Lodi Wine Commission"].map((name) => (
-              <span key={name} className="text-sm md:text-base font-bold uppercase tracking-brand opacity-70 hover:opacity-100 transition-opacity">
-                <T>{name}</T>
-              </span>
+            {pressLogos.map((logo) => (
+              <img
+                key={logo.name}
+                src={logo.src}
+                alt={logo.name}
+                loading="lazy"
+                className="h-10 md:h-12 w-auto grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition"
+              />
             ))}
           </div>
         </div>

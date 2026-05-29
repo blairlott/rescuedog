@@ -144,7 +144,12 @@ export default function CrmLayout() {
                 }`}
               >
                 <item.icon className="h-4 w-4" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {"badge" in item && (item as any).badge > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-[10px] font-bold bg-destructive text-destructive-foreground rounded">
+                    {(item as any).badge}
+                  </span>
+                )}
               </Link>
             );
           })}

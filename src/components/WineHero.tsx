@@ -100,6 +100,11 @@ const EXPLORATION_FLOOR = 80; // per variant
 const ORDER_WEIGHT = 8; // 1 attributed order ≈ 8 clicks
 const VARIANTS_CACHE_KEY = "rdw_wine_hero_variants_v1";
 const VARIANTS_TTL_MS = 5 * 60 * 1000;
+const BLOCKED_HERO_VARIANT_IDS = new Set([
+  "318d1530-417e-4e06-9519-44069f78c5ed",
+  "d798bb18-57ee-4e75-bf2e-24456b238ca4",
+  "ae4776b8-acc9-4de2-916c-2b9a562d7bcf",
+]);
 
 type VariantStat = {
   variant_id: string;
@@ -232,6 +237,11 @@ function writeCachedVariants(data: DbHeroVariant[]) {
   try { localStorage.setItem(VARIANTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch { /* noop */ }
 }
 
+function sanitizeVariants(data: DbHeroVariant[] | null | undefined): DbHeroVariant[] {
+  const filtered = (data ?? []).filter((variant) => !BLOCKED_HERO_VARIANT_IDS.has(variant.id));
+  return filtered.length > 0 ? filtered : FALLBACK_VARIANTS;
+}
+
 // Fallback (offline / first load) — built from bundled assets + copy decks above.
 const FALLBACK_VARIANTS: DbHeroVariant[] = WINE_HERO_IMAGES.map((img, i) => {
   const cp = WINE_HERO_COPY[i % WINE_HERO_COPY.length];
@@ -252,7 +262,7 @@ const FALLBACK_VARIANTS: DbHeroVariant[] = WINE_HERO_IMAGES.map((img, i) => {
 });
 
 export const WineHero = () => {
-  const [variants, setVariants] = useState<DbHeroVariant[]>(() => readCachedVariants() ?? FALLBACK_VARIANTS);
+  const [variants, setVariants] = useState<DbHeroVariant[]>(() => sanitizeVariants(readCachedVariants()));
   const loggedImpression = useRef(false);
 
   const variant = useMemo(() => {
@@ -276,8 +286,9 @@ export const WineHero = () => {
           cta_href: r.cta_href ?? "/wines",
           sticky: !!r.sticky,
         }));
-        writeCachedVariants(mapped);
-        setVariants(mapped);
+        const sanitized = sanitizeVariants(mapped);
+        writeCachedVariants(sanitized);
+        setVariants(sanitized);
       }
     });
   }, []);

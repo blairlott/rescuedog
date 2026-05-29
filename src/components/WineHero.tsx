@@ -32,8 +32,8 @@ type CopyVariant = {
 };
 
 export const WINE_HERO_IMAGES: ImageVariant[] = [
-  { id: "img1-cheers-cab",      jpg: hero1Jpg, webp: hero1Webp, alt: "Friends laughing and toasting glasses of Rescue Dog Wines Cabernet Sauvignon on a sunlit patio at golden hour" },
-  { id: "img2-couples-dog",     jpg: hero2Jpg, webp: hero2Webp, alt: "Two couples sharing Rescue Dog Wines Red Blend by candlelight at a dinner table with a scruffy rescue dog seated beside them" },
+  { id: "img1-cheers-cab",      jpg: hero1Jpg, webp: hero1Webp, alt: "Three friends toasting Rescue Dog Wines Cabernet Sauvignon at a sunset vineyard table" },
+  { id: "img2-couples-dog",     jpg: hero2Jpg, webp: hero2Webp, alt: "Two couples sharing Rescue Dog Wines Red Blend at a candlelit dinner with a rescue dog at their side" },
 ];
 
 // Each copy deck leans on a different psychological lever for conversions:

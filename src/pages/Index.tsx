@@ -469,31 +469,6 @@ const Index = () => {
       </section>
 
       {/* Events Preview */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-10">
-            <h2 className="text-2xl font-bold text-foreground"><T>Events</T></h2>
-            <Link to="/events" className="text-sm font-medium text-foreground hover:text-primary flex items-center gap-1 uppercase tracking-brand">
-              <T>View More Events</T> <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="border border-border p-6 hover:border-primary transition-colors">
-              <p className="text-sm text-primary font-bold uppercase tracking-brand mb-1">April 2026</p>
-              <h3 className="text-xl font-bold text-foreground mb-2">Birthday Block Party</h3>
-              <p className="text-sm text-muted-foreground mb-3">April 18, 2026 · All Day Event</p>
-              <Link to="/events" className="text-sm text-primary hover:underline font-medium">More Info →</Link>
-            </div>
-            <div className="border border-border p-6 hover:border-primary transition-colors">
-              <p className="text-sm text-primary font-bold uppercase tracking-brand mb-1">April 2026</p>
-              <h3 className="text-xl font-bold text-foreground mb-2">Spay-ghetti & No Balls Dinner</h3>
-              <p className="text-sm text-muted-foreground mb-3">April 18, 2026 · 7:00 pm - 10:00 pm</p>
-              <Link to="/events" className="text-sm text-primary hover:underline font-medium">More Info →</Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Instagram Feed */}
       <section className="py-16 bg-secondary">
         <div className="container mx-auto px-4">

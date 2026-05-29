@@ -12946,10 +12946,6 @@ export type Database = {
       }
     }
     Functions: {
-      _test_cron_auth: { Args: { _fn: string; _mode: string }; Returns: number }
-      _test_decode_srk: { Args: never; Returns: string }
-      _test_list_vault_names: { Args: never; Returns: string }
-      _test_srk_fingerprint: { Args: never; Returns: string }
       ab_results_summary: {
         Args: { _since?: string }
         Returns: {

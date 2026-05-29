@@ -9,14 +9,10 @@ import hero1Jpg from "@/assets/wine-hero-1.jpg";
 import hero1Webp from "@/assets/wine-hero-1.webp";
 import hero2Jpg from "@/assets/wine-hero-2.jpg";
 import hero2Webp from "@/assets/wine-hero-2.webp";
-import hero3Jpg from "@/assets/wine-hero-3.jpg";
-import hero3Webp from "@/assets/wine-hero-3.webp";
-import hero4Jpg from "@/assets/wine-hero-4.jpg";
-import hero4Webp from "@/assets/wine-hero-4.webp";
 
 // Images and copy rotate INDEPENDENTLY so the bandit can find the best
 // image × copy pairing. variant_id logged to hero_events is `${imgId}__${copyId}`,
-// giving 16 cells across 4 images and 4 copy decks.
+// giving 4 cells across 2 images and 2 copy decks (May 26 rollback baseline).
 type ImageVariant = {
   id: string;
   jpg: string;
@@ -43,32 +39,18 @@ type CopyVariant = {
 
 export const WINE_HERO_IMAGES: ImageVariant[] = [
   {
-    id: "img1-rose-vineyard-toast",
+    id: "img1-cheers-cab",
     jpg: hero1Jpg,
     webp: hero1Webp,
-    alt: "Three friends toasting glasses of Rescue Dog Wines Rosé of Pinot Noir at a golden-hour vineyard table with a rescue dog",
-    traits: { varietal: "rose", scene: "vineyard-patio-toast", time_of_day: "golden-hour", group_size: 3, has_dog: true, light_direction: "left" },
+    alt: "Friends toasting with Rescue Dog Wines Cabernet Sauvignon",
+    traits: { varietal: "cabernet", scene: "cheers", time_of_day: "golden-hour", group_size: 3, has_dog: false, light_direction: "left" },
   },
   {
-    id: "img2-redblend-candlelit-dinner",
+    id: "img2-couples-dog",
     jpg: hero2Jpg,
     webp: hero2Webp,
-    alt: "Four friends sharing Rescue Dog Wines Red Blend at a candlelit dinner with a rescue dog beside the table",
-    traits: { varietal: "red-blend", scene: "candlelit-dinner", time_of_day: "candlelit", group_size: 4, has_dog: true, light_direction: "overhead" },
-  },
-  {
-    id: "img3-cabernet-porch-bistro",
-    jpg: hero3Jpg,
-    webp: hero3Webp,
-    alt: "Two friends on a porch at sunset with a rescue dog and a bottle of Rescue Dog Wines Cabernet Sauvignon on a small bistro table",
-    traits: { varietal: "cabernet", scene: "porch-bistro-table", time_of_day: "sunset", group_size: 2, has_dog: true, light_direction: "right" },
-  },
-  {
-    id: "img4-pinotnoir-vineyard-picnic",
-    jpg: hero4Jpg,
-    webp: hero4Webp,
-    alt: "Four friends at a sunset vineyard picnic with a bottle of Rescue Dog Wines Pinot Noir as the centerpiece",
-    traits: { varietal: "pinot-noir", scene: "vineyard-picnic", time_of_day: "sunset", group_size: 4, has_dog: true, light_direction: "left" },
+    alt: "Couple sharing Rescue Dog Wines with their rescue dog",
+    traits: { varietal: "red-blend", scene: "couples-dog", time_of_day: "golden-hour", group_size: 2, has_dog: true, light_direction: "left" },
   },
 ];
 
@@ -107,8 +89,6 @@ export const WINE_HERO_VARIANTS = WINE_HERO_IMAGES.flatMap((img) =>
 const ASSET_FALLBACK_MAP: Record<string, string> = {
   "/src/assets/wine-hero-1.jpg": hero1Jpg,
   "/src/assets/wine-hero-2.jpg": hero2Jpg,
-  "/src/assets/wine-hero-3.jpg": hero3Jpg,
-  "/src/assets/wine-hero-4.jpg": hero4Jpg,
 };
 function resolveImageUrl(url: string): string {
   return ASSET_FALLBACK_MAP[url] ?? url;

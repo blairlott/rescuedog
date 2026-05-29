@@ -284,7 +284,7 @@ Deno.serve(async (req) => {
     // Poll Vinoshipper — paginate ORDER_DATE DESC, early-exit on full-dedupe page.
     // VS caps page size at 25 server-side regardless of `limit`. Hard cap 20 pages = 500 orders.
     const PAGE_SIZE = 25;
-    const MAX_PAGES = 20;
+    const MAX_PAGES = 40; // TEMP: raised from 20 for one-time post-May-17 backfill; restore to 20 after
     let ordersSeen = 0;
     const allNewOrders: any[] = [];
     let pagesFetched = 0;

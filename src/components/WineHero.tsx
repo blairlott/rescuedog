@@ -19,12 +19,15 @@ type ImageVariant = {
   webp: string;
   alt: string;
   traits: {
-    varietal: "rose" | "red-blend" | "cabernet" | "pinot-noir";
-    scene: string;
-    time_of_day: "golden-hour" | "candlelit" | "midday" | "sunset";
-    group_size: number;
+    // Iteration #1 trait vocabulary — see Addendum 3.
+    // Future iterations may extend this; keep additions backward-compatible.
+    featured_bottle: string;                 // varietal slug (cabernet, red-blend, chardonnay, sparkling, rose, pinot-noir...)
+    scene_type: "outdoor" | "dinner" | "porch" | "kitchen" | "celebration";
+    people_count: number;
     has_dog: boolean;
-    light_direction: "left" | "right" | "overhead";
+    lighting: "golden_hour" | "candlelight" | "daylight" | "evening";
+    composition_style: "lifestyle" | "product" | "environmental";
+    audience_hint: "social" | "intimate" | "aspirational" | "comfort";
   };
 };
 
@@ -39,18 +42,34 @@ type CopyVariant = {
 
 export const WINE_HERO_IMAGES: ImageVariant[] = [
   {
-    id: "img1-cheers-cab",
+    id: "img1-cabernet-outdoor-cheers",
     jpg: hero1Jpg,
     webp: hero1Webp,
     alt: "Friends toasting with Rescue Dog Wines Cabernet Sauvignon",
-    traits: { varietal: "cabernet", scene: "cheers", time_of_day: "golden-hour", group_size: 3, has_dog: false, light_direction: "left" },
+    traits: {
+      featured_bottle: "cabernet",
+      scene_type: "outdoor",
+      people_count: 3,
+      has_dog: false,
+      lighting: "golden_hour",
+      composition_style: "lifestyle",
+      audience_hint: "social",
+    },
   },
   {
-    id: "img2-couples-dog",
+    id: "img2-redblend-dinner-rescuedog",
     jpg: hero2Jpg,
     webp: hero2Webp,
     alt: "Couple sharing Rescue Dog Wines with their rescue dog",
-    traits: { varietal: "red-blend", scene: "couples-dog", time_of_day: "golden-hour", group_size: 2, has_dog: true, light_direction: "left" },
+    traits: {
+      featured_bottle: "red-blend",
+      scene_type: "dinner",
+      people_count: 2,
+      has_dog: true,
+      lighting: "golden_hour",
+      composition_style: "lifestyle",
+      audience_hint: "intimate",
+    },
   },
 ];
 

@@ -13097,6 +13097,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      approve_wine_drift: { Args: { _pending_id: string }; Returns: undefined }
       attribute_hero_order: {
         Args: {
           _order_value: number
@@ -13554,6 +13555,7 @@ export type Database = {
           redemption_id: string
         }[]
       }
+      reject_wine_drift: { Args: { _pending_id: string }; Returns: undefined }
       resolve_iab_platform_ids: {
         Args: { _platform?: string; _rdw_mapping: string }
         Returns: {

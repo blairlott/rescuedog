@@ -101,6 +101,7 @@ const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const AdminSecretsAccessPage = lazy(() => import("./pages/admin/AdminSecretsAccessPage"));
 const AdminCustomersPage = lazy(() => import("./pages/admin/AdminCustomersPage"));
 const AdminHeroAnalyticsPage = lazy(() => import("./pages/admin/AdminHeroAnalyticsPage"));
+const SyncDriftPage = lazy(() => import("./pages/admin/SyncDriftPage"));
 const RequestAccessPage = lazy(() => import("./pages/RequestAccessPage"));
 const SellOnSitePage = lazy(() => import("./pages/SellOnSitePage"));
 const AmbassadorsLandingPage = lazy(() => import("./pages/AmbassadorsLandingPage"));
@@ -343,6 +344,7 @@ function AppContent() {
         <Route path="customer-service" element={<CrmCustomerServicePage />} />
         <Route path="restructures" element={<CrmRestructuresPage />} />
         <Route path="legacy-migration" element={<CrmLegacyMigrationPage />} />
+        <Route path="admin/sync-drift" element={<SyncDriftPage />} />
       </Route>
       <Route path="/dropship" element={<DropshipDashboard />} />
       <Route path="/kennel" element={<KennelGuard><KennelLayout /></KennelGuard>}>

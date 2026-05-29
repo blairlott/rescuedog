@@ -34,6 +34,19 @@ import { T } from "@/components/T";
 import { useExperiment } from "@/hooks/useExperiment";
 import { WineHero } from "@/components/WineHero";
 import { Seo } from "@/components/Seo";
+import pressWineEnthusiast from "@/assets/press-logos/wine-enthusiast.svg";
+import pressUsaToday from "@/assets/press-logos/usa-today.svg";
+import pressForbes from "@/assets/press-logos/forbes.svg";
+import pressSfChronicle from "@/assets/press-logos/sf-chronicle.svg";
+import pressLodi from "@/assets/press-logos/lodi-wine-commission.svg";
+
+const pressLogos = [
+  { name: "Wine Enthusiast", src: pressWineEnthusiast },
+  { name: "USA Today", src: pressUsaToday },
+  { name: "Forbes", src: pressForbes },
+  { name: "SF Chronicle", src: pressSfChronicle },
+  { name: "Lodi Wine Commission", src: pressLodi },
+];
 
 const instagramPosts = [
   {

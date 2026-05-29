@@ -350,6 +350,37 @@ Deno.serve(async (req) => {
     }
     const newOrders = allNewOrders;
 
+    // TEST MODE: skip all writes + CAPI fires; return mapped sample for inspection.
+    if (testMode) {
+      const mappedSample = newOrders.slice(0, 5).map(mapOrder);
+      const mappedAll = newOrders.map(mapOrder);
+      // Find Friday's test order if present
+      const fridayTest = mappedAll.find((r) => String(r.invoice).startsWith("96444125012")) ?? null;
+      const may25Orders = mappedAll.filter((r) => r.transaction_date === "2026-05-25");
+      await admin.from("vs_poll_log").update({
+        finished_at: new Date().toISOString(),
+        orders_seen: ordersSeen,
+        orders_new: newOrders.length,
+        notes: {
+          test_mode: true,
+          pages_fetched: pagesFetched,
+          early_exit_reason: earlyExitReason,
+          mapping_fix_verification: true,
+        },
+      }).eq("id", logId);
+      return json({
+        ok: true,
+        test_mode: true,
+        pages_fetched: pagesFetched,
+        early_exit_reason: earlyExitReason,
+        orders_seen: ordersSeen,
+        would_insert: newOrders.length,
+        mapped_sample_first_5: mappedSample,
+        may25_orders: may25Orders,
+        friday_test_order_96444125012: fridayTest,
+      });
+    }
+
     // Upsert new orders
     let inserted = 0;
     if (newOrders.length > 0) {
@@ -372,14 +403,13 @@ Deno.serve(async (req) => {
     let purchases = 0, subscribes = 0, ltvCents = 0;
     const multipliers = await loadStateMultipliers(admin);
     for (const o of newOrders) {
-      const orderId = String(o.id ?? o.orderId ?? o.invoice);
-      const orderTotal = pickNum(o.orderTotal, o.total, o.grandTotal) ?? 0;
+      const orderId = String(o.orderNumber ?? o.id ?? o.orderId ?? o.invoice);
+      const orderTotal = pickNum(o.saleAmount, o.orderTotal, o.total, o.grandTotal) ?? 0;
       const rawCents = Math.round(orderTotal * 100);
       if (rawCents <= 0) continue;
 
       const cust = o.customer ?? {};
-      const ship = o.shipTo ?? cust;
-      const shipAddr = ship?.address ?? cust?.address ?? {};
+      const shipAddr = o.shipToAddress ?? o.shipTo?.address ?? cust?.address ?? {};
       const club = o.club ?? o.subscription ?? null;
       const isClub = !!club || /club|member/i.test(String(o.cartType ?? o.orderType ?? ""));
       const shipState = shipAddr.state ?? shipAddr.stateCode ?? null;

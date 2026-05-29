@@ -72,7 +72,15 @@ Deno.serve(async (req) => {
           const current = (row as Record<string, unknown>)[field];
           if (incoming === current) continue;
           newOverrides[field] = {
-            value: current ?? null,
+            // SEMANTIC: cms_overrides[field].value records the LAST-
+            // ACKNOWLEDGED VS-SIDE VALUE — not the curated DB value. The
+            // curated value lives in wine_products[field] itself; this
+            // entry tracks "we've reviewed VS at this snapshot."
+            // sync-catalog compares incoming VS against lock.value; if
+            // they match, VS hasn't moved since we acknowledged, so no
+            // pending row is created. Approve/reject update lock.value
+            // to whatever VS value the admin reviewed.
+            value: incoming ?? null, // VS state at lock time
             locked_at: lockedAt,
             source: SOURCE_TAG,
           };

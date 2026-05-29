@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
   const defensiveSkips: Array<{ wine_product_id: string; field: SyncField; reason: string }> = [];
   let writeThroughCount = 0;
   let pendingCreatedCount = 0;
+  let lockUnchangedSkips = 0;
   let productsProcessed = 0;
 
   try {
@@ -93,6 +94,13 @@ Deno.serve(async (req) => {
           if (incoming === current) continue;
 
           if (Object.prototype.hasOwnProperty.call(overrides, field)) {
+            const lockEntry = overrides[field] as { value?: unknown } | null | undefined;
+            const lockValue = lockEntry && typeof lockEntry === "object" ? lockEntry.value : undefined;
+            if (JSON.stringify(incoming) === JSON.stringify(lockValue)) {
+              // VS unchanged since lock — silent skip; no pending row needed.
+              lockUnchangedSkips++;
+              continue;
+            }
             // Staged for admin review (no live write).
             if (!dryRun) {
               const { error: upErr } = await admin
@@ -140,6 +148,7 @@ Deno.serve(async (req) => {
       products_processed: productsProcessed,
       write_through_count: writeThroughCount,
       pending_created_count: pendingCreatedCount,
+      lock_unchanged_skips: lockUnchangedSkips,
       defensive_skips: defensiveSkips,
       errors,
       dry_run: dryRun,
@@ -152,6 +161,7 @@ Deno.serve(async (req) => {
         products_processed: productsProcessed,
         write_through_count: writeThroughCount,
         pending_created_count: pendingCreatedCount,
+        lock_unchanged_skips: lockUnchangedSkips,
         defensive_skips: defensiveSkips.length,
         errors: errors.length,
         dry_run: dryRun,

@@ -321,8 +321,8 @@ Deno.serve(async (req) => {
       }
 
       const pageInvoices = pageOrders
-        .map((o) => String(o.id ?? o.orderId ?? o.invoice))
-        .filter(Boolean);
+        .map((o) => String(o.orderNumber ?? o.id ?? o.orderId ?? o.invoice))
+        .filter((s) => s && s !== "undefined");
       const existing = new Set<string>();
       if (pageInvoices.length > 0) {
         const { data: have } = await admin
@@ -332,7 +332,7 @@ Deno.serve(async (req) => {
         have?.forEach((row: any) => existing.add(row.invoice));
       }
       const pageNew = pageOrders.filter(
-        (o) => !existing.has(String(o.id ?? o.orderId ?? o.invoice)),
+        (o) => !existing.has(String(o.orderNumber ?? o.id ?? o.orderId ?? o.invoice)),
       );
       allNewOrders.push(...pageNew);
 

@@ -74,6 +74,10 @@ export async function verifyCronSecret(req: Request, functionName: string): Prom
   const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
   if (authHeader && /^Bearer\s+/i.test(authHeader)) {
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const srk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
+    // Fast path: caller presents the exact service-role key.
+    if (token.length > 0 && srk && token === srk) return true;
+    // Validation path: any JWT that decodes (via getClaims) with role=service_role.
     if (token.length > 0) {
       try {
         const { data, error } = await admin().auth.getClaims(token);

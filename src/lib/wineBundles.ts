@@ -5,7 +5,8 @@
  * threshold and is excluded from the 20% member discount.
  */
 const BUNDLE_HANDLES = new Set([
-  "mothers-day-6-pack",
+  "rescue-dog-6-bottle-sampler",
+  "mothers-day-6-pack", // legacy alias kept during transition (safe to remove after sitemap recrawl)
   "6-bottle-sampler",
 ]);
 

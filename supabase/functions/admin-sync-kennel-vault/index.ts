@@ -14,9 +14,9 @@ const J = (s: number, b: unknown) =>
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
-  const SR = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  if (req.headers.get("Authorization") !== `Bearer ${SR}`) {
-    return J(401, { error: "service-role bearer required" });
+  const CRON = Deno.env.get("CRON_SECRET") ?? "";
+  if (!CRON || req.headers.get("x-cron-secret") !== CRON) {
+    return J(401, { error: "x-cron-secret required (CRON_SECRET)" });
   }
 
   const secret = Deno.env.get("KENNEL_INGEST_SECRET") ?? "";

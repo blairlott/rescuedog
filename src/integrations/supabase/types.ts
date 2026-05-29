@@ -12375,6 +12375,7 @@ export type Database = {
         Row: {
           badges: string[] | null
           club_price_cents: number | null
+          cms_overrides: Json
           cost_cents: number | null
           created_at: string
           description: string | null
@@ -12400,6 +12401,7 @@ export type Database = {
         Insert: {
           badges?: string[] | null
           club_price_cents?: number | null
+          cms_overrides?: Json
           cost_cents?: number | null
           created_at?: string
           description?: string | null
@@ -12425,6 +12427,7 @@ export type Database = {
         Update: {
           badges?: string[] | null
           club_price_cents?: number | null
+          cms_overrides?: Json
           cost_cents?: number | null
           created_at?: string
           description?: string | null
@@ -12448,6 +12451,62 @@ export type Database = {
           vintage?: number | null
         }
         Relationships: []
+      }
+      wine_products_pending: {
+        Row: {
+          created_at: string
+          field: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          status: string
+          updated_at: string
+          vinoshipper_product_id: string | null
+          wine_product_id: string
+        }
+        Insert: {
+          created_at?: string
+          field: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          vinoshipper_product_id?: string | null
+          wine_product_id: string
+        }
+        Update: {
+          created_at?: string
+          field?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          vinoshipper_product_id?: string | null
+          wine_product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wine_products_pending_wine_product_id_fkey"
+            columns: ["wine_product_id"]
+            isOneToOne: false
+            referencedRelation: "wine_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wine_subscription_charges: {
         Row: {
@@ -13450,6 +13509,10 @@ export type Database = {
           payload: Json
           source_queue: string
         }
+        Returns: number
+      }
+      notify_edge_function: {
+        Args: { _fn: string; _payload: Json }
         Returns: number
       }
       platform_radar_open_count: { Args: never; Returns: number }

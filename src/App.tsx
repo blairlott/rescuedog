@@ -344,6 +344,7 @@ function AppContent() {
         <Route path="customer-service" element={<CrmCustomerServicePage />} />
         <Route path="restructures" element={<CrmRestructuresPage />} />
         <Route path="legacy-migration" element={<CrmLegacyMigrationPage />} />
+        <Route path="admin/sync-drift" element={<SyncDriftPage />} />
       </Route>
       <Route path="/dropship" element={<DropshipDashboard />} />
       <Route path="/kennel" element={<KennelGuard><KennelLayout /></KennelGuard>}>

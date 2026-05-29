@@ -180,12 +180,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://rescuedogwines.com/product/mthode-champenoise-sparkling-ros</loc>
-    <lastmod>2026-05-29</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://rescuedogwines.com/product/chardonnay</loc>
     <lastmod>2026-05-29</lastmod>
     <changefreq>weekly</changefreq>
@@ -193,6 +187,12 @@
   </url>
   <url>
     <loc>https://rescuedogwines.com/product/cabernet-sauvignon</loc>
+    <lastmod>2026-05-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://rescuedogwines.com/product/mthode-champenoise-sparkling-ros</loc>
     <lastmod>2026-05-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

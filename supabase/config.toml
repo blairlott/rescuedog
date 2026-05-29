@@ -3,6 +3,8 @@ project_id = "eskqaxmypgvwtsffcbsw"
 [functions]
   [functions.slack-events]
     verify_jwt = false
+  [functions.admin-sync-kennel-vault]
+    verify_jwt = false
   [functions.slack-post]
     verify_jwt = true
   [functions.auth-email-hook]

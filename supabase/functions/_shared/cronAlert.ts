@@ -52,14 +52,48 @@ export async function logCronRun(
   }
 }
 
-/** Returns true if the request has a valid x-cron-secret; otherwise logs+alerts and returns false. */
+/**
+ * Returns true if the request has a valid x-cron-secret OR a valid service-role
+ * JWT in the Authorization header; otherwise logs+alerts and returns false.
+ *
+ * The service-role fallback exists so other edge functions (which authenticate
+ * with the project service-role key) can invoke cron-gated functions like
+ * kennel-alert-dispatch without needing CRON_SECRET.
+ */
 export async function verifyCronSecret(req: Request, functionName: string): Promise<boolean> {
-  return checkSharedSecret(req, {
+  // Path 1 — existing cron header (do not alert yet; JWT may still succeed).
+  const headerOk = await checkSharedSecret(req, {
     functionName,
     envVar: "CRON_SECRET",
     headers: ["x-cron-secret"],
-    alertOnFail: true,
+    alertOnFail: false,
   });
+  if (headerOk) return true;
+
+  // Path 2 — service-role JWT in Authorization: Bearer <jwt>.
+  const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
+  if (authHeader && /^Bearer\s+/i.test(authHeader)) {
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const srk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
+    // Fast path: caller presents the exact service-role key.
+    if (token.length > 0 && srk && token === srk) return true;
+    // Validation path: any JWT that decodes (via getClaims) with role=service_role.
+    if (token.length > 0) {
+      try {
+        const { data, error } = await admin().auth.getClaims(token);
+        const role = (data?.claims as { role?: string } | undefined)?.role;
+        if (!error && role === "service_role") return true;
+      } catch (_) { /* fall through to auth_fail */ }
+    }
+  }
+
+  // Both paths failed — log + alert once.
+  await logCronRun(functionName, "auth_fail", {
+    httpStatus: 401,
+    error: "missing/invalid x-cron-secret and no valid service-role JWT",
+    metadata: { ua: req.headers.get("user-agent") ?? null },
+  });
+  return false;
 }
 
 export type SharedSecretOpts = {

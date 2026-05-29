@@ -16,6 +16,17 @@
 //
 // Auth: shared secret KENNEL_INGEST_SECRET (header x-kennel-ingest-secret)
 // OR admin JWT. pg_cron passes the secret.
+//
+// Date bucketing note: transaction_date / ship_date are derived via
+// `new Date(...).toISOString().slice(0,10)`, which buckets in UTC. VS returns
+// `purchasedAt` with a -07:00 (PT) offset, so a Pacific-evening order will
+// shift to next-day UTC (e.g. 2026-05-28T19:31:00-07:00 → 2026-05-29).
+// This matches legacy behavior; downstream reports treat dates as UTC. Keep
+// in mind when reconciling against VS admin UI which displays Pacific time.
+//
+// VS endpoint quirk: /api/v3/p/orders/search returns at most 25 rows total
+// for this account's credentials; `offset` does not page beyond that window.
+// Older history requires a different VS API or expanded credentials.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { forwardPurchaseConversion } from "../_shared/serverConversions.ts";

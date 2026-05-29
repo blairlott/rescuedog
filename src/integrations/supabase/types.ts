@@ -12946,15 +12946,6 @@ export type Database = {
       }
     }
     Functions: {
-      _test_kis_fingerprint: {
-        Args: never
-        Returns: {
-          first4: string
-          last4: string
-          name: string
-          secret_len: number
-        }[]
-      }
       ab_results_summary: {
         Args: { _since?: string }
         Returns: {
@@ -13643,6 +13634,15 @@ export type Database = {
       vault_create_secret_by_name: {
         Args: { p_name: string; p_secret: string }
         Returns: string
+      }
+      vault_secret_fingerprint: {
+        Args: { _name: string }
+        Returns: {
+          first4: string
+          last4: string
+          name: string
+          secret_len: number
+        }[]
       }
       vault_secret_id_by_name: { Args: { p_name: string }; Returns: string }
       vault_update_secret_by_name: {

@@ -20,7 +20,7 @@ const PAIRINGS: Record<string, string[]> = {
   drinkware: ["chardonnay", "rescue-dog-wines-sauvignon-blanc", "rescue-dog-wines-ros-of-pinot-noir"],
   pet: ["red-wine-blend", "cabernet-sauvignon"],
   home: ["mthode-champenoise-sparkling-ros", "demisec-mthode-champenoise-sparkling-wine"],
-  gift: ["mothers-day-6-pack", "rescue-dog-wines-ros-of-pinot-noir"],
+  gift: ["rescue-dog-6-bottle-sampler", "rescue-dog-wines-ros-of-pinot-noir"],
 };
 
 export function PairItPicker({ productHandle, productTitle, productCategory }: Props) {

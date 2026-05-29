@@ -13577,7 +13577,6 @@ export type Database = {
           views: number
         }[]
       }
-      sync_kennel_ingest_vault: { Args: { p_value: string }; Returns: Json }
       update_backlog_item: {
         Args: {
           _id: string

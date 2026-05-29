@@ -34,6 +34,18 @@ export default function CrmLoginPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("must_change_password")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (profile?.must_change_password) {
+            navigate("/admin/change-password?next=/crm", { replace: true });
+            return;
+          }
+        }
         navigate("/crm");
       }
     } catch (err: any) {

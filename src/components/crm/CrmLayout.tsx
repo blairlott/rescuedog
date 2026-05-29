@@ -50,6 +50,27 @@ export default function CrmLayout() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Force password change gate: any authenticated user with
+  // profiles.must_change_password=true gets redirected to the change-password
+  // page with ?next= pointing back to where they were going.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("must_change_password")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (profile?.must_change_password) {
+        const next = encodeURIComponent(location.pathname + location.search);
+        navigate(`/admin/change-password?next=${next}`, { replace: true });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, navigate]);
+
   // Close mobile nav on route change — must be declared before any conditional return
   // to keep hook order stable across renders.
   useEffect(() => {

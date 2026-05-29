@@ -1,97 +1,62 @@
-# Make rescuedogwines.com Crawlable (Vite + React, no framework migration)
+# Vinoshipper webhook secret rotation — surgical
 
-Sequenced exactly per your brief. I'll **stop and report after each step** for your go-ahead before moving on. No Next.js, no visual changes.
+## Pre-flight findings (read-only, already done)
 
----
+1. **Is `VINOSHIPPER_WEBHOOK_SECRET` currently set?** **No.** It does not appear in the project's Edge Function secrets list. That matches the symptom: `vinoshipper-webhook` short-circuits with `500 server_misconfigured: VINOSHIPPER_WEBHOOK_SECRET not set` for every inbound event since launch, so nothing is being written and nothing is being authorized.
+2. **Log table name:** the function inserts every received event into **`public.vinoshipper_webhook_events`** (columns include `subject`, `event`, `identifier`, `payload`, `raw_body`, `signature_header`, `signature_valid`, `source_ip`, `processed`, `processing_error`, `processed_at`, `created_at`). A separate table `vinoshipper_webhook_logs` also exists but is not what this function writes to — the active log is `vinoshipper_webhook_events`.
 
-## Step 1 — Prerendering (highest priority)
+## Steps (build mode)
 
-**Approach:** Add `vite-plugin-prerender` (uses Puppeteer, integrates with existing Vite build, no source restructuring). `react-snap` is the alternative but it's unmaintained since 2020 — `vite-plugin-prerender` is the right call.
-
-**Routes to prerender:**
-- `/`
-- `/shop` (current path is `/wines` — will confirm and prerender the canonical one)
-- `/club` (Wine Club)
-- `/mission` (cause / rescue partners page)
-- `/wine-that-gives-back`
-- `/ambassadors`
-- `/press`
-- `/policies`
-- Every individual wine PDP — pulled at build time from the `wine_products` table via the Supabase anon key (already in `.env`)
-
-**Excluded from prerender** (correctly noindex'd already): `/crm/*`, `/cms/*`, `/kennel/*`, `/admin/*`, `/finance/*`, all `*-login`, `/account`, `/checkout`, `/thank-you`, `/unsubscribe`.
-
-**Age-gate consideration:** Puppeteer will hit the age modal during prerender. I'll set `localStorage.rdw-age-verified=true` in the prerender script's page context so the real HTML renders. Step 6 then makes sure the gate doesn't hide HTML from crawlers either way.
-
-**Verification:** `curl https://rescuedogwines.com/wines/<slug>` → must show `<h1>`, product name, price, description in the response body.
-
----
-
-## Step 2 — Per-route meta tags
-
-`react-helmet-async` is **already installed** (used by the `<Seo>` component we audited last week). I'll audit which prerendered routes are missing it and fill the gaps. Per-PDP `og:image` = bottle shot, not the site default. Canonical on every page.
-
----
-
-## Step 3 — `/og-default.jpg`
-
-Check `public/og-default.jpg` exists at 1200×630. If missing or low-res, generate a brand-correct one (red #c30017 + black RDW logo, no "free shipping" copy).
-
----
-
-## Step 4 — JSON-LD structured data
-
-Already have `src/lib/jsonLd.tsx`. Will extend so the prerender output includes:
-- `Organization` on `/` with `sameAs` (need IG/FB/LinkedIn URLs from you — see Open Questions)
-- `Product` on each PDP — name, image, description, brand "Rescue Dog Wines", offers (price, availability), `aggregateRating` only when reviews exist
-- `WebSite` + `SearchAction` on `/` pointing at `/wines?q={search_term_string}`
-
----
-
-## Step 5 — sitemap.xml + robots.txt
-
-Both already exist in `/public`. I'll regenerate sitemap from live DB at build time (`scripts/generate-sitemap.ts` predev/prebuild hook) with all canonical URLs + `lastmod`. Confirm robots.txt allows all + references sitemap.
-
----
-
-## Step 6 — Age-gate audit
-
-Current `AgeGate.tsx` is client-side localStorage — good. Need to verify it never returns `null` from `<App>` before children mount (which would empty the DOM for crawlers). Refactor if needed so the gate is a pure **overlay** while the underlying `<main>` HTML is always present in the source.
-
----
-
-## Step 7 — GTM dataLayer sanity
-
-GTM-NHTH66HM head snippet + `<noscript>` iframe placement check in `index.html`. Add a route-change listener that pushes:
-
-```js
-dataLayer.push({
-  event: 'page_view',
-  page_type: 'home' | 'shop' | 'pdp' | 'club' | 'mission' | ...,
-  wine_sku: <sku or undefined>,
-  user_status: 'member' | 'non_member' | 'unknown',
-});
+### Step 1 — Generate the secret
+Run a one-shot in the sandbox:
 ```
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+This produces a 64-char hex string (32 bytes of CSPRNG entropy). Capture it as `NEW_SECRET`. It will be displayed exactly once in chat, clearly labeled "COPY NOW INTO VINOSHIPPER".
 
-Wire `user_status` to `useCustomerAuth` + `useIsMember`.
+### Step 2 — Store as Edge Function secret
+Call `secrets--add_secret` for `VINOSHIPPER_WEBHOOK_SECRET`. The Lovable secrets form requires the user to paste the value — I will instruct Blair to paste the exact `NEW_SECRET` string from step 1 into the form (no other transformation). On save, Lovable propagates it to all Edge Functions automatically; no redeploy needed.
 
----
+### Step 3 — Verify it is actually loaded by `vinoshipper-webhook`
+Hit the deployed function with an intentionally wrong token to prove the env var is now read (and the misconfig branch is gone):
+```
+curl -i -X POST "https://eskqaxmypgvwtsffcbsw.supabase.co/functions/v1/vinoshipper-webhook?token=wrong" \
+  -H "Content-Type: application/json" -d '{"subject":"ORDER","event":"APPROVED","identifier":"probe"}'
+```
+- Before rotation: `500 server_misconfigured`.
+- After rotation: `401 unauthorized` (proves env var is loaded — secret is present but the probe token doesn't match).
 
-## Step 8 — Lighthouse baseline
+Then repeat with `?token=$NEW_SECRET` and expect `200 {"received":true,...}` plus a row in `vinoshipper_webhook_events` with `signature_valid=true`.
 
-Run Lighthouse mobile on `/` and one PDP **before** changes and **after**. Report deltas. Targets: LCP < 2.5s, CLS < 0.1, Perf ≥ 85. Prerendering alone usually nets +15–25 perf points because the LCP image and H1 are in the static HTML.
+### Step 4 — Output block (single chat message)
+- ✅ Confirmation: `VINOSHIPPER_WEBHOOK_SECRET` set and loaded (probe returned 401, not 500; live probe returned 200).
+- 🔑 The new secret, displayed **once**, labeled exactly: `COPY NOW INTO VINOSHIPPER — this is the only time it will appear here.`
+- 🌐 Full webhook URL, paste-ready:
+  ```
+  https://eskqaxmypgvwtsffcbsw.supabase.co/functions/v1/vinoshipper-webhook?token=<NEW_SECRET>
+  ```
+  Blair pastes this into VS dashboard → Webhooks for both ORDER and CLUB_MEMBERSHIP subjects.
+- 📊 Verification SQL for Blair to run after triggering a VS test order:
+  ```sql
+  SELECT created_at, subject, event, identifier,
+         signature_valid, processed, processing_error
+  FROM public.vinoshipper_webhook_events
+  ORDER BY created_at DESC
+  LIMIT 20;
+  ```
+  Healthy row = `signature_valid = true`, `processed = true`, `processing_error IS NULL`.
 
----
+## Explicit non-goals (will NOT touch)
+- No edits to `supabase/functions/vinoshipper-webhook/index.ts` or any other function code.
+- No other secret added, updated, rotated, or deleted.
+- No migrations, schema changes, RLS edits, or backfill of missing Monday orders (separate follow-up).
+- No other security/cleanup work this turn.
 
-## Open questions (need before Step 4)
+## One thing to confirm before I execute
+The `secrets--add_secret` tool requires you to paste the generated value into a secure form yourself — I cannot write it directly into the secret store. Workflow will be:
+1. I generate and display `NEW_SECRET` in chat.
+2. I trigger the add-secret form for `VINOSHIPPER_WEBHOOK_SECRET`.
+3. You paste the exact same string into that form and submit.
+4. I run the curl probes to confirm load, then post the final output block.
 
-1. **Social `sameAs` URLs** — please paste Instagram, Facebook, LinkedIn handles/URLs for the Organization schema.
-2. **Shop path canonical** — site currently uses `/wines`, your brief says `/shop`. Should I (a) keep `/wines` as canonical, (b) add `/shop` as a 301-style alias that renders the same page, or (c) rename `/wines` → `/shop`? Recommend (a) — `/wines` is already indexed and on the sitemap.
-
----
-
-## Execution cadence
-
-I'll do **Step 1 only**, report what changed + a `curl` verification of one prerendered route, and wait for your green light before Step 2. Same pattern through Step 8.
-
-Ready to start Step 1 on your go.
+Approve and I'll execute exactly this — nothing more.

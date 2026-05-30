@@ -37,6 +37,7 @@ import { Seo } from "@/components/Seo";
 import { CmsBody } from "@/components/cms/CmsBody";
 import { PressStrip } from "@/components/home/PressStrip";
 import { PressPullQuotes } from "@/components/home/PressPullQuotes";
+import { DonationCounter } from "@/components/home/DonationCounter";
 
 const instagramPosts = [
   {
@@ -304,6 +305,9 @@ const Index = () => {
 
       {/* Press / As Recognized By strip — DB-backed (PART 2.7) */}
       <PressStrip />
+
+      {/* Donation impact counter — PART 2.14 (data: donation_metrics, copy: cms_content) */}
+      <DonationCounter />
 
       {/* Pull quotes — movie-poster style */}
       <PressPullQuotes />

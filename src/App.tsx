@@ -103,6 +103,7 @@ const AdminCustomersPage = lazy(() => import("./pages/admin/AdminCustomersPage")
 const AdminHeroAnalyticsPage = lazy(() => import("./pages/admin/AdminHeroAnalyticsPage"));
 const SyncDriftPage = lazy(() => import("./pages/admin/SyncDriftPage"));
 const AdminPressMentionsPage = lazy(() => import("./pages/admin/AdminPressMentionsPage"));
+const BrandOwnerAccessPage = lazy(() => import("./pages/admin/BrandOwnerAccessPage"));
 const RequestAccessPage = lazy(() => import("./pages/RequestAccessPage"));
 const SellOnSitePage = lazy(() => import("./pages/SellOnSitePage"));
 const AmbassadorsLandingPage = lazy(() => import("./pages/AmbassadorsLandingPage"));

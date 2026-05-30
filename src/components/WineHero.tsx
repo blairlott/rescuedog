@@ -5,10 +5,12 @@ import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { T } from "@/components/T";
+import { LazyYouTube } from "@/components/LazyYouTube";
 import hero1Jpg from "@/assets/wine-hero-1.jpg";
 import hero1Webp from "@/assets/wine-hero-1.webp";
 import hero2Jpg from "@/assets/wine-hero-2.jpg";
 import hero2Webp from "@/assets/wine-hero-2.webp";
+import brandVideoPoster from "@/assets/hero/brand-video-poster.jpg";
 
 // Images and copy rotate INDEPENDENTLY so the bandit can find the best
 // image × copy pairing. variant_id logged to hero_events is `${imgId}__${copyId}`,
@@ -104,6 +106,9 @@ type DbHeroVariant = {
   cta_label: string;
   cta_href: string;
   sticky: boolean;
+  variant_type?: "image" | "video";
+  video_url?: string | null;
+  variant_key?: string | null;
 };
 
 const IMG_STORAGE_KEY = "rdw_wine_hero_img_idx";
@@ -301,6 +306,9 @@ export const WineHero = () => {
           cta_label: r.cta_label ?? "Shop Wines",
           cta_href: r.cta_href ?? "/wines",
           sticky: !!r.sticky,
+          variant_type: (r.variant_type as "image" | "video") ?? "image",
+          video_url: r.video_url ?? null,
+          variant_key: r.variant_key ?? null,
         }));
         const sanitized = sanitizeVariants(mapped);
         writeCachedVariants(sanitized);
@@ -348,17 +356,40 @@ export const WineHero = () => {
 
   return (
     <section className="relative h-[90vh] min-h-[600px] flex items-center overflow-hidden bg-foreground">
-      <picture>
-        <img
-          src={variant.image_url}
-          alt={variant.image_alt}
-          className="absolute inset-0 w-full h-full object-cover"
-          width={1920}
-          height={1080}
-          fetchPriority="high"
-          decoding="async"
-        />
-      </picture>
+      {variant.variant_type === "video" && variant.video_url ? (
+        variant.video_url.includes("youtube.com") || variant.video_url.includes("youtu.be") ? (
+          <LazyYouTube
+            embedUrl={variant.video_url}
+            posterUrl={variant.image_url}
+            ariaLabel={variant.image_alt}
+            className="absolute inset-0 w-full h-full"
+          />
+        ) : (
+          <video
+            src={variant.video_url}
+            poster={variant.image_url || undefined}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-label={variant.image_alt}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )
+      ) : (
+        <picture>
+          <img
+            src={variant.image_url}
+            alt={variant.image_alt}
+            className="absolute inset-0 w-full h-full object-cover"
+            width={1920}
+            height={1080}
+            fetchPriority="high"
+            decoding="async"
+          />
+        </picture>
+      )}
       <div className="absolute inset-0 bg-gradient-to-r from-foreground/85 via-foreground/45 to-transparent" />
       <div className="relative container mx-auto px-4">
         <div className="max-w-2xl">

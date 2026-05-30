@@ -19,7 +19,7 @@ export function useDonationMetric(metricKey = "lifetime_donations") {
       });
       if (error) throw error;
       const row = Array.isArray(data) ? data[0] : data;
-      return row ?? null;
+      return (row as DonationMetricPublic | undefined) ?? null;
     },
     staleTime: 5 * 60 * 1000,
   });

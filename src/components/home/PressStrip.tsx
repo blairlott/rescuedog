@@ -37,6 +37,14 @@ const FILTER_OVERRIDES: Record<string, string> = {
 };
 const getFilter = (slug: string) => FILTER_OVERRIDES[slug] ?? DEFAULT_FILTER_B;
 
+// Per-slug background overrides for logos that need a card behind them
+// (e.g. wordmarks on light grey source PNGs that lose contrast after the
+// monochrome filter is applied).
+const BACKGROUND_OVERRIDES: Record<string, string> = {
+  "wine-enthusiast": "bg-white px-3 py-2 rounded-sm",
+};
+const getBackground = (slug: string) => BACKGROUND_OVERRIDES[slug] ?? "";
+
 export const PressStrip = () => {
   const { content, upsert } = useCmsContent("home");
   const [editOpen, setEditOpen] = useState(false);
@@ -86,6 +94,7 @@ export const PressStrip = () => {
             const approach = RENDER_APPROACH[row.outlet_slug] ?? "A";
             const clickable = !!row.article_url;
             const imgClass = "h-10 md:h-12 w-auto object-contain transition duration-200";
+            const bgClass = getBackground(row.outlet_slug);
             const img =
               approach === "A" ? (
                 <span
@@ -106,6 +115,11 @@ export const PressStrip = () => {
                   style={{ filter: getFilter(row.outlet_slug), opacity: 0.9 }}
                 />
               );
+            const wrapped = bgClass ? (
+              <span className={`inline-flex items-center ${bgClass}`}>{img}</span>
+            ) : (
+              img
+            );
             return clickable ? (
               <a
                 key={row.outlet_slug}
@@ -116,11 +130,11 @@ export const PressStrip = () => {
                 title={row.article_title || row.outlet_name}
                 className="cursor-pointer"
               >
-                {img}
+                {wrapped}
               </a>
             ) : (
               <span key={row.outlet_slug} title={row.article_title || row.outlet_name}>
-                {img}
+                {wrapped}
               </span>
             );
           })}

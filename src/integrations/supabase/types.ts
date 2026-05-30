@@ -3008,26 +3008,35 @@ export type Database = {
       }
       cms_content: {
         Row: {
+          body_md: string | null
           content: Json
+          end_at: string | null
           id: string
           page: string
           section_key: string
+          start_at: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          body_md?: string | null
           content?: Json
+          end_at?: string | null
           id?: string
           page: string
           section_key: string
+          start_at?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          body_md?: string | null
           content?: Json
+          end_at?: string | null
           id?: string
           page?: string
           section_key?: string
+          start_at?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -9055,6 +9064,51 @@ export type Database = {
           source_url?: string | null
           summary?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      press_mentions: {
+        Row: {
+          article_title: string | null
+          article_url: string | null
+          created_at: string
+          display_order: number
+          end_at: string | null
+          id: string
+          logo_asset_slug: string
+          outlet_name: string
+          outlet_slug: string
+          start_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          article_title?: string | null
+          article_url?: string | null
+          created_at?: string
+          display_order?: number
+          end_at?: string | null
+          id?: string
+          logo_asset_slug: string
+          outlet_name: string
+          outlet_slug: string
+          start_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          article_title?: string | null
+          article_url?: string | null
+          created_at?: string
+          display_order?: number
+          end_at?: string | null
+          id?: string
+          logo_asset_slug?: string
+          outlet_name?: string
+          outlet_slug?: string
+          start_at?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }

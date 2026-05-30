@@ -14,33 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _kis_probe: {
-        Row: {
-          created_at: string | null
-          first4: string | null
-          last4: string | null
-          name: string | null
-          secret_len: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          first4?: string | null
-          last4?: string | null
-          name?: string | null
-          secret_len?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          first4?: string | null
-          last4?: string | null
-          name?: string | null
-          secret_len?: number | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       ab_checkout_intents: {
         Row: {
           ab_test: string

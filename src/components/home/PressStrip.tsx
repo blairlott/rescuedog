@@ -13,11 +13,11 @@ const RENDER_APPROACH: Record<string, "A" | "B"> = {
   forbes: "A",
   "sf-chronicle": "A",
   gma3: "B",
-  "wine-enthusiast": "A",
-  "lodi-wine-commission": "A",
+  "wine-enthusiast": "B",
+  "lodi-wine-commission": "B",
   "press-democrat": "B",
   "this-dogs-life": "A",
-  "nashville-scene": "A",
+  "nashville-scene": "B",
 };
 
 type Row = {
@@ -29,7 +29,13 @@ type Row = {
   display_order: number;
 };
 
-const FILTER_B = "grayscale(1) brightness(0.4) opacity(0.85)";
+const DEFAULT_FILTER_B = "grayscale(1) brightness(0.4) opacity(0.85)";
+// Per-slug filter overrides for sources that need different tuning.
+const FILTER_OVERRIDES: Record<string, string> = {
+  // Red background + white "SCENE" + black "NASHVILLE" — preserve readability.
+  "nashville-scene": "grayscale(1) brightness(0.65) contrast(1.25) opacity(0.9)",
+};
+const getFilter = (slug: string) => FILTER_OVERRIDES[slug] ?? DEFAULT_FILTER_B;
 
 export const PressStrip = () => {
   const { content, upsert } = useCmsContent("home");
@@ -97,7 +103,7 @@ export const PressStrip = () => {
                   alt={logo.alt}
                   loading="lazy"
                   className={imgClass + (clickable ? " hover:opacity-100" : "")}
-                  style={{ filter: FILTER_B, opacity: clickable ? 0.85 : 0.85 }}
+                  style={{ filter: getFilter(row.outlet_slug), opacity: 0.9 }}
                 />
               );
             return clickable ? (

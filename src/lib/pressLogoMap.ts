@@ -16,12 +16,13 @@
  * sourcing report). gma3 entry is new and also pending authoritative SVG.
  */
 import forbes from "@/assets/press-logos/forbes.svg";
-import wineEnthusiast from "@/assets/press-logos/wine-enthusiast.svg";
 import sfChronicle from "@/assets/press-logos/sf-chronicle.svg";
 import lodi from "@/assets/press-logos/lodi-wine-commission.png";
 import gma3 from "@/assets/press-logos/gma3.svg";
 import pressDemocrat from "@/assets/press-logos/press-democrat.png";
 import thisDogsLife from "@/assets/press-logos/this-dogs-life.svg";
+import wineEnthusiast from "@/assets/press-logos/wine-enthusiast.png";
+import nashvilleScene from "@/assets/press-logos/nashville-scene.png";
 
 export interface PressLogo {
   src: string;
@@ -36,6 +37,7 @@ export const PRESS_LOGO_MAP: Record<string, PressLogo> = {
   "lodi-wine-commission": { src: lodi, alt: "Lodi Wine Commission" },
   "press-democrat": { src: pressDemocrat, alt: "The Press Democrat" },
   "this-dogs-life": { src: thisDogsLife, alt: "This Dog's Life" },
+  "nashville-scene": { src: nashvilleScene, alt: "Nashville Scene" },
 };
 
 export const getPressLogo = (slug: string | null | undefined): PressLogo | null => {

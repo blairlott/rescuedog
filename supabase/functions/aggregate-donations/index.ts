@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
     await writeErr(msg);
     return respond(200, {
       success: false, computed_value_cents: null, computed_value_display: null,
-      vendor_count: null, qb_account: null, error: msg, as_of: asOf,
+      partner_count: null, qb_account: null, error: msg, as_of: asOf,
     });
   }
 

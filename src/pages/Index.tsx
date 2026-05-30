@@ -296,39 +296,29 @@ const Index = () => {
       </section>
 
       {/* Winemaker-driven band */}
-      <section className="py-12 md:py-16 bg-foreground text-primary-foreground">
+      <section className="py-12 md:py-16 bg-foreground text-primary-foreground relative">
+        <CmsEditButton onClick={() => setEditSection("winemaker_driven")} />
         <div className="container mx-auto px-4 max-w-4xl text-center">
           <p className="text-xs tracking-brand uppercase text-primary-foreground/60 mb-3 font-bold">
-            <T>Winemaker-Driven</T>
+            <T>{getVal("winemaker_driven", "eyebrow", "Winemaker-Driven")}</T>
           </p>
           <h2 className="text-2xl md:text-4xl font-bold uppercase leading-tight mb-4">
-            <T>Crafted by Susana Rodriguez Vasquez — vine to glass.</T>
+            <T>{getVal("winemaker_driven", "title", "Crafted by Susana Rodriguez Vasquez — vine to glass.")}</T>
           </h2>
-          <p className="text-primary-foreground/80 leading-relaxed max-w-2xl mx-auto">
-            <T>Every Rescue Dog wine is varietally correct and intentionally made — guided from the vineyard to the glass by our Chief Consulting Winemaker, Susy Vasquez. No shortcuts, no house-style blending at scale. Just honest, expressive Lodi wines.</T>
-          </p>
-        </div>
-      </section>
-
-      {/* Press / As Seen In strip */}
-      <section className="py-8 border-y border-border bg-background">
-        <div className="container mx-auto px-4">
-          <p className="text-[11px] tracking-brand uppercase text-muted-foreground text-center mb-4 font-bold">
-            <T>As Featured In</T>
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-foreground/70">
-            {pressLogos.map((logo) => (
-              <img
-                key={logo.name}
-                src={logo.src}
-                alt={logo.name}
-                loading="lazy"
-                className="h-10 md:h-12 w-auto grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition"
-              />
-            ))}
+          <div className="text-primary-foreground/80 leading-relaxed max-w-2xl mx-auto">
+            <CmsBody
+              markdown={getVal("winemaker_driven", "body", "Every Rescue Dog wine is varietally correct and intentionally made — guided from the vineyard to the glass by our Chief Consulting Winemaker, Susy Vasquez. No shortcuts, no house-style blending at scale. Just honest, expressive Lodi wines.")}
+              className="prose-invert"
+            />
           </div>
         </div>
       </section>
+
+      {/* Press / As Recognized By strip — DB-backed (PART 2.7) */}
+      <PressStrip />
+
+      {/* Pull quotes — movie-poster style */}
+      <PressPullQuotes />
 
       {/* Why Lodi — 3-tile explainer */}
       <section className="py-16 md:py-20 bg-background">

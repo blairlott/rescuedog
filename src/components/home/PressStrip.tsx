@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getPressLogo } from "@/lib/pressLogoMap";
 import { T } from "@/components/T";
+import { useCmsContent, getCmsValue } from "@/hooks/useCmsContent";
+import { CmsEditButton } from "@/components/cms/CmsEditButton";
+import { CmsEditDialog, CmsField } from "@/components/cms/CmsEditDialog";
 
 // "A" = SVG uses fill="currentColor" → text-stone-500 styles it.
 // "B" = brand-color SVG → CSS grayscale filter to neutralize.
@@ -11,6 +15,9 @@ const RENDER_APPROACH: Record<string, "A" | "B"> = {
   gma3: "B",
   "wine-enthusiast": "A",
   "lodi-wine-commission": "A",
+  "press-democrat": "B",
+  "this-dogs-life": "A",
+  "nashville-scene": "A",
 };
 
 type Row = {
@@ -25,6 +32,12 @@ type Row = {
 const FILTER_B = "grayscale(1) brightness(0.4) opacity(0.85)";
 
 export const PressStrip = () => {
+  const { content, upsert } = useCmsContent("home");
+  const [editOpen, setEditOpen] = useState(false);
+  const eyebrow = getCmsValue(content, "press_recognition", "eyebrow", "");
+  const heading = getCmsValue(content, "press_recognition", "heading", "As Recognized By");
+  const subheading = getCmsValue(content, "press_recognition", "subheading", "");
+
   const { data: rows = [] } = useQuery({
     queryKey: ["press-strip-homepage"],
     queryFn: async (): Promise<Row[]> => {
@@ -44,9 +57,22 @@ export const PressStrip = () => {
   return (
     <section className="py-8 border-y border-border bg-background">
       <div className="container mx-auto px-4">
-        <p className="text-[11px] tracking-brand uppercase text-muted-foreground text-center mb-4 font-bold">
-          <T>As Recognized By</T>
-        </p>
+        <div className="relative text-center mb-4">
+          <CmsEditButton onClick={() => setEditOpen(true)} label="Edit heading" scope="marketing" />
+          {eyebrow && (
+            <p className="text-[10px] tracking-brand uppercase text-muted-foreground/70 mb-1 font-bold">
+              <T>{eyebrow}</T>
+            </p>
+          )}
+          <p className="text-[11px] tracking-brand uppercase text-muted-foreground font-bold">
+            <T>{heading}</T>
+          </p>
+          {subheading && (
+            <p className="text-xs text-muted-foreground/80 mt-1">
+              <T>{subheading}</T>
+            </p>
+          )}
+        </div>
         <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
           {rows.map((row) => {
             const logo = getPressLogo(row.logo_asset_slug);
@@ -94,6 +120,23 @@ export const PressStrip = () => {
           })}
         </div>
       </div>
+      <CmsEditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        title='Edit "As Recognized By" Heading'
+        fields={[
+          { key: "eyebrow", label: "Eyebrow / tag (optional)", type: "text", value: eyebrow },
+          { key: "heading", label: "Section heading", type: "text", value: heading },
+          { key: "subheading", label: "Subheading (optional)", type: "text", value: subheading },
+        ] as CmsField[]}
+        onSave={(values) =>
+          upsert.mutate(
+            { sectionKey: "press_recognition", content: values },
+            { onSuccess: () => setEditOpen(false) }
+          )
+        }
+        isSaving={upsert.isPending}
+      />
     </section>
   );
 };

@@ -5,9 +5,10 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, type CmsField } from "@/components/cms/CmsEditDialog";
 import { T } from "@/components/T";
 
-/** Brand-floor fallback. Visitors must NEVER see $0 / 0 partners. If the
- *  metric pipeline returns null/0 (first deploy, QB pull failed, etc.) we
- *  render these seed values so the page still tells the truthful baseline. */
+/** Fallback copy — used ONLY when source === 'fallback' (i.e. the QB
+ *  pull failed). When source === 'quickbooks' we render the real value
+ *  verbatim, even if it dips. A silent brand-floor that masks reality
+ *  would damage brand integrity worse than a temporary number wobble. */
 const FALLBACK_AMOUNT_DISPLAY = "$170,000+";
 const FALLBACK_PARTNER_COUNT = 208;
 
@@ -86,13 +87,17 @@ export function DonationCounter() {
     "Since 2017 — half of every bottle sold supports animal rescue.",
   );
 
-  // Brand-floor fallback: never show $0 / 0. If either field is null or 0
-  // we substitute the seed values so the headline still reads truthfully.
+  // Render the real QB-sourced value verbatim. Only substitute the seed
+  // copy when the metric pipeline explicitly reports source='fallback'
+  // (i.e. the QB pull failed), so visitors never see $0 / 0 in a
+  // hard-failure mode, but a healthy QB pull always shows the truth.
+  const isFallback = !data || data.source === "fallback";
   const rawPartnerCount = data?.partner_count ?? 0;
-  const partnerCount = rawPartnerCount > 0 ? rawPartnerCount : FALLBACK_PARTNER_COUNT;
-  const rawDisplay = data?.value_display ?? "";
-  const parsedRaw = parseDisplayAmount(rawDisplay);
-  const parsed = parsedRaw && parsedRaw.number > 0
+  const partnerCount = isFallback || rawPartnerCount <= 0
+    ? FALLBACK_PARTNER_COUNT
+    : rawPartnerCount;
+  const parsedRaw = parseDisplayAmount(data?.value_display ?? "");
+  const parsed = !isFallback && parsedRaw && parsedRaw.number > 0
     ? parsedRaw
     : parseDisplayAmount(FALLBACK_AMOUNT_DISPLAY)!;
   const targetAmount = parsed.number;

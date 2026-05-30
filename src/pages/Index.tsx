@@ -34,21 +34,9 @@ import { T } from "@/components/T";
 import { useExperiment } from "@/hooks/useExperiment";
 import { WineHero } from "@/components/WineHero";
 import { Seo } from "@/components/Seo";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { getPressLogo } from "@/lib/pressLogoMap";
 import { CmsBody } from "@/components/cms/CmsBody";
-
-// Render approach per outlet (see PART 2.6 sourcing report).
-// "A" = SVG uses fill="currentColor" — recoloring is one line.
-// "B" = SVG has fixed brand colors / gradients — uses CSS grayscale filter.
-const LOGO_RENDER_APPROACH: Record<string, "A" | "B"> = {
-  forbes: "A",
-  "sf-chronicle": "A",
-  gma3: "B",
-  "wine-enthusiast": "A",
-  "lodi-wine-commission": "A",
-};
+import { PressStrip } from "@/components/home/PressStrip";
+import { PressPullQuotes } from "@/components/home/PressPullQuotes";
 
 const instagramPosts = [
   {

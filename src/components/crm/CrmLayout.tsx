@@ -51,6 +51,7 @@ export default function CrmLayout() {
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/legacy-migration", label: "Legacy Migration", icon: Link2 }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin/sync-drift", label: "Catalog Drift", icon: AlertTriangle, badge: driftCount }] : []),
     ...(isBrandOwner ? [{ to: "/crm/admin/press-mentions", label: "Press Mentions", icon: Newspaper }] : []),
+    ...(roleInfo?.isOwner ? [{ to: "/crm/admin/brand-owner-access", label: "Brand Owner Access", icon: ShieldCheck }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin", label: "Users", icon: Users }] : []),
   ];
 

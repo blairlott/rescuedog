@@ -2398,6 +2398,39 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_owner_access_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          note: string | null
+          performed_by: string
+          performed_by_email: string | null
+          target_email: string | null
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          performed_by: string
+          performed_by_email?: string | null
+          target_email?: string | null
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          performed_by?: string
+          performed_by_email?: string | null
+          target_email?: string | null
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       business_expense_facts: {
         Row: {
           account: string | null
@@ -9078,6 +9111,11 @@ export type Database = {
           logo_asset_slug: string
           outlet_name: string
           outlet_slug: string
+          pull_quote: string | null
+          pull_quote_attribution: string | null
+          pull_quote_show_on_homepage: boolean
+          show_in_press_section: boolean
+          show_on_homepage: boolean
           start_at: string | null
           status: string
           updated_at: string
@@ -9092,6 +9130,11 @@ export type Database = {
           logo_asset_slug: string
           outlet_name: string
           outlet_slug: string
+          pull_quote?: string | null
+          pull_quote_attribution?: string | null
+          pull_quote_show_on_homepage?: boolean
+          show_in_press_section?: boolean
+          show_on_homepage?: boolean
           start_at?: string | null
           status?: string
           updated_at?: string
@@ -9106,6 +9149,11 @@ export type Database = {
           logo_asset_slug?: string
           outlet_name?: string
           outlet_slug?: string
+          pull_quote?: string | null
+          pull_quote_attribution?: string | null
+          pull_quote_show_on_homepage?: boolean
+          show_in_press_section?: boolean
+          show_on_homepage?: boolean
           start_at?: string | null
           status?: string
           updated_at?: string
@@ -13363,6 +13411,13 @@ export type Database = {
           wine_club_net_cents: number
         }[]
       }
+      find_user_by_email: {
+        Args: { _email: string }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
       get_active_candidates_for_slot: {
         Args: { _slot_key: string }
         Returns: {
@@ -13427,6 +13482,10 @@ export type Database = {
           score: number
           variant_key: string
         }[]
+      }
+      grant_brand_owner_access: {
+        Args: { _note?: string; _target_user_id: string }
+        Returns: undefined
       }
       has_role: {
         Args: {
@@ -13515,6 +13574,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      list_brand_owners: {
+        Args: never
+        Returns: {
+          email: string
+          granted_at: string
+          user_id: string
+        }[]
+      }
       log_ab_event: {
         Args: {
           _ab_test?: string
@@ -13591,6 +13658,10 @@ export type Database = {
           segment_name: string
           tier: number
         }[]
+      }
+      revoke_brand_owner_access: {
+        Args: { _note?: string; _target_user_id: string }
+        Returns: undefined
       }
       run_meta_segment_sql: {
         Args: { _limit?: number; _sql: string }

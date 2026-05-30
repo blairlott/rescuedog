@@ -34,19 +34,9 @@ import { T } from "@/components/T";
 import { useExperiment } from "@/hooks/useExperiment";
 import { WineHero } from "@/components/WineHero";
 import { Seo } from "@/components/Seo";
-import pressWineEnthusiast from "@/assets/press-logos/wine-enthusiast.svg";
-import pressUsaToday from "@/assets/press-logos/usa-today.svg";
-import pressForbes from "@/assets/press-logos/forbes.svg";
-import pressSfChronicle from "@/assets/press-logos/sf-chronicle.svg";
-import pressLodi from "@/assets/press-logos/lodi-wine-commission.svg";
-
-const pressLogos = [
-  { name: "Wine Enthusiast", src: pressWineEnthusiast },
-  { name: "USA Today", src: pressUsaToday },
-  { name: "Forbes", src: pressForbes },
-  { name: "SF Chronicle", src: pressSfChronicle },
-  { name: "Lodi Wine Commission", src: pressLodi },
-];
+import { CmsBody } from "@/components/cms/CmsBody";
+import { PressStrip } from "@/components/home/PressStrip";
+import { PressPullQuotes } from "@/components/home/PressPullQuotes";
 
 const instagramPosts = [
   {
@@ -82,13 +72,14 @@ const instagramPosts = [
 ];
 
 type EditSection = "hero" | "mission" | "about_us" | "lodi" | "club_cta" | null;
+type EditSectionAll = EditSection | "winemaker_driven";
 
 const Index = () => {
   const { data: products, isLoading } = useProducts(50);
   const [isMuted, setIsMuted] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { content, upsert } = useCmsContent("homepage");
-  const [editSection, setEditSection] = useState<EditSection>(null);
+  const [editSection, setEditSection] = useState<EditSectionAll>(null);
   const showImpact = useFeatureFlag("impact_counter", false);
   const { data: rescuePartners = [] } = useRescuePartners();
 
@@ -154,6 +145,14 @@ const Index = () => {
       fields: [
         { key: "heading", label: "Heading", type: "text", value: getVal("club_cta", "heading", "Club") },
         { key: "body", label: "Body", type: "textarea", value: getVal("club_cta", "body", "Get 20% off wine purchases! Join us in our commitment to support animal rescue organizations and receive regular shipments of award-winning wines — plus perks!") },
+      ],
+    },
+    winemaker_driven: {
+      title: "Winemaker-Driven Section",
+      fields: [
+        { key: "eyebrow", label: "Eyebrow / tag", type: "text", value: getVal("winemaker_driven", "eyebrow", "Winemaker-Driven") },
+        { key: "title", label: "Section title", type: "text", value: getVal("winemaker_driven", "title", "Crafted by Susana Rodriguez Vasquez — vine to glass.") },
+        { key: "body", label: "Body copy", type: "markdown", value: getVal("winemaker_driven", "body", "Every Rescue Dog wine is varietally correct and intentionally made — guided from the vineyard to the glass by our Chief Consulting Winemaker, Susy Vasquez. No shortcuts, no house-style blending at scale. Just honest, expressive Lodi wines.") },
       ],
     },
   };
@@ -285,39 +284,29 @@ const Index = () => {
       </section>
 
       {/* Winemaker-driven band */}
-      <section className="py-12 md:py-16 bg-foreground text-primary-foreground">
+      <section className="py-12 md:py-16 bg-foreground text-primary-foreground relative">
+        <CmsEditButton onClick={() => setEditSection("winemaker_driven")} />
         <div className="container mx-auto px-4 max-w-4xl text-center">
           <p className="text-xs tracking-brand uppercase text-primary-foreground/60 mb-3 font-bold">
-            <T>Winemaker-Driven</T>
+            <T>{getVal("winemaker_driven", "eyebrow", "Winemaker-Driven")}</T>
           </p>
           <h2 className="text-2xl md:text-4xl font-bold uppercase leading-tight mb-4">
-            <T>Crafted by Susana Rodriguez Vasquez — vine to glass.</T>
+            <T>{getVal("winemaker_driven", "title", "Crafted by Susana Rodriguez Vasquez — vine to glass.")}</T>
           </h2>
-          <p className="text-primary-foreground/80 leading-relaxed max-w-2xl mx-auto">
-            <T>Every Rescue Dog wine is varietally correct and intentionally made — guided from the vineyard to the glass by our Chief Consulting Winemaker, Susy Vasquez. No shortcuts, no house-style blending at scale. Just honest, expressive Lodi wines.</T>
-          </p>
-        </div>
-      </section>
-
-      {/* Press / As Seen In strip */}
-      <section className="py-8 border-y border-border bg-background">
-        <div className="container mx-auto px-4">
-          <p className="text-[11px] tracking-brand uppercase text-muted-foreground text-center mb-4 font-bold">
-            <T>As Featured In</T>
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-foreground/70">
-            {pressLogos.map((logo) => (
-              <img
-                key={logo.name}
-                src={logo.src}
-                alt={logo.name}
-                loading="lazy"
-                className="h-10 md:h-12 w-auto grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition"
-              />
-            ))}
+          <div className="text-primary-foreground/80 leading-relaxed max-w-2xl mx-auto">
+            <CmsBody
+              markdown={getVal("winemaker_driven", "body", "Every Rescue Dog wine is varietally correct and intentionally made — guided from the vineyard to the glass by our Chief Consulting Winemaker, Susy Vasquez. No shortcuts, no house-style blending at scale. Just honest, expressive Lodi wines.")}
+              className="prose-invert"
+            />
           </div>
         </div>
       </section>
+
+      {/* Press / As Recognized By strip — DB-backed (PART 2.7) */}
+      <PressStrip />
+
+      {/* Pull quotes — movie-poster style */}
+      <PressPullQuotes />
 
       {/* Why Lodi — 3-tile explainer */}
       <section className="py-16 md:py-20 bg-background">

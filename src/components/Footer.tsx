@@ -98,7 +98,34 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border mt-10 pt-8 text-xs text-muted-foreground tracking-wide">
-          <p>© {new Date().getFullYear()} RescueDogWines. <T>All rights reserved.</T></p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <p>© {new Date().getFullYear()} RescueDogWines. <T>All rights reserved.</T></p>
+
+            {/* Trust badges — PART 2.14c */}
+            <div className="flex flex-wrap items-center gap-4 md:gap-6 text-foreground">
+              <span
+                className="text-[10px] uppercase tracking-brand font-bold border border-border px-3 py-1.5"
+                aria-label="Lodi Rules sustainability certified"
+                title="Lodi Rules — third-party sustainability certified"
+              >
+                <T>Lodi Rules Certified</T>
+              </span>
+              <span
+                className="text-[10px] uppercase tracking-brand font-bold border border-border px-3 py-1.5"
+                aria-label="Accepts Visa, MasterCard, American Express, Discover"
+                title="Visa · MasterCard · American Express · Discover"
+              >
+                <T>Visa · MC · Amex · Discover</T>
+              </span>
+              <span
+                className="text-[10px] uppercase tracking-brand font-bold border border-border px-3 py-1.5"
+                aria-label="Secure SSL-encrypted checkout"
+                title="Secure SSL-encrypted checkout"
+              >
+                <T>Secure Checkout</T>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

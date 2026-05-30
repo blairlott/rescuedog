@@ -18,8 +18,10 @@
 import forbes from "@/assets/press-logos/forbes.svg";
 import wineEnthusiast from "@/assets/press-logos/wine-enthusiast.svg";
 import sfChronicle from "@/assets/press-logos/sf-chronicle.svg";
-import lodi from "@/assets/press-logos/lodi-wine-commission.svg";
+import lodi from "@/assets/press-logos/lodi-wine-commission.png";
 import gma3 from "@/assets/press-logos/gma3.svg";
+import pressDemocrat from "@/assets/press-logos/press-democrat.png";
+import thisDogsLife from "@/assets/press-logos/this-dogs-life.svg";
 
 export interface PressLogo {
   src: string;
@@ -32,6 +34,8 @@ export const PRESS_LOGO_MAP: Record<string, PressLogo> = {
   "wine-enthusiast": { src: wineEnthusiast, alt: "Wine Enthusiast" },
   "sf-chronicle": { src: sfChronicle, alt: "San Francisco Chronicle" },
   "lodi-wine-commission": { src: lodi, alt: "Lodi Wine Commission" },
+  "press-democrat": { src: pressDemocrat, alt: "The Press Democrat" },
+  "this-dogs-life": { src: thisDogsLife, alt: "This Dog's Life" },
 };
 
 export const getPressLogo = (slug: string | null | undefined): PressLogo | null => {

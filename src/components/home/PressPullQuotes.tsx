@@ -1,32 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-
-type Row = {
-  outlet_slug: string;
-  outlet_name: string;
-  pull_quote: string;
-  pull_quote_attribution: string | null;
-};
+import { usePullQuoteRotation } from "@/hooks/usePullQuoteRotation";
 
 export const PressPullQuotes = () => {
-  const { data: rows = [] } = useQuery({
-    queryKey: ["press-pull-quotes-homepage"],
-    queryFn: async (): Promise<Row[]> => {
-      const { data, error } = await (supabase as any)
-        .from("press_mentions")
-        .select("outlet_slug,outlet_name,pull_quote,pull_quote_attribution")
-        .eq("status", "active")
-        .eq("show_on_homepage", true)
-        .eq("pull_quote_show_on_homepage", true)
-        .not("pull_quote", "is", null)
-        .order("display_order", { ascending: true })
-        .limit(3);
-      if (error) throw error;
-      return (data || []).filter((r: Row) => r.pull_quote && r.pull_quote.trim().length > 0);
-    },
-  });
+  const { quotes: rows, loading } = usePullQuoteRotation();
 
-  if (!rows.length) return null;
+  if (loading || !rows.length) return null;
 
   return (
     <section className="py-12 md:py-16 bg-background">

@@ -80,7 +80,6 @@ async function refreshTokens(admin: any, conn: any): Promise<string> {
 
 interface QbAggregate {
   totalCents: number;
-  vendorCount: number;
   accountId: string;
   accountName: string;
 }
@@ -120,16 +119,12 @@ async function fetchQbDonations(admin: any, conn: any): Promise<QbAggregate> {
     txJson?.QueryResponse?.Purchase ?? [];
 
   let totalCents = 0;
-  const vendors = new Set<string>();
   for (const r of rows) {
     totalCents += Math.round((r.TotalAmt ?? 0) * 100);
-    const v = r.EntityRef?.value;
-    if (v) vendors.add(v);
   }
 
   return {
     totalCents,
-    vendorCount: vendors.size,
     accountId: account.Id,
     accountName: account.Name,
   };
@@ -169,7 +164,7 @@ Deno.serve(async (req) => {
     await writeErr(msg);
     return respond(200, {
       success: false, computed_value_cents: null, computed_value_display: null,
-      vendor_count: null, qb_account: null, error: msg, as_of: asOf,
+      partner_count: null, qb_account: null, error: msg, as_of: asOf,
     });
   }
 
@@ -177,12 +172,26 @@ Deno.serve(async (req) => {
     const agg = await fetchQbDonations(admin, conn);
     const display = formatUsd(agg.totalCents);
 
+    // partner_count = authoritative count from rescue_partners (is_active=true),
+    // matching the public partners list. partner_count_override (if set)
+    // takes precedence for temporary inflation during onboarding.
+    const { count: activePartners } = await admin
+      .from("rescue_partners")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true);
+    const { data: existing } = await admin
+      .from("donation_metrics")
+      .select("partner_count_override")
+      .eq("metric_key", "lifetime_donations")
+      .maybeSingle();
+    const partnerCount = existing?.partner_count_override ?? activePartners ?? 0;
+
     await admin.from("donation_metrics").upsert(
       {
         metric_key: "lifetime_donations",
         value_cents: agg.totalCents,
         value_display: display,
-        partner_count: agg.vendorCount,
+        partner_count: partnerCount,
         source: "quickbooks",
         qb_account_id: agg.accountId,
         qb_account_name: agg.accountName,
@@ -197,7 +206,7 @@ Deno.serve(async (req) => {
       success: true,
       computed_value_cents: agg.totalCents,
       computed_value_display: display,
-      vendor_count: agg.vendorCount,
+      partner_count: partnerCount,
       qb_account: { id: agg.accountId, name: agg.accountName },
       error: null,
       as_of: asOf,
@@ -207,7 +216,7 @@ Deno.serve(async (req) => {
     await writeErr(errMsg);
     return respond(200, {
       success: false, computed_value_cents: null, computed_value_display: null,
-      vendor_count: null, qb_account: null, error: errMsg, as_of: asOf,
+      partner_count: null, qb_account: null, error: errMsg, as_of: asOf,
     });
   }
 });

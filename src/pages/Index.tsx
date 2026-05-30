@@ -304,10 +304,11 @@ const Index = () => {
       </section>
 
       {/* Press / As Recognized By strip — DB-backed (PART 2.7) */}
-      <PressStrip />
-
       {/* Donation impact counter — PART 2.14 (data: donation_metrics, copy: cms_content) */}
       <DonationCounter />
+
+      {/* Press / As Recognized By strip — DB-backed (PART 2.7) */}
+      <PressStrip />
 
       {/* Pull quotes — movie-poster style */}
       <PressPullQuotes />

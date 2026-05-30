@@ -3008,26 +3008,35 @@ export type Database = {
       }
       cms_content: {
         Row: {
+          body_md: string | null
           content: Json
+          end_at: string | null
           id: string
           page: string
           section_key: string
+          start_at: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          body_md?: string | null
           content?: Json
+          end_at?: string | null
           id?: string
           page: string
           section_key: string
+          start_at?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          body_md?: string | null
           content?: Json
+          end_at?: string | null
           id?: string
           page?: string
           section_key?: string
+          start_at?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -9058,6 +9067,51 @@ export type Database = {
         }
         Relationships: []
       }
+      press_mentions: {
+        Row: {
+          article_title: string | null
+          article_url: string | null
+          created_at: string
+          display_order: number
+          end_at: string | null
+          id: string
+          logo_asset_slug: string
+          outlet_name: string
+          outlet_slug: string
+          start_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          article_title?: string | null
+          article_url?: string | null
+          created_at?: string
+          display_order?: number
+          end_at?: string | null
+          id?: string
+          logo_asset_slug: string
+          outlet_name: string
+          outlet_slug: string
+          start_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          article_title?: string | null
+          article_url?: string | null
+          created_at?: string
+          display_order?: number
+          end_at?: string | null
+          id?: string
+          logo_asset_slug?: string
+          outlet_name?: string
+          outlet_slug?: string
+          start_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_reviews: {
         Row: {
           body: string | null
@@ -13728,6 +13782,7 @@ export type Database = {
         | "viewer"
         | "cfo"
         | "developer"
+        | "brand_owner"
       cfo_share_type: "live" | "snapshot"
       discount_scope: "sitewide" | "wine" | "merch" | "sku_list" | "collection"
       discount_tier: "public" | "club_member" | "ambassador" | "vip" | "staff"
@@ -13915,6 +13970,7 @@ export const Constants = {
         "viewer",
         "cfo",
         "developer",
+        "brand_owner",
       ],
       cfo_share_type: ["live", "snapshot"],
       discount_scope: ["sitewide", "wine", "merch", "sku_list", "collection"],

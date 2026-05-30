@@ -4180,6 +4180,57 @@ export type Database = {
           },
         ]
       }
+      donation_metrics: {
+        Row: {
+          as_of: string
+          created_at: string
+          error_log: string | null
+          id: string
+          last_successful_at: string | null
+          metric_key: string
+          partner_count: number | null
+          partner_count_override: number | null
+          qb_account_id: string | null
+          qb_account_name: string | null
+          source: string
+          updated_at: string
+          value_cents: number | null
+          value_display: string
+        }
+        Insert: {
+          as_of?: string
+          created_at?: string
+          error_log?: string | null
+          id?: string
+          last_successful_at?: string | null
+          metric_key: string
+          partner_count?: number | null
+          partner_count_override?: number | null
+          qb_account_id?: string | null
+          qb_account_name?: string | null
+          source?: string
+          updated_at?: string
+          value_cents?: number | null
+          value_display: string
+        }
+        Update: {
+          as_of?: string
+          created_at?: string
+          error_log?: string | null
+          id?: string
+          last_successful_at?: string | null
+          metric_key?: string
+          partner_count?: number | null
+          partner_count_override?: number | null
+          qb_account_id?: string | null
+          qb_account_name?: string | null
+          source?: string
+          updated_at?: string
+          value_cents?: number | null
+          value_display?: string
+        }
+        Relationships: []
+      }
       donation_requests: {
         Row: {
           affiliate_interest: string | null
@@ -5888,6 +5939,10 @@ export type Database = {
           sub: string
           surface: string
           updated_at: string
+          variant_key: string | null
+          variant_type: string
+          video_url: string | null
+          weight: number
         }
         Insert: {
           auto_generated?: boolean
@@ -5905,6 +5960,10 @@ export type Database = {
           sub?: string
           surface: string
           updated_at?: string
+          variant_key?: string | null
+          variant_type?: string
+          video_url?: string | null
+          weight?: number
         }
         Update: {
           auto_generated?: boolean
@@ -5922,6 +5981,10 @@ export type Database = {
           sub?: string
           surface?: string
           updated_at?: string
+          variant_key?: string | null
+          variant_type?: string
+          video_url?: string | null
+          weight?: number
         }
         Relationships: []
       }
@@ -13447,6 +13510,10 @@ export type Database = {
           sub: string
           surface: string
           updated_at: string
+          variant_key: string | null
+          variant_type: string
+          video_url: string | null
+          weight: number
         }[]
         SetofOptions: {
           from: "*"
@@ -13454,6 +13521,16 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_donation_metric_public: {
+        Args: { _metric_key: string }
+        Returns: {
+          as_of: string
+          metric_key: string
+          partner_count: number
+          source: string
+          value_display: string
+        }[]
       }
       get_hero_variant_stats: {
         Args: { _days?: number }

@@ -11,6 +11,9 @@ const RENDER_APPROACH: Record<string, "A" | "B"> = {
   gma3: "B",
   "wine-enthusiast": "A",
   "lodi-wine-commission": "A",
+  "press-democrat": "B",
+  "this-dogs-life": "A",
+  "nashville-scene": "A",
 };
 
 type Row = {

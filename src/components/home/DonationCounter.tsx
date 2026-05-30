@@ -5,12 +5,6 @@ import { CmsEditButton } from "@/components/cms/CmsEditButton";
 import { CmsEditDialog, type CmsField } from "@/components/cms/CmsEditDialog";
 import { T } from "@/components/T";
 
-const COUNTER_FIELDS: CmsField[] = [
-  { name: "eyebrow", label: "Eyebrow", type: "text" },
-  { name: "headline_template", label: "Headline (supports {amount} and {partners})", type: "text" },
-  { name: "subtext", label: "Subtext", type: "text" },
-];
-
 /** Parse "$170,000+" → 170000 (drops '$', commas, trailing '+'). Returns null if no digits. */
 function parseDisplayAmount(display: string): { prefix: string; number: number; suffix: string } | null {
   const m = display.match(/^([^\d-]*)([\d,]+)(.*)$/);
@@ -21,14 +15,14 @@ function parseDisplayAmount(display: string): { prefix: string; number: number; 
 }
 
 function useCountUp(target: number, enabled: boolean, durationMs = 1500): number {
-  const [value, setValue] = useState(enabled ? 0 : target);
+  const [value, setValue] = useState(0);
   const rafRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!enabled) { setValue(target); return; }
+    if (!enabled) return;
     const start = performance.now();
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
       setValue(Math.round(eased * target));
       if (t < 1) rafRef.current = requestAnimationFrame(tick);
     };
@@ -43,10 +37,10 @@ function useCountUp(target: number, enabled: boolean, durationMs = 1500): number
  *  and substitutes {amount} / {partners} from donation_metrics. */
 export function DonationCounter() {
   const { data, isLoading } = useDonationMetric("lifetime_donations");
-  const { content } = useCmsContent("home");
+  const { content, upsert } = useCmsContent("homepage");
   const [editing, setEditing] = useState(false);
   const [animate, setAnimate] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -63,8 +57,6 @@ export function DonationCounter() {
     return () => io.disconnect();
   }, []);
 
-  if (isLoading || !data) return null;
-
   const eyebrow = getCmsValue(content, "donation_counter", "eyebrow", "Mission in numbers");
   const headlineTemplate = getCmsValue(
     content,
@@ -79,11 +71,13 @@ export function DonationCounter() {
     "Since 2017 — half of every bottle sold supports animal rescue.",
   );
 
-  const partnerCount = data.partner_count ?? 0;
-  const parsed = parseDisplayAmount(data.value_display);
+  const partnerCount = data?.partner_count ?? 0;
+  const parsed = parseDisplayAmount(data?.value_display ?? "");
   const targetAmount = parsed?.number ?? 0;
   const animatedAmount = useCountUp(targetAmount, animate);
   const animatedPartners = useCountUp(partnerCount, animate);
+
+  if (isLoading || !data) return null;
 
   const displayAmount = parsed
     ? `${parsed.prefix}${animatedAmount.toLocaleString("en-US")}${parsed.suffix}`
@@ -95,6 +89,17 @@ export function DonationCounter() {
     .replace("{amount}", `\u0001${displayAmount}\u0001`)
     .replace("{partners}", `\u0001${displayPartners}\u0001`);
   const parts = rendered.split("\u0001");
+
+  const fields: CmsField[] = [
+    { key: "eyebrow", label: "Eyebrow", type: "text", value: eyebrow },
+    {
+      key: "headline_template",
+      label: "Headline (supports {amount} and {partners})",
+      type: "text",
+      value: headlineTemplate,
+    },
+    { key: "subtext", label: "Subtext", type: "text", value: subtext },
+  ];
 
   return (
     <section
@@ -127,11 +132,15 @@ export function DonationCounter() {
       <CmsEditDialog
         open={editing}
         onOpenChange={setEditing}
-        page="home"
-        sectionKey="donation_counter"
         title="Donation Counter"
-        fields={COUNTER_FIELDS}
-        currentContent={content["donation_counter"] ?? {}}
+        fields={fields}
+        isSaving={upsert.isPending}
+        onSave={(values) =>
+          upsert.mutate(
+            { sectionKey: "donation_counter", content: values },
+            { onSuccess: () => setEditing(false) },
+          )
+        }
       />
     </section>
   );

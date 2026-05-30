@@ -7,12 +7,36 @@ import { useState, useEffect, useRef } from "react";
 import { Upload, Loader2, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrentUserRoles } from "@/hooks/useCurrentUserRoles";
+import { CmsBody } from "@/components/cms/CmsBody";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+
+const LA_TZ = "America/Los_Angeles";
+
+/** ISO (UTC) -> "YYYY-MM-DDTHH:mm" string in America/Los_Angeles for datetime-local inputs. */
+const isoToLocalInput = (iso: string | null | undefined): string => {
+  if (!iso) return "";
+  try { return formatInTimeZone(new Date(iso), LA_TZ, "yyyy-MM-dd'T'HH:mm"); }
+  catch { return ""; }
+};
+
+/** datetime-local string (interpreted as LA) -> ISO UTC string. Empty -> null. */
+const localInputToIso = (local: string): string | null => {
+  if (!local) return null;
+  try { return fromZonedTime(local, LA_TZ).toISOString(); }
+  catch { return null; }
+};
 
 export interface CmsField {
   key: string;
   label: string;
-  type: "text" | "textarea" | "url";
+  type: "text" | "textarea" | "url" | "markdown";
   value: string;
+}
+
+export interface CmsSchedule {
+  start_at?: string | null;
+  end_at?: string | null;
 }
 
 interface Props {
@@ -20,25 +44,50 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   title: string;
   fields: CmsField[];
-  onSave: (values: Record<string, string>) => void;
+  onSave: (values: Record<string, string>, schedule?: CmsSchedule) => void;
   isSaving: boolean;
+  /** When provided, enables start_at/end_at schedule fields (gated to owner/brand_owner). */
+  schedule?: CmsSchedule;
+  /** When true, schedule fields appear even without an initial schedule value. */
+  enableSchedule?: boolean;
 }
 
-export const CmsEditDialog = ({ open, onOpenChange, title, fields, onSave, isSaving }: Props) => {
+export const CmsEditDialog = ({ open, onOpenChange, title, fields, onSave, isSaving, schedule, enableSchedule }: Props) => {
   const [values, setValues] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const [startAtLocal, setStartAtLocal] = useState("");
+  const [endAtLocal, setEndAtLocal] = useState("");
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [mdPreview, setMdPreview] = useState<Record<string, boolean>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const { toast } = useToast();
+  const { data: roles } = useCurrentUserRoles();
+  const canEditAdvanced = !!(roles && (roles.has("owner") || roles.has("brand_owner")));
+  const showSchedule = (enableSchedule || !!schedule) && canEditAdvanced;
 
   useEffect(() => {
     const initial: Record<string, string> = {};
     fields.forEach((f) => { initial[f.key] = f.value; });
     setValues(initial);
-  }, [fields, open]);
+    setStartAtLocal(isoToLocalInput(schedule?.start_at));
+    setEndAtLocal(isoToLocalInput(schedule?.end_at));
+    setScheduleError(null);
+    setMdPreview({});
+  }, [fields, open, schedule?.start_at, schedule?.end_at]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(values);
+    if (showSchedule) {
+      const startIso = localInputToIso(startAtLocal);
+      const endIso = localInputToIso(endAtLocal);
+      if (startIso && endIso && new Date(startIso) >= new Date(endIso)) {
+        setScheduleError("Start must be before end.");
+        return;
+      }
+      onSave(values, { start_at: startIso, end_at: endIso });
+    } else {
+      onSave(values);
+    }
   };
 
   const handleFileUpload = async (fieldKey: string, file: File) => {
@@ -95,6 +144,49 @@ export const CmsEditDialog = ({ open, onOpenChange, title, fields, onSave, isSav
                   onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
                   rows={4}
                 />
+              ) : field.type === "markdown" ? (
+                canEditAdvanced ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] uppercase tracking-brand text-muted-foreground">
+                        Markdown supported (GFM)
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setMdPreview((p) => ({ ...p, [field.key]: !p[field.key] }))}
+                      >
+                        {mdPreview[field.key] ? "Edit" : "Preview"}
+                      </Button>
+                    </div>
+                    {mdPreview[field.key] ? (
+                      <div className="rounded border border-border bg-muted/30 p-3 min-h-[120px]">
+                        <CmsBody markdown={values[field.key] || ""} />
+                      </div>
+                    ) : (
+                      <Textarea
+                        id={`cms-${field.key}`}
+                        value={values[field.key] || ""}
+                        onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
+                        rows={8}
+                        className="font-mono text-sm"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <Textarea
+                      id={`cms-${field.key}`}
+                      value={values[field.key] || ""}
+                      onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
+                      rows={6}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Advanced markdown editor not available to your role. Plain text only.
+                    </p>
+                  </div>
+                )
               ) : field.type === "url" ? (
                 <div className="space-y-2">
                   <div className="flex gap-2">
@@ -154,6 +246,41 @@ export const CmsEditDialog = ({ open, onOpenChange, title, fields, onSave, isSav
               )}
             </div>
           ))}
+          {showSchedule && (
+            <div className="rounded border border-border bg-muted/20 p-3 space-y-3">
+              <div>
+                <p className="text-xs uppercase tracking-brand text-muted-foreground font-bold">
+                  Schedule
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Times are interpreted as <strong>Pacific (America/Los_Angeles)</strong> regardless of your browser timezone.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="cms-start-at" className="text-xs">Start at</Label>
+                  <Input
+                    id="cms-start-at"
+                    type="datetime-local"
+                    value={startAtLocal}
+                    onChange={(e) => setStartAtLocal(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cms-end-at" className="text-xs">End at</Label>
+                  <Input
+                    id="cms-end-at"
+                    type="datetime-local"
+                    value={endAtLocal}
+                    onChange={(e) => setEndAtLocal(e.target.value)}
+                  />
+                </div>
+              </div>
+              {scheduleError && (
+                <p className="text-xs text-destructive">{scheduleError}</p>
+              )}
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={isSaving || Object.values(uploading).some(Boolean)}>

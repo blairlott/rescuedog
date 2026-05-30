@@ -4,6 +4,16 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const REDIRECT_URI = `${Deno.env.get("SUPABASE_URL")}/functions/v1/qbo-auth-callback`;
 const DISCOVERY_URL = "https://developer.api.intuit.com/.well-known/openid_configuration";
 
+function escHtml(s: string | null | undefined): string {
+  if (s == null) return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 let _discoveryCache: { token_endpoint: string } | null = null;
 async function getTokenEndpoint() {
   if (_discoveryCache) return _discoveryCache.token_endpoint;
@@ -31,7 +41,7 @@ Deno.serve(async (req) => {
   const realmId = url.searchParams.get("realmId");
   const errorParam = url.searchParams.get("error");
 
-  if (errorParam) return html(`<h1 class="err">Connection cancelled</h1><p>${errorParam}</p>`, 400);
+  if (errorParam) return html(`<h1 class="err">Connection cancelled</h1><p>${escHtml(errorParam)}</p>`, 400);
   if (!code || !state || !realmId) return html(`<h1 class="err">Missing parameters</h1>`, 400);
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -76,7 +86,7 @@ Deno.serve(async (req) => {
     const t = await tokenRes.text();
     const tid = tokenRes.headers.get("intuit_tid") ?? tokenRes.headers.get("intuit-tid");
     console.error("qbo token exchange failed", { status: tokenRes.status, intuit_tid: tid, body: t });
-    return html(`<h1 class="err">Token exchange failed</h1><p>${t.slice(0, 300)}</p><p><small>intuit_tid: ${tid ?? "n/a"}</small></p>`, 500);
+    return html(`<h1 class="err">Token exchange failed</h1><p>${escHtml(t.slice(0, 300))}</p><p><small>intuit_tid: ${escHtml(tid ?? "n/a")}</small></p>`, 500);
   }
   const tok: any = await tokenRes.json();
 
@@ -109,5 +119,5 @@ Deno.serve(async (req) => {
     last_error: null,
   }, { onConflict: "realm_id" });
 
-  return html(`<h1 class="ok">QuickBooks connected ✓</h1><p>Company: <strong>${companyName ?? realmId}</strong></p>`);
+  return html(`<h1 class="ok">QuickBooks connected ✓</h1><p>Company: <strong>${escHtml(companyName ?? realmId)}</strong></p>`);
 });

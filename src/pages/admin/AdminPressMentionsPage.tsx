@@ -368,6 +368,50 @@ export default function AdminPressMentionsPage() {
               <Label htmlFor="article_title">Article title / recognition</Label>
               <Input id="article_title" value={form.article_title || ""} onChange={(e) => setForm((f) => ({ ...f, article_title: e.target.value }))} />
             </div>
+
+            <div className="rounded border border-border bg-muted/20 p-3 space-y-3">
+              <p className="text-xs uppercase tracking-brand text-muted-foreground font-bold">Pull Quote</p>
+              <div>
+                <Label htmlFor="pull_quote">Pull quote</Label>
+                <textarea
+                  id="pull_quote"
+                  rows={2}
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={form.pull_quote || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, pull_quote: e.target.value }))}
+                  placeholder="Short excerpt (5–15 words)…"
+                />
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1">
+                  <span>
+                    Short excerpt from the article (5–15 words). Renders below the press strip on the homepage. Use direct quotes — brand integrity matters here.
+                  </span>
+                  <span className={(form.pull_quote?.length || 0) > 120 ? "text-amber-600" : ""}>
+                    {form.pull_quote?.length || 0} chars{(form.pull_quote?.length || 0) > 120 ? " — visual impact drops" : ""}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="pull_quote_attribution">Attribution (optional)</Label>
+                <Input
+                  id="pull_quote_attribution"
+                  value={form.pull_quote_attribution || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, pull_quote_attribution: e.target.value }))}
+                  placeholder="e.g. Hudson Lindenberger, Forbes"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Override for byline. If blank, falls back to outlet name.
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="pull_quote_show_on_homepage">Show this quote on the homepage</Label>
+                <Switch
+                  id="pull_quote_show_on_homepage"
+                  checked={form.pull_quote_show_on_homepage ?? true}
+                  onCheckedChange={(v) => setForm((f) => ({ ...f, pull_quote_show_on_homepage: v }))}
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="display_order">Display order</Label>

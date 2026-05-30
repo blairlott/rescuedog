@@ -3,7 +3,7 @@ import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook, TrendingDown, FlaskConical, Headphones, ArrowLeft, Radar, Menu, X, AlertTriangle } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Route, Users, UserCircle, Heart, TrendingUp, ShieldCheck, ExternalLink, PenLine, FileText, Mail, Link2, Brain, Globe2, Webhook, TrendingDown, FlaskConical, Headphones, ArrowLeft, Radar, Menu, X, AlertTriangle, Newspaper } from "lucide-react";
 import { ProfileDialog } from "@/components/crm/ProfileDialog";
 import { CrmCommandPalette } from "@/components/crm/CrmCommandPalette";
 import { CrmBreadcrumbs } from "@/components/crm/CrmBreadcrumbs";
@@ -35,6 +35,7 @@ export default function CrmLayout() {
     return () => { cancelled = true; window.removeEventListener("focus", onFocus); };
   }, [roleInfo?.isAdminOrOwner]);
 
+  const isBrandOwner = roleInfo?.isOwner || (roleInfo?.roles || []).includes("brand_owner" as any);
   const navItems = [
     { to: "/crm", label: "Dashboard", icon: LayoutDashboard },
     { to: "/crm/map", label: "Map", icon: Map },
@@ -49,6 +50,7 @@ export default function CrmLayout() {
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin#depletion-uploader", label: "Depletion Upload", icon: FileText }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/legacy-migration", label: "Legacy Migration", icon: Link2 }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin/sync-drift", label: "Catalog Drift", icon: AlertTriangle, badge: driftCount }] : []),
+    ...(isBrandOwner ? [{ to: "/crm/admin/press-mentions", label: "Press Mentions", icon: Newspaper }] : []),
     ...(roleInfo?.isAdminOrOwner ? [{ to: "/crm/admin", label: "Users", icon: Users }] : []),
   ];
 

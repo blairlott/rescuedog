@@ -35,6 +35,9 @@ type PressMention = {
   // Added in PART 2.7 — read defensively until then.
   show_on_homepage?: boolean;
   show_in_press_section?: boolean;
+  pull_quote?: string | null;
+  pull_quote_attribution?: string | null;
+  pull_quote_show_on_homepage?: boolean;
 };
 
 const emptyForm = (): Partial<PressMention> => ({
@@ -49,6 +52,9 @@ const emptyForm = (): Partial<PressMention> => ({
   end_at: null,
   show_on_homepage: true,
   show_in_press_section: true,
+  pull_quote: "",
+  pull_quote_attribution: "",
+  pull_quote_show_on_homepage: true,
 });
 
 export default function AdminPressMentionsPage() {
@@ -106,6 +112,9 @@ export default function AdminPressMentionsPage() {
         end_at: payload.end_at || null,
         show_on_homepage: payload.show_on_homepage ?? true,
         show_in_press_section: payload.show_in_press_section ?? true,
+        pull_quote: (payload.pull_quote || "").trim() || null,
+        pull_quote_attribution: (payload.pull_quote_attribution || "").trim() || null,
+        pull_quote_show_on_homepage: payload.pull_quote_show_on_homepage ?? true,
       };
       if (editingId) {
         const { error } = await (supabase as any)

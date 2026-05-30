@@ -9,12 +9,13 @@ import { MOCK_PAGES } from "@/lib/wpMockData";
  * 1. Try WP page (slug = page name) ACF fields. 2. Fall back to legacy cms_content.
  * Writes still target cms_content; retarget to WP via edge function once editors trained.
  */
-export const useCmsContent = (page: string) => {
+export const useCmsContent = (page: string, options?: { includeScheduled?: boolean }) => {
+  const includeScheduled = options?.includeScheduled ?? false;
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["cms-content", page],
+    queryKey: ["cms-content", page, includeScheduled],
     queryFn: async () => {
       try {
         let wpAcf: Record<string, any> | undefined;
@@ -37,9 +38,18 @@ export const useCmsContent = (page: string) => {
         .select("*")
         .eq("page", page);
       if (error) throw error;
+      // Schedule filter applied client-side so admin previews don't accidentally
+      // render future/expired content. Public users are already filtered by RLS.
+      const now = Date.now();
+      const rows = (data || []).filter((row: any) => {
+        if (includeScheduled) return true;
+        const startOk = !row.start_at || new Date(row.start_at).getTime() <= now;
+        const endOk = !row.end_at || new Date(row.end_at).getTime() > now;
+        return startOk && endOk;
+      });
       // Return as a map of section_key -> content
       const map: Record<string, any> = {};
-      data?.forEach((row: any) => {
+      rows.forEach((row: any) => {
         map[row.section_key] = row.content;
       });
       return map;

@@ -13728,6 +13728,7 @@ export type Database = {
         | "viewer"
         | "cfo"
         | "developer"
+        | "brand_owner"
       cfo_share_type: "live" | "snapshot"
       discount_scope: "sitewide" | "wine" | "merch" | "sku_list" | "collection"
       discount_tier: "public" | "club_member" | "ambassador" | "vip" | "staff"
@@ -13915,6 +13916,7 @@ export const Constants = {
         "viewer",
         "cfo",
         "developer",
+        "brand_owner",
       ],
       cfo_share_type: ["live", "snapshot"],
       discount_scope: ["sitewide", "wine", "merch", "sku_list", "collection"],

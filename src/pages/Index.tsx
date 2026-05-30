@@ -34,19 +34,21 @@ import { T } from "@/components/T";
 import { useExperiment } from "@/hooks/useExperiment";
 import { WineHero } from "@/components/WineHero";
 import { Seo } from "@/components/Seo";
-import pressWineEnthusiast from "@/assets/press-logos/wine-enthusiast.svg";
-import pressUsaToday from "@/assets/press-logos/usa-today.svg";
-import pressForbes from "@/assets/press-logos/forbes.svg";
-import pressSfChronicle from "@/assets/press-logos/sf-chronicle.svg";
-import pressLodi from "@/assets/press-logos/lodi-wine-commission.svg";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { getPressLogo } from "@/lib/pressLogoMap";
+import { CmsBody } from "@/components/cms/CmsBody";
 
-const pressLogos = [
-  { name: "Wine Enthusiast", src: pressWineEnthusiast },
-  { name: "USA Today", src: pressUsaToday },
-  { name: "Forbes", src: pressForbes },
-  { name: "SF Chronicle", src: pressSfChronicle },
-  { name: "Lodi Wine Commission", src: pressLodi },
-];
+// Render approach per outlet (see PART 2.6 sourcing report).
+// "A" = SVG uses fill="currentColor" — recoloring is one line.
+// "B" = SVG has fixed brand colors / gradients — uses CSS grayscale filter.
+const LOGO_RENDER_APPROACH: Record<string, "A" | "B"> = {
+  forbes: "A",
+  "sf-chronicle": "A",
+  gma3: "B",
+  "wine-enthusiast": "A",
+  "lodi-wine-commission": "A",
+};
 
 const instagramPosts = [
   {
@@ -82,13 +84,14 @@ const instagramPosts = [
 ];
 
 type EditSection = "hero" | "mission" | "about_us" | "lodi" | "club_cta" | null;
+type EditSectionAll = EditSection | "winemaker_driven";
 
 const Index = () => {
   const { data: products, isLoading } = useProducts(50);
   const [isMuted, setIsMuted] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { content, upsert } = useCmsContent("homepage");
-  const [editSection, setEditSection] = useState<EditSection>(null);
+  const [editSection, setEditSection] = useState<EditSectionAll>(null);
   const showImpact = useFeatureFlag("impact_counter", false);
   const { data: rescuePartners = [] } = useRescuePartners();
 
@@ -154,6 +157,14 @@ const Index = () => {
       fields: [
         { key: "heading", label: "Heading", type: "text", value: getVal("club_cta", "heading", "Club") },
         { key: "body", label: "Body", type: "textarea", value: getVal("club_cta", "body", "Get 20% off wine purchases! Join us in our commitment to support animal rescue organizations and receive regular shipments of award-winning wines — plus perks!") },
+      ],
+    },
+    winemaker_driven: {
+      title: "Winemaker-Driven Section",
+      fields: [
+        { key: "eyebrow", label: "Eyebrow / tag", type: "text", value: getVal("winemaker_driven", "eyebrow", "Winemaker-Driven") },
+        { key: "title", label: "Section title", type: "text", value: getVal("winemaker_driven", "title", "Crafted by Susana Rodriguez Vasquez — vine to glass.") },
+        { key: "body", label: "Body copy", type: "markdown", value: getVal("winemaker_driven", "body", "Every Rescue Dog wine is varietally correct and intentionally made — guided from the vineyard to the glass by our Chief Consulting Winemaker, Susy Vasquez. No shortcuts, no house-style blending at scale. Just honest, expressive Lodi wines.") },
       ],
     },
   };
